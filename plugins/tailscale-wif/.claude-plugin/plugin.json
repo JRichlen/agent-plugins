@@ -18,5 +18,7 @@
   ],
   "skills": "./skills/",
   "commands": "./commands/",
-  "agents": "./agents/"
+  "agents": [
+    "./agents/tailscale-wif-setup.md"
+  ]
 }
