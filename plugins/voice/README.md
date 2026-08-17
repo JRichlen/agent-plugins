@@ -15,7 +15,7 @@ for picking between them.
 ## Install
 
 ```sh
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install voice@jrichlen
 ```
 

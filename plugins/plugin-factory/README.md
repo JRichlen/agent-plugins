@@ -7,7 +7,7 @@ is a solved step instead of a dozen hand-edits.
 ## Install
 
 ```
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install plugin-factory@jrichlen
 ```
 

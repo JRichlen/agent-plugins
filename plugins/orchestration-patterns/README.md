@@ -16,7 +16,7 @@ object.
 ## Install
 
 ```
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install orchestration-patterns@jrichlen
 ```
 

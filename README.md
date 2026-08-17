@@ -1,4 +1,4 @@
-# claude-plugins
+# agent-plugins
 
 **Jordan Richlen's Claude Code plugin marketplace.**
 
@@ -10,7 +10,7 @@ installed by name.
 ## Install
 
 ```sh
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install <name>@jrichlen
 ```
 
@@ -28,7 +28,7 @@ point. The core logic is plain, portable `bash`.
 ## Repository layout
 
 ```
-claude-plugins/
+agent-plugins/
 ├── .claude-plugin/marketplace.json   # registry: every plugin, name + source path
 ├── AGENTS.md                         # cross-harness entry point + eval governance
 ├── plugins/

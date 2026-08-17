@@ -26,7 +26,7 @@ and still trust months later.
 ## Install
 
 ```
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install dev-diary@jrichlen
 ```
 

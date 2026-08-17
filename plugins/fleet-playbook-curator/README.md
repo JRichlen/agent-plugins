@@ -5,7 +5,7 @@ Deploy daily GitHub automation that curates a living, self-invalidating operatin
 ## Install
 
 ```
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install fleet-playbook-curator@jrichlen
 ```
 

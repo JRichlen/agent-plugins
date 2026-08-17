@@ -106,8 +106,8 @@ data = {
   "version": "0.0.1",
   "description": desc,
   "author": {"name": author},
-  "repository": "https://github.com/JRichlen/claude-plugins",
-  "homepage": f"https://github.com/JRichlen/claude-plugins/tree/main/plugins/{name}",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": f"https://github.com/JRichlen/agent-plugins/tree/main/plugins/{name}",
   "license": "MIT",
   "keywords": [],
   "skills": "./skills/",
@@ -180,7 +180,7 @@ $DESC
 ## Install
 
 \`\`\`
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install $NAME@jrichlen
 \`\`\`
 
