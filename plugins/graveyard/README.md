@@ -14,7 +14,7 @@ It ships as a **Claude Code plugin** but works with **any coding agent** — the
 core is plain `bash` + `git` + `gh`, driven by a standard `SKILL.md` and an
 `AGENTS.md` entry point.
 
-> Part of the [claude-plugins](../../README.md) marketplace.
+> Part of the [agent-plugins](../../README.md) marketplace.
 
 ---
 
@@ -52,7 +52,7 @@ git clone my-old-project.bundle my-old-project
 
 ```sh
 # Add the marketplace, then install:
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install graveyard@jrichlen
 ```
 
@@ -66,8 +66,8 @@ Then just ask, or run the command:
 ### With any other agent (Codex, Cursor, Gemini, Aider, …)
 
 ```sh
-git clone https://github.com/JRichlen/claude-plugins
-cd claude-plugins/plugins/graveyard
+git clone https://github.com/JRichlen/agent-plugins
+cd agent-plugins/plugins/graveyard
 ```
 
 Point your agent at [`AGENTS.md`](AGENTS.md) (most read it automatically) and

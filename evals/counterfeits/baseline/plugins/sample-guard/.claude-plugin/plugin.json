@@ -5,8 +5,8 @@
   "author": {
     "name": "Jordan Richlen"
   },
-  "repository": "https://github.com/JRichlen/claude-plugins",
-  "homepage": "https://github.com/JRichlen/claude-plugins",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins",
   "license": "MIT",
   "keywords": [],
   "skills": "./skills/",

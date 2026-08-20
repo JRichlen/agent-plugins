@@ -3,7 +3,7 @@
 **Date:** 2026-07-10
 **Status:** Approved (brainstorming) — pending implementation plan
 **Author:** Jordan Richlen (JRichlen)
-**Repo:** `JRichlen/claude-plugins`
+**Repo:** `JRichlen/agent-plugins`
 
 ## Problem
 

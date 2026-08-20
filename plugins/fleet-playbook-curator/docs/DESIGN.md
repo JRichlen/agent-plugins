@@ -43,7 +43,7 @@ The original hypothesis proposed four skills (`fleet`, `fleet-playbook`,
 
 ```mermaid
 graph TD
-    subgraph mkt["JRichlen/claude-plugins"]
+    subgraph mkt["JRichlen/agent-plugins"]
         CUR["fleet-playbook-curator plugin<br/>skill + agent + deploy/curate commands<br/>fleet primitive (scripts) + playbook TEMPLATE + evals"]
     end
     HUMAN["operator"] -->|invokes once| DEPLOY["/deploy-fleet-playbook<br/>(plan + confirm gate)"]

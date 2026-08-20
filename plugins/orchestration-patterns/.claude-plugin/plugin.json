@@ -5,8 +5,8 @@
   "author": {
     "name": "Jordan Richlen"
   },
-  "repository": "https://github.com/JRichlen/claude-plugins",
-  "homepage": "https://github.com/JRichlen/claude-plugins/tree/main/plugins/orchestration-patterns",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/orchestration-patterns",
   "license": "MIT",
   "keywords": [
     "orchestration",

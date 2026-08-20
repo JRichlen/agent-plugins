@@ -1,11 +1,11 @@
-# AGENTS.md — claude-plugins marketplace
+# AGENTS.md — agent-plugins marketplace
 
 This repository is **Jordan Richlen's Claude Code plugin marketplace**. It hosts
 one or more plugins under `plugins/<name>/`, listed in the root
 `.claude-plugin/marketplace.json` so each can be installed with:
 
 ```
-/plugin marketplace add JRichlen/claude-plugins
+/plugin marketplace add JRichlen/agent-plugins
 /plugin install <name>@jrichlen
 ```
 
