@@ -1,0 +1,23 @@
+{
+  "name": "semver-gate",
+  "version": "1.0.0",
+  "description": "Classifies the autonomy an agent should take for a pending action by borrowing semver's MAJOR/MINOR/PATCH taxonomy: PATCH acts silently, MINOR acts and flags, MAJOR stops for explicit human sign-off. Builds on top of existing reversibility/blast-radius judgment and autoMode classifiers rather than replacing them.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate",
+  "license": "MIT",
+  "keywords": [
+    "semver",
+    "autonomy",
+    "permissions",
+    "risk",
+    "judgment",
+    "breaking-change",
+    "conventional-commits",
+    "guardrails"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

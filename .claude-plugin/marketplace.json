@@ -123,6 +123,26 @@
         "second-opinion",
         "communication"
       ]
+    },
+    {
+      "name": "semver-gate",
+      "description": "Classifies the autonomy an agent should take for a pending action by borrowing semver's MAJOR/MINOR/PATCH taxonomy: PATCH acts silently, MINOR acts and flags, MAJOR stops for explicit human sign-off. Builds on top of existing reversibility/blast-radius judgment and autoMode classifiers rather than replacing them.",
+      "version": "1.0.0",
+      "source": "./plugins/semver-gate",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "semver",
+        "autonomy",
+        "permissions",
+        "risk",
+        "judgment",
+        "breaking-change",
+        "conventional-commits",
+        "guardrails"
+      ]
     }
   ]
 }
