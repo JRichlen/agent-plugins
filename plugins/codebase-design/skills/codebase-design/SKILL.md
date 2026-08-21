@@ -37,39 +37,37 @@ by mistake. None of them is this skill.
   Workflow-tool templates for fanning subagents out over RESEARCH dimensions
   and adversarially verifying the CLAIMS that research surfaces — frozen
   ground-truth context, per-stage JSON schemas, a verifier that defaults to
-  disbelief. It is fact-checking machinery for information gathering.
+  disbelief. Its own trigger list names "design comparison" too, but only as
+  one *use* of that fan-out-and-verify machinery — hand-rolling subagents to
+  research several options and fact-check what they report back.
   codebase-design borrows only the *shape* of "produce several, then
-  compare" — applied to DESIGN ALTERNATIVES the agent itself generates, not
-  to claims a research fan-out surfaced — and it needs no Workflow tool, no
-  per-stage schema, no adversarial verifier. Default execution is one agent
-  working through 3+ designs sequentially in a single session; a
-  subagent-spawning tool, if available, may optionally dispatch the 3
-  designs in parallel for extra independence (Step 1), but that is a
-  borrowed optimization, never a dependency, and it never pulls in
-  orchestrate's verify/harvest/reconcile machinery — these are competing
-  designs, not assertions to fact-check.
+  compare", applied instead to DESIGN ALTERNATIVES the agent itself generates
+  and scores against fixed axes, never to claims a fan-out surfaced — no
+  Workflow tool, per-stage schema, or adversarial verifier required by
+  default (Step 1's optional parallel dispatch borrows the fan-out habit, not
+  the verify/harvest/reconcile machinery). Reach for orchestrate to research
+  N options and verify what's claimed about them; reach for this skill when
+  the shape space is already known and the job is to generate and score
+  candidates directly.
 - **second-opinion** (`plugins/voice/skills/second-opinion`) is *post-hoc and
-  offer-only*: it validates a verdict that already exists, batches
-  fact-checks plus scoped advisor personas, and is forbidden from emitting
-  its grouped Verified/Flagged/Conflict output unless subagents actually
-  dispatched and reported back. codebase-design is *pre-hoc and
-  self-triggering* on the interface-shaped heuristic in Step 0 — it runs
-  BEFORE an interface is written, produces designs rather than validating
-  one that already exists, and never needs a subagent-spawning tool to do
-  its core job.
+  offer-only*: it validates a verdict that already exists and is forbidden
+  from emitting output unless subagents actually dispatched and reported
+  back. codebase-design is *pre-hoc and self-triggering* on the
+  interface-shaped heuristic in Step 0 — it runs BEFORE an interface is
+  written, produces designs rather than validating one that already exists,
+  and never needs a subagent-spawning tool to do its core job.
 - **grill-me** (`plugins/grill-me/skills/grill-me`) is the closest surface
   match — it too runs "before starting a nontrivial multi-step change whose
-  design isn't yet settled" and walks a "design tree." But grill-me is a
-  live, single-session CONVERSATIONAL INTERVIEW of the USER aimed at
-  reaching shared understanding of a PLAN. codebase-design never interviews
-  the user as its core mechanism — it is the agent GENERATING and
-  self-comparing 3+ concrete interface designs against objective axes
-  (depth/locality/seam placement), with no requirement that the user
+  design isn't yet settled." But grill-me is a live, single-session
+  CONVERSATIONAL INTERVIEW of the USER aimed at reaching shared understanding
+  of a PLAN. codebase-design never interviews the user as its core mechanism
+  — it is the agent GENERATING and self-comparing 3+ concrete interface
+  designs against objective axes, with no requirement that the user
   participate turn-by-turn. The two are complementary: grill-me's frontier
-  loop can reach a branch that IS an interface decision (Step 0's heuristic)
-  and at that branch hand off to design-it-twice instead of asking the user
-  to freehand an API in conversation — but the two must never merge into one
-  "design conversation" skill that does neither job well.
+  loop can reach a branch that IS an interface decision and hand off to
+  design-it-twice there instead of asking the user to freehand an API in
+  conversation — but the two must never merge into one "design conversation"
+  skill that does neither job well.
 
 ## Step 0 — Is this interface-shaped?
 
@@ -126,26 +124,22 @@ dependency; see Portability below.
 
 ## Step 2 — Compare on depth, locality, seam placement
 
-Still from `references/design-it-twice.md`. For EACH candidate, answer these
-three named questions — the "exact check" that replaces "be careful":
+Still from `references/design-it-twice.md` — full scoring questions and
+worked examples live there. For EACH candidate, answer these three named
+questions — the "exact check" that replaces "be careful":
 
-1. **DEPTH** — what's the ratio of caller-visible footprint (parameter
-   count + required call-order + config surface) to hidden decision count
-   (branches/states/error cases handled internally)? A small footprint
-   hiding a lot is deep (good); a footprint roughly 1:1 with what it does is
-   shallow.
-2. **LOCALITY** — if a bug fix or a plausible future requirement change hits
-   this concern, how many call sites/files need to change? Does correct
-   usage require the caller to hold a cross-call invariant in their head
-   (call A before B, remember to call C)? Fewer forced call sites and no
-   caller-held invariants is better locality.
-3. **SEAM PLACEMENT** — apply the deletion test now (full definition in
-   `references/deep-modules.md`, applied here to pick a winner): mentally
-   delete the module and inline its logic at each call site. Does real
-   complexity (branching, error handling, I/O) disappear from the codebase
-   (a real seam — the module earned its boundary), or does the code read
-   almost identically minus one layer of indirection (a pass-through, not a
-   seam)?
+1. **DEPTH** — ratio of caller-visible footprint to hidden decision count. A
+   small footprint hiding a lot is deep (good); a footprint roughly 1:1 with
+   what it does is shallow.
+2. **LOCALITY** — how many call sites/files a plausible bug fix or future
+   change would touch, and whether the caller must hold a cross-call
+   invariant in their head. Fewer forced call sites and no caller-held
+   invariants is better.
+3. **SEAM PLACEMENT** — apply the deletion test (full definition in
+   `references/deep-modules.md`): mentally delete the module and inline its
+   logic at each call site. Real complexity disappearing from the codebase is
+   a real seam; code that reads almost identically minus one layer of
+   indirection is a pass-through, not a seam.
 
 Build a 3-candidates x 3-axes comparison — a short table or three short
 paragraphs, whichever the answer's complexity warrants — then pick a winner
@@ -173,26 +167,23 @@ writing it.
 
 ## Step 4 — Final depth check before handoff
 
-Still in `references/deep-modules.md` (Module Depth Analysis subsection).
-Classify the chosen design's dependencies into four categories to decide
-what gets a test double and what doesn't:
+Still in `references/deep-modules.md` (Module Depth Analysis subsection) —
+full category definitions live there. Classify the chosen design's
+dependencies into four categories to decide what gets a test double and what
+doesn't:
 
 1. **Pure/internal logic** — no I/O, deterministic given inputs. Test
    directly, no mocking.
-2. **Owned deep dependency** — another module in this codebase that already
-   has its own confirmed seam and its own tests. Call it for real;
-   re-mocking it here duplicates an assumption and hides integration bugs.
+2. **Owned deep dependency** — another module in this codebase with its own
+   confirmed seam and tests. Call it for real, don't re-mock it here.
 3. **Unowned external boundary** — a third-party API, the network, the
-   filesystem, the clock, another team's service: something outside your
-   control that can fail or change independently. This is where a test
+   filesystem, the clock, another team's service. This is where a test
    double belongs, and the only place one belongs.
 4. **Config/environment surface** — values that vary by deploy, not by
-   logic. Inject as parameters; test by passing fixed values through, never
-   by mocking a getter.
+   logic. Inject as parameters; never mock a getter.
 
 Diagnostic — the over-fragmentation check: if the chosen interface exists
-ONLY so a test can swap out a category-1 or category-2 dependency (the sole
-reason for the boundary is testability, not a real external system), that's
+ONLY so a test can swap out a category-1 or category-2 dependency, that's
 exactly the thin, testability-only interface failure mode. Collapse it back
 into its caller and push the test out to the real category-3 boundary
 instead. A module whose only adapter will ever be itself just failed the
@@ -211,12 +202,9 @@ is a front-loaded, distinct step, not interleaved with coding.
 
 ## Portability
 
-Default mode needs NO subagent-spawning tool: Step 1's 3+ designs are
-produced sequentially by the same agent in one session — the
+Default mode needs NO subagent-spawning tool (see Step 1) — the
 always-available path, matching grill-me's "no subagents required"
-portability class, not second-opinion's hard gate. Where a
-subagent-spawning tool (e.g. Claude Code's Task/Workflow tool) IS available,
-Step 1 MAY optionally dispatch the 3 candidate generations in parallel for
-genuine independence (each agent proposes without seeing the others first)
-— the one place this skill's shape echoes orchestrate's fan-out habit (see
-"Not this"). The escalation is always optional and never changes Steps 2-5.
+portability class, not second-opinion's hard gate. Full detail on the
+optional parallel-dispatch escalation, where a subagent-spawning tool is
+available, lives in `references/design-it-twice.md` ("Optional: parallel
+generation"). The escalation is always optional and never changes Steps 2-5.

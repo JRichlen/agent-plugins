@@ -14,15 +14,26 @@ Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state
 An instruction file that's checked into the repo and formatted like every
 other doc *looks* authoritative whether or not it's still true. That gap —
 present and well-formatted is not the same thing as current — is exactly
-what this plugin exists to close, and this marketplace already has two live
-examples of it happening for real:
+what this plugin exists to close, and this marketplace has two real,
+git-verifiable incidents of it happening — one of them history rather than
+present tense, because a present-tense claim about a table that gets
+rebuilt every time a plugin ships would itself go stale the next time one
+did:
 
-- **This repo's own root `README.md`** names only 2 of the 11 plugins that
-  actually exist in `.claude-plugin/marketplace.json` (`graveyard` and
-  `tailscale-wif` — check the install table). It's been quietly wrong since
+- **This repo's own root `README.md`, historically.** Right before the fix
+  commit `1d6d73f`, the plugin table named only 2 of the 11 plugins then
+  registered in `.claude-plugin/marketplace.json` (`graveyard` and
+  `tailscale-wif`) — present, well-formatted, and quietly wrong since
   roughly the third plugin shipped, and nothing caught it because nothing
-  re-checks a README's claims against the marketplace manifest it's
-  describing.
+  re-checked the README's claim against the manifest it was describing. The
+  fix commit `1d6d73f` found it, rebuilt the table from `marketplace.json`,
+  and added a permanent regression guard in `evals/cheap/run.sh` (the
+  "README documents every registered plugin" check): every plugin
+  registered in `marketplace.json` must be named in `README.md` or the
+  cheap tier fails closed. That fix landed *before this plugin existed*, so
+  the incident is history, not a live bug — verify it yourself with
+  `git show 1d6d73f^:README.md` against
+  `git show 1d6d73f^:.claude-plugin/marketplace.json`.
 - **`plugins/fleet-playbook-curator/README.md`** asserted a "Freshly
   scaffolded... intentionally RED" status long after its evals were written
   and green across all three tiers. Its README now records that correction
@@ -30,8 +41,8 @@ examples of it happening for real:
   half of this plugin's invariant, demonstrated by a sibling plugin before
   this one existed to formalize it.
 
-Neither of those is contrived for this README. Both are real, currently
-verifiable state in this repository.
+Neither of those is contrived for this README. Both are real, git-verifiable
+incidents in this repository's history.
 
 ## What this isn't
 
