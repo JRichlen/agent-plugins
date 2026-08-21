@@ -67,7 +67,16 @@ user through, in priority order:
 2. **Real deterministic checks** in `evals/cheap/checks.sh` — replace the stub
    body, then delete the sentinel line and the `bad` call. This is what turns the
    plugin green; until then `evals/cheap/run.sh` fails closed on it by design.
-3. The remaining prose `TODO`s in `SKILL.md`, `AGENTS.md`, and the command.
+3. The remaining prose `TODO`s in `SKILL.md`, `AGENTS.md`, and the command. Once
+   the TODOs are filled, run the two authoring-time passes in
+   [`references/authoring-checklist.md`](references/authoring-checklist.md)
+   over that prose before calling it done: the **No-Op Test** (delete a line;
+   if agent behavior doesn't change, the line didn't earn its place) and
+   **progressive disclosure** (every token of `SKILL.md`/`AGENTS.md` loads on
+   every invocation, so budget it — push deep or rare-path detail out to
+   `references/*.md`, add that directory only if the split is earned). These
+   are about the plugin you're writing right now, not an audit of docs that
+   already shipped elsewhere.
 
 ### 4. Confirm it's green
 

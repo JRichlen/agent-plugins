@@ -54,3 +54,29 @@ Use the plugin-factory scaffold (`/new-plugin`), fill the TODOs, replace the
 red-by-default `evals/cheap/checks.sh` stub with real checks for your plugin's
 invariant, and add a counterfeit fixture that proves the gate bites. See
 `plugins/plugin-factory/` and `evals/counterfeits/README.md`.
+
+## PRs touching marketplace.json: rebase and re-run before merge
+
+`.claude-plugin/marketplace.json` is a single shared array, and every
+plugin-adding PR appends to it. Two such PRs open at once will not conflict on
+CI — each branch is internally consistent — but they **will** conflict on
+merge, because both diffs touch the same insertion point. This has already
+happened for real (semver-gate vs. tracer-bullets landed the same day) and
+required manual resolution; do not assume it's a one-off.
+
+If your PR adds, removes, or reorders a `marketplace.json` entry:
+
+1. **Rebase onto latest `origin/main`** immediately before merge — not when you
+   opened the PR. A green run from days ago proves nothing about a
+   `marketplace.json` that has since moved under you.
+2. **Re-run `evals/cheap/run.sh` from repo root** after the rebase, and confirm
+   it exits 0. A rebase can silently drop or duplicate an entry; only a fresh
+   run catches that.
+3. **On a merge conflict inside the `plugins` array, keep BOTH entries.** Never
+   resolve by picking one side and dropping the other — that silently
+   unregisters someone else's plugin (and, per the reverse-lockfile check in
+   `evals/cheap/run.sh`, orphans its directory from CI coverage entirely).
+   Entry order in the array does not matter — the wiring checks in
+   `evals/cheap/run.sh` are order-independent — so the safe resolution is
+   always additive: keep every entry from both sides, then re-run the cheap
+   tier to confirm the merged file is still valid and fully wired.
