@@ -279,7 +279,13 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.touched.outputs.paid == 'true'
         with:
-          node-version: 20
+          # promptfoo@latest now requires Node >=22.22.0 (it warns and hard-exits
+          # 1 on Node 20 as of 0.122.0 — "promptfoo requires a supported Node.js
+          # runtime"). This leg was pinned to 20 and untouched by any PR that
+          # actually exercised it until semver-gate's promptfoo tier ran here and
+          # hit the real failure — bumped forward so the required aggregation
+          # gate reflects a real pass, not a job that happened to be skipped.
+          node-version: 22
       - name: promptfoo eval
         if: steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
