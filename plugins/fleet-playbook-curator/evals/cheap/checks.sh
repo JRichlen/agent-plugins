@@ -114,3 +114,70 @@ group "fleet-playbook-curator — cross-harness seam"
 has "$SYNC" 'AGENT_CMD' \
   "curate workflow exposes a swappable AGENT_CMD (not hard-wired to one harness)" \
   "curate workflow hard-wires the agent invocation — lost the cross-harness seam"
+
+# --- honest signals: this plugin must not lie about its own liveness -------
+# Every check below defends a hole found by reading the shipped code, where the
+# pipeline could report success while doing nothing observable. A tool whose
+# entire premise is "never assert what you didn't verify" is the last place a
+# silent-green path belongs.
+group "fleet-playbook-curator — no silent-green paths"
+
+# Asserted as a POSITIVE, deliberately. The obvious form here is a negative grep
+# for the old swallow-the-no-op line — but this file's own comments quote that
+# line to explain why it was removed, so the negative matched the documentation
+# and went red on a correct tree. A negative grep breaks the moment you document
+# what you deleted; assert the fix is present instead.
+has "$SYNC" 'curation ran, no playbook delta' \
+  "a zero-delta curation writes a changelog line rather than being silently swallowed" \
+  "REGRESSION: a no-op curation leaves no changelog trace — an agent that did nothing is again indistinguishable from an agent that never ran"
+
+has "$SYNC" '::notice::Curation ran and produced NO playbook change' \
+  "a no-op curation emits a visible annotation naming the repos that changed" \
+  "no-op curation is silent again — restore the ::notice:: attribution"
+
+# Anchored to executable content, not the step name or its comment: a first pass
+# grepped for "Backpressure", which also appears in the explanatory comment, so
+# renaming the step still passed. Mutation testing caught that. Re-anchored again
+# after the query moved off the Search API — this plugin's own SKILL.md says to
+# avoid Search (eventually consistent, different rate bucket), and the original
+# `--search 'head:curate/'` violated that principle in the plugin that documents
+# it. The jq filter below is the load-bearing part now.
+has "$SYNC" 'startswith("curate/")' \
+  "detect reports unmerged curation PRs (playbook prose can rot behind a queue while facts stay current)" \
+  "lost the unmerged-PR backpressure check — the playbook can go stale behind open PRs with every run green"
+
+has "$SYNC" 'LAST_VERIFIED' \
+  "last-verified is a separate clock from last-curated (freshness banner was wrong in BOTH directions when collapsed into one)" \
+  "LAST_VERIFIED stamp gone — the freshness banner reverts to being wrong in both directions"
+
+has "$SYNC" '::error::detect could not push facts to main' \
+  "a failed facts push to main fails loudly (it is a load-bearing assumption, not incidental)" \
+  "detect's push failure is silent again — branch protection on main would break this daily with no clear signal"
+
+# --- portability: owner may be an org OR a user ----------------------------
+group "fleet-playbook-curator — owner resolution"
+has "$SK/scripts/list-fleet-members.sh" 'users/${owner}/repos' \
+  "enumeration falls back to users/<owner>/repos (orgs/ alone 404s for personal accounts)" \
+  "org-only enumeration is back — any user-owned fleet silently fails to enumerate"
+
+has "$SK/scripts/list-fleet-members.sh" 'Refusing to emit an empty fleet' \
+  "a glob matching zero repos fails loudly instead of emitting an empty manifest forever" \
+  "an empty fleet is emitted silently again — it looks identical to a stable fleet on every later run"
+
+# --- the README must not assert a false status ------------------------------
+group "fleet-playbook-curator — status honesty"
+# Positive assertion for the same reason as above: the README now openly records
+# that it once carried a false status line, so a negative grep for that phrase
+# would match the confession and fail a correct tree.
+has "$PLUGIN_DIR/README.md" 'Implemented and green across all three eval tiers' \
+  "README states the plugin's true, current eval status" \
+  "README no longer states its real status — it previously claimed an 'intentionally RED' eval long after the evals passed, which is exactly the kind of uncited assertion this plugin exists to refuse"
+
+# The backpressure step is inert without this scope, and inert in the WORST way:
+# `gh pr list` denied -> the old `|| echo 0` fallback -> "no unmerged curation
+# PRs" reported forever. A check that cannot fail is worse than no check, so the
+# permission it depends on is asserted here rather than assumed.
+group "fleet-playbook-curator — backpressure has the access it needs"
+has "$SYNC" 'pull-requests: read' \
+  "detect grants pull-requests: read, so the backpressure query can actually run" \
+  "detect lost pull-requests: read — declaring permissions at all sets unlisted scopes to none, so the backpressure check silently reports a permanent all-clear"

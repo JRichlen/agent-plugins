@@ -20,6 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write          # commit the facts manifest to main
+      # REQUIRED by the backpressure step below. Declaring `permissions:` at all
+      # sets every UNLISTED scope to `none`, so omitting this does not fall back
+      # to a default — it hard-denies `gh pr list`. The first version of that
+      # step omitted it and swallowed the resulting failure with `|| echo 0`,
+      # which reported "no unmerged curation PRs" forever: a permanently false
+      # all-clear from the very check added to kill a false all-clear. Granted
+      # explicitly, and asserted in this plugin's cheap eval so it cannot be
+      # dropped silently again.
+      pull-requests: read
     outputs:
       changed: ${{ steps.diff.outputs.changed }}
     env:
@@ -53,9 +62,49 @@ jobs:
             echo "no fact change; recording a re-verified heartbeat in the changelog"
             date -u +'- %Y-%m-%dT%H:%M:%SZ no change; fleet re-verified' >> fleet-playbook/CHANGELOG.md
           fi
-          git add fleet-manifest.json fleet-playbook/CHANGELOG.md
+          # LAST-VERIFIED is a SEPARATE clock from last-curated. detect runs daily
+          # and proves the fleet was re-read; curate only runs when something
+          # changed. Collapsing both into one "freshness" stamp made the banner
+          # wrong in both directions: a fleet that legitimately hadn't changed in
+          # 45 days displayed a 45-day-old stamp telling readers to distrust a
+          # playbook that was in fact verified this morning, while a playbook
+          # rotting behind unmerged curate PRs looked fresh. Two clocks, two
+          # truths.
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > fleet-playbook/LAST_VERIFIED
+          git add fleet-manifest.json fleet-playbook/CHANGELOG.md fleet-playbook/LAST_VERIFIED
           git commit -m "detect: refresh fleet facts (changed=${{ steps.diff.outputs.changed }})" || echo "nothing to commit"
-          git push origin HEAD:main
+          # Push can legitimately fail if this repo later gains branch protection
+          # on main. Say so in one unmistakable line rather than emitting a raw
+          # git error into a log nobody reads — detect writing facts to main is a
+          # load-bearing assumption of the whole design, so its failure must be
+          # legible, not archaeological.
+          git push origin HEAD:main || {
+            echo "::error::detect could not push facts to main. If main is now branch-protected, this workflow's detect job needs a bypass or the design needs revisiting — facts auto-committing to main is load-bearing, not incidental."
+            exit 1
+          }
+
+      # Backpressure: curate opens PRs; nothing here ever merged them. Facts kept
+      # advancing on main daily while the playbook itself could sit months stale
+      # behind a queue of unmerged curate PRs — with every workflow run green.
+      # A stale-but-green pipeline is the exact failure this plugin exists to
+      # prevent, so it now reports on itself.
+      - name: Backpressure — warn if curation PRs are piling up unmerged
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! prs="$(gh pr list --state open --json headRefName,createdAt)"; then
+            echo "::warning::Backpressure check failed (could not list PRs). Ensure the detect job grants pull-requests: read to GITHUB_TOKEN."
+            exit 0
+          fi
+          open_prs="$(jq '[.[] | select(.headRefName | startswith("curate/"))] | length' <<<"$prs")"
+          if [ "${open_prs:-0}" -gt 0 ]; then
+            oldest="$(jq -r '[.[] | select(.headRefName | startswith("curate/"))] | min_by(.createdAt).createdAt' <<<"$prs")"
+            echo "::warning::${open_prs} curation PR(s) open and unmerged (oldest: ${oldest:-unknown}). The facts manifest on main is current, but the PLAYBOOK is only as fresh as the last MERGED curation — readers are trusting stale prose."
+          else
+            echo "no unmerged curation PRs; playbook prose is as current as the last detected change"
+          fi
+
       - uses: actions/upload-artifact@v4
         if: steps.diff.outputs.changed == 'true'
         with: { name: fleet-diff, path: diff.json }
@@ -102,7 +151,31 @@ jobs:
           git config user.email "fleet-curator@users.noreply.github.com"
           git checkout -b "$branch"
           git add fleet-playbook/
-          git commit -m "curate: refresh fleet-playbook from detected changes" || { echo "no curation delta"; exit 0; }
+          # A NO-OP MUST NOT LOOK LIKE A SUCCESS. Previously this line was
+          # `|| { echo "no curation delta"; exit 0; }` — so an agent that ran and
+          # silently produced nothing was indistinguishable from an agent that
+          # correctly decided nothing needed changing, and both were
+          # indistinguishable from an agent that never really ran. Green build,
+          # no PR, no signal. That is precisely the failure mode this plugin was
+          # built to eliminate, sitting inside the plugin itself.
+          #
+          # A zero delta after detect reported a real change is a LEGITIMATE
+          # outcome (a member's head_sha can move without changing anything
+          # playbook-worthy), so this does not fail the build — but it is now
+          # recorded where a human will see it, and attributed to the specific
+          # repos that changed.
+          if ! git commit -m "curate: refresh fleet-playbook from detected changes"; then
+            changed_repos="$(jq -r '[.members[]? | select(.changed == true) | .full_name] | join(", ")' diff.json 2>/dev/null || echo 'unknown')"
+            echo "::notice::Curation ran and produced NO playbook change, though detect flagged: ${changed_repos}. Legitimate when a head_sha moved without changing anything playbook-worthy — but recorded here so 'the agent decided nothing' is never mistaken for 'the agent never ran'."
+            date -u +"- %Y-%m-%dT%H:%M:%SZ curation ran, no playbook delta (changed: ${changed_repos})" >> fleet-playbook/CHANGELOG.md
+            git add fleet-playbook/CHANGELOG.md
+            git commit -m "curate: no delta, recorded" || true
+            git push origin "$branch"
+            gh pr create --base main --head "$branch" \
+              --title "curate: no playbook delta (audit trail)" \
+              --body "detect flagged a change in \`${changed_repos}\`, but curation produced no playbook edit. Recorded rather than silently discarded, so a no-op is auditable. Close this if the no-op is correct." || true
+            exit 0
+          fi
           git push origin "$branch"
           gh pr create --base main --head "$branch" \
             --title "curate: fleet-playbook update" \

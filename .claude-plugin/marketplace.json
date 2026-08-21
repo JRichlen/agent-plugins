@@ -78,13 +78,21 @@
     {
       "name": "fleet-playbook-curator",
       "description": "Deploy daily GitHub automation that curates a living, self-invalidating operating index (a 'fleet playbook') for a glob of repos \u2014 always pointing at the repos as the source of truth, never posing as it.",
-      "version": "0.0.1",
+      "version": "1.0.0",
       "source": "./plugins/fleet-playbook-curator",
       "author": {
         "name": "Jordan Richlen"
       },
       "license": "MIT",
-      "keywords": []
+      "keywords": [
+        "fleet",
+        "multi-repo",
+        "documentation",
+        "curation",
+        "github-actions",
+        "citations",
+        "index"
+      ]
     },
     {
       "name": "dev-diary",

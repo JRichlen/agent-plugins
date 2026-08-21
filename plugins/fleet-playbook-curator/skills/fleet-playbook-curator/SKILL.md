@@ -23,7 +23,7 @@ curation is quarantined to a pull request a human reviews.
 ## When to use this
 
 - Someone has a **fleet** — a set of repos matched by an `owner/glob` (e.g.
-  `jrichlen-lab/ansible-homelab-*`), likely growing — and wants a single place that
+  `acme/service-*`), likely growing — and wants a single place that
   explains how to operate across them without hand-maintaining it.
 - They want that place to **stay current automatically** and to **never drift into a
   false source of truth**: it routes to the real repos/files/commits, timestamped.
