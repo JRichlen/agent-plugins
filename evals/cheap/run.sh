@@ -110,8 +110,14 @@ except ImportError:
     print(f"  SKIP {sys.argv[1]} (PyYAML unavailable)"); sys.exit(0)
 p = sys.argv[1]
 txt = open(p).read()
+# Frontmatter on a command file is OPTIONAL — a command that is pure prose is
+# valid, and the counterfeit corpus's known-good baseline is exactly that. This
+# gate is about MALFORMED frontmatter, not absent frontmatter; failing the
+# latter over-rejects valid plugins. (Caught by the counterfeit tier when this
+# check was first written too strictly — the corpus turning red on its own
+# calibration baseline is the tier working as designed.)
 if not txt.startswith("---"):
-    print(f"  FAIL {p} (no frontmatter)"); sys.exit(1)
+    print(f"  PASS {p} (no frontmatter — nothing to parse)"); sys.exit(0)
 parts = txt.split("---", 2)
 if len(parts) < 3:
     print(f"  FAIL {p} (unterminated frontmatter)"); sys.exit(1)
