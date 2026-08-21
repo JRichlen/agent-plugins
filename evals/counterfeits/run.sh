@@ -56,6 +56,10 @@ build_root() {
   cp "$REPO_ROOT/.github/workflows/evals.yml" "$root/.github/workflows/evals.yml"
   cp -R "$REPO_ROOT/ci/." "$root/ci/"
   cp -R "$REPO_ROOT/evals/paid" "$root/evals/paid"
+  # Stage a top-level README.md (§5b is guarded on its presence, same as the
+  # gates above) so "README documents every registered plugin" fires here too;
+  # fixture 16 mutates it to prove the gate bites.
+  cp "$BASELINE/README.md" "$root/README.md"
   printf '%s' "$root"
 }
 
@@ -82,7 +86,7 @@ rm -rf "$cal_root"
 # would silently pass by never triggering — this catches that coverage regression
 # (the "add a gate but leave it unexercised" drift the corpus exists to prevent).
 group "gate coverage — repo-level gates fire in the synthetic root"
-for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage"; do
+for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin"; do
   if grep -qF "$g" <<<"$cal_out"; then ok "gate fires in synthetic root: $g"; else bad "gate '$g' did NOT fire in the synthetic root — build_root staging regressed"; fi
 done
 
