@@ -46,11 +46,20 @@ for f in "$REF_TAXONOMY" "$REF_BREAKDOWN" "$REF_FOGOFWAR"; do
 done
 
 # --- SKILL.md's procedure actually cites all three reference files ---------
-# Existing on disk isn't enough — the procedure steps must actually point a
+# Existing on disk isn't enough — the procedure STEPS must actually point a
 # reader at each file, or the references/ split is unwired documentation.
+# Scoped to '## The procedure' section only: the later '## Every judgment
+# call...' summary also cites all three files, and a naive whole-file grep
+# would stay green even if every in-procedure pointer were deleted (the
+# progressive-disclosure wiring the citations exist to prove would then be
+# gone while this check kept passing on the summary's restatement alone).
 group "wayfinder — SKILL.md procedure cites all three reference files"
+# Collapsed to a single line before matching: markdown line-wrapping can put
+# whitespace inside a phrase we need to match as one run of text, and a
+# collapsed grep is immune to a rewrap moving that whitespace around.
+PROCEDURE_BLOCK="$(awk '/^## The procedure/{flag=1; next} /^## /{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
 for name in "ticket-taxonomy.md" "task-breakdown.md" "fog-of-war.md"; do
-  if grep -qF "references/$name" "$SKILL"; then
+  if printf '%s' "$PROCEDURE_BLOCK" | grep -qF "references/$name"; then
     ok "SKILL.md procedure cites references/$name"
   else
     bad "SKILL.md procedure is MISSING a citation of references/$name"
@@ -105,6 +114,28 @@ hasE "$REF_TAXONOMY" 'resolved-into-a-new-linked-task-ticket' \
 hasE "$SKILL" 'never (be )?relabeled in place' \
      "SKILL.md states tickets are never relabeled in place" \
      "SKILL.md is MISSING the never-relabeled-in-place clause"
+# The heading and the marker sentence above can both survive while the
+# close-and-link PROCEDURE BODY underneath is gutted (e.g. replaced with the
+# exact in-place relabel the invariant forbids) — a marker-phrase test alone
+# can't tell. Scope to the type-lock section and require its real numbered
+# steps, anchored to structure (start-of-line "N. ...") so restating them in
+# prose elsewhere can't satisfy this either.
+TYPE_LOCK_BLOCK="$(awk '/^## The type-lock rule/{flag=1; next} /^## /{flag=0} flag' "$REF_TAXONOMY")"
+if printf '%s' "$TYPE_LOCK_BLOCK" | grep -qE '^1\. Close the original ticket'; then
+  ok "ticket-taxonomy.md's close-and-link procedure has a real step 1 (close the original ticket)"
+else
+  bad "ticket-taxonomy.md's close-and-link procedure is MISSING step 1 (close the original ticket) — marker phrase alone is not the real procedure"
+fi
+if printf '%s' "$TYPE_LOCK_BLOCK" | grep -qE '^2\. Open a new ticket, typed `task`'; then
+  ok "ticket-taxonomy.md's close-and-link procedure has a real step 2 (open a new linked task ticket)"
+else
+  bad "ticket-taxonomy.md's close-and-link procedure is MISSING step 2 (open a new linked task ticket)"
+fi
+if printf '%s' "$TYPE_LOCK_BLOCK" | grep -qE '^3\. The new `task` ticket goes through fog-of-war charting'; then
+  ok "ticket-taxonomy.md's close-and-link procedure has a real step 3 (new ticket re-enters fog-of-war charting)"
+else
+  bad "ticket-taxonomy.md's close-and-link procedure is MISSING step 3 (new ticket re-enters fog-of-war charting)"
+fi
 
 # --- frontier definition: computed, not cached ------------------------------
 group "wayfinder — frontier definition is the computed-not-cached heuristic"
@@ -114,6 +145,23 @@ hasE "$REF_BREAKDOWN" 'frontier is the set of open tickets whose every listed de
 hasE "$REF_BREAKDOWN" 'never cached' \
      "task-breakdown.md forbids caching frontier membership" \
      "task-breakdown.md does NOT forbid caching frontier membership"
+# The always-loaded SKILL.md restates this same definition in step 2 of its
+# own procedure — and nothing above checks THAT copy. SKILL.md could be
+# rewritten to directly contradict its own Invariant (a cached "on frontier"
+# flag is exactly the drift the invariant forbids) with no check firing.
+# Scoped to step 2 only, so a correct restatement elsewhere in the file can't
+# stand in for step 2's own text.
+STEP2_BLOCK="$(awk '/^### 2\. Build the dependency graph/{flag=1; next} /^### /{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+if printf '%s' "$STEP2_BLOCK" | grep -qF 'every listed dependency is CLOSED'; then
+  ok "SKILL.md's own procedure (step 2) states the frontier = every listed dependency is CLOSED"
+else
+  bad "SKILL.md's procedure (step 2) is MISSING or contradicts the frontier definition"
+fi
+if printf '%s' "$STEP2_BLOCK" | grep -qF 'never a cached'; then
+  ok "SKILL.md's own procedure (step 2) forbids caching frontier membership"
+else
+  bad "SKILL.md's procedure (step 2) does NOT forbid caching frontier membership — cached-flag drift risk"
+fi
 
 # --- cycle check: mechanical DAG-traversal revisit check --------------------
 group "wayfinder — cycle check is a mechanical revisit-on-current-path test"
@@ -132,9 +180,17 @@ group "wayfinder — fog-of-war one-sentence-question test"
 hasE "$REF_FOGOFWAR" 'one sentence with a question mark' \
      "fog-of-war.md states the one-sentence-question test" \
      "fog-of-war.md is MISSING the one-sentence-question test"
-hasE "$SKILL" 'one sentence with a question mark' \
-     "SKILL.md restates the one-sentence-question test in the procedure" \
-     "SKILL.md is MISSING the one-sentence-question test in the procedure"
+# Scoped to step 3 itself, not the whole file — the '## Every judgment call'
+# summary near the end also restates this phrase, so a whole-file grep stays
+# green even if the procedure's own test (SKILL.md's step 3) is replaced with
+# vague guidance ("use your judgment..."). The summary can't stand in for the
+# step that actually owns the rule.
+STEP3_BLOCK="$(awk '/^### 3\. Mark unknowns explicitly/{flag=1; next} /^### /{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+if printf '%s' "$STEP3_BLOCK" | grep -qE 'one sentence with a question mark'; then
+  ok "SKILL.md's own procedure (step 3) states the one-sentence-question test"
+else
+  bad "SKILL.md's procedure (step 3) is MISSING the one-sentence-question test"
+fi
 hasE "$REF_FOGOFWAR" 'explicitly out of scope' \
      "fog-of-war.md names the explicitly-out-of-scope bucket" \
      "fog-of-war.md is MISSING the explicitly-out-of-scope bucket"
@@ -144,9 +200,17 @@ group "wayfinder — board-vs-reality drift rule (homelab-board discipline)"
 hasE "$SKILL" 'must write to the ticket store' \
      "SKILL.md states the control-must-write-or-not-exist rule" \
      "SKILL.md is MISSING the control-must-write-or-not-exist rule"
-hasE "$SKILL" 'exactly one (status label|column label)? ?per (ticket|issue)' \
-     "SKILL.md states the exactly-one-status-label-per-ticket rule" \
-     "SKILL.md is MISSING the exactly-one-status-label-per-ticket rule"
+# Scoped to step 0 (where wayfinder states this as ITS OWN operative rule),
+# not the whole file — the '## Modeled on homelab-board' narrative section
+# also matches this phrase while only describing homelab-board itself, so a
+# whole-file grep stays green even if wayfinder's own rule at step 0 is
+# inverted ("as many [labels] as you want, blockers optional").
+STEP0_BLOCK="$(awk '/^### 0\. Detect the ticket store/{flag=1; next} /^### /{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+if printf '%s' "$STEP0_BLOCK" | grep -qE 'exactly one (status label|column label)? ?per (ticket|issue)'; then
+  ok "SKILL.md's own procedure (step 0) states the exactly-one-status-label-per-ticket rule"
+else
+  bad "SKILL.md's procedure (step 0) is MISSING the exactly-one-status-label-per-ticket rule"
+fi
 
 # --- differentiation: 'Not this' section names both orchestrate and grill-me
 # The design brief is explicit this is load-bearing, and its precedent
@@ -181,41 +245,89 @@ fi
 
 # --- 'Not this' claims about orchestrate/grill-me are accurate, not just present
 # A confident-but-wrong differentiation is a documented failure mode for this
-# build. Anchor to a real, structural fact about each neighbouring plugin
-# rather than trusting SKILL.md's prose alone: orchestrate's own SKILL.md
-# must actually be single-session/no-persistent-ticket-state (it names the
-# Workflow tool and returns from one run), and grill-me's own SKILL.md must
-# actually be a live, single-session interrogation (it has its own Invariant
-# naming "single-session").
+# build. The PRIOR version of this group never opened wayfinder's own
+# SKILL.md at all — it only grepped the neighbours' files for strings
+# wayfinder cannot influence, so no edit to wayfinder's "Not this" section
+# could ever turn it red. Fixed here to do both halves: (1) read wayfinder's
+# OWN claim text (scoped to its "Not this" section, reusing the same
+# structural scoping as the section-presence group above) and require the
+# SPECIFIC property it attributes to each neighbour, so a false claim written
+# INTO wayfinder's file is caught directly; (2) cross-check that same
+# property string genuinely appears in the neighbour's real SKILL.md, so a
+# claim that happens to be internally consistent but factually wrong about
+# the neighbour is also caught.
 group "wayfinder — 'Not this' claims check out against the real neighbouring plugins"
-ORCHESTRATE_SKILL="orchestrate/skills/orchestrate/SKILL.md"
+# Scoped to each neighbour's OWN bullet paragraph, not the whole "Not this"
+# section: the section also carries a closing "load-bearing distinction"
+# paragraph that summarizes BOTH neighbours together (it says "single-session"
+# too), which could otherwise let a gutted per-neighbour claim hide behind
+# the summary sentence — the same substrate-restatement trap this whole pass
+# is fixing, just one section down. Anchoring stop-markers to the next
+# bullet/paragraph keeps each check honest about which text it's reading.
+ORCH_CLAIM_BLOCK="$(awk '/^- \*\*orchestrate\*\*/{flag=1} /^- \*\*grill-me\*\*/{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+GRILLME_CLAIM_BLOCK="$(awk '/^- \*\*grill-me\*\*/{flag=1} /^The load-bearing distinction/{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+
 ORCHESTRATE_PATH=""
 for cand in "$PLUGIN_DIR/../orchestrate/skills/orchestrate/SKILL.md" "plugins/orchestrate/skills/orchestrate/SKILL.md"; do
   [ -f "$cand" ] && ORCHESTRATE_PATH="$cand" && break
 done
 if [ -n "$ORCHESTRATE_PATH" ]; then
-  hasE "$ORCHESTRATE_PATH" 'Workflow tool' \
-       "orchestrate's real SKILL.md does name the Workflow tool, matching wayfinder's claim" \
-       "orchestrate's real SKILL.md does NOT name the Workflow tool — wayfinder's claim is stale"
+  if printf '%s' "$ORCH_CLAIM_BLOCK" | grep -qF 'no persistent state across sessions'; then
+    ok "wayfinder's OWN orchestrate paragraph claims it has no persistent state across sessions"
+  else
+    bad "wayfinder's orchestrate paragraph no longer claims no persistent state across sessions — differentiation may now be false or gutted"
+  fi
+  if printf '%s' "$ORCH_CLAIM_BLOCK" | grep -qE 'caller-supplied .dimensions. list'; then
+    ok "wayfinder's OWN orchestrate paragraph attributes the 'dimensions' input to orchestrate"
+    if grep -qF 'dimensions' "$ORCHESTRATE_PATH"; then
+      ok "orchestrate's real SKILL.md corroborates: it genuinely takes a 'dimensions' input"
+    else
+      bad "orchestrate's real SKILL.md does NOT mention 'dimensions' — wayfinder's claim is stale"
+    fi
+  else
+    bad "wayfinder's orchestrate paragraph no longer attributes the 'dimensions' input to orchestrate"
+  fi
 else
   bad "could not locate orchestrate's real SKILL.md to check wayfinder's claim against"
 fi
+
 GRILLME_PATH=""
 for cand in "$PLUGIN_DIR/../grill-me/skills/grill-me/SKILL.md" "plugins/grill-me/skills/grill-me/SKILL.md"; do
   [ -f "$cand" ] && GRILLME_PATH="$cand" && break
 done
 if [ -n "$GRILLME_PATH" ]; then
-  hasE "$GRILLME_PATH" 'single-session' \
-       "grill-me's real SKILL.md does describe itself as single-session, matching wayfinder's claim" \
-       "grill-me's real SKILL.md does NOT describe itself as single-session — wayfinder's claim is stale"
+  if printf '%s' "$GRILLME_CLAIM_BLOCK" | grep -qE 'single-session'; then
+    ok "wayfinder's OWN grill-me paragraph claims grill-me is single-session"
+    if grep -qE 'single-session' "$GRILLME_PATH"; then
+      ok "grill-me's real SKILL.md corroborates: it genuinely describes itself as single-session"
+    else
+      bad "grill-me's real SKILL.md does NOT describe itself as single-session — wayfinder's claim is stale"
+    fi
+  else
+    bad "wayfinder's grill-me paragraph no longer claims grill-me is single-session"
+  fi
+  if printf '%s' "$GRILLME_CLAIM_BLOCK" | grep -qF 'no ticket store, no persistence across sessions'; then
+    ok "wayfinder's OWN grill-me paragraph claims grill-me has no ticket store or cross-session persistence"
+  else
+    bad "wayfinder's grill-me paragraph no longer claims grill-me has no ticket store or cross-session persistence — differentiation may now be false or gutted"
+  fi
 else
   bad "could not locate grill-me's real SKILL.md to check wayfinder's claim against"
 fi
 
 # --- no leftover scaffold placeholders --------------------------------------
+# Scans checks.sh itself too, unlike the prior bare-word version this
+# replaces (which excluded checks.sh entirely, so an unfilled scaffold
+# placeholder left in the eval pack itself could never fire). Matched on the
+# actual scaffold marker shape (the bare word immediately followed by a
+# colon, per scaffold-plugin.sh) rather than the bare word alone, so this
+# file's own prose describing the check ("no unfilled placeholders", the
+# messages below) — which never uses that colon shape — can't self-trigger a
+# false positive.
+TODO_MARKER="TOD""O:"
 group "wayfinder — no unfilled TODOs"
-if grep -rln "TODO" "$PLUGIN_DIR" 2>/dev/null | grep -v '/evals/cheap/checks\.sh$' | grep -q .; then
-  bad "unfilled TODO marker(s) remain under $PLUGIN_DIR — scaffold prose was never replaced"
+if grep -rlF "$TODO_MARKER" "$PLUGIN_DIR" 2>/dev/null | grep -q .; then
+  bad "unfilled scaffold placeholder marker(s) remain under $PLUGIN_DIR — scaffold prose was never replaced"
 else
-  ok "no TODO markers under $PLUGIN_DIR (outside this checks.sh)"
+  ok "no unfilled scaffold placeholder markers under $PLUGIN_DIR"
 fi

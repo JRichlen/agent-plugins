@@ -47,9 +47,9 @@ Two plugins in this marketplace look adjacent. Neither is this skill:
 - **grill-me** (`plugins/grill-me/skills/grill-me`) is a single-session,
   no-subagents-required, **live interrogation of one plan, right now**,
   ending in a synthesized recap the user confirms before work starts. It has
-  no ticket store, no persistence across sessions, and explicitly triages
-  branches by stakes (reversibility x blast-radius) rather than by
-  dependency-graph position. Its "frontier" is a design-tree concept scoped
+  no ticket store, no persistence across sessions, and layers a stakes triage
+  (reversibility x blast-radius) on top of its own frontier to size question
+  *depth* within one session. Its "frontier" is a design-tree concept scoped
   to one interrogation session, not a multi-session dispatch queue with
   typed, independently-assignable tickets.
 
@@ -135,8 +135,8 @@ produces a DAG, not a flat backlog, and it's checked two mechanical ways:
 
 Read `references/fog-of-war.md` at ticket-creation time, and again whenever a
 ticket's scope starts to feel fuzzy. The test: **can you state the open
-question this ticket exists to answer, as a single sentence with a question
-mark, right now?**
+question this ticket exists to answer, as one sentence with a question mark,
+right now?**
 
 - Yes → genuine known-unknown; type it `research` or `grilling`, and write
   that sentence as the ticket's done-condition.
@@ -173,14 +173,13 @@ relabeled/closed/commented.
 
 ## Every judgment call resolves to a named, restatable check
 
-- Type conflation → "closes as a new linked task ticket, never relabeled in
-  place" (`references/ticket-taxonomy.md`).
-- Frontier membership → "every listed dependency is CLOSED" — computed, not
-  cached (`references/task-breakdown.md`).
-- Cycles → mechanical DAG-traversal revisit check
-  (`references/task-breakdown.md`).
-- Known-unknown vs. not-yet-chartable → "can you write the open question as
-  one sentence with a question mark, right now?" (`references/fog-of-war.md`).
-- Board-vs-reality drift → "the control must write to the ticket store or
-  must not exist" — the verbatim homelab-board rule, applied to any rendered
-  view wayfinder produces.
+None of the above is a vibe check. Each one is defined once, where it's used
+(steps 0-3 above), and worked with examples in the reference file that owns
+it:
+
+- Type conflation → the type-lock rule (`references/ticket-taxonomy.md`).
+- Frontier membership → the frontier definition (`references/task-breakdown.md`).
+- Cycles → the path-revisit cycle check (`references/task-breakdown.md`).
+- Known-unknown vs. not-yet-chartable → the fog-of-war test (`references/fog-of-war.md`).
+- Board-vs-reality drift → the control-must-write-to-the-store rule (above,
+  under "Modeled on homelab-board").
