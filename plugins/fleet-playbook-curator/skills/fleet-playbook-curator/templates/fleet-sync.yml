@@ -84,9 +84,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          open_prs="$(gh pr list --state open --search 'head:curate/' --json number,createdAt --jq 'length' 2>/dev/null || echo 0)"
+          if ! prs="$(gh pr list --state open --json headRefName,createdAt)"; then
+            echo "::warning::Backpressure check failed (could not list PRs). Ensure the detect job grants pull-requests: read to GITHUB_TOKEN."
+            exit 0
+          fi
+          open_prs="$(jq '[.[] | select(.headRefName | startswith("curate/"))] | length' <<<"$prs")"
           if [ "${open_prs:-0}" -gt 0 ]; then
-            oldest="$(gh pr list --state open --search 'head:curate/' --json createdAt --jq 'min_by(.createdAt).createdAt' 2>/dev/null || echo '')"
+            oldest="$(jq -r '[.[] | select(.headRefName | startswith("curate/"))] | min_by(.createdAt).createdAt' <<<"$prs")"
             echo "::warning::${open_prs} curation PR(s) open and unmerged (oldest: ${oldest:-unknown}). The facts manifest on main is current, but the PLAYBOOK is only as fresh as the last MERGED curation — readers are trusting stale prose."
           else
             echo "no unmerged curation PRs; playbook prose is as current as the last detected change"
