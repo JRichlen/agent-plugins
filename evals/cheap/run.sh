@@ -70,6 +70,45 @@ sys.exit(1 if fail else 0)
 PY
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 3a. description/keywords stay byte-identical between plugin.json and ---
+# the marketplace.json entry. Anthropic's own official marketplace proves
+# marketplace.json's `description` is what the marketplace browser actually
+# shows (every entry there carries one, sometimes deliberately DIFFERENT from
+# the plugin's own plugin.json description as separate marketing copy) — so
+# dropping the field here would degrade discoverability. This repo instead
+# keeps a single voice: the two must read exactly the same, checked here so
+# they can never quietly drift apart again (as 'orchestrate' and 'graveyard'
+# both already had, unnoticed, before this check existed).
+group "plugin.json <-> marketplace.json description/keywords parity"
+python3 - "$REPO_ROOT" <<'PY'
+import json, os, sys
+root = sys.argv[1]
+mkt = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+fail = 0
+for p in mkt.get("plugins", []):
+    name = p.get("name", "")
+    src = (p.get("source", "") or "").lstrip("./")
+    manifest = os.path.join(root, src, ".claude-plugin", "plugin.json")
+    if not os.path.isfile(manifest):
+        continue  # already reported as a failure by section 3
+    pj = json.load(open(manifest))
+    ok = True
+    if pj.get("description") != p.get("description"):
+        print(f"  FAIL {name}: description differs between plugin.json and marketplace.json entry")
+        ok = False
+    if pj.get("keywords") != p.get("keywords"):
+        print(f"  FAIL {name}: keywords differ between plugin.json and marketplace.json entry")
+        print(f"    plugin.json:      {pj.get('keywords')}")
+        print(f"    marketplace.json: {p.get('keywords')}")
+        ok = False
+    if ok:
+        print(f"  PASS {name}: description and keywords identical in both manifests")
+    else:
+        fail += 1
+sys.exit(1 if fail else 0)
+PY
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 4. SKILL.md frontmatter -----------------------------------------------
 group "skill frontmatter"
 while IFS= read -r skill; do
@@ -153,6 +192,35 @@ for manifest in sorted(glob.glob(os.path.join(root, "plugins", "*", ".claude-plu
 sys.exit(1 if fail else 0)
 PY
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 5b. README documents every registered plugin ---------------------------
+# README.md carries a hand-maintained plugin table. It has gone stale before —
+# it once named only 2 of 11 registered plugins with no warning from any check.
+# Fail closed: every plugin name in marketplace.json must appear as its own
+# token somewhere in README.md (a Markdown link target `plugins/<name>/` or a
+# bare `<name>` mention both count), or the build goes red instead of the docs
+# quietly aging out of sync with what's actually installable. This check reads
+# the repo's own README.md, not the synthetic counterfeit root's, so it is a
+# REPO-level gate like sections 11/11b/12 below.
+if [ -f "README.md" ]; then
+  group "README documents every registered plugin"
+  python3 - "$REPO_ROOT" <<'PY'
+import json, os, re, sys
+root = sys.argv[1]
+mkt = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+readme = open(os.path.join(root, "README.md")).read()
+fail = 0
+for p in mkt.get("plugins", []):
+    name = p.get("name", "")
+    # word-boundary match so e.g. "voice" doesn't false-positive on "invoice"
+    if re.search(r'(?<![\w-])' + re.escape(name) + r'(?![\w-])', readme):
+        print(f"  PASS {name} is named in README.md")
+    else:
+        print(f"  FAIL {name} is registered in marketplace.json but not named in README.md"); fail += 1
+sys.exit(1 if fail else 0)
+PY
+  if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 
 # --- 6. No unfilled placeholder tokens in shipped prose/manifests -----------
 # The scaffolder fills every {{token}} at generation time. A surviving {{...}} in

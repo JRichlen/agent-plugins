@@ -19,12 +19,13 @@
         "backup",
         "archive",
         "git-bundle",
-        "cleanup"
+        "cleanup",
+        "repository-management"
       ]
     },
     {
       "name": "orchestrate",
-      "description": "Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code's Workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don't survive. Ships a shared skill, two workflow-script templates, and a worked example.",
+      "description": "Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code's Workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don't survive. Ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example.",
       "version": "1.0.0",
       "source": "./plugins/orchestrate",
       "author": {
@@ -36,7 +37,8 @@
         "multi-agent",
         "workflow",
         "research",
-        "verification"
+        "verification",
+        "subagents"
       ]
     },
     {
