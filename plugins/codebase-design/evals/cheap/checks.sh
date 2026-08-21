@@ -133,9 +133,14 @@ else
 fi
 
 # --- Step 0: the interface-shaped gate is a real, checkable heuristic ------
+# Scoped to the '## Step 0' section body itself (same awk-extraction pattern
+# as 'Not this' below), not the whole file — "call sites" also appears in the
+# frontmatter, the invariant, and Step 2's LOCALITY prose, so a whole-file
+# grep survives deleting the actual Step 0 bullet it's meant to defend.
 group "codebase-design — Step 0 gate has checkable criteria"
+STEP0_BODY="$(awk '/^## Step 0 —/{f=1; next} /^## /{f=0} f' "$SKILL")"
 for marker in "call sites" "crosses a boundary" "expensive or breaking to change" "new abstraction"; do
-  if grep -qiF "$marker" "$SKILL"; then
+  if printf '%s' "$STEP0_BODY" | grep -qiF "$marker"; then
     ok "Step 0 heuristic names: $marker"
   else
     bad "Step 0 heuristic is missing: $marker"
@@ -173,13 +178,17 @@ else
 fi
 
 # --- Step 3: two-adapter check and the unconfirmed-seam rule ---------------
+# Scoped to the '## Step 3' section body — "two-adapter check" also appears
+# in Step 4's cross-reference (:202), so a whole-file grep survives Step 3
+# itself no longer naming the check it's supposed to apply.
 group "codebase-design — Step 3 seam confirmation"
-if grep -qiF 'two-adapter check' "$SKILL"; then
+STEP3_BODY="$(awk '/^## Step 3 —/{f=1; next} /^## /{f=0} f' "$SKILL")"
+if printf '%s' "$STEP3_BODY" | grep -qiF 'two-adapter check'; then
   ok "SKILL.md names the two-adapter check"
 else
   bad "SKILL.md does not name the two-adapter check"
 fi
-if grep -qiF 'no test at an unconfirmed seam' "$SKILL"; then
+if printf '%s' "$STEP3_BODY" | grep -qiF 'no test at an unconfirmed seam'; then
   ok "SKILL.md states the 'no test at an unconfirmed seam' rule"
 else
   bad "SKILL.md does not state the 'no test at an unconfirmed seam' rule"
@@ -322,8 +331,25 @@ else
 fi
 
 # --- invariant text survives verbatim in SKILL.md and AGENTS.md ------------
+# Two markers, not one: the closing sentence (test/seam discipline) AND the
+# HEADLINE ALWAYS/NEVER clause (3+ candidates compared before picking one).
+# Pinning only the closing sentence lets the headline clause — the actual
+# "produce 3+ radically different designs" mandate the whole plugin exists to
+# enforce — be gutted to something toothless ("sanity-check it before picking
+# one") while the suite stays green. Both markers must hold in both files.
 group "codebase-design — invariant text is verbatim in SKILL.md and AGENTS.md"
+INVARIANT_MARKER_HEAD='ALWAYS produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one — NEVER let the first workable interface ship unexamined'
 INVARIANT_MARKER='NEVER a shallow pass-through whose interface exists only to make internals swappable, and NEVER a test written against an unconfirmed seam'
+if grep -qF "$INVARIANT_MARKER_HEAD" "$SKILL"; then
+  ok "SKILL.md carries the invariant's headline ALWAYS/NEVER clause verbatim"
+else
+  bad "SKILL.md is missing the invariant's headline ALWAYS/NEVER clause verbatim"
+fi
+if grep -qF "$INVARIANT_MARKER_HEAD" "$AGENTS"; then
+  ok "AGENTS.md carries the invariant's headline ALWAYS/NEVER clause verbatim"
+else
+  bad "AGENTS.md is missing the invariant's headline ALWAYS/NEVER clause verbatim"
+fi
 if grep -qF "$INVARIANT_MARKER" "$SKILL"; then
   ok "SKILL.md carries the invariant's closing sentence verbatim"
 else
