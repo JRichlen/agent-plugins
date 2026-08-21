@@ -280,6 +280,26 @@
         "seam-design",
         "design-comparison"
       ]
+    },
+    {
+      "name": "wayfinder",
+      "description": "Chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. Plans; never executes.",
+      "version": "1.0.0",
+      "source": "./plugins/wayfinder",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "planning",
+        "tickets",
+        "dependency-graph",
+        "frontier",
+        "multi-session",
+        "dispatch",
+        "task-breakdown",
+        "roadmap"
+      ]
     }
   ]
 }

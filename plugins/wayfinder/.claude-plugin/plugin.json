@@ -1,0 +1,23 @@
+{
+  "name": "wayfinder",
+  "version": "1.0.0",
+  "description": "Chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. Plans; never executes.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/wayfinder",
+  "license": "MIT",
+  "keywords": [
+    "planning",
+    "tickets",
+    "dependency-graph",
+    "frontier",
+    "multi-session",
+    "dispatch",
+    "task-breakdown",
+    "roadmap"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
