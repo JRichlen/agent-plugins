@@ -14,10 +14,10 @@ survive into the answer as if true — plus a hard-constraint gate. It returns o
 coherent decision out the back, latency matters, and there are floors the answer
 may not cross.
 
-**Invoke the `orchestration-patterns` skill and follow it.** The skill explains
+**Invoke the `orchestrate` skill and follow it.** The skill explains
 the shared discipline, helps you scout `dimensions` and `constraints`, and points
 at the template to run with `Workflow({ scriptPath, args })`. The template lives
-at `skills/orchestration-patterns/templates/pipelined-verdict-wins.workflow.js`;
+at `skills/orchestrate/templates/pipelined-verdict-wins.workflow.js`;
 the annotated walkthrough is `references/strategy-b-pipelined-verdict-wins.md`
 and a filled-in example is `references/worked-example-observability.md`.
 

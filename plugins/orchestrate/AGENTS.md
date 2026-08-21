@@ -32,18 +32,18 @@ Two shapes, picked by what you want out the back:
 
 ## How to run it
 
-**Read `skills/orchestration-patterns/SKILL.md` and follow it.** It is the
+**Read `skills/orchestrate/SKILL.md` and follow it.** It is the
 authoritative description: the shared discipline, an A-vs-B decision guide, how to
 scout `dimensions` inline first, and how to invoke a template with
 `Workflow({ scriptPath, args })`.
 
 The two templates it drives:
 
-- `skills/orchestration-patterns/templates/derived-verify.workflow.js` — Strategy A.
-- `skills/orchestration-patterns/templates/pipelined-verdict-wins.workflow.js` — Strategy B.
+- `skills/orchestrate/templates/derived-verify.workflow.js` — Strategy A.
+- `skills/orchestrate/templates/pipelined-verdict-wins.workflow.js` — Strategy B.
 
 Annotated walkthroughs and a filled-in example live under
-`skills/orchestration-patterns/references/`.
+`skills/orchestrate/references/`.
 
 ## The discipline these templates defend
 
