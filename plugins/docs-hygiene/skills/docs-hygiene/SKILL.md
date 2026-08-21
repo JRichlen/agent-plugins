@@ -9,7 +9,7 @@ description: >-
 
 ## Invariant
 
-A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is never trusted or propagated forward without being re-verified against current repo state first. Once observed reality contradicts an instruction, the contradicted instruction is never left in place — it is corrected or explicitly flagged in the same pass, not carried forward for later. When two or more layered instruction files disagree with each other, the audit always resolves the disagreement to one explicit kept version — it never leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
+A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. Once observed reality contradicts an instruction, the contradicted instruction is NEVER left in place — it is corrected or explicitly flagged in the same pass, not carried forward for "later." When two or more layered instruction files disagree with each other, the audit ALWAYS resolves the disagreement to one explicit kept version — it NEVER leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
 
 Everything below exists to keep that true.
 
@@ -19,9 +19,9 @@ For an AI agent that reads instruction files on every request, stale information
 
 This is the exact same failure shape as a GitOps controller that stays green — `Ready: True` — while quietly reconciling against a stale artifact, because the controller never re-diffs its own claim of freshness against what's actually live. An instruction file fails the same way: it sits there looking authoritative — present, well-formatted, checked in — while the fact it asserts has silently diverged from reality. **Present and well-formatted is not evidence of current.** That gap is exactly why this audit exists as its own repeatable step instead of a one-time write nobody revisits.
 
-Two real, in-repo instances of this exact failure, not hypotheticals:
+Two real, in-repo instances of this exact failure, not hypotheticals — one of them git-verifiable history rather than present-tense (a present-tense claim about a table that gets rebuilt every time a plugin ships is exactly the kind of claim guaranteed to go stale again, so this cites the fixed incident, not the live table):
 
-- This marketplace's own root `README.md` names only 2 of the 11 plugins that actually exist in `marketplace.json` (`graveyard` and `tailscale-wif` — see the install table). It reads as complete, is well-formatted, and has been quietly wrong since roughly the third plugin was added.
+- This marketplace's own root `README.md`, historically: right before the fix commit `1d6d73f`, its plugin table named only 2 of the 11 plugins then registered in `marketplace.json` (`graveyard` and `tailscale-wif`) — present, well-formatted, and quietly wrong since roughly the third plugin was added, with nothing re-checking the README's claim against the manifest it was describing. The fix commit `1d6d73f` caught it, rebuilt the table from `marketplace.json`, and added a permanent regression guard (`evals/cheap/run.sh`, the "README documents every registered plugin" check) so every plugin registered in `marketplace.json` must be named in `README.md` or the cheap tier fails closed. That fix landed *before this plugin existed* — verify it yourself with `git show 1d6d73f^:README.md` vs `git show 1d6d73f^:.claude-plugin/marketplace.json`.
 - `plugins/fleet-playbook-curator/README.md` asserted a "Freshly scaffolded... intentionally RED" status long after its evals were written and green across all three tiers — stale status text asserting something demonstrably false, in a plugin whose entire purpose is refusing to assert uncited claims. (That plugin's README now records the correction in place rather than quietly editing it away — a worked example of the "explicitly flagged" half of this skill's invariant.)
 
 ## When to use this
