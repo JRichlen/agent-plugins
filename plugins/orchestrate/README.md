@@ -1,4 +1,4 @@
-# orchestration-patterns
+# orchestrate
 
 Two reusable multi-agent orchestration templates for **research-and-verify**
 work on Claude Code's Workflow tool. Both fan out research across dimensions and
@@ -17,7 +17,7 @@ object.
 
 ```
 /plugin marketplace add JRichlen/agent-plugins
-/plugin install orchestration-patterns@jrichlen
+/plugin install orchestrate@jrichlen
 ```
 
 ## The two templates
@@ -36,7 +36,7 @@ defaults to disbelief** so unsupported claims fail closed.
 ## Usage
 
 Invoke the skill — `/derived-verify` or `/pipelined-verdict-wins`, or just
-describe a research-and-verify task and the `orchestration-patterns` skill will
+describe a research-and-verify task and the `orchestrate` skill will
 trigger. The skill helps you scout the right `dimensions` (and `constraints` for
 Strategy B), then you run a template with:
 
@@ -47,13 +47,13 @@ Workflow({
 })
 ```
 
-See `skills/orchestration-patterns/references/worked-example-observability.md`
+See `skills/orchestrate/references/worked-example-observability.md`
 for a fully filled-in `args` for both strategies.
 
 ## Layout
 
 ```
-skills/orchestration-patterns/
+skills/orchestrate/
   SKILL.md                                  # shared discipline + A-vs-B decision guide
   templates/
     derived-verify.workflow.js              # Strategy A

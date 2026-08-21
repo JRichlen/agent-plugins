@@ -1,5 +1,5 @@
 ---
-name: orchestration-patterns
+name: orchestrate
 description: >-
   Two reusable multi-agent orchestration templates for research-and-verify work
   built on Claude Code's Workflow tool: fan out research over dimensions, then
