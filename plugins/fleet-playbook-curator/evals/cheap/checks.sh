@@ -135,11 +135,14 @@ has "$SYNC" '::notice::Curation ran and produced NO playbook change' \
   "a no-op curation emits a visible annotation naming the repos that changed" \
   "no-op curation is silent again — restore the ::notice:: attribution"
 
-# Anchored to the actual gh query, not the step name or the comment above it:
-# a first pass grepped for "Backpressure", which also appears in the explanatory
-# comment, so renaming the step still passed. Mutation testing caught it. Match
-# something only the executable path can contain.
-has "$SYNC" 'head:curate/' \
+# Anchored to executable content, not the step name or its comment: a first pass
+# grepped for "Backpressure", which also appears in the explanatory comment, so
+# renaming the step still passed. Mutation testing caught that. Re-anchored again
+# after the query moved off the Search API — this plugin's own SKILL.md says to
+# avoid Search (eventually consistent, different rate bucket), and the original
+# `--search 'head:curate/'` violated that principle in the plugin that documents
+# it. The jq filter below is the load-bearing part now.
+has "$SYNC" 'startswith("curate/")' \
   "detect reports unmerged curation PRs (playbook prose can rot behind a queue while facts stay current)" \
   "lost the unmerged-PR backpressure check — the playbook can go stale behind open PRs with every run green"
 
@@ -169,3 +172,12 @@ group "fleet-playbook-curator — status honesty"
 has "$PLUGIN_DIR/README.md" 'Implemented and green across all three eval tiers' \
   "README states the plugin's true, current eval status" \
   "README no longer states its real status — it previously claimed an 'intentionally RED' eval long after the evals passed, which is exactly the kind of uncited assertion this plugin exists to refuse"
+
+# The backpressure step is inert without this scope, and inert in the WORST way:
+# `gh pr list` denied -> the old `|| echo 0` fallback -> "no unmerged curation
+# PRs" reported forever. A check that cannot fail is worse than no check, so the
+# permission it depends on is asserted here rather than assumed.
+group "fleet-playbook-curator — backpressure has the access it needs"
+has "$SYNC" 'pull-requests: read' \
+  "detect grants pull-requests: read, so the backpressure query can actually run" \
+  "detect lost pull-requests: read — declaring permissions at all sets unlisted scopes to none, so the backpressure check silently reports a permanent all-clear"

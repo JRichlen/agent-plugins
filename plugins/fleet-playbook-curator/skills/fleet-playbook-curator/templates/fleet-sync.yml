@@ -20,6 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write          # commit the facts manifest to main
+      # REQUIRED by the backpressure step below. Declaring `permissions:` at all
+      # sets every UNLISTED scope to `none`, so omitting this does not fall back
+      # to a default — it hard-denies `gh pr list`. The first version of that
+      # step omitted it and swallowed the resulting failure with `|| echo 0`,
+      # which reported "no unmerged curation PRs" forever: a permanently false
+      # all-clear from the very check added to kill a false all-clear. Granted
+      # explicitly, and asserted in this plugin's cheap eval so it cannot be
+      # dropped silently again.
+      pull-requests: read
     outputs:
       changed: ${{ steps.diff.outputs.changed }}
     env:
