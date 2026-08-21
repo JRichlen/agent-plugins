@@ -88,6 +88,49 @@ PY
   if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 done < <(find plugins -name 'SKILL.md' -type f | sort)
 
+# --- 4b. commands/*.md frontmatter must be PARSEABLE YAML -------------------
+# Section 4 above checks SKILL.md frontmatter for required KEYS, but nothing
+# checked that any frontmatter actually parses. That gap shipped two real bugs
+# to main: semver-gate's command carried an unquoted colon inside its
+# description, and fleet-playbook-curator's argument-hint began with '[', which
+# YAML reads as a flow sequence and then chokes on the trailing prose. Both
+# passed every tier of this suite and were only caught when `apm install`
+# refused to deploy the command files ("malformed or over-budget YAML
+# frontmatter") — i.e. the break surfaced in a downstream consumer, not here,
+# which is the exact shape of failure this suite exists to prevent.
+#
+# Key-presence is not parseability. Assert the parse itself.
+group "command frontmatter parses as YAML"
+while IFS= read -r cmd; do
+  python3 - "$cmd" <<'PY'
+import sys
+try:
+    import yaml
+except ImportError:
+    print(f"  SKIP {sys.argv[1]} (PyYAML unavailable)"); sys.exit(0)
+p = sys.argv[1]
+txt = open(p).read()
+# Frontmatter on a command file is OPTIONAL — a command that is pure prose is
+# valid, and the counterfeit corpus's known-good baseline is exactly that. This
+# gate is about MALFORMED frontmatter, not absent frontmatter; failing the
+# latter over-rejects valid plugins. (Caught by the counterfeit tier when this
+# check was first written too strictly — the corpus turning red on its own
+# calibration baseline is the tier working as designed.)
+if not txt.startswith("---"):
+    print(f"  PASS {p} (no frontmatter — nothing to parse)"); sys.exit(0)
+parts = txt.split("---", 2)
+if len(parts) < 3:
+    print(f"  FAIL {p} (unterminated frontmatter)"); sys.exit(1)
+try:
+    yaml.safe_load(parts[1])
+except Exception as e:
+    first = str(e).splitlines()[0]
+    print(f"  FAIL {p} (unparseable YAML: {first})"); sys.exit(1)
+print(f"  PASS {p}")
+PY
+  if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+done < <(find plugins -path '*/commands/*.md' -type f | sort)
+
 # --- 5. Reverse lockfile: every plugin dir is registered --------------------
 # Section 3 checks marketplace -> dir (forward). This is the reverse: any
 # plugins/<name>/ that ships a plugin.json MUST have a matching marketplace
