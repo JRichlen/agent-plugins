@@ -34,6 +34,7 @@ multiple machines and want it to resolve identically every time.
 | [**tracer-bullets**](plugins/tracer-bullets/) | Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build. |
 | [**semver-gate**](plugins/semver-gate/) | Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. |
 | [**verify-before-claim**](plugins/verify-before-claim/) | Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first. |
+| [**diagnosing-bugs**](plugins/diagnosing-bugs/) | Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing a bug, debugging a failure, triaging an error, or the user asks to diagnose/root-cause/troubleshoot an issue. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry
