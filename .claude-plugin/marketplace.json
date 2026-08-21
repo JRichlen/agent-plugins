@@ -42,7 +42,7 @@
     {
       "name": "plugin-factory",
       "description": "Scaffold a new marketplace plugin skeleton in one command: a deterministic generator emits a valid plugin.json, an invariant-first SKILL.md, cross-harness AGENTS.md symlinks, a command stub, and a red-by-default eval that fails closed until you implement real checks \u2014 then wires it into the marketplace lockfile.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "source": "./plugins/plugin-factory",
       "author": {
         "name": "Jordan Richlen"

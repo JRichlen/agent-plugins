@@ -159,3 +159,52 @@ else
 fi
 
 unset _skill _pin _missing
+
+# --- Wave 4: authoring-time discipline (No-Op Test + progressive disclosure) -
+# Two harvest findings folded into the factory's own guidance, not new CLI
+# behavior: the No-Op Test (delete a line; if agent behavior doesn't change, it
+# didn't earn its place) and progressive disclosure (every token of
+# SKILL.md/AGENTS.md loads on every invocation, so budget it). These are
+# authoring-time checks an author runs on the plugin they're writing right now
+# — maintenance-time auditing of already-shipped docs is a separate plugin's
+# job, out of scope here.
+group "plugin 'plugin-factory' authoring-time discipline (wave 4)"
+
+_checklist="$PLUGIN_DIR/skills/plugin-factory/references/authoring-checklist.md"
+if [ -f "$_checklist" ]; then
+  ok "plugin-factory: references/authoring-checklist.md exists"
+else
+  bad "plugin-factory: references/authoring-checklist.md is missing"
+fi
+
+# The checklist must cover both harvest findings by name, not just exist as an
+# empty file — grep for the load-bearing terms, not a paraphrase.
+if [ -f "$_checklist" ] && grep -q 'No-Op Test' "$_checklist" \
+   && grep -qi 'progressive disclosure' "$_checklist"; then
+  ok "plugin-factory: authoring-checklist.md covers the No-Op Test and progressive disclosure"
+else
+  bad "plugin-factory: authoring-checklist.md is missing the No-Op Test or progressive-disclosure content"
+fi
+
+# SKILL.md's own prose must point authors at the checklist before they call a
+# scaffold done — this is the fold-in into the existing invariant-first
+# interview step, not a bolt-on nobody reads.
+if grep -qF 'references/authoring-checklist.md' "$PLUGIN_DIR/skills/plugin-factory/SKILL.md" 2>/dev/null; then
+  ok "plugin-factory: SKILL.md references authoring-checklist.md"
+else
+  bad "plugin-factory: SKILL.md does not point authors at references/authoring-checklist.md"
+fi
+
+# CONTRIBUTING.md must carry the marketplace.json rebase-and-reconcile section
+# in real content, not just a heading — grep for the load-bearing instruction
+# (keep BOTH entries on conflict) so a heading-only stub still fails.
+_contrib="$REPO_ROOT/CONTRIBUTING.md"
+if [ -f "$_contrib" ] && grep -qi 'rebase' "$_contrib" \
+   && grep -qi 'keep BOTH entries' "$_contrib" \
+   && grep -qF 'marketplace.json' "$_contrib"; then
+  ok "plugin-factory: CONTRIBUTING.md documents rebase + keep-both-entries recovery for marketplace.json conflicts"
+else
+  bad "plugin-factory: CONTRIBUTING.md is missing the marketplace.json rebase/reconcile section"
+fi
+
+unset _checklist _contrib
