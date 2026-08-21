@@ -184,6 +184,26 @@
         "human-in-the-loop",
         "decision-gate"
       ]
+    },
+    {
+      "name": "verify-before-claim",
+      "description": "Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first.",
+      "version": "1.0.0",
+      "source": "./plugins/verify-before-claim",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "verification",
+        "fact-checking",
+        "claims",
+        "reproduction",
+        "uncertainty",
+        "discipline",
+        "inline",
+        "always-on"
+      ]
     }
   ]
 }
