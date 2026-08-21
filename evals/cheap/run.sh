@@ -292,13 +292,16 @@ for base, _, files in os.walk(os.path.join(root, "plugins")):
         for m in link.finditer(open(src, encoding="utf-8").read()):
             target = m.group(1).strip()
             if not target or target.startswith("#"): continue
-            if scheme.match(target): continue  # http(s)://, mailto:, etc.
+            if target.startswith("//") or scheme.match(target): continue  # http(s)://, //host, mailto:, etc.
             target = target.split("#", 1)[0].split("?", 1)[0]
             if not target: continue
             if "<" in target or ">" in target: continue  # templated placeholder, not a real path
             checked += 1
             resolve_from = root if target.startswith("/") else base
-            candidate = os.path.join(resolve_from, target.lstrip("/"))
+            candidate = os.path.realpath(os.path.join(resolve_from, target.lstrip("/")))
+            root_real = os.path.realpath(root)
+            if os.path.commonpath((root_real, candidate)) != root_real:
+                print(f"  FAIL {os.path.relpath(src, root)} links `{target}` which escapes the repository"); fail += 1; continue
             if os.path.exists(candidate): continue
             print(f"  FAIL {os.path.relpath(src, root)} links `{target}` which does not resolve to a real file"); fail += 1
 if fail == 0:
