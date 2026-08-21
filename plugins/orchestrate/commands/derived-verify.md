@@ -12,12 +12,12 @@ fan-out, not guessed up front. It returns the raw `{ research, verdicts }`; it
 does not decide for you. Reach for it when you don't yet know what's worth
 fact-checking and you want to inspect the verdicts yourself.
 
-**Invoke the `orchestration-patterns` skill and follow it.** The skill explains
+**Invoke the `orchestrate` skill and follow it.** The skill explains
 the shared discipline (frozen ground-truth context, per-stage structured output,
 adversarial verifier that defaults to disbelief), helps you scout the right
 `dimensions` inline, and points at the template to run with
 `Workflow({ scriptPath, args })`. The template lives at
-`skills/orchestration-patterns/templates/derived-verify.workflow.js`; the
+`skills/orchestrate/templates/derived-verify.workflow.js`; the
 annotated walkthrough is `references/strategy-a-derived-verify.md` and a filled-in
 example is `references/worked-example-observability.md`.
 
