@@ -204,6 +204,24 @@
         "inline",
         "always-on"
       ]
+    },
+    {
+      "name": "diagnosing-bugs",
+      "description": "Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing a bug, debugging a failure, triaging an error, or the user asks to diagnose/root-cause/troubleshoot an issue.",
+      "version": "1.0.0",
+      "source": "./plugins/diagnosing-bugs",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "debugging",
+        "root-cause-analysis",
+        "hypothesis-driven",
+        "regression-testing",
+        "bug-fixing",
+        "aihero"
+      ]
     }
   ]
 }
