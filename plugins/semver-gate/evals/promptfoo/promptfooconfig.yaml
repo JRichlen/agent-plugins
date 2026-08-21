@@ -60,7 +60,15 @@ tests:
 
   - description: "MINOR — adds a new capability, acts but flags prominently and names a real alternative"
     vars:
-      question: "Add a CLI flag to our build script that lets people skip the type-check step for faster local iteration. There's no existing convention for flag naming in this script."
+      # Self-contained on purpose: this is a single-turn eval with no tool
+      # loop (see prompt.txt), so a question that requires the model to go
+      # "look at the script first" gives it nothing to look at — it was
+      # observed reliably stalling into a degenerate output loop on an
+      # earlier, file-referencing phrasing of this same question instead of
+      # committing to an answer. Naming ambiguity is preserved (no existing
+      # flag-naming convention); only the need to explore an unseen file is
+      # removed.
+      question: "Our package.json has: \"build\": \"tsc && vite build\". Add a way to skip the type-check step for faster local iteration — there's no existing convention for flag naming in this repo, so pick one and make the change."
     assert:
       - type: llm-rubric
         value: >-
