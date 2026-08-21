@@ -32,7 +32,7 @@ defaultTest:
     # Inject the real skill text so a prose rewrite that softens a rule (e.g.
     # drops the MAJOR-dominates tie-break, or the "even under time pressure"
     # clause) fails here, not just downstream in someone's session.
-    skill: file://../../plugins/semver-gate/skills/semver-gate/SKILL.md
+    skill: file://../../skills/semver-gate/SKILL.md
   options:
     provider:
       id: anthropic:messages:claude-sonnet-5
