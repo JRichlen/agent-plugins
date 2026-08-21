@@ -41,7 +41,7 @@ done
 
 # --- invariant text carried verbatim in both SKILL.md and AGENTS.md --------
 group "docs-hygiene — invariant text present verbatim"
-INVARIANT_MARKER='never leaves the contradiction standing for the next reader'
+INVARIANT_MARKER='NEVER leaves the contradiction standing for the next reader'
 if grep -qF "$INVARIANT_MARKER" "$SKILL"; then
   ok "SKILL.md carries the contradiction-resolution invariant verbatim"
 else
@@ -209,18 +209,62 @@ if grep -qi 'fleet-playbook-curator' "$SKILL" && grep -qi 'intentionally RED' "$
 else
   bad "SKILL.md does not cite fleet-playbook-curator's corrected 'intentionally RED' claim"
 fi
-# Cross-check these citations are actually still true of the repo right now —
-# the plugin that teaches "don't cite stale claims" would be self-defeating
-# if its own worked examples went stale. The root README table really does
-# name only these two plugins (not all 11); assert that structurally.
-ROOT_README="$REPO_ROOT/README.md"
-if [ -f "$ROOT_README" ]; then
-  plugin_count=$(python3 -c "import json; print(len(json.load(open('$REPO_ROOT/.claude-plugin/marketplace.json'))['plugins']))")
-  install_lines=$(grep -c '/plugin install .*@jrichlen' "$ROOT_README")
-  if [ "$install_lines" -lt "$plugin_count" ]; then
-    ok "root README's install table ($install_lines entries) is still behind marketplace.json ($plugin_count plugins) — the worked example remains real and current"
+# Cross-check this citation against an anchor, not against itself — the
+# plugin that teaches "don't cite stale claims" would be self-defeating if
+# its own worked example went stale, and a claim phrased in the PRESENT
+# tense about a table that gets rebuilt every time a plugin ships is
+# GUARANTEED to go stale again the next time one does. (This is exactly what
+# happened here: an earlier version of this check compared the CURRENT
+# install-table line count [always 1 — the literal string
+# `/plugin install <name>@jrichlen` is a generic usage example, not one line
+# per plugin] against the CURRENT plugin count, which is trivially true
+# forever and never once read the number SKILL.md actually asserted. A
+# mutated "2 of the 47 plugins" sailed straight through it.)
+#
+# So the worked example now cites a specific, immutable historical commit
+# instead of "current" state. ANCHOR_* below are ground truth, independently
+# verified once against real git history (`git show 1d6d73f^:README.md` /
+# `git show 1d6d73f^:.claude-plugin/marketplace.json`, at authoring time —
+# see the PR description for the exact commands) and hardcoded here so the
+# check works in CI's shallow (`actions/checkout@v4`, fetch-depth 1 default)
+# cheap-tier job, which does not have commit 1d6d73f's ancestry available.
+# Mutating SKILL.md's cited numbers or sha now has to survive comparison
+# against this independent anchor, not just a substring match against
+# itself.
+group "docs-hygiene — README-staleness worked example is anchored, not self-asserted"
+ANCHOR_FIX_SHA="1d6d73f"
+ANCHOR_NAMED_BEFORE=2
+ANCHOR_TOTAL_BEFORE=11
+
+CLAIM=$(grep -oE 'named only [0-9]+ of the [0-9]+ plugins' "$SKILL" | head -1)
+CLAIMED_NAMED=$(printf '%s' "$CLAIM" | grep -oE '[0-9]+' | sed -n '1p')
+CLAIMED_TOTAL=$(printf '%s' "$CLAIM" | grep -oE '[0-9]+' | sed -n '2p')
+CLAIMED_SHA=$(grep -oE 'fix commit `[0-9a-f]{7,40}`' "$SKILL" | head -1 | grep -oE '[0-9a-f]{7,40}')
+
+if [ -z "$CLAIM" ]; then
+  bad "SKILL.md does not state the worked example as 'named only N of the M plugins' — its numbers cannot be anchored"
+elif [ -z "$CLAIMED_SHA" ]; then
+  bad "SKILL.md does not cite the fix as 'fix commit \`<sha>\`' — the worked example is not anchored to a specific commit"
+elif [ "$CLAIMED_NAMED" != "$ANCHOR_NAMED_BEFORE" ] || [ "$CLAIMED_TOTAL" != "$ANCHOR_TOTAL_BEFORE" ]; then
+  bad "SKILL.md claims '$CLAIMED_NAMED of $CLAIMED_TOTAL' but the anchored historical fact (right before fix commit $ANCHOR_FIX_SHA) is '$ANCHOR_NAMED_BEFORE of $ANCHOR_TOTAL_BEFORE' — the worked example's numbers are wrong or have drifted"
+elif [ "$CLAIMED_SHA" != "$ANCHOR_FIX_SHA" ]; then
+  bad "SKILL.md cites fix commit '$CLAIMED_SHA' but the anchored fix commit is '$ANCHOR_FIX_SHA'"
+else
+  ok "SKILL.md's worked example ('$CLAIMED_NAMED of $CLAIMED_TOTAL', fix commit \`$ANCHOR_FIX_SHA\`) matches the anchor exactly"
+fi
+
+# Opportunistic deeper verification: when this clone has 1d6d73f's ancestry
+# (a full/unshallow clone — true locally and for any CI job that opts into
+# fetch-depth: 0), recompute the SAME numbers live from git and confirm the
+# hardcoded anchor itself hasn't drifted from reality.
+if git -C "$REPO_ROOT" cat-file -e "${ANCHOR_FIX_SHA}^" 2>/dev/null; then
+  REAL_TOTAL_BEFORE=$(git -C "$REPO_ROOT" show "${ANCHOR_FIX_SHA}^:.claude-plugin/marketplace.json" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['plugins']))")
+  REAL_NAMED_BEFORE=$(git -C "$REPO_ROOT" show "${ANCHOR_FIX_SHA}^:README.md" | grep -cF '](plugins/')
+  REAL_NAMED_AFTER=$(git -C "$REPO_ROOT" show "${ANCHOR_FIX_SHA}:README.md" | grep -cF '](plugins/')
+  if [ "$REAL_NAMED_BEFORE" = "$ANCHOR_NAMED_BEFORE" ] && [ "$REAL_TOTAL_BEFORE" = "$ANCHOR_TOTAL_BEFORE" ] && [ "$REAL_NAMED_AFTER" -ge "$REAL_TOTAL_BEFORE" ]; then
+    ok "live git history at ${ANCHOR_FIX_SHA}^ confirms the anchor ($ANCHOR_NAMED_BEFORE of $ANCHOR_TOTAL_BEFORE, fixed by $ANCHOR_FIX_SHA which raises it to $REAL_NAMED_AFTER named) is still accurate"
   else
-    bad "root README's install table now covers all $plugin_count plugins — the SKILL.md's worked example is STALE and must be updated or replaced (ironic, but the invariant applies to this plugin's own docs too)"
+    bad "live git history at ${ANCHOR_FIX_SHA}^ no longer matches the hardcoded ANCHOR_* constants (real: $REAL_NAMED_BEFORE of $REAL_TOTAL_BEFORE before, $REAL_NAMED_AFTER after) — update ANCHOR_NAMED_BEFORE/ANCHOR_TOTAL_BEFORE in checks.sh"
   fi
 fi
 

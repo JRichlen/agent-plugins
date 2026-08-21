@@ -15,7 +15,7 @@ two or more instruction files are in scope, not for a single-file check.
 
 ## The invariant this plugin defends
 
-A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is never trusted or propagated forward without being re-verified against current repo state first. Once observed reality contradicts an instruction, the contradicted instruction is never left in place -- it is corrected or explicitly flagged in the same pass, not carried forward for later. When two or more layered instruction files disagree with each other, the audit always resolves the disagreement to one explicit kept version -- it never leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
+A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. Once observed reality contradicts an instruction, the contradicted instruction is NEVER left in place — it is corrected or explicitly flagged in the same pass, not carried forward for "later." When two or more layered instruction files disagree with each other, the audit ALWAYS resolves the disagreement to one explicit kept version — it NEVER leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
 
 The deterministic checks that defend it live in `evals/cheap/checks.sh` and run
 as part of the marketplace cheap tier.
