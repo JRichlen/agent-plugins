@@ -1,0 +1,22 @@
+{
+  "name": "context-handoff",
+  "version": "1.0.0",
+  "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only \u2014 settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. Use this when the context window is getting full, you're wondering whether to clear or compact, you need to hand off to another harness, directory, or colleague, you've hit a phase boundary and aren't sure whether to keep going or start fresh, or you want to cache hard-won research before it's lost.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/context-handoff",
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "handoff",
+    "session-lifecycle",
+    "phase-boundary",
+    "compact",
+    "clear",
+    "delegate"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
