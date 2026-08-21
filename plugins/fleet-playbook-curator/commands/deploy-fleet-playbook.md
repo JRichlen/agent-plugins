@@ -1,6 +1,6 @@
 ---
 description: Stand up the daily fleet-playbook automation for an owner/glob (one-shot, confirm-gated).
-argument-hint: <owner> <glob>   e.g. jrichlen-lab 'ansible-homelab-*'
+argument-hint: <owner> <glob>   e.g. acme 'service-*'
 ---
 
 Invoke the `fleet-playbook-curator` skill and follow `skills/fleet-playbook-curator/SKILL.md`,
