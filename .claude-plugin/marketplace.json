@@ -142,15 +142,40 @@
       ]
     },
     {
+      "name": "tracer-bullets",
+      "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place \u2014 for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build.",
+      "version": "1.0.0",
+      "source": "./plugins/tracer-bullets",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "tracer-bullets",
+        "pragmatic-programmer",
+        "scoping",
+        "prototyping",
+        "investigation",
+        "research"
+      ]
+    },
+    {
       "name": "semver-gate",
       "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting \u2014 act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you're mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json's autoMode patterns don't enumerate.",
-      "version": "0.0.1",
+      "version": "1.0.0",
       "source": "./plugins/semver-gate",
       "author": {
         "name": "Jordan Richlen"
       },
       "license": "MIT",
-      "keywords": []
+      "keywords": [
+        "autonomy",
+        "semver",
+        "escalation",
+        "blast-radius",
+        "human-in-the-loop",
+        "decision-gate"
+      ]
     }
   ]
 }
