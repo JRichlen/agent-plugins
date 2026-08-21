@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# orchestration-patterns — plugin-specific cheap checks.
+# orchestrate — plugin-specific cheap checks.
 #
 # SOURCED by the shared runner (evals/cheap/run.sh), not run standalone: it
 # inherits that runner's helpers (ok/bad/group), its `set -uo pipefail`, a
@@ -15,13 +15,13 @@
 # VERDICT-WINS into an average) while the file still parses and reads fine.
 # These greps make that kind of quiet regression a red build.
 
-SKILL_DIR="$PLUGIN_DIR/skills/orchestration-patterns"
+SKILL_DIR="$PLUGIN_DIR/skills/orchestrate"
 TEMPLATES="$SKILL_DIR/templates"
 A="$TEMPLATES/derived-verify.workflow.js"
 B="$TEMPLATES/pipelined-verdict-wins.workflow.js"
 
 # --- structure: the plugin's advertised surface actually exists ------------
-group "orchestration-patterns — structure"
+group "orchestrate — structure"
 for f in \
   "$PLUGIN_DIR/.claude-plugin/plugin.json" \
   "$SKILL_DIR/SKILL.md" \
@@ -32,7 +32,7 @@ done
 
 # Both templates must be valid workflow scripts: a `meta` block the runtime
 # parses and reason enough to load. bash can't run them, but node can parse-check.
-group "orchestration-patterns — templates declare meta"
+group "orchestrate — templates declare meta"
 for t in "$A" "$B"; do
   if grep -q 'export const meta = {' "$t" 2>/dev/null; then
     ok "$(basename "$t") declares export const meta"
@@ -45,7 +45,7 @@ done
 # Each marker is a named piece of the verify-honestly contract. If one vanishes
 # from the template it was meant to protect, the template has quietly lost its
 # teeth even though it still runs. Grep the exact markers where they belong.
-group "orchestration-patterns — shared discipline markers"
+group "orchestrate — shared discipline markers"
 
 # FROZEN-CONTEXT: one ground-truth string injected into every agent. Both
 # templates depend on it — a verifier that reasons from different facts than the

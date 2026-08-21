@@ -1,12 +1,12 @@
 {
-  "name": "orchestration-patterns",
+  "name": "orchestrate",
   "version": "1.0.0",
   "description": "Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code's Workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don't survive. Ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example.",
   "author": {
     "name": "Jordan Richlen"
   },
   "repository": "https://github.com/JRichlen/agent-plugins",
-  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/orchestration-patterns",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/orchestrate",
   "license": "MIT",
   "keywords": [
     "orchestration",

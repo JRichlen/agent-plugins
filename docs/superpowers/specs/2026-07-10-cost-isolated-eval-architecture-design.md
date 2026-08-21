@@ -8,7 +8,7 @@
 ## Problem
 
 As the marketplace grows past its three current plugins (`graveyard`,
-`orchestration-patterns`, `plugin-factory`), the CI eval harness in
+`orchestrate`, `plugin-factory`), the CI eval harness in
 `.github/workflows/evals.yml` will run *every* plugin's evals on *every* PR.
 That is fine for the free tiers, but it is a real cost problem for the tiers
 that spend money on model calls.
