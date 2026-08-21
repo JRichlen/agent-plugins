@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "sample-guard",
-      "description": "A minimal known-good plugin: the calibration baseline the counterfeit corpus mutates. Emits a guarded destructive script, mirroring the graveyard discipline in miniature.",
+      "description": "A minimal known-good plugin: the calibration baseline the counterfeit corpus mutates.",
       "version": "0.0.1",
       "source": "./plugins/sample-guard",
       "author": {
