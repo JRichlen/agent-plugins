@@ -1,6 +1,6 @@
 ---
 description: Manually trigger a fleet-playbook curation pass (same PR-only, cited path as the daily cron).
-argument-hint: [path-to-diff.json]   (defaults to running detect first)
+argument-hint: "[path-to-diff.json]   (defaults to running detect first)"
 ---
 
 Invoke the `fleet-playbook-curator` skill and follow `skills/fleet-playbook-curator/SKILL.md`
