@@ -1,0 +1,23 @@
+{
+  "name": "verify-before-claim",
+  "version": "1.0.0",
+  "description": "Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/verify-before-claim",
+  "license": "MIT",
+  "keywords": [
+    "verification",
+    "fact-checking",
+    "claims",
+    "reproduction",
+    "uncertainty",
+    "discipline",
+    "inline",
+    "always-on"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
