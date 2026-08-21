@@ -263,6 +263,23 @@
         "clear",
         "delegate"
       ]
+    },
+    {
+      "name": "codebase-design",
+      "description": "Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later \u2014 produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use on \"before committing to an interface\", \"design this API/module/class boundary\", \"how should this be structured\", \"compare interface designs\", \"is this the right abstraction\", \"design it twice\", reviewing a proposed interface shape in a PR \u2014 or self-trigger whenever about to write a new interface meeting that bar.",
+      "version": "1.0.0",
+      "source": "./plugins/codebase-design",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "interface-design",
+        "api-design",
+        "deep-modules",
+        "seam-design",
+        "design-comparison"
+      ]
     }
   ]
 }
