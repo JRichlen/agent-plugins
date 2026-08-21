@@ -28,9 +28,6 @@ compatibility: >-
 
 Before committing to an interface (a module boundary, class API, or function signature that ≥2 call sites will depend on, or that crosses a service/team/persistence boundary, or that is expensive to change later): ALWAYS produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one — NEVER let the first workable interface ship unexamined. The chosen interface must ALWAYS hide its implementation complexity behind a boundary that tests hold honest at a confirmed seam — NEVER a shallow pass-through whose interface exists only to make internals swappable, and NEVER a test written against an unconfirmed seam.
 
-Write this first, before any workflow prose. The invariant is what the cheap
-eval defends; everything below exists to keep it true.
-
 ## Not this
 
 Three plugins in this marketplace share enough vocabulary to be reached for

@@ -72,7 +72,7 @@ This is the exact shape a cheap/deterministic eval can check for: flag any
 handoff-shaped file that has one of those six headings followed by more than
 ~4 lines of prose with no path-like token or URL anywhere in that block. This
 plugin ships that checker at
-[`../../scripts/check-handoff-portability.py`](../../scripts/check-handoff-portability.py)
+[`../../../scripts/check-handoff-portability.py`](../../../scripts/check-handoff-portability.py)
 — run it against a candidate handoff file before sending it:
 
 ```

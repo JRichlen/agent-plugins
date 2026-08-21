@@ -88,21 +88,36 @@ if grep -qiE 'first match wins' "$SKILL"; then
 else
   bad "SKILL.md does not state 'first match wins'"
 fi
-if grep -qiE 'never jump(ed)? (straight )?to a later branch|never jumped to out of order' "$SKILL"; then
-  ok "SKILL.md forbids jumping to a later branch out of order"
+
+# Computed here (before it's needed by the ordering check just below) and
+# reused by the mid-phase carve-out group further down — one extraction, two
+# consumers, so it can't drift out of sync with itself.
+# Anchored to the '## When the tree applies' section specifically (not just
+# anywhere in the file) — the invariant's compressed parenthetical up at
+# SKILL.md:12 carries a similarly-worded phrase ("never jumped to out of
+# order"), so an unanchored grep would still pass even if this section's own
+# restatement of the ordering rule were gutted. Scoping to the section that
+# actually guides runtime behavior here is what makes this a real check
+# instead of one satisfied by a copy living somewhere else in the file.
+BOUNDARY_BLOCK_FLAT="$(awk '/^## When the tree applies/{flag=1; next} /^## The ordered decision tree/{flag=0} flag' "$SKILL" | tr '\n' ' ')"
+
+# Require BOTH distinctive phrases from the section's actual ordering
+# sentence ("...never jump straight to a later branch because it 'feels
+# right'; the earlier branches are cheaper/safer and must be ruled out
+# first.") to co-occur in that section. This is deliberately NOT satisfiable
+# by the invariant's compressed restatement at SKILL.md:12 ("never jumped to
+# out of order"), which has neither "later branch" nor "ruled out first" —
+# so deleting this section's own ordering sentence fails even though the
+# invariant line is untouched.
+if printf '%s' "$BOUNDARY_BLOCK_FLAT" | grep -qiE 'never jump (straight )?to a later branch' \
+  && printf '%s' "$BOUNDARY_BLOCK_FLAT" | grep -qiE 'ruled out first'; then
+  ok "'## When the tree applies' forbids jumping to a later branch out of order"
 else
-  bad "SKILL.md does not forbid jumping to a later branch out of order"
+  bad "'## When the tree applies' does not forbid jumping to a later branch out of order"
 fi
 
 # --- mid-phase carve-out: the tree must not be run mid-phase ----------------
 group "context-handoff — mid-phase carve-out present"
-# Anchored to the '## When the tree applies' section specifically (not just
-# anywhere in the file) — the invariant's compressed parenthetical carries a
-# similar phrase, so an unanchored grep would still pass even if this
-# section's own restatement of the carve-out were gutted. Scoping to the
-# section that actually guides runtime behavior here is what makes this a
-# real check instead of one satisfied by a copy living somewhere else.
-BOUNDARY_BLOCK_FLAT="$(awk '/^## When the tree applies/{flag=1; next} /^## The ordered decision tree/{flag=0} flag' "$SKILL" | tr '\n' ' ')"
 if printf '%s' "$BOUNDARY_BLOCK_FLAT" | grep -q .; then
   ok "SKILL.md has a non-empty '## When the tree applies' section"
 else

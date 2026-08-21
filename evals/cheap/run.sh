@@ -263,6 +263,50 @@ sys.exit(1 if fail else 0)
 PY
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 7b. Relative markdown links resolve to real files ----------------------
+# Same failure shape as §7 (AGENTS.md path check) but for markdown-syntax
+# links `[text](target)` in EVERY .md file under plugins/, not just AGENTS.md.
+# context-handoff shipped exactly this defect: a reference doc linked its
+# sibling checker script with the wrong `../../` depth, and nothing caught it
+# because the only check that touched that line grepped for the script's
+# BASENAME rather than resolving the path. Only local, non-anchor-only
+# targets are checked — `http(s)://`, `mailto:`, and other URL schemes are
+# skipped (they can't be resolved offline), as are bare `#fragment` links.
+# A target's own `#fragment`/`?query` suffix is stripped before resolving,
+# and `/`-rooted targets resolve from the repo root (GitHub renders those as
+# repo-root-relative). Each target is resolved relative to the directory of
+# the .md file that links it, per plain relative-link semantics.
+group "relative markdown links resolve to real files"
+python3 - "$REPO_ROOT" <<'PY'
+import os, re, sys
+root = sys.argv[1]
+link = re.compile(r'!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
+scheme = re.compile(r'^[A-Za-z][A-Za-z0-9+.-]*:')
+fail = 0
+checked = 0
+for base, _, files in os.walk(os.path.join(root, "plugins")):
+    for fn in files:
+        if not fn.endswith(".md"): continue
+        src = os.path.join(base, fn)
+        if os.path.islink(src): continue
+        for m in link.finditer(open(src, encoding="utf-8").read()):
+            target = m.group(1).strip()
+            if not target or target.startswith("#"): continue
+            if scheme.match(target): continue  # http(s)://, mailto:, etc.
+            target = target.split("#", 1)[0].split("?", 1)[0]
+            if not target: continue
+            if "<" in target or ">" in target: continue  # templated placeholder, not a real path
+            checked += 1
+            resolve_from = root if target.startswith("/") else base
+            candidate = os.path.join(resolve_from, target.lstrip("/"))
+            if os.path.exists(candidate): continue
+            print(f"  FAIL {os.path.relpath(src, root)} links `{target}` which does not resolve to a real file"); fail += 1
+if fail == 0:
+    print(f"  PASS all {checked} local relative markdown links resolve")
+sys.exit(1 if fail else 0)
+PY
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 8. Red-by-default sentinel never ships ---------------------------------
 # The scaffolder writes a UUID-shaped sentinel into each new plugin's checks.sh
 # so a freshly scaffolded (unimplemented) plugin is RED until a human writes real

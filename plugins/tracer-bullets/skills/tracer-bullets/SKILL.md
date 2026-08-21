@@ -22,9 +22,6 @@ it must NEVER be thrown away like a prototype/spike; a prototype/spike answers a
 question and gets discarded, a tracer bullet becomes the skeleton of the final
 thing.
 
-Write this first, before any workflow prose. The invariant is what the cheap
-eval defends; everything below exists to keep it true.
-
 ## Where this comes from
 
 The term is Hunt & Thomas's, from *The Pragmatic Programmer* (the tracer-round
