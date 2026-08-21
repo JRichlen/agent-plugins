@@ -280,7 +280,7 @@ group "relative markdown links resolve to real files"
 python3 - "$REPO_ROOT" <<'PY'
 import os, re, sys
 root = sys.argv[1]
-link = re.compile(r'!?\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)')
+link = re.compile(r'!?\[[^\]]*\]\((<[^>]*>|[^)\s]+)(?:\s+"[^"]*")?\)')
 scheme = re.compile(r'^[A-Za-z][A-Za-z0-9+.-]*:')
 fail = 0
 checked = 0
@@ -290,12 +290,24 @@ for base, _, files in os.walk(os.path.join(root, "plugins")):
         src = os.path.join(base, fn)
         if os.path.islink(src): continue
         for m in link.finditer(open(src, encoding="utf-8").read()):
-            target = m.group(1).strip()
+            raw = m.group(1).strip()
+            if not raw or raw.startswith("#"): continue
+            # CommonMark angle-bracket destination: <path/to/file>
+            if raw.startswith("<") and raw.endswith(">"):
+                inner = raw[1:-1]
+                # template placeholder (e.g. <plugin-name>) — not a real path
+                if re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]*', inner):
+                    continue
+                target = inner
+            else:
+                # skip if it still contains < or > (template placeholder outside angle form)
+                if "<" in raw or ">" in raw:
+                    continue
+                target = raw
             if not target or target.startswith("#"): continue
             if target.startswith("//") or scheme.match(target): continue  # http(s)://, //host, mailto:, etc.
             target = target.split("#", 1)[0].split("?", 1)[0]
             if not target: continue
-            if "<" in target or ">" in target: continue  # templated placeholder, not a real path
             checked += 1
             resolve_from = root if target.startswith("/") else base
             candidate = os.path.realpath(os.path.join(resolve_from, target.lstrip("/")))
