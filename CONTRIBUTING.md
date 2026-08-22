@@ -112,6 +112,22 @@ packs as worked examples:
   completion is always backed by the specific check that would prove it
   false, performed this turn, never asserted as settled. (PR #55)
 
+**Correction — this tier was dead until PR #59, and every leg reported
+green.** The three packs above (PRs #55-57) shipped against a CI job that
+pinned Node 20, but promptfoo requires Node >=22. The job could not make a
+single model call — and reported **success anyway**, because an untouched
+plugin's behavioral step is designed to skip, and GitHub treats a skipped
+required check as green (the same mechanism the fork-PR gap above relies on).
+Measured: 4-7 second "passes" across 40 runs, for packs that are supposed to
+spend minutes making real API calls. PR #59 fixed the pin (Node 22, promptfoo
+version pinned, an explicit `::notice::` on the skip path so a skip is
+visible instead of silent), and the tier executed for real for the first
+time. **The lesson: a tier you have never watched FAIL is not a tier you can
+trust** — the same rule that applies to any individual check (see "Mutation
+testing" below) applies to the tier's own CI wiring. A green run from a job
+that has never once failed is not evidence, it's an untested assumption. What
+follows is what that first real run found.
+
 Read `plugins/voice/evals/promptfoo/promptfooconfig.yaml` in full before
 writing a new pack — it's the best-documented example: `SKILL.md` is injected
 as a `file://` var, the subject model is cheap (OpenRouter), the grader is a
@@ -132,6 +148,31 @@ the real skill. The deep (pier) tier already encodes this idea: see the
 `oracle`/`nop` calibration floor in `evals/README.md` and `AGENTS.md`, which
 CI runs on every invocation.
 
+**This is not theoretical — it paid for itself on the first real run.** Once
+PR #59 let the tier actually execute, 4 of the 8 calibration cases across the
+three packs above *failed*: the gutted `calibration-stub.md` produced the
+invariant behavior anyway, meaning those scenarios measure base-model
+training, not the skill. Concrete example: semver-gate's "deadline pressure"
+calibration case injects no skill, states a 5-minute deadline, and asks the
+model to disable a required status check — and the model still refused,
+named the mechanism, and asked mechanism-specific questions. That is
+base-model safety training, not semver-gate's doing; the scenario proves
+nothing about the skill.
+
+**The scenario-design rule this forces: test where the skill changes
+behavior, not where the model is already correct.** Obvious-safety scenarios
+("should I disable a safety control under deadline pressure") are covered by
+base-model training regardless of what SKILL.md says, and a calibration case
+built on one will never discriminate. Contrast within the same pack:
+semver-gate's "transitive yes" calibration case — a change that looks MINOR
+until you trace a transitive dependency that makes it MAJOR — *did*
+discriminate, because the correct classification is counter-intuitive and
+depends on the skill's rule, not general judgment, whereas "deadline
+pressure" did not. Before writing a new calibration scenario, ask whether a
+competent model with no domain-specific instructions would plausibly get it
+wrong; if the honest answer is no, the scenario belongs somewhere else, not
+in the eval.
+
 **Mutation testing is the acceptance criterion**, at every tier, for any new
 check: break what the check defends, watch it go RED, restore it, watch it go
 GREEN. A check nobody has watched fail is not a check, it's a guess. That's
@@ -148,6 +189,20 @@ check. This is exactly why the calibration case above is mandatory, not a
 nice-to-have: it's the one piece of mutation evidence a behavioral pack can
 carry without ever calling the API. The "mutation" — gutting the skill — is
 baked into the pack itself, and CI proves the RED side every time it runs.
+
+**What the behavioral tier caught that no grep ever could.** wayfinder's
+real-skill run (the actual `SKILL.md` injected, not the calibration stub)
+failed one case: given a ticket with zero dependencies, the model excluded it
+from the dispatch frontier, reasoning that since the ticket itself was not
+CLOSED, it could not be dispatched. That inverts the rule — frontier
+eligibility requires the ticket's *own* status to be OPEN and its
+*dependencies'* status to be CLOSED; a ticket with no dependencies is
+trivially eligible. A cheap-tier check can grep `SKILL.md` for the sentence
+stating that rule and confirm the string survives untouched; it cannot tell
+you the sentence is *misreadable* by a competent model in exactly this way.
+Only a behavioral run, judging what the model actually concluded, surfaces
+that — this is the tier earning its existence on the first run it was ever
+able to complete.
 
 ## PRs touching marketplace.json: rebase and re-run before merge
 
