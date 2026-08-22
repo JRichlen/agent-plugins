@@ -279,7 +279,21 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.touched.outputs.paid == 'true'
         with:
-          node-version: 20
+          # 22, not 20. promptfoo 0.122.0 declares engines.node >=22.22.0, so on
+          # node 20 `npx promptfoo eval` aborts before making a single model call:
+          #   "promptfoo requires a supported Node.js runtime. Detected: v20.x"
+          # This tier was silently dead until a PR actually touched a plugin with a
+          # promptfoo pack — see this job's pinned-version note below.
+          node-version: 22
+      # A skipped leg and a passed leg are both reported as a green check, which
+      # is how this tier stayed green for weeks while being completely unable to
+      # run. Cost is why it skips (real API spend per plugin per run) and that
+      # tradeoff is fine — silently looking identical to a real pass is not. Say
+      # which one happened, out loud, in the check output.
+      - name: announce that this leg did NOT run
+        if: steps.touched.outputs.paid != 'true'
+        run: |
+          echo "::notice::behavioral tier SKIPPED for ${{ matrix.plugin }} — this plugin was not touched by this PR. This leg is green because it did not run, NOT because its behavioral eval passed."
       - name: promptfoo eval
         if: steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
@@ -287,7 +301,13 @@ jobs:
           # Subject model (cheap, via OpenRouter) + grader (Anthropic).
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: npx --yes promptfoo@latest eval --output results.json
+        # PINNED, not @latest. `promptfoo@latest` is what broke this tier: the
+        # package raised engines.node to >=22.22.0 in a release nobody here chose,
+        # and every run afterwards failed on the node-20 pin above — while the
+        # aggregate gate stayed green because untouched plugins skip. Pin the tool
+        # so a third party's release cannot silently disable a required check;
+        # bump deliberately and re-read the output when you do.
+        run: npx --yes promptfoo@0.122.0 eval --output results.json
       - name: show failing transcripts
         if: always() && steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
