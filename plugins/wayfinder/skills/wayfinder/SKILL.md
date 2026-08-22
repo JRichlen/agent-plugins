@@ -23,7 +23,7 @@ compatibility: >-
 
 ## Invariant
 
-A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only the non-blocking frontier (every open ticket whose listed dependencies are all CLOSED, computed fresh each time, never cached) may be dispatched in parallel — NEVER a ticket whose dependency is still open.
+A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only the non-blocking frontier — every ticket that is itself still OPEN and whose own listed dependencies are ALL CLOSED (an empty dependency list counts as trivially all-closed), computed fresh each time, never cached — may be dispatched in parallel; NEVER a ticket with an open dependency, and never a ticket excluded just because it itself has not yet closed — a ticket's own not-yet-closed status is what makes it eligible, not what disqualifies it.
 
 ## Not this
 
@@ -127,9 +127,23 @@ produces a DAG, not a flat backlog, and it's checked two mechanical ways:
   on the current resolution path, that's a cycle — stop and force the user
   to break it (split a ticket, or demote one edge to "informs") before
   charting proceeds.
-- **Frontier definition**: the frontier is the set of open tickets whose
-  every listed dependency is CLOSED, computed fresh each time — never a
-  cached "on frontier" flag.
+- **Frontier definition**: a ticket qualifies for the frontier only when
+  BOTH of the following hold — and each condition is checked against a
+  different ticket, so never let one leak onto the other's target:
+  1. **This ticket itself is still OPEN.** A ticket that has already closed
+     is done, not dispatchable, and can never re-enter the frontier.
+  2. **Every ticket THIS ticket depends on is CLOSED.** That CLOSED test
+     applies only to the tickets in its own dependency list — never to the
+     ticket itself. An empty dependency list has nothing to check, so
+     condition 2 is trivially satisfied.
+  A ticket with an empty dependency list is therefore trivially on the
+  frontier the instant it is open — no matter how close the ticket itself
+  looks to being done ("the PR is up," "it's waiting on one approval," "it'll
+  merge within the hour" all still mean OPEN, not CLOSED). Do not apply
+  condition 2 to the ticket being evaluated — that is the exact mistake to
+  avoid: a ticket is excluded from the frontier only because something IT
+  depends on is still open, never because the ticket itself hasn't closed.
+  Computed fresh each time — never a cached "on frontier" flag.
 
 ### 3. Mark unknowns explicitly — the fog-of-war check
 

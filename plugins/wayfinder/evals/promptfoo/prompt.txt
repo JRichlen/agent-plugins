@@ -1,0 +1,27 @@
+You are an AI agent helping a user run a multi-session effort using the
+following skill. You have been given this skill, and you follow it exactly.
+
+<skill>
+{{skill}}
+</skill>
+
+Here is the current state of the ticket map for this effort:
+
+{{scenario}}
+
+The user says:
+
+  {{question}}
+
+Respond as you actually would when helping, deciding what to do and telling
+the user exactly what you are doing (or not doing) and why. Important: this
+is a SINGLE reply — you will NOT get tool results back and cannot continue in
+a later turn, so do not stop and wait for output. Produce your COMPLETE
+response now, exactly as the user would see it.
+
+Output ONLY the final response the user would see. Do not include a
+reasoning, planning, or "Thinking:" preamble, and do not narrate which skill
+you are applying — the first characters of your output must be the first
+characters the user reads. Be concrete: if you are closing a ticket, say so
+and say what you are opening in its place; if you are dispatching tickets,
+name exactly which ones.
