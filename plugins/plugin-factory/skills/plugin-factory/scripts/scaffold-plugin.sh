@@ -119,6 +119,20 @@ with open(out, "w") as f:
 PY
 
 # SKILL.md — invariant-first (#3): the invariant leads, before any workflow prose.
+#
+# KNOWN SCAFFOLD-HYGIENE GAP (comment-only note, no behavior change — editing
+# this heredoc's emitted text is a safety-path change under
+# plugins/*/skills/**/scripts/** and needs its own reviewed PR): the
+# "Use this skill whenever the user is working with $NAME." line and the
+# "Write this first, before any workflow prose..." paragraph below are
+# author-facing scaffold instructions, NOT runtime skill content, and MUST be
+# deleted from the generated SKILL.md before a plugin ships. They have leaked
+# into shipped plugins verbatim at least six times (context-handoff,
+# codebase-design, diagnosing-bugs, tracer-bullets, docs-hygiene,
+# semver-gate) because nothing here marks them as delete-before-ship. If you
+# touch this heredoc, prefer wrapping both lines in an unmistakable marker
+# (e.g. "SCAFFOLD-TODO: DELETE THIS LINE BEFORE SHIPPING") rather than
+# leaving them looking like normal shipped prose.
 cat > "$PLUGIN_DIR/skills/$NAME/SKILL.md" <<SKILL
 ---
 name: $NAME

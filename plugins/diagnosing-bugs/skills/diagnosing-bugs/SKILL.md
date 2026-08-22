@@ -31,9 +31,6 @@ approximate and adapted to the bug at hand.
 These three checkpoints are never allowed to soften: **hypothesis-before-code**,
 **tag-before-ship**, **seam-gated-test**.
 
-Write this first, before any workflow prose. The invariant is what the cheap
-eval defends; everything below exists to keep it true.
-
 ## Where this comes from
 
 The applied write-up this skill is sourced from is Matt Pocock's "How I
