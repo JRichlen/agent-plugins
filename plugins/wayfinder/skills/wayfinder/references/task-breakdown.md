@@ -73,9 +73,28 @@ so leaving it in place silently strands those tickets forever.
 
 ## The frontier definition (the exact heuristic)
 
-**The frontier is the set of open tickets whose every listed dependency is CLOSED.**
+A ticket qualifies for the frontier only when **both** of these hold — and
+each condition is checked against a *different* ticket, so never let one
+leak onto the other's target:
 
-- A ticket with zero dependencies is trivially on the frontier.
+1. **This ticket itself is still OPEN.** A ticket that has already closed is
+   done, not dispatchable, and can never re-enter the frontier.
+2. **Every ticket THIS ticket depends on is CLOSED.** That CLOSED test
+   applies only to the tickets in its own dependency list — never to the
+   ticket itself. An empty dependency list has nothing to check, so
+   condition 2 is trivially satisfied.
+
+**A ticket with zero dependencies is therefore trivially on the frontier**
+the instant it is open — condition 2 is already (vacuously) satisfied, so
+condition 1 is the only thing left to check. This holds no matter how close
+the ticket itself looks to being done: "the PR is up," "CI is green," "it's
+waiting on one reviewer's approval," "it'll merge within the hour" all still
+describe a ticket that is OPEN, not one that has CLOSED. Progress toward
+done is not done. **Do not apply condition 2's CLOSED test to the ticket
+being evaluated** — that is the exact mistake to avoid: a ticket is excluded
+from the frontier only because something *it* depends on is still open,
+never because the ticket itself hasn't closed yet.
+
 - A ticket with one open dependency is NOT on the frontier, no matter how
   close that dependency is to closing.
 - Frontier membership is **computed fresh each time**, never cached. There is no
