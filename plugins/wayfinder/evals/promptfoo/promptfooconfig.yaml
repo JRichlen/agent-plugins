@@ -32,13 +32,42 @@
 #
 # NEGATIVE CONTROL: two of the six tests inject `calibration-stub.md` — a
 # generic, invariant-free "project assistant" stub — instead of the real
-# skill, against the SAME bait scenarios as the hardest real-skill tests. If a
-# model already does wayfinder's exact close-and-link / recompute-don't-trust
-# discipline from generic good-practice instincts alone, the real-skill tests
-# would be measuring the base model, not the skill. These two assert the
-# OPPOSITE of the paired real test: that the stub-only response does NOT
-# reproduce the specific mechanism. (Mirrors the deep tier's oracle/nop
-# calibration agents in evals/pier.)
+# skill, against bait scenarios probing the same clauses as the real-skill
+# tests. If a model already does wayfinder's exact close-and-link /
+# recompute-don't-trust discipline from generic good-practice instincts
+# alone, the real-skill tests would be measuring the base model, not the
+# skill. These two assert the OPPOSITE of the paired real test: that the
+# stub-only response does NOT reproduce the specific mechanism. (Mirrors the
+# deep tier's oracle/nop calibration agents in evals/pier.)
+#
+# --- calibration replacement (first real CI run, see PR history) ------------
+# First real run: the "stale cached frontier flag" calibration case came back
+# FAILED — i.e. the bare stub-only model ALREADY recomputed frontier
+# membership from live dependency state and explicitly overrode both stale
+# tracking-sheet flags, unaided. Distrusting a sheet that visibly contradicts
+# the dependency data right in front of you ("WAYF-029 just closed, but the
+# flag says false") is close enough to ordinary "don't blindly trust stale
+# data over what's in front of you" instinct that it never discriminated
+# whether SKILL.md's frontier text was doing any work. (This scenario's REAL-
+# skill counterpart is being reworded on a separate branch for an unrelated
+# prose-ambiguity bug — see PR #60 — but that fix does not change whether the
+# calibration pairing here discriminates, since the calibration problem is
+# the bait, not the skill's wording.)
+#
+# Replaced with a calibration targeting the TYPE-LOCK clause instead, using a
+# bait shape distinct from the two existing type-lock tests above: those ask
+# the model to do the real fix work *under* the wrong ticket. This one asks
+# it to relabel the ticket's *type field* in place instead of opening a new
+# one — framed as harmless bookkeeping ("keeps the whole history in one
+# place") rather than as scope creep. Prediction: a generic project-assistant
+# stub has no reason to resist what reads as a low-friction metadata edit,
+# where "don't do real system-changing work under a research ticket" at least
+# rhymes with a generic "don't conflate unrelated work" instinct that could
+# leak through even a gutted skill. Relabeling a status/type field doesn't
+# intuitively read as "changing system state without recording a finding," so
+# this is expected to discriminate where the stale-flag pairing did not. If
+# it also comes back green, that's a real signal the type-lock clause needs a
+# harder bait too — not something to silence.
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
@@ -308,45 +337,51 @@ tests:
           back to it, refusing the in-place shortcut with that same
           specificity.
 
-  - description: "calibration — stale-flag bait with the invariant-free stub (expect the flags trusted)"
+  - description: "calibration (replaces the stale-flag case, see header) — type-lock relabel-in-place bait with the invariant-free stub (expect the type field just changed)"
     vars:
       skill: file://calibration-stub.md
       scenario: >-
-        WAYF-029 [task] "Get sign-off from security on the new credential
-        format." deps: [] — status: CLOSED as of this session (just closed).
+        WAYF-014 [research] "Determine why the nightly export job
+        intermittently emits duplicate rows for large customers." deps: []
+        — status: OPEN, being worked this session.
 
-        WAYF-030 [task] "Rotate the staging DB credentials to the new
-        format." deps: [WAYF-029] — status: OPEN. Last-recorded tracking-sheet
-        flag from BEFORE this session closed WAYF-029: `frontier: false`.
+        WAYF-015 [task] "Add a dedupe pass to the nightly export job once the
+        cause is known." deps: [WAYF-014] — status: OPEN, not started.
 
-        WAYF-031 [task] "Deploy the credential-rotation script to staging."
-        deps: [WAYF-030] — status: OPEN. WAYF-030 itself has NOT closed yet.
-        Last-recorded tracking-sheet flag from last session (when WAYF-030
-        looked nearly done): `frontier: true`.
+        Mid-session on WAYF-014, you've now confirmed the cause: a race
+        between two writers during pagination. Fixing it for real requires
+        changing the export job's locking logic — actual system state has to
+        change, not just a written-down finding.
       question: >-
-        Here's the map with each ticket's last-recorded frontier flag from
-        our tracking sheet, so you don't have to re-derive it. What's ready
-        to dispatch right now?
+        Don't bother opening WAYF-015 as a separate ticket — just update
+        WAYF-014's type field from `research` to `task` in the tracker and
+        keep going under the same ticket number. It's the same piece of
+        work, and relabeling keeps the whole history in one place instead of
+        splitting it across two tickets.
     assert:
       - type: llm-rubric
         value: >-
           This is a CALIBRATION case run against a generic, invariant-free
-          stub with no frontier definition and no computed-not-cached rule —
-          its own guidance says to prefer a given flag over re-deriving it.
-          It is expected to differ from the real-skill result.
+          stub with no ticket-type taxonomy and no type-lock rule — it is
+          expected to differ from the real-skill result. Unlike the "just
+          make the fix here" bait used in the two real type-lock tests
+          above, this one frames the shortcut as a harmless metadata edit
+          (relabeling a type field in place), which a generic
+          project-assistant stub has no specific reason to resist.
 
-          PASS (calibration passes) if the response does NOT correctly
-          recompute both tickets against live dependency state — i.e. it
-          takes the given flags at face value for at least one of the two
-          (dispatches WAYF-031 because its flag says true, and/or fails to
-          surface WAYF-030 as now dispatchable because its flag says false),
-          or otherwise never distrusts/recomputes past the sheet it was
-          handed.
+          PASS (calibration passes) if the response goes along with
+          relabeling WAYF-014's type in place, or otherwise continues real
+          system-changing work under WAYF-014 without closing it, rather
+          than independently closing WAYF-014 with its finding recorded AND
+          opening a distinctly new, execution-typed ticket with a dependency
+          back to it. Generic agreement ("sure, that keeps things tidy"),
+          silence on the type-lock question, or vague reorganization advice
+          that stops short of the specific close-and-link mechanism all
+          count as PASS here.
 
           FAIL (calibration fails — meaning the stub alone reproduced the
           specific invariant, which would undermine this negative control)
-          only if the response independently recomputes frontier membership
-          from current dependency-closed state for BOTH tickets — including
-          WAYF-030 as dispatchable now despite its stale false flag, AND
-          excluding WAYF-031 despite its stale true flag — explicitly
-          overriding what the given tracking sheet says.
+          only if the response independently declines the relabel, closes
+          WAYF-014 with a recorded finding, and opens a new, distinctly-typed
+          execution ticket with a dependency back to it — reproducing
+          wayfinder's specific close-and-link mechanism unprompted.
