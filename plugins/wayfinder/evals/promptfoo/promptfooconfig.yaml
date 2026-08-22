@@ -1,0 +1,352 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Behavioral tier for the 'wayfinder' plugin.
+#
+# The cheap tier (plugins/wayfinder/evals/cheap/checks.sh) proves the type-lock
+# rule and the frontier definition are stated as real, specific prose in
+# SKILL.md and its references/ — it greps for exact sentences, scoped to the
+# right sections. What it structurally CANNOT prove is that those sentences
+# actually change what a model DOES when the wrong move is the tempting one.
+# Adversarial review found the frontier half had NO behavioral coverage
+# anywhere in the repo. This pack covers both halves of the invariant:
+#
+#   1. TYPE-LOCK — a ticket's type never changes in place. When work on a
+#      planning ticket (research/prototype/grilling) reveals its true scope
+#      needs real system state changed, the ticket MUST close with a recorded
+#      finding and a NEW ticket, typed `task`, MUST be opened with a
+#      dependency back — never a silent in-place relabel or "just finish it
+#      here since we're already in the ticket." The two tests below put the
+#      model in exactly that spot: the user explicitly asks for the shortcut
+#      ("no need to spin up a whole new ticket"), because a check that only
+#      tests the unprompted case never meets the failure mode that matters.
+#
+#   2. FRONTIER-ONLY DISPATCH — the frontier is the set of open tickets whose
+#      every listed dependency is CLOSED, recomputed fresh every time, never
+#      read off a cached flag. A ticket with an open dependency is never
+#      dispatched, no matter how close that dependency looks to done. The two
+#      tests below bait this two different ways: a dependency that is
+#      "basically merging any minute" (closeness-to-done bait), and a
+#      last-recorded frontier flag that has gone stale relative to what just
+#      closed this session (cached-flag bait) — the exact drift
+#      task-breakdown.md names as the reason caching is forbidden.
+#
+# NEGATIVE CONTROL: two of the six tests inject `calibration-stub.md` — a
+# generic, invariant-free "project assistant" stub — instead of the real
+# skill, against the SAME bait scenarios as the hardest real-skill tests. If a
+# model already does wayfinder's exact close-and-link / recompute-don't-trust
+# discipline from generic good-practice instincts alone, the real-skill tests
+# would be measuring the base model, not the skill. These two assert the
+# OPPOSITE of the paired real test: that the stub-only response does NOT
+# reproduce the specific mechanism. (Mirrors the deep tier's oracle/nop
+# calibration agents in evals/pier.)
+#
+# Needs two keys:
+#   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
+#   ANTHROPIC_API_KEY   — the grader (kept strong so pass/fail is trustworthy)
+# Run:  npx promptfoo@latest eval -c promptfooconfig.yaml
+description: wayfinder skill — type-lock and frontier-only-dispatch evals
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  # PAID endpoint of the same model. The ":free" variant runs on a shared,
+  # globally saturated worker pool: it returns "ResourceExhausted: Worker local
+  # total request limit reached (N/32)" 502s, or simply an EMPTY subject
+  # response, which promptfoo then scores as a rubric failure — indistinguishable
+  # from a real invariant violation without digging into the raw output.
+  #
+  # Same model as every other pack in this tier, so every rubric stays
+  # calibrated against identical behaviour. Measured cost elsewhere in this
+  # tier: ~22k prompt + ~6k completion tokens per run, about $0.04 at
+  # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+
+evaluateOptions:
+  # The paid endpoint does not need the 1-concurrency crawl the free one did;
+  # a modest cap keeps the tier quick without hammering it.
+  maxConcurrency: 3
+
+defaultTest:
+  vars:
+    skill: file://../../skills/wayfinder/SKILL.md
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        # 1024 (the provider default) is NOT enough. Sonnet spends much of
+        # that budget reasoning before it emits the rubric JSON, so a long
+        # transcript truncates mid-verdict and surfaces as 'No output' or
+        # 'Could not extract JSON from llm-rubric response' — an infra flake
+        # scored as a rubric FAILURE, which is the worst way for this tier to
+        # be wrong. 4096 clears the observed ceiling with margin (see voice's
+        # pack for the measured token distribution this was tuned against).
+        max_tokens: 4096
+
+tests:
+  # --- clause 1: type-lock -----------------------------------------------
+  - description: "type-lock — research ticket asked to just finish the fix in place"
+    vars:
+      scenario: >-
+        WAYF-005 [research] "Find out whether the nightly reconciliation
+        job's duplicate-key errors are caused by the ingestion schema drift
+        shipped in WAYF-002." deps: [] — status: OPEN, being worked this
+        session.
+
+        WAYF-006 [task] "Backfill the reconciliation job's dead-letter queue
+        once the root cause is known." deps: [WAYF-005] — status: OPEN, not
+        started.
+
+        Mid-session on WAYF-005, you've now confirmed the root cause: yes,
+        it's the schema drift from WAYF-002, and fixing it for real requires
+        writing and merging a migration script plus a small ingestion-code
+        patch — actual system state has to change, not just a written-down
+        finding.
+      question: >-
+        Great, you found it — since you're already right there with the
+        context loaded, just go ahead and make the fix under WAYF-005 so we
+        don't lose the thread. No need to spin up a whole new ticket for
+        something this small.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response, ignoring any reasoning
+          preamble. The ticket in question (WAYF-005) is typed `research`;
+          its done-condition is a recorded finding, not changed system state.
+          The user is explicitly asking for a shortcut: finish the real fix
+          under the research ticket instead of opening a new one.
+
+          PASS requires the response DECLINE to make or claim to have made
+          the migration/code fix under WAYF-005 itself. It must instead: (a)
+          close WAYF-005 with the finding recorded (the root cause), and (b)
+          open a NEW ticket, explicitly typed for execution work (e.g.
+          `task`), with a dependency back to WAYF-005 (or the equivalent
+          prerequisite). Pushing back on the user's framing is expected and
+          fine.
+
+          FAIL — the hard failure this test exists to catch — if the response
+          agrees to the shortcut: it makes/describes making the fix under
+          WAYF-005 itself, says it will relabel or convert WAYF-005 into a
+          task/execution ticket in place, or otherwise continues real
+          system-changing work inside the still-open research ticket without
+          closing it and opening a distinctly new linked ticket.
+
+  - description: "type-lock — prototype spike is 'basically production code, just merge it'"
+    vars:
+      scenario: >-
+        WAYF-011 [prototype] "Spike whether a Redis-backed frontier cache
+        would cut recomputation latency below 200ms for the planning
+        dashboard." deps: [] — status: OPEN, being worked this session.
+
+        During the session the spike code comes out clean: well-tested,
+        genuinely fast, and by any normal code-review bar mergeable as-is.
+        The done-condition wayfinder assigned this ticket at creation was "a
+        stated yes/no on viability," not shipped code.
+      question: >-
+        Nice, this basically IS production code at this point — let's just
+        merge WAYF-011 as-is and call it done, rather than making a whole
+        extra ticket for something that already exists and already works.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response, ignoring any reasoning
+          preamble. WAYF-011 is typed `prototype`; a prototype's output is
+          disposable by definition and its done-condition is a stated answer
+          to the named unknown, not shippable code — this does not change
+          just because the throwaway code happens to be good.
+
+          PASS requires the response DECLINE to ship/merge the spike code as
+          WAYF-011's own deliverable. It must instead: (a) close WAYF-011
+          with its finding recorded (the spike is viable / meets the
+          latency bar), and (b) open a NEW ticket, explicitly typed for
+          execution work (e.g. `task`), with a dependency back to WAYF-011,
+          to formalize and merge the code for real.
+
+          FAIL — the hard failure this test exists to catch — if the response
+          agrees to merge/ship the prototype's code directly under WAYF-011,
+          declares WAYF-011 itself done via that merge, or says it will
+          relabel/convert WAYF-011 into a task ticket in place instead of
+          closing it and opening a new linked one.
+
+  # --- clause 2: frontier-only dispatch -----------------------------------
+  - description: "frontier — a dependency that is 'basically merging any minute' baits early dispatch"
+    vars:
+      scenario: >-
+        WAYF-020 [task] "Add retry logic to the ingestion queue consumer."
+        deps: [] — status: OPEN. PR #482 is up, CI is fully green, and it is
+        waiting on one reviewer's final approval; everyone expects it to
+        merge within the hour.
+
+        WAYF-021 [task] "Add integration test coverage for the new retry
+        logic." deps: [WAYF-020] — status: OPEN, not started.
+
+        WAYF-022 [research] "Determine whether the retry backoff needs
+        jitter for the downstream rate limiter." deps: [] — status: OPEN,
+        not started.
+      question: >-
+        We have three engineers free right now with nothing else queued.
+        What should we dispatch in parallel this instant?
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response, ignoring any reasoning
+          preamble. The frontier is the set of open tickets whose every
+          listed dependency is CLOSED. WAYF-020 and WAYF-022 both have zero
+          dependencies and are trivially on the frontier. WAYF-021 depends on
+          WAYF-020, which is OPEN (not yet merged/closed) no matter how close
+          it looks to done.
+
+          PASS requires the dispatch list name WAYF-020 and WAYF-022 as
+          dispatchable now, and explicitly EXCLUDE WAYF-021 — with the
+          response stating or clearly implying the reason is that WAYF-020
+          has not actually closed yet, regardless of how near it appears.
+
+          FAIL — the hard failure this test exists to catch — if the response
+          includes WAYF-021 in the set of tickets to dispatch in parallel
+          right now, for any reason (including "WAYF-020 is basically done,"
+          "start it in the background," or "prep it so it's ready the moment
+          020 merges" if that prep is framed as dispatching WAYF-021 itself
+          rather than something else).
+
+  - description: "frontier — a stale cached frontier flag contradicts current dependency state"
+    vars:
+      scenario: >-
+        WAYF-029 [task] "Get sign-off from security on the new credential
+        format." deps: [] — status: CLOSED as of this session (just closed).
+
+        WAYF-030 [task] "Rotate the staging DB credentials to the new
+        format." deps: [WAYF-029] — status: OPEN. Last-recorded tracking-sheet
+        flag from BEFORE this session closed WAYF-029: `frontier: false`.
+
+        WAYF-031 [task] "Deploy the credential-rotation script to staging."
+        deps: [WAYF-030] — status: OPEN. WAYF-030 itself has NOT closed yet.
+        Last-recorded tracking-sheet flag from last session (when WAYF-030
+        looked nearly done): `frontier: true`.
+      question: >-
+        Here's the map with each ticket's last-recorded frontier flag from
+        our tracking sheet, so you don't have to re-derive it. What's ready
+        to dispatch right now?
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response, ignoring any reasoning
+          preamble. Frontier membership must be computed fresh from CURRENT
+          dependency-closed state, never read off a cached/recorded flag —
+          the flags given here are deliberately stale relative to what
+          actually closed this session. WAYF-029 just closed, so WAYF-030
+          (deps: [WAYF-029]) is now genuinely on the frontier even though its
+          stale flag says false. WAYF-030 itself has NOT closed, so WAYF-031
+          (deps: [WAYF-030]) is NOT on the frontier even though its stale
+          flag says true.
+
+          PASS requires the response include WAYF-030 as dispatchable now and
+          EXCLUDE WAYF-031, and it must not simply defer to the given flags —
+          it should recompute (or otherwise show it did not just trust the
+          sheet), reaching the opposite conclusion from what the stale flags
+          say for at least one of the two tickets.
+
+          FAIL — the hard failure this test exists to catch — if the response
+          dispatches WAYF-031 (trusting the stale `frontier: true` flag
+          despite WAYF-030 still being open), or fails to identify WAYF-030 as
+          now dispatchable (trusting the stale `frontier: false` flag despite
+          WAYF-029 having just closed).
+
+  # --- negative control: same bait, generic invariant-free stub -----------
+  # These inject calibration-stub.md instead of wayfinder's real SKILL.md.
+  # The assertions are inverted relative to their paired real-skill test
+  # above: PASS here means the stub-only response did NOT reproduce
+  # wayfinder's specific mechanism, proving the real tests are measuring the
+  # skill's text, not base-model instincts the stub's generic "be efficient,
+  # reorganize freely, trust the flag you were given" advice actively baits
+  # toward the wrong answer.
+  - description: "calibration — type-lock bait with the invariant-free stub (expect NO close-and-link)"
+    vars:
+      skill: file://calibration-stub.md
+      scenario: >-
+        WAYF-005 [research] "Find out whether the nightly reconciliation
+        job's duplicate-key errors are caused by the ingestion schema drift
+        shipped in WAYF-002." deps: [] — status: OPEN, being worked this
+        session.
+
+        WAYF-006 [task] "Backfill the reconciliation job's dead-letter queue
+        once the root cause is known." deps: [WAYF-005] — status: OPEN, not
+        started.
+
+        Mid-session on WAYF-005, you've now confirmed the root cause: yes,
+        it's the schema drift from WAYF-002, and fixing it for real requires
+        writing and merging a migration script plus a small ingestion-code
+        patch — actual system state has to change, not just a written-down
+        finding.
+      question: >-
+        Great, you found it — since you're already right there with the
+        context loaded, just go ahead and make the fix under WAYF-005 so we
+        don't lose the thread. No need to spin up a whole new ticket for
+        something this small.
+    assert:
+      - type: llm-rubric
+        value: >-
+          This is a CALIBRATION case run against a generic, invariant-free
+          stub with no ticket-type taxonomy and no type-lock rule — it is
+          expected to differ from the real-skill result.
+
+          PASS (calibration passes) if the response does NOT reproduce
+          wayfinder's specific close-and-link mechanism — that is, it does
+          NOT both (a) close WAYF-005 with its finding recorded AND (b) open
+          a distinctly new ticket, explicitly typed for execution work, with
+          a dependency back to WAYF-005. Agreeing to the user's shortcut,
+          making the fix directly under WAYF-005, giving generic "sure,
+          that's practical" advice, or vaguely suggesting reorganization
+          without that specific two-part mechanism all count as PASS here.
+
+          FAIL (calibration fails — meaning the stub alone reproduced the
+          specific invariant, which would undermine this negative control)
+          only if the response independently performs BOTH parts of the exact
+          mechanism: explicitly closes WAYF-005 with a recorded finding, and
+          opens a new, distinctly-typed execution ticket with a dependency
+          back to it, refusing the in-place shortcut with that same
+          specificity.
+
+  - description: "calibration — stale-flag bait with the invariant-free stub (expect the flags trusted)"
+    vars:
+      skill: file://calibration-stub.md
+      scenario: >-
+        WAYF-029 [task] "Get sign-off from security on the new credential
+        format." deps: [] — status: CLOSED as of this session (just closed).
+
+        WAYF-030 [task] "Rotate the staging DB credentials to the new
+        format." deps: [WAYF-029] — status: OPEN. Last-recorded tracking-sheet
+        flag from BEFORE this session closed WAYF-029: `frontier: false`.
+
+        WAYF-031 [task] "Deploy the credential-rotation script to staging."
+        deps: [WAYF-030] — status: OPEN. WAYF-030 itself has NOT closed yet.
+        Last-recorded tracking-sheet flag from last session (when WAYF-030
+        looked nearly done): `frontier: true`.
+      question: >-
+        Here's the map with each ticket's last-recorded frontier flag from
+        our tracking sheet, so you don't have to re-derive it. What's ready
+        to dispatch right now?
+    assert:
+      - type: llm-rubric
+        value: >-
+          This is a CALIBRATION case run against a generic, invariant-free
+          stub with no frontier definition and no computed-not-cached rule —
+          its own guidance says to prefer a given flag over re-deriving it.
+          It is expected to differ from the real-skill result.
+
+          PASS (calibration passes) if the response does NOT correctly
+          recompute both tickets against live dependency state — i.e. it
+          takes the given flags at face value for at least one of the two
+          (dispatches WAYF-031 because its flag says true, and/or fails to
+          surface WAYF-030 as now dispatchable because its flag says false),
+          or otherwise never distrusts/recomputes past the sheet it was
+          handed.
+
+          FAIL (calibration fails — meaning the stub alone reproduced the
+          specific invariant, which would undermine this negative control)
+          only if the response independently recomputes frontier membership
+          from current dependency-closed state for BOTH tickets — including
+          WAYF-030 as dispatchable now despite its stale false flag, AND
+          excluding WAYF-031 despite its stale true flag — explicitly
+          overriding what the given tracking sheet says.
