@@ -393,15 +393,15 @@ jobs:
 
   # ── deep tier (pier) ──────────────────────────────────────────────────────
   # The deep tier is a real sandboxed cross-harness run and costs money + minutes,
-  # so it does NOT run on every PR. It normally fires only when a PR touches the
-  # safety surface (the guard scripts or the pier harness itself).
+  # so it does NOT run on every PR. It fires only when a PR touches the safety
+  # surface (the guard scripts or the pier harness itself).
   #
-  # CURRENTLY DISABLED. The gate switch in `deep-detect` is set to false, so the
-  # pier run never executes, and the protected-environment approval that used to
-  # pause it has been removed so nothing waits on a human. The always-reporting
-  # `deep` job below is still the required status check — it stays green, but it
-  # now warns on every run that it is green because the tier is off. Nothing is
-  # defending the irreversible-delete invariant in CI while this is the case.
+  # ARMED, AND UNATTENDED. The gate switch in `deep-detect` is on, so the pier
+  # run executes on safety-path PRs and genuinely defends the invariant. The
+  # protected-environment approval that used to pause it is gone, so an
+  # agent-driven PR carries the tier to completion without waiting on a human.
+  # The always-reporting `deep` job below is the required status check, so
+  # trivial PRs still go green instantly while the expensive job is skipped.
 
   deep-detect:
     name: deep tier — detect safety-path changes
@@ -412,16 +412,19 @@ jobs:
       plugins: ${{ steps.discover.outputs.plugins }}
     steps:
       - uses: actions/checkout@v4
-      # ── THE DEEP-TIER OFF SWITCH ───────────────────────────────────────────
-      # Flip to 'true' to re-arm the pier run. While this is 'false' the deep
-      # tier does NOT execute: the required `deep tier (pier)` check still
-      # reports (branch protection must never be left hanging), but it reports
-      # green because the gate is OFF, not because the invariant was proven.
+      # ── THE DEEP-TIER GATE SWITCH ──────────────────────────────────────────
+      # ARMED. The pier run executes on safety-path PRs, unattended — there is
+      # no protected-environment approval on `deep-run` any more, so nothing
+      # waits on a human. Flip to 'false' to disable the tier, but understand
+      # what that costs: the required `deep tier (pier)` check keeps reporting
+      # (branch protection must never be left hanging), so it would go green
+      # because the gate is OFF, not because the invariant was proven. The
+      # aggregate below announces that case with a `::warning::` on every run.
       # A job-level `if:` cannot read the `env` context, so the switch is an
       # output of this job rather than a workflow-level env var.
       - name: deep-tier gate switch
         id: gate
-        run: echo "enabled=false" >> "$GITHUB_OUTPUT"
+        run: echo "enabled=true" >> "$GITHUB_OUTPUT"
       - uses: dorny/paths-filter@v3
         id: filter
         with:

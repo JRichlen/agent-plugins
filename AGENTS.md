@@ -74,25 +74,24 @@ This is the tier that proves the invariant holds no matter which harness
 (claude-code, codex, gemini, cursor) drives the skill — the cross-harness
 guarantee this repo exists to keep.
 
-> [!WARNING]
-> **The deep tier is currently DISABLED in CI.** The gate switch in the
-> `deep-detect` job of `.github/workflows/evals.yml` is set to `enabled=false`,
-> and the protected-environment approval that used to pause the run has been
-> removed. The required `deep tier (pier)` check still reports — it has to, or
-> branch protection would hang — but it reports **green because the tier does not
-> run**, not because the invariant below was proven. It emits a `::warning::`
-> saying so on every run. Nothing defends the invariant in CI until someone flips
-> that switch back to `true`. **Run the deep tier locally before merging any
-> change to a safety path** (`plugins/*/skills/**/scripts/**`,
-> `plugins/*/evals/pier/**`).
->
-> To re-arm: set `enabled=true` in the `deep-tier gate switch` step, and re-add
-> `environment: deep-evals` to `deep-run` to restore the maintainer approval.
-
-In CI the deep tier is a **required** check (`deep tier (pier)`) and, when armed,
-the actual pier run is gated: it fires only when a PR touches
+In CI the deep tier is a **required** check (`deep tier (pier)`) and the actual
+pier run is gated: it fires only when a PR touches
 `plugins/*/skills/**/scripts/**` or `plugins/*/evals/pier/**` — so nothing is
 spent on trivial PRs. Non-safety PRs report the deep tier green instantly.
+
+The tier runs **unattended**: `deep-run` carries no protected environment, so an
+agent-driven PR reaches a verdict without waiting for a maintainer to approve the
+run. The `deep-tier gate switch` step in `deep-detect` is the on/off control and
+is currently `enabled=true`.
+
+> [!WARNING]
+> Setting that switch to `false` does not make the `deep tier (pier)` check
+> disappear — it *cannot*, or branch protection would hang and the
+> branch-protection drift guard would go red. The check keeps reporting, so it
+> goes **green because the tier did not run**, not because the invariant below
+> was proven. The aggregate emits a `::warning::` saying exactly that on every
+> run. If you ever turn it off, run the tier locally before merging any
+> safety-path change, and turn it back on as soon as you can.
 
 ### The invariant every tier defends
 
