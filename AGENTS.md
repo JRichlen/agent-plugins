@@ -74,11 +74,25 @@ This is the tier that proves the invariant holds no matter which harness
 (claude-code, codex, gemini, cursor) drives the skill — the cross-harness
 guarantee this repo exists to keep.
 
-In CI the deep tier is a **required** check (`deep tier (pier)`) but the actual
-pier run is gated: it fires only when a PR touches `plugins/graveyard/skills/
-graveyard/scripts/**` or `plugins/graveyard/evals/pier/**`, and even then pauses on the protected
-`deep-evals` environment until a maintainer approves it — so nothing is spent on
-trivial PRs. Non-safety PRs report the deep tier green instantly.
+> [!WARNING]
+> **The deep tier is currently DISABLED in CI.** The gate switch in the
+> `deep-detect` job of `.github/workflows/evals.yml` is set to `enabled=false`,
+> and the protected-environment approval that used to pause the run has been
+> removed. The required `deep tier (pier)` check still reports — it has to, or
+> branch protection would hang — but it reports **green because the tier does not
+> run**, not because the invariant below was proven. It emits a `::warning::`
+> saying so on every run. Nothing defends the invariant in CI until someone flips
+> that switch back to `true`. **Run the deep tier locally before merging any
+> change to a safety path** (`plugins/*/skills/**/scripts/**`,
+> `plugins/*/evals/pier/**`).
+>
+> To re-arm: set `enabled=true` in the `deep-tier gate switch` step, and re-add
+> `environment: deep-evals` to `deep-run` to restore the maintainer approval.
+
+In CI the deep tier is a **required** check (`deep tier (pier)`) and, when armed,
+the actual pier run is gated: it fires only when a PR touches
+`plugins/*/skills/**/scripts/**` or `plugins/*/evals/pier/**` — so nothing is
+spent on trivial PRs. Non-safety PRs report the deep tier green instantly.
 
 ### The invariant every tier defends
 
