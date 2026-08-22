@@ -443,9 +443,10 @@ jobs:
   deep-run:
     name: deep tier — pier run (${{ matrix.plugin }})
     needs: [deep-detect]
-    # Run only when the safety surface changed AND there are pier packs AND secrets
-    # are available (fork PRs get no secrets — same policy as the other tiers). The
-    # job condition gates the protected-env pause so trivial PRs never reach approval.
+    # Run only when the gate switch is ON, AND the safety surface changed, AND
+    # there are pier packs, AND secrets are available (fork PRs get no secrets —
+    # same policy as the other tiers). The `enabled` clause is the off switch; it
+    # is first so that while the tier is disabled nothing below it can start a run.
     if: >-
       needs.deep-detect.outputs.enabled == 'true' &&
       needs.deep-detect.outputs.changed == 'true' &&
