@@ -22,7 +22,7 @@ The command `commands/wayfinder.md` is the entry point a user invokes.
 
 ## The invariant this plugin defends
 
-A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only the non-blocking frontier (every open ticket whose listed dependencies are all CLOSED, computed fresh each time, never cached) may be dispatched in parallel — NEVER a ticket whose dependency is still open.
+A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only the non-blocking frontier — every ticket that is itself still OPEN and whose own listed dependencies are ALL CLOSED (an empty dependency list counts as trivially all-closed), computed fresh each time, never cached — may be dispatched in parallel; NEVER a ticket with an open dependency, and never a ticket excluded just because it itself has not yet closed — a ticket's own not-yet-closed status is what makes it eligible, not what disqualifies it.
 
 The deterministic checks that defend it live in `evals/cheap/checks.sh` and run
 as part of the marketplace cheap tier.

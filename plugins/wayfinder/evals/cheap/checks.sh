@@ -8,8 +8,9 @@
 # any ticket is dispatched; planning tickets must NEVER be silently converted
 # into execution tickets (a scope surprise closes the ticket and spawns a new
 # LINKED task ticket instead); and only the non-blocking frontier — every
-# open ticket whose dependencies are all CLOSED, computed fresh each time,
-# never cached — may ever be dispatched in parallel. These checks defend
+# ticket that is itself still OPEN and whose own listed dependencies are ALL
+# CLOSED, computed fresh each time, never cached — may ever be dispatched in
+# parallel. These checks defend
 # BOTH the structural wiring (three reference files exist and are actually
 # named in SKILL.md's procedure) and the content invariants (the type-lock
 # rule, the frontier definition, the cycle check, the fog-of-war test, and
@@ -79,7 +80,7 @@ fi
 # The scaffold wrote this into both at generation time from --invariant; a
 # later edit to one and not the other is a real drift risk this catches.
 group "wayfinder — invariant text present verbatim"
-INVARIANT_MARKER='the non-blocking frontier (every open ticket whose listed dependencies are all CLOSED, computed fresh each time, never cached) may be dispatched in parallel'
+INVARIANT_MARKER='the non-blocking frontier — every ticket that is itself still OPEN and whose own listed dependencies are ALL CLOSED (an empty dependency list counts as trivially all-closed), computed fresh each time, never cached — may be dispatched in parallel'
 if grep -qF "$INVARIANT_MARKER" "$SKILL"; then
   ok "SKILL.md carries the invariant text verbatim"
 else
@@ -139,9 +140,15 @@ fi
 
 # --- frontier definition: computed, not cached ------------------------------
 group "wayfinder — frontier definition is the computed-not-cached heuristic"
-hasE "$REF_BREAKDOWN" 'frontier is the set of open tickets whose every listed dependency is CLOSED' \
-     "task-breakdown.md states the exact frontier definition" \
-     "task-breakdown.md is MISSING the exact frontier definition"
+hasE "$REF_BREAKDOWN" 'This ticket itself is still OPEN' \
+     "task-breakdown.md states condition 1 of the frontier definition (ticket itself OPEN)" \
+     "task-breakdown.md is MISSING condition 1 of the frontier definition (ticket itself OPEN)"
+hasE "$REF_BREAKDOWN" 'Every ticket THIS ticket depends on is CLOSED' \
+     "task-breakdown.md states condition 2 of the frontier definition (its deps CLOSED)" \
+     "task-breakdown.md is MISSING condition 2 of the frontier definition (its deps CLOSED)"
+hasE "$REF_BREAKDOWN" 'zero dependencies is therefore trivially on the frontier' \
+     "task-breakdown.md states the zero-dependency case explicitly" \
+     "task-breakdown.md is MISSING the explicit zero-dependency case"
 hasE "$REF_BREAKDOWN" 'never cached' \
      "task-breakdown.md forbids caching frontier membership" \
      "task-breakdown.md does NOT forbid caching frontier membership"
@@ -152,10 +159,15 @@ hasE "$REF_BREAKDOWN" 'never cached' \
 # Scoped to step 2 only, so a correct restatement elsewhere in the file can't
 # stand in for step 2's own text.
 STEP2_BLOCK="$(awk '/^### 2\. Build the dependency graph/{flag=1; next} /^### /{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
-if printf '%s' "$STEP2_BLOCK" | grep -qF 'every listed dependency is CLOSED'; then
-  ok "SKILL.md's own procedure (step 2) states the frontier = every listed dependency is CLOSED"
+if printf '%s' "$STEP2_BLOCK" | grep -qF 'Every ticket THIS ticket depends on is CLOSED'; then
+  ok "SKILL.md's own procedure (step 2) states the frontier = every ticket it depends on is CLOSED"
 else
   bad "SKILL.md's procedure (step 2) is MISSING or contradicts the frontier definition"
+fi
+if printf '%s' "$STEP2_BLOCK" | grep -qF 'Do not apply condition 2 to the ticket being evaluated'; then
+  ok "SKILL.md's own procedure (step 2) explicitly forbids applying the CLOSED test to the ticket itself"
+else
+  bad "SKILL.md's procedure (step 2) is MISSING the explicit ticket-itself-vs-dependency disambiguation"
 fi
 if printf '%s' "$STEP2_BLOCK" | grep -qF 'never a cached'; then
   ok "SKILL.md's own procedure (step 2) forbids caching frontier membership"
