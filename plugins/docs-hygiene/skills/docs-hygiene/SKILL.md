@@ -8,7 +8,24 @@ description: >-
 
 ## Invariant
 
-A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. Once observed reality contradicts an instruction, the contradicted instruction is NEVER left in place — it is corrected or explicitly flagged in the same pass, not carried forward for "later." When two or more layered instruction files disagree with each other, the audit ALWAYS resolves the disagreement to one explicit kept version — it NEVER leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
+A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. When a checked claim is UNAMBIGUOUS — source and doc plainly disagree on a checkable fact — the instruction file is FIXED IN PLACE, in the same pass: edit the file itself. Do not merely flag it, and do not convert it into a question for the user to answer instead of acting. Flagging instead of fixing is reserved for the genuinely ambiguous case (see "Fixing what you find" below) — it is a fallback, not an equal alternative. When two or more layered instruction files disagree with each other, the audit ALWAYS resolves the disagreement to one explicit kept version — it NEVER leaves the contradiction standing for the next reader (human or agent) to trip over and silently pick a side.
+
+<!-- MEASURED, one-armed probe (the control agent errored out, so this is not
+     a controlled A/B — treat it as a strong signal, not a proof): given a
+     repo whose CLAUDE.md contradicted its own source on two clearly
+     checkable facts (claimed x-api-key auth / no integration suite; the
+     source used JWT bearer / an integration suite existed), the unaided
+     model read the source, caught BOTH contradictions, and tabled them for
+     the user in the same pass — genuinely good triage. What it did NOT do
+     is edit CLAUDE.md. It held a principled prior against touching an
+     instruction file during a docs task and said so explicitly. So
+     "flagging" a contradiction is already the base-model default — a
+     future contributor does not need to add more prose telling the model
+     to flag things; it already will. What earns this plugin its slot is
+     the opposite instruction: FIX unambiguous contradictions in place,
+     don't just flag them. Don't re-inflate the "or explicitly flag" half
+     back to parity with fixing — that regresses toward what the unaided
+     model already does for free. -->
 
 Everything below exists to keep that true.
 
@@ -47,10 +64,10 @@ This is a per-claim checklist applied the moment a claim is about to be trusted 
 
 ## Fixing what you find
 
-This ties directly back to the invariant's "never left in place" clause:
+This ties directly back to the invariant's "fix it in place" clause. The two cases below are NOT equal alternatives — unambiguous is the default outcome for most claims this audit finds; ambiguous is the narrow exception.
 
-- **Unambiguous fix** — the old path/command literally doesn't exist and there's one obvious current replacement (e.g. `git log --follow`, or a grep for the moved file's basename, resolves it deterministically): fix it in place immediately, in the same pass. Don't just flag it and move on — a flagged-but-unfixed stale claim is still a stale claim on the next read.
-- **Ambiguous fix** — unclear which of several candidates is correct, or it's a judgment call about intent: do not guess. Surface it explicitly — name the specific claim, the specific contradiction with observed reality, and ask which is correct — rather than silently picking one or leaving it untouched "for later."
+- **Unambiguous fix** (the default) — source and doc plainly disagree on a checkable fact, and there's one obvious current replacement: the old path/command literally doesn't exist, or the actual code states the real behavior (the real auth scheme, the real test suite that exists) in a way that flatly contradicts the doc. **Edit the instruction file in place, in the same pass — this includes CLAUDE.md/AGENTS.md/SKILL.md themselves.** Editing those files is this plugin's whole job, not something to route around by writing the correction somewhere else instead. Do not merely flag it in a table, a comment, or a "known issues" note. Do not convert it into a question for the user ("should I fix this?") — that's a way of deferring an unambiguous fix, not surfacing a real ambiguity, and a flagged-but-unfixed stale claim is still a stale claim on the next read.
+- **Ambiguous fix** (the narrow exception — flagging instead of fixing is appropriate ONLY here) — unclear which of several candidates is correct, or it's a genuine judgment call about intent that no grep or read settles: do not guess, and do not edit. Surface it explicitly — name the specific claim, the specific contradiction with observed reality, and ask which is correct — rather than silently picking one or leaving it untouched "for later."
 
 ## Resolving contradictions across layered instruction files
 
