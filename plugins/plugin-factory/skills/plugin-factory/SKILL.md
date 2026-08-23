@@ -14,14 +14,37 @@ closed until a human replaces it with real checks. The factory never emits a
 skeleton that could show green with zero safety coverage — a green new plugin
 must be earned by writing its checks, not granted by scaffolding.
 
+The red-by-default sentinel is a **generator-to-human handoff protocol**: the
+scaffolder hands the author a stub that visibly refuses to pass until they've
+done real work. The behavioral probe that measured this plugin's other claims
+could not test this half honestly — a single agent played both the generator
+and the human filling in the stub, so the handoff never actually crossed a
+role boundary. Treat the sentinel's *mechanism* (the eval fails closed until
+edited) as verified by the cheap tier's own dogfood check below, but treat
+its *purpose* (stopping a human from shipping the stub unnoticed) as
+un-probed, not proven.
+
 ## What this does
 
-Adding a plugin by hand means getting a dozen small things right: kebab-case
-naming, a valid manifest, a SKILL.md with real frontmatter, the
-AGENTS.md + CLAUDE.md/GEMINI.md symlinks that make it cross-harness, a command
-stub, an eval pack, and the marketplace.json entry. Miss any one and the cheap
-tier goes red (or worse, a plugin ships with no safety coverage). This skill runs
-one deterministic script that gets all of it right every time.
+<!-- MEASURED: a capable model asked to scaffold a plugin for this marketplace
+cold, with no skill loaded, wrote 59 real deterministic checks and drove the
+suite to exit 0 — the discipline of writing checks is not what's missing. What
+it got wrong was this marketplace's OWN layout, 6 times out of 6: plugin.json
+and SKILL.md at the root instead of .claude-plugin/ and skills/<name>/, no
+AGENTS.md + CLAUDE.md/GEMINI.md symlinks, a bespoke evals/run.sh instead of
+evals/cheap/checks.sh, no marketplace.json entry, version 0.1.0 instead of
+0.0.1. None of that is inferable from first principles — it's this repo's
+convention, and only this repo knows it. That is the plugin's real job. -->
+
+This marketplace's plugin layout — where `plugin.json` lives, that SKILL.md
+sits under `skills/<name>/`, the AGENTS.md + CLAUDE.md/GEMINI.md symlink
+trio, `evals/cheap/checks.sh` as the entry point, the marketplace.json
+lockfile entry, starting at version `0.0.1` — is a local convention, not
+something derivable from general plugin-authoring knowledge. A model asked to
+scaffold a plugin cold, without having read this repo's other plugins, gets
+the actual content right (real checks, a real invariant) but gets this
+repo-specific wiring wrong, every time. This skill runs one deterministic
+script that encodes the convention so it's never re-guessed.
 
 ## How to use it
 
