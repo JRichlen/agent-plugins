@@ -1,0 +1,21 @@
+{
+  "name": "egress-gate",
+  "version": "0.0.1",
+  "description": "Before any call that transmits repo or user content off-machine (posting a comment, pushing a branch, calling an external API with file contents in the payload), state what is being sent and to whom — permission modes gate the call, this gates the content. Use whenever output leaves the machine to a destination the user didn't name in this task.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/egress-gate",
+  "license": "MIT",
+  "keywords": [
+    "egress",
+    "data-exfiltration",
+    "payload",
+    "secrets",
+    "outbound",
+    "safety"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

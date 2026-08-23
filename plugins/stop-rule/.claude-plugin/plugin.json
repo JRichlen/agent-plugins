@@ -1,0 +1,21 @@
+{
+  "name": "stop-rule",
+  "version": "0.0.1",
+  "description": "A halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report the state with hypotheses — never make attempt N+1 on momentum. Use when re-pushing to fix CI, retrying a flaky repro, or any loop where each retry is a guess rather than a diagnosis.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/stop-rule",
+  "license": "MIT",
+  "keywords": [
+    "halting",
+    "retry-loops",
+    "attempt-bound",
+    "stop-and-report",
+    "ci",
+    "discipline"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

@@ -1,0 +1,21 @@
+{
+  "name": "scope-fence",
+  "version": "0.0.1",
+  "description": "Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to 'fix it while I'm here', or when reviewing whether a diff crept beyond its mandate.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/scope-fence",
+  "license": "MIT",
+  "keywords": [
+    "scope",
+    "scope-creep",
+    "diff-audit",
+    "findings",
+    "bounded-tasks",
+    "discipline"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

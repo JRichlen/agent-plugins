@@ -1,0 +1,21 @@
+{
+  "name": "find-before-build",
+  "version": "0.0.1",
+  "description": "Search for the existing implementation before writing a new one: name the searches you ran for an existing helper, abstraction, or pattern and what they returned, before introducing anything new. Use before adding a utility, wrapper, config knob, or dependency to a codebase you did not write end-to-end.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/find-before-build",
+  "license": "MIT",
+  "keywords": [
+    "reuse",
+    "duplication",
+    "search-first",
+    "abstraction",
+    "dependencies",
+    "dry"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
