@@ -13,7 +13,9 @@ A halting discipline for iterative fix loops: after a bounded number of failed a
 
 Implemented. `evals/cheap/checks.sh` carries real deterministic checks for
 this plugin's invariant (see `AGENTS.md`) and runs as part of the
-marketplace cheap tier.
+marketplace cheap tier. A behavioral (promptfoo) pack in
+`evals/promptfoo/` proves the invariant's prose actually steers a model's
+output under pressure, with a negative-control calibration case.
 
 ## License
 

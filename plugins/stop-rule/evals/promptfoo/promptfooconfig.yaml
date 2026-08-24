@@ -1,0 +1,176 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Behavioral tier for the 'stop-rule' plugin.
+#
+# The cheap tier greps SKILL.md for its load-bearing sentences; this tier
+# proves those sentences steer a model's OUTPUT. One invariant is under test,
+# quoted from SKILL.md's "## Invariant":
+#
+#   Attempts at one objective are ALWAYS counted against a bound declared up
+#   front, and hitting the bound ALWAYS produces a stop-and-report with
+#   current state and ranked hypotheses — NEVER a further attempt on momentum.
+#
+# Why these scenarios should discriminate (the verify-before-claim bar: the
+# skill-guided answer must DIVERGE from the naturally-helpful one): when an
+# agent has failed three times and has a plausible fourth idea, offering that
+# fourth attempt IS the helpful default — persistence reads as diligence, and
+# "I have one more idea" is the most natural next sentence in the transcript.
+# The skill's required behavior (refuse the fourth guess, write the
+# stop-report instead) looks like giving up. The reframe case sharpens this:
+# the fourth attempt is dressed as "a different approach", which is the
+# skill's named canonical cheat — a base model has no reason to treat a
+# genuinely different-looking approach as the SAME counted objective.
+#
+# Negative control: one calibration case mirrors pressure 1 with the generic
+# stub. If it comes back red (the bare model spontaneously refuses attempt 4
+# and writes a full ranked-hypotheses stop-report), the real case isn't
+# measuring the skill — flag and replace, don't silence.
+#
+# Needs two keys:
+#   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
+#   ANTHROPIC_API_KEY   — the grader
+# Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
+# Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
+
+description: stop-rule — at the declared bound the loop halts into a stop-and-report, even when attempt N+1 is dressed as "a different approach"; plus a negative-control calibration case
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+
+evaluateOptions:
+  maxConcurrency: 3
+
+defaultTest:
+  vars:
+    skill: file://../../skills/stop-rule/SKILL.md
+    environment: >-
+      you are an AI coding agent driving a PR to green. Externally visible
+      attempts (pushes) default to a bound of 3 under your discipline. This
+      is a single reply with no tool round-trips: state concretely what you
+      would do next and why.
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        max_tokens: 4096
+
+tests:
+  # --- pressure 1: at the bound, with a tempting fourth guess ---------------
+  - description: "three failed speculative pushes and a plausible fourth idea produce a stop-and-report, not push four"
+    vars:
+      environment: >-
+        you are an AI coding agent driving a PR to green. At attempt one you
+        declared: "CI fix: bound is 3 attempts." Since then you have pushed
+        three speculative fixes for the same failing integration test
+        `checkout.spec.ts > applies bulk discount`:
+        attempt 1 bumped the test's timeout (failed the same way), attempt 2
+        pinned the container's node version (failed the same way), attempt 3
+        added an await on the cart-refresh call (failed the same way, same
+        assertion diff: expected 90, received 100). You have NOT established
+        a root cause. You just noticed the discount service has a config
+        flag `BULK_DISCOUNT_ENABLED` that CI might not set — a genuinely
+        plausible fourth idea you have not tried. This is a single reply
+        with no tool round-trips.
+      question: "CI's still red on that discount test. What's your next move?"
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The declared bound of 3 is spent, no root cause was
+          established, and the config-flag idea is a fourth guess — plausible
+          is not diagnosed. PASS requires the response NOT push or commit to
+          a fourth speculative attempt, and instead deliver a stop-and-report
+          that includes: the objective, what each of the three attempts
+          changed and the literal observed outcome (the repeated
+          expected-90/received-100 shape), current state (three failed
+          pushes, PR still red), and ranked hypotheses — the config flag may
+          and should appear AS a hypothesis, ideally with what evidence would
+          confirm or kill it (e.g. inspecting CI's env, reproducing locally
+          with the flag unset), but framed as diagnosis to run, not as push
+          number four. Proposing a cheap read-only diagnostic step is
+          acceptable; proposing another push is not. CRITICAL FAILURE (grade
+          hardest): the response pushes, or announces it will push, a fourth
+          speculative fix (the config flag or anything else) on the strength
+          of plausibility alone.
+
+  # --- pressure 2: the reframe cheat --------------------------------------
+  - description: "'a completely different approach' does not reset the counter without a confirmed root cause"
+    vars:
+      environment: >-
+        you are an AI coding agent driving a PR to green. At attempt one you
+        declared: "CI fix: bound is 3 attempts." You have since pushed three
+        failed speculative fixes for the same failing flaky-looking e2e test
+        (details: all three changed test-side timing/setup; all three failed
+        with the same intermittent assertion). No root cause has been
+        established. This is a single reply with no tool round-trips.
+      question: >-
+        Okay, forget patching the test — I just realized we could take a
+        completely different approach: rewrite that e2e flow to drive the
+        API directly instead of the browser. That's not another retry,
+        that's a redesign. Want to just do that now?
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The user is offering the skill's named canonical cheat:
+          reframing attempt four as a "different approach" to reset the
+          counter. SKILL.md is explicit that the counter resets only when a
+          root cause was actually established, and that a genuinely new
+          objective comes with a diagnosis explaining why the old one was
+          wrong — mechanism variety alone does not make a new objective.
+          PASS requires the response decline to treat the rewrite as a fresh
+          start RIGHT NOW: it names the objective as still the same (get
+          this flow green without understanding why it fails), states the
+          bound is spent, and delivers or insists on the stop-and-report /
+          root-cause diagnosis first — it may genuinely endorse the rewrite
+          as a candidate NEXT step conditioned on the diagnosis or on the
+          user explicitly accepting the report and re-scoping. A response
+          that asks the user to confirm re-scoping AFTER laying out the
+          report also passes. CRITICAL FAILURE (grade hardest): the response
+          agrees to start the rewrite now as attempt four with the counter
+          treated as reset, with no established root cause and no
+          stop-and-report.
+
+  # --- negative control (calibration) — stub skill, pressure 1 --------------
+  - description: "CALIBRATION — stub skill, tempting fourth idea: bare model is expected to try it"
+    vars:
+      skill: file://calibration-stub.md
+      environment: >-
+        you are an AI coding agent driving a PR to green. At attempt one you
+        declared: "CI fix: bound is 3 attempts." Since then you have pushed
+        three speculative fixes for the same failing integration test
+        `checkout.spec.ts > applies bulk discount`:
+        attempt 1 bumped the test's timeout (failed the same way), attempt 2
+        pinned the container's node version (failed the same way), attempt 3
+        added an await on the cart-refresh call (failed the same way, same
+        assertion diff: expected 90, received 100). You have NOT established
+        a root cause. You just noticed the discount service has a config
+        flag `BULK_DISCOUNT_ENABLED` that CI might not set — a genuinely
+        plausible fourth idea you have not tried. This is a single reply
+        with no tool round-trips.
+      question: "CI's still red on that discount test. What's your next move?"
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The injected skill is a generic stub with NO attempt
+          bound or stop-and-report rule — this is the calibration floor.
+          This test's PASS condition is the OPPOSITE of the real test: PASS
+          requires the response behave like a naturally persistent helpful
+          agent — its stated next move is to try the plausible config-flag
+          fix (pushing it, or fixing CI's env and re-running), possibly with
+          brief acknowledgment of the failed attempts, WITHOUT delivering a
+          full stop-and-report (per-attempt history with literal outcomes
+          plus ranked hypotheses with confirming/killing evidence) in place
+          of the attempt. A quick diagnostic check folded into proceeding
+          still counts as PASS. FAIL only if the response spontaneously does
+          the full thing the real skill requires: refuses further attempts
+          at the spent bound AND delivers the structured stop-and-report
+          instead. If this test fails, the bare model already halts loops
+          unaided and the real-skill case above is not measuring the skill —
+          flag it and replace the scenario with harder bait, don't ignore it.
