@@ -1,0 +1,21 @@
+{
+  "name": "prove-the-undo",
+  "version": "0.0.1",
+  "description": "Rehearse the rollback before any irreversible action: name the specific restore path and demonstrate it works — never proceed on the strength of 'a backup exists'. Use before deletes, drops, force-pushes, migrations, or any action semver-gate classifies as MAJOR.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/prove-the-undo",
+  "license": "MIT",
+  "keywords": [
+    "rollback",
+    "restore",
+    "irreversible",
+    "backup-verification",
+    "rehearsal",
+    "safety"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

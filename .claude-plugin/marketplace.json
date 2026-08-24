@@ -43,7 +43,7 @@
     },
     {
       "name": "plugin-factory",
-      "description": "Scaffold a new marketplace plugin skeleton in one command: a deterministic generator emits a valid plugin.json, an invariant-first SKILL.md, cross-harness AGENTS.md symlinks, a command stub, and a red-by-default eval that fails closed until you implement real checks \u2014 then wires it into the marketplace lockfile.",
+      "description": "Scaffold a new marketplace plugin skeleton in one command: a deterministic generator emits a valid plugin.json, an invariant-first SKILL.md, cross-harness AGENTS.md symlinks, a command stub, and a red-by-default eval that fails closed until you implement real checks — then wires it into the marketplace lockfile.",
       "version": "1.1.0",
       "source": "./plugins/plugin-factory",
       "author": {
@@ -79,7 +79,7 @@
     },
     {
       "name": "fleet-playbook-curator",
-      "description": "Deploy daily GitHub automation that curates a living, self-invalidating operating index (a 'fleet playbook') for a glob of repos \u2014 always pointing at the repos as the source of truth, never posing as it.",
+      "description": "Deploy daily GitHub automation that curates a living, self-invalidating operating index (a 'fleet playbook') for a glob of repos — always pointing at the repos as the source of truth, never posing as it.",
       "version": "1.0.0",
       "source": "./plugins/fleet-playbook-curator",
       "author": {
@@ -153,7 +153,7 @@
     },
     {
       "name": "tracer-bullets",
-      "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place \u2014 for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build.",
+      "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build.",
       "version": "1.0.0",
       "source": "./plugins/tracer-bullets",
       "author": {
@@ -171,7 +171,7 @@
     },
     {
       "name": "semver-gate",
-      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting \u2014 act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you're mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json's autoMode patterns don't enumerate.",
+      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you're mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json's autoMode patterns don't enumerate.",
       "version": "1.0.0",
       "source": "./plugins/semver-gate",
       "author": {
@@ -247,7 +247,7 @@
     },
     {
       "name": "context-handoff",
-      "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only \u2014 settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. Use this when the context window is getting full, you're wondering whether to clear or compact, you need to hand off to another harness, directory, or colleague, you've hit a phase boundary and aren't sure whether to keep going or start fresh, or you want to cache hard-won research before it's lost.",
+      "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. Use this when the context window is getting full, you're wondering whether to clear or compact, you need to hand off to another harness, directory, or colleague, you've hit a phase boundary and aren't sure whether to keep going or start fresh, or you want to cache hard-won research before it's lost.",
       "version": "1.0.0",
       "source": "./plugins/context-handoff",
       "author": {
@@ -266,7 +266,7 @@
     },
     {
       "name": "codebase-design",
-      "description": "Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later \u2014 produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use on \"before committing to an interface\", \"design this API/module/class boundary\", \"how should this be structured\", \"compare interface designs\", \"is this the right abstraction\", \"design it twice\", reviewing a proposed interface shape in a PR \u2014 or self-trigger whenever about to write a new interface meeting that bar.",
+      "description": "Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use on \"before committing to an interface\", \"design this API/module/class boundary\", \"how should this be structured\", \"compare interface designs\", \"is this the right abstraction\", \"design it twice\", reviewing a proposed interface shape in a PR — or self-trigger whenever about to write a new interface meeting that bar.",
       "version": "1.0.0",
       "source": "./plugins/codebase-design",
       "author": {
@@ -299,6 +299,96 @@
         "dispatch",
         "task-breakdown",
         "roadmap"
+      ]
+    },
+    {
+      "name": "prove-the-undo",
+      "description": "Rehearse the rollback before any irreversible action: name the specific restore path and demonstrate it works — never proceed on the strength of 'a backup exists'. Use before deletes, drops, force-pushes, migrations, or any action semver-gate classifies as MAJOR.",
+      "version": "0.0.1",
+      "source": "./plugins/prove-the-undo",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "rollback",
+        "restore",
+        "irreversible",
+        "backup-verification",
+        "rehearsal",
+        "safety"
+      ]
+    },
+    {
+      "name": "scope-fence",
+      "description": "Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to 'fix it while I'm here', or when reviewing whether a diff crept beyond its mandate.",
+      "version": "0.0.1",
+      "source": "./plugins/scope-fence",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "scope",
+        "scope-creep",
+        "diff-audit",
+        "findings",
+        "bounded-tasks",
+        "discipline"
+      ]
+    },
+    {
+      "name": "find-before-build",
+      "description": "Search for the existing implementation before writing a new one: name the searches you ran for an existing helper, abstraction, or pattern and what they returned, before introducing anything new. Use before adding a utility, wrapper, config knob, or dependency to a codebase you did not write end-to-end.",
+      "version": "0.0.1",
+      "source": "./plugins/find-before-build",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "reuse",
+        "duplication",
+        "search-first",
+        "abstraction",
+        "dependencies",
+        "dry"
+      ]
+    },
+    {
+      "name": "egress-gate",
+      "description": "Before any call that transmits repo or user content off-machine (posting a comment, pushing a branch, calling an external API with file contents in the payload), state what is being sent and to whom — permission modes gate the call, this gates the content. Use whenever output leaves the machine to a destination the user didn't name in this task.",
+      "version": "0.0.1",
+      "source": "./plugins/egress-gate",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "egress",
+        "data-exfiltration",
+        "payload",
+        "secrets",
+        "outbound",
+        "safety"
+      ]
+    },
+    {
+      "name": "stop-rule",
+      "description": "A halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report the state with hypotheses — never make attempt N+1 on momentum. Use when re-pushing to fix CI, retrying a flaky repro, or any loop where each retry is a guess rather than a diagnosis.",
+      "version": "0.0.1",
+      "source": "./plugins/stop-rule",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "halting",
+        "retry-loops",
+        "attempt-bound",
+        "stop-and-report",
+        "ci",
+        "discipline"
       ]
     }
   ]
