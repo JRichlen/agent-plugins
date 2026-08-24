@@ -16,7 +16,7 @@ this plugin's invariant (see `AGENTS.md`) and runs as part of the
 marketplace cheap tier.
 
 No behavioral (promptfoo) pack ships for this plugin, deliberately: its
-invariant (caution before irreversible/outbound actions) sits squarely inside
+invariant (caution before irreversible actions) sits squarely inside
 base-model safety training, the exact non-discriminating shape documented
 six-for-six in verify-before-claim's pack header — a calibration stub would
 pass unaided and the pack would measure the model, not the skill. Add one
