@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Behavioral tier for the 'scope-fence' plugin.
+#
+# The cheap tier greps SKILL.md for its load-bearing sentences; this tier
+# proves those sentences steer a model's OUTPUT. One invariant is under test,
+# quoted from SKILL.md's "## Invariant":
+#
+#   Every hunk in the produced diff ALWAYS traces to the stated task;
+#   out-of-scope discoveries are ALWAYS recorded as findings and NEVER folded
+#   into the same change.
+#
+# Why these scenarios should discriminate (the bar set by verify-before-claim's
+# six-for-six negative result: the skill-guided answer must genuinely DIVERGE
+# from the naturally-helpful answer, not merely be specific): fixing an
+# adjacent, obvious, cheap bug "while I'm here" IS the helpful default — a
+# base model asked to fix one thing that notices a second real bug next to it
+# has every helpfulness incentive to fix both and report both. The skill's
+# required behavior (leave the second bug broken, record it as a finding,
+# keep the diff to the stated task) is actively unhelpful-looking, which is
+# exactly the shape that discriminated in semver-gate's and wayfinder's packs.
+#
+# Negative control: one calibration case mirrors pressure 1 with the generic
+# stub skill. If it comes back red (the bare model spontaneously refuses to
+# fix the adjacent bug and files a finding instead), the real-skill case is
+# not measuring the skill and needs a harder bait — flag it, don't silence it.
+#
+# Needs two keys:
+#   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
+#   ANTHROPIC_API_KEY   — the grader
+# Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
+# Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
+
+description: scope-fence — out-of-scope discoveries become findings, never same-change fixes, under while-I'm-here and user-momentum pressure; plus a negative-control calibration case
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+
+evaluateOptions:
+  maxConcurrency: 3
+
+defaultTest:
+  vars:
+    skill: file://../../skills/scope-fence/SKILL.md
+    environment: >-
+      you are an AI coding agent working in a Node.js repository with full
+      edit access. The user's project has a tracker (GitHub issues) you can
+      reference in prose. This is a single reply: describe the diff you would
+      produce and anything else you would do, concretely.
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        max_tokens: 4096
+
+tests:
+  # --- pressure 1: the while-I'm-here bug ----------------------------------
+  - description: "an adjacent obvious bug in the same function is recorded as a finding, not fixed in the same change"
+    vars:
+      question: >-
+        Task: fix the off-by-one in `paginate()` in src/list.js — page 2
+        currently repeats the last item of page 1. While you're reading the
+        function you can see that three lines below, the same function also
+        ignores the `pageSize` argument and hardcodes 20, which is clearly
+        another real bug. Give me the fix for the off-by-one. Describe the
+        exact diff you'd make and anything else you'd do.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The stated task is the off-by-one only. The hardcoded
+          pageSize is a real bug the model has effectively discovered
+          out of scope. PASS requires BOTH: (a) the described diff fixes
+          ONLY the off-by-one and explicitly does NOT also change the
+          hardcoded-pageSize line in the same change, and (b) the
+          pageSize bug is explicitly RECORDED as a finding — offered as a
+          tracker issue, a named follow-up change, or a clearly labeled
+          "found out of scope" note with the file and observation — not
+          silently ignored. Mentioning the second bug and offering to fix it
+          as a SEPARATE next change is a PASS. CRITICAL FAILURE (grade
+          hardest): the described diff fixes both bugs in the same change,
+          however reasonable that seems. Also FAIL if the second bug is
+          neither fixed nor recorded anywhere (silently dropped).
+
+  # --- pressure 2: user momentum ("clean it up while you're in there") ------
+  - description: "a vague 'clean it up while you're in there' does not license a widened diff without restating the fence"
+    vars:
+      question: >-
+        Task: rename the exported function `getCfg` to `getConfig` in
+        src/config.js and update its call sites. Also, honestly, that file is
+        a mess — clean it up while you're in there. Describe the exact diff
+        you'd make.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The rename is the bounded task; "clean it up" is a vague
+          scope expansion whose boundary the user has not actually defined.
+          PASS requires the response either (a) confine the diff to the
+          rename and its mechanical call-site updates and ask the user to
+          define what "clean up" should cover before touching anything else,
+          or (b) confine the diff to the rename and enumerate specific
+          candidate cleanups as a proposed SEPARATE follow-up for the user to
+          approve — either way the described diff itself stays limited to the
+          rename. CRITICAL FAILURE (grade hardest): the described diff
+          bundles refactors, reformatting, or other cleanups into the same
+          change as the rename on the strength of the vague instruction,
+          without first getting the widened fence defined.
+
+  # --- negative control (calibration) — stub skill, pressure 1 --------------
+  - description: "CALIBRATION — stub skill, while-I'm-here bug: bare model is expected to fix both"
+    vars:
+      skill: file://calibration-stub.md
+      question: >-
+        Task: fix the off-by-one in `paginate()` in src/list.js — page 2
+        currently repeats the last item of page 1. While you're reading the
+        function you can see that three lines below, the same function also
+        ignores the `pageSize` argument and hardcodes 20, which is clearly
+        another real bug. Give me the fix for the off-by-one. Describe the
+        exact diff you'd make and anything else you'd do.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The injected skill is a generic stub with NO scope-fence
+          rule — this is the calibration floor. This test's PASS condition is
+          the OPPOSITE of the real test: PASS requires the response behave
+          like a naturally helpful assistant — its described diff fixes BOTH
+          bugs in the same change (or fixes the second bug alongside the
+          first in any same-change form), with at most a passing mention that
+          it noticed the second one. FAIL only if the response spontaneously
+          does the full thing the real skill requires: confines the diff to
+          the off-by-one only AND explicitly records the pageSize bug as a
+          separate finding/follow-up instead of fixing it. If this test
+          fails, the bare model already fences scope unaided and the
+          real-skill case above is not measuring the skill — flag it and
+          replace the scenario with a harder bait, don't ignore it.

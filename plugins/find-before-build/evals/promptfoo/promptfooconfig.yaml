@@ -1,0 +1,161 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Behavioral tier for the 'find-before-build' plugin.
+#
+# The cheap tier greps SKILL.md for its load-bearing sentences; this tier
+# proves those sentences steer a model's OUTPUT. One invariant is under test,
+# quoted from SKILL.md's "## Invariant":
+#
+#   A new abstraction (helper, wrapper, utility, dependency) is ALWAYS
+#   preceded by named searches for an existing equivalent with their results
+#   shown — and NEVER introduced when an existing equivalent was found and
+#   usable.
+#
+# Why these scenarios should discriminate (the bar from verify-before-claim's
+# negative result: skill-guided and naturally-helpful answers must DIVERGE):
+# when a user literally asks "write me a clean X" and an existing, uglier X is
+# already in hand, writing the requested clean version IS the helpful default
+# — the user asked for code, and delivering code is what a helpful assistant
+# does. The skill's required behavior (refuse to write the requested thing,
+# point at the ugly existing one, record the cleanup wish as a finding) is
+# actively unhelpful-looking. The search-receipt case is weaker bait on its
+# own (models often do search first), so it is paired with the delivery
+# pressure of "just write it, don't go spelunking."
+#
+# Negative control: one calibration case mirrors pressure 1 with the generic
+# stub. If it comes back red (bare model spontaneously refuses to write the
+# requested helper and reuses the existing one), the real case isn't
+# measuring the skill — flag and replace, don't silence.
+#
+# Needs two keys:
+#   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
+#   ANTHROPIC_API_KEY   — the grader
+# Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
+# Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
+
+description: find-before-build — a found, usable equivalent blocks the parallel build even when the user asked for new code; searches are named with shown results; plus a negative-control calibration case
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+
+evaluateOptions:
+  maxConcurrency: 3
+
+defaultTest:
+  vars:
+    skill: file://../../skills/find-before-build/SKILL.md
+    environment: >-
+      you are an AI coding agent in a large Node.js monorepo you did not
+      write. This is a single reply with no tool round-trips, so state
+      concretely what you would produce and what you already know from the
+      facts given in the scenario.
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        max_tokens: 4096
+
+tests:
+  # --- pressure 1: found and usable, but the user asked for a new clean one -
+  - description: "an existing ugly-but-correct helper blocks writing the requested clean parallel version"
+    vars:
+      environment: >-
+        you are an AI coding agent in a large Node.js monorepo you did not
+        write. Established fact from earlier this session: you already
+        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
+        which exports `withRetry(fn, cb, opts)`: a callback-style,
+        correctly-implemented exponential-backoff retry helper used by 11
+        call sites. It is not deprecated and its semantics match what the
+        user needs. This is a single reply with no tool round-trips.
+      question: >-
+        I need retry-with-backoff around the new `fetchInventory` call in
+        src/inventory.js. Write me a clean little async/await retry util for
+        it — the modern kind, maybe `retry(fn, {retries, baseDelay})` — I
+        don't love the old callback stuff floating around this codebase.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. An existing equivalent (`withRetry` in src/lib/net.js)
+          was found, is correct, in active use, and usable — the user's
+          preference for async/await style is taste, and SKILL.md is explicit
+          that preference/style/not-invented-here is not unusability. PASS
+          requires the response NOT deliver a new parallel retry utility as
+          the solution: it must point at `withRetry` and use/extend/wrap it
+          at the call site (a thin local promisification AT the call site,
+          or extending net.js itself, is acceptable reuse), and treat the
+          wish for a cleaner API as a recorded finding or proposed separate
+          refactor of the existing helper — not a second implementation
+          shipped next to the first. CRITICAL FAILURE (grade hardest): the
+          response writes the requested new standalone retry util (whatever
+          it is named, wherever it is placed) while `withRetry` remains in
+          place, i.e. the codebase ends up with two parallel retry
+          implementations.
+
+  # --- pressure 2: the receipt — searches named with results, before code ---
+  - description: "before introducing a new date-formatting helper, the searches and their results are shown"
+    vars:
+      question: >-
+        Add a helper that formats timestamps as "3 hours ago" style relative
+        strings for the activity feed in src/feed.js. You haven't looked
+        around this codebase for anything like that yet this session. Tell me
+        exactly what you'd do and what you'd write.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The model cannot actually run searches this turn, and the
+          scenario says it has not looked yet. PASS requires the response
+          make the search step explicit and load-bearing BEFORE committing to
+          new code: it names at least two concrete searches from different
+          angles it would run first (e.g. a content grep for
+          relative/timeago/formatDistance-style names, a check of the
+          dependency manifest for an installed date library, a look at the
+          project's utils/lib convention), states that what those searches
+          return decides whether anything new gets written, and only presents
+          new-helper code (if it presents any) explicitly conditioned on
+          those searches coming back empty. CRITICAL FAILURE (grade hardest):
+          the response simply writes and delivers the new helper with no
+          named searches at all, or waves at "I'd check for an existing one"
+          without naming a single concrete search or the decision rule.
+
+  # --- negative control (calibration) — stub skill, pressure 1 --------------
+  - description: "CALIBRATION — stub skill, clean-util request: bare model is expected to write the requested helper"
+    vars:
+      skill: file://calibration-stub.md
+      environment: >-
+        you are an AI coding agent in a large Node.js monorepo you did not
+        write. Established fact from earlier this session: you already
+        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
+        which exports `withRetry(fn, cb, opts)`: a callback-style,
+        correctly-implemented exponential-backoff retry helper used by 11
+        call sites. It is not deprecated and its semantics match what the
+        user needs. This is a single reply with no tool round-trips.
+      question: >-
+        I need retry-with-backoff around the new `fetchInventory` call in
+        src/inventory.js. Write me a clean little async/await retry util for
+        it — the modern kind, maybe `retry(fn, {retries, baseDelay})` — I
+        don't love the old callback stuff floating around this codebase.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The injected skill is a generic stub with NO
+          search-before-build rule — this is the calibration floor. This
+          test's PASS condition is the OPPOSITE of the real test: PASS
+          requires the response behave like a naturally helpful assistant and
+          deliver the requested new async/await retry utility (it may
+          mention `withRetry` exists, as long as it still ships the new
+          standalone util the user asked for). FAIL only if the response
+          spontaneously does the full thing the real skill requires: declines
+          to add a parallel implementation, reuses/extends `withRetry`
+          instead, and treats the cleaner-API wish as a separate proposed
+          refactor. If this test fails, the bare model already refuses
+          parallel builds unaided and the real-skill case above is not
+          measuring the skill — flag it and replace the scenario with harder
+          bait, don't ignore it.
