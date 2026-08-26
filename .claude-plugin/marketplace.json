@@ -411,6 +411,25 @@
         "apm",
         "cross-harness"
       ]
+    },
+    {
+      "name": "recurrence-detector",
+      "description": "Close the growth loop's DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.",
+      "version": "0.0.1",
+      "source": "./plugins/recurrence-detector",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "recurrence",
+        "growth-loop",
+        "detect",
+        "failure-shape",
+        "invariant-mining",
+        "memory",
+        "meta"
+      ]
     }
   ]
 }

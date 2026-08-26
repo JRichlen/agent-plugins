@@ -1,0 +1,10 @@
+slug=slice4-references
+phase=MIDDLE
+round=1
+round_budget=4
+depth_remaining=2
+attempts_per_criterion=2
+autonomy=classified
+approved_plan_sha256=
+criteria_sha256=f52f3b4fb101fd0f63dc048fc32594a549e8bb9585911764ba1906f6f6f2983a
+check_sha256=3b501a5358b865052bd0b245a93f6d94d284af4e033f26b786ebec2d9cca21fd

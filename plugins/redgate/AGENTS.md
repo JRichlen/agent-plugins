@@ -35,13 +35,14 @@ load-bearing is prose plus plain bash — no Claude-Code primitive is required:
   anything irreversible — always stops for a structured human question.
 - Full protocol: `docs/red-gate-protocol.md` at the marketplace root.
 
-## Status: slices 1–2 of 5
+## Status: all five slices shipped
 
-Ships the driver, BEGIN (criteria-contract), and END (reconcile) — the full
-round loop: command → skills → generator → red gate → independent verify with
-drift, evidence, and mutation control. An optional Claude-Code hooks enforcement layer (hooks are
-CC-specific; on any other harness the same rules hold as prose discipline), and the protocol references
-land as later slices per `docs/red-gate-implementation-plan.md`.
+Driver, BEGIN (criteria-contract), END (reconcile), the hooks enforcement
+layer (hooks are Claude-Code-specific; on another harness the same rules hold
+as prose discipline), and the protocol references. The growth loop's DETECT
+organ ships separately as the `recurrence-detector` plugin. Each slice was
+built as a real Red Gate round — see `.redgate/*/gates.log` for the run
+records, including the two rounds where the protocol caught its own defects.
 
 ## The invariant this plugin defends
 

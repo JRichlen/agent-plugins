@@ -1,0 +1,27 @@
+{
+  "description": "redgate — compile the protocol's out-of-bounds rule into harness events: no write may reach a ratified run's contract while its round is in MIDDLE, and an unfinished run announces itself at session start. PORTABILITY: hooks are a Claude-Code convenience, not a dependency — on another harness the same rules hold as the prose discipline in skills/redgate/SKILL.md.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/guard-redgate-paths.sh\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

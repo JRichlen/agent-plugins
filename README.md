@@ -45,6 +45,7 @@ multiple machines and want it to resolve identically every time.
 | [**egress-gate**](plugins/egress-gate/) | Before any call that transmits repo or user content off-machine, state what is being sent and to whom — permission modes gate the call, this gates the content; secrets and out-of-scope content never ride in an outbound payload. |
 | [**stop-rule**](plugins/stop-rule/) | A halting discipline for iterative fix loops: declare an attempt bound up front, count honestly, and at the bound stop and report state with ranked hypotheses — never attempt N+1 on momentum. |
 | [**redgate**](plugins/redgate/) | Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — round gates classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation, plan approval, and irreversible actions always block on the human. Cross-harness (Claude Code, Codex, Copilot via APM); the red gate is executed, not asked. |
+| [**recurrence-detector**](plugins/recurrence-detector/) | Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, findings, unmet criteria, diary entries) by failure shape, and surface any shape seen at least 3 times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry

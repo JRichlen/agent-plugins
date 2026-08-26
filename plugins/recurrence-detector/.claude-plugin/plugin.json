@@ -1,0 +1,22 @@
+{
+  "name": "recurrence-detector",
+  "version": "0.0.1",
+  "description": "Close the growth loop's DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/recurrence-detector",
+  "license": "MIT",
+  "keywords": [
+    "recurrence",
+    "growth-loop",
+    "detect",
+    "failure-shape",
+    "invariant-mining",
+    "memory",
+    "meta"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

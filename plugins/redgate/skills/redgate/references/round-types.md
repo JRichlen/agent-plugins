@@ -1,0 +1,76 @@
+# Round types and their shape criteria
+
+Pick the round type with the **round-zero rule**: start at the first round
+whose criteria you can write *without already knowing the answer*. Each type
+below gives a criteria template you can copy into `CRITERIA.md`.
+
+The ladder: early rounds check an artifact's **shape** (machine-checkable
+even when its content is a judgment call, with the human judging substance at
+the gate); later rounds check **behavior**. This is what keeps a research
+round honest instead of spending the `UNVERIFIABLE` budget on "is this good?".
+
+## Orientation — the approach is undecided
+
+END artifact: a decision brief. Gate class: **always MAJOR** — the approach
+steers every round beneath it.
+
+```
+## #1 The brief exists at the agreed path
+check_cmd: test -f docs/<slug>/decision-brief.md
+## #2 It presents at least 3 candidate approaches
+check_cmd: test "$(grep -c '^## Option ' docs/<slug>/decision-brief.md)" -ge 3
+## #3 Every option carries costs and a "fails if"
+check_cmd: [ "$(grep -c '^### Costs' docs/<slug>/decision-brief.md)" = "$(grep -c '^## Option ' docs/<slug>/decision-brief.md)" ]
+## #4 It ends in one recommendation naming what would falsify it
+check_cmd: grep -q '^## Recommendation' docs/<slug>/decision-brief.md && grep -q 'Falsified if' docs/<slug>/decision-brief.md
+```
+
+## Plan — the approach is chosen, the slices are not
+
+END artifact: an ordered slice list. Gate class: **always MAJOR** — this
+approval *is* the autonomy envelope being drawn.
+
+```
+## #1 The plan exists and lists ordered slices
+check_cmd: grep -qE '^### Slice 1' docs/<slug>/plan.md
+## #2 Every slice names a proposed verifier
+check_cmd: [ "$(grep -c '^### Slice' docs/<slug>/plan.md)" = "$(grep -c 'check_cmd:' docs/<slug>/plan.md)" ]
+## #3 The first slice crosses every layer named in the brief
+check_cmd: grep -A6 '^### Slice 1' docs/<slug>/plan.md | grep -qi 'end to end\|every layer'
+```
+
+## Build — the criteria are writable today
+
+END artifact: working change. Gate class: **PATCH** when strictly derived
+from an approved plan slice, verifier green, no escalator.
+
+```
+## #1 <the behavior, stated as an observation>
+layers: <every layer the slice crosses>
+red-because: absent | present-but-wrong
+check_cmd: <the test / probe / audit that fails today>
+```
+
+One criterion per slice, every named layer touched for real, **no stub at the
+seam the slice exists to prove**.
+
+## Consolidation — widen the slice in place
+
+END artifact: the same behavior at more inputs. Gate class: **PATCH**, same
+conditions.
+
+```
+## #1 The behavior holds at the ambiguous inputs too
+check_cmd: <the same test shape, extended cases>
+## #2 The failure path is exercised, not just the happy path
+check_cmd: <a test that asserts the error branch>
+```
+
+## The one rule every template shares
+
+Every `check_cmd` must be **red before the work and coupled to the work**:
+run it now (it must fail), and after the slice, revert the core hunk and run
+it again (it must fail again). A check that survives the revert is
+`UNVERIFIABLE`, not proven — and assert on **exit codes, not messages**: a
+grep for a warning string passes even when the gate that should act was
+removed.

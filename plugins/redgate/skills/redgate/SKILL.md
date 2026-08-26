@@ -106,6 +106,19 @@ qualifying conditions is a protocol violation, not a judgment call.
 Precedence is semver-gate's own, unchanged: a coded rule (autoMode pattern,
 harness permission) always wins over this classification.
 
+## References
+
+Load these when the situation calls for them — they stay out of the default
+context budget:
+
+- [`references/round-types.md`](references/round-types.md) — criteria
+  templates per round type, and the shape-vs-behavior ladder.
+- [`references/handoff-envelope.md`](references/handoff-envelope.md) — the
+  typed DOWN/UP envelope, its caps, and why criteria are excluded from them.
+- [`references/recursion-contract.md`](references/recursion-contract.md) —
+  the four-part spawn precondition, sibling budget pool, `depth_remaining`,
+  harvest, and leases.
+
 ## Budgets and recursion
 
 - **Round budget**: declared in the manifest at run start, default **4**.

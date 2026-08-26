@@ -26,7 +26,7 @@ under all three.
 
 ## Status
 
-Slices 1–2 of 5 (per `docs/red-gate-implementation-plan.md` at the marketplace
+All five slices (per `docs/red-gate-implementation-plan.md` at the marketplace
 root): driver + BEGIN, with the red gate live and executed by the cheap
 tier's dogfood check — a fresh scaffold's `check.sh` must exit red, harness
 failure must be 99, a 127 must be a FAIL, and pinning must record both
