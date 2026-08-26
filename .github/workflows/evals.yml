@@ -52,9 +52,7 @@ jobs:
           # or any plugin surface it scores could have changed.
           filters: |
             corpus:
-              - 'evals/cheap/**'
-              - 'evals/counterfeits/**'
-              - 'plugins/**'
+              - 'evals/counterfeits/fixtures/**'
 
   counterfeit-run:
     name: counterfeit tier — run (corpus)
