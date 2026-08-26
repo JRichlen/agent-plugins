@@ -658,6 +658,17 @@ load-bearing ones:
 
 ---
 
+## Pattern corpus
+
+A full corpus of the agentic patterns AI leaders are using — 88 unique
+patterns from 90 scout sightings, every one kept, deep-dive-verified against
+primary sources, with a ranked adoption roadmap — lives at
+[`research/agentic-patterns-corpus.md`](research/agentic-patterns-corpus.md)
+(machine-readable: [`research/agentic-patterns-corpus.json`](research/agentic-patterns-corpus.json)).
+Its verdict: Red Gate's invariants live in prose the model is asked to honor,
+while the field has moved the same invariants into code — hooks, tool classes,
+pinned constraint blocks. The protocol should compile.
+
 ## Interactive map
 
 An interactive representation of this protocol — the red-gate simulator, all 24
