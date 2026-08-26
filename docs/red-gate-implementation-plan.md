@@ -50,8 +50,11 @@ unattended. Red Gate's scripts land under exactly that glob. Therefore:
 2. The scripts slice is **one PR**, not dribbled across several, so the pier
    spend happens once.
 3. `redgate` ships **without a pier pack initially** (its scripts generate and
-   verify; they never delete). The scripts PR still triggers pier for plugins
-   that have packs (graveyard) — expected, budgeted, and stated in that PR.
+   verify; they never delete). Measured on slice 1's actual CI run: the pier
+   jobs are **per-plugin path-scoped** — graveyard's job filters on
+   graveyard's own safety paths, so a redgate-scripts PR skips every pier
+   step and spends zero pier minutes. The "one scripts PR" rule stays as
+   hygiene, not as a cost necessity.
 
 ---
 
