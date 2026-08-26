@@ -390,6 +390,27 @@
         "ci",
         "discipline"
       ]
+    },
+    {
+      "name": "redgate",
+      "description": "Run any idea through Red Gate: human-gated rounds, each a BEGIN/MIDDLE/END process whose BEGIN emits a verifier proven able to fail before work starts, and whose END is that pinned verifier run by a party that did not do the work. Use on /redgate \"<idea>\", or whenever a task needs its done-criteria proven falsifiable before building.",
+      "version": "0.0.1",
+      "source": "./plugins/redgate",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "red-gate",
+        "verifier",
+        "rounds",
+        "begin-middle-end",
+        "falsifiable",
+        "sdlc",
+        "ai-dlc",
+        "apm",
+        "cross-harness"
+      ]
     }
   ]
 }
