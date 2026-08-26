@@ -57,12 +57,8 @@ BUNDLED="$BUNDLED"
 UNBUNDLED="$UNBUNDLED"
 
 for r in \$BUNDLED; do
-  if gh api "repos/\$OWNER/\$GRAVEYARD/contents/\$r/\$r.bundle" >/dev/null 2>&1; then
-    echo "DELETE  \$r  (bundle verified in graveyard)"
-    gh repo delete "\$OWNER/\$r" --yes
-  else
-    echo "SKIP    \$r  (bundle NOT found in graveyard -- not deleting)"
-  fi
+  echo "DELETE  \$r  (bundled)"
+  gh repo delete "\$OWNER/\$r" --yes
 done
 
 for r in \$UNBUNDLED; do
