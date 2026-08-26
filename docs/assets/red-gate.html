@@ -146,6 +146,43 @@ h2{font-size:clamp(27px,3.4vw,36px);font-weight:700;letter-spacing:-.02em;margin
   font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.5}
 .exit b{color:var(--gate-ink);font-weight:700}
 
+/* ---------- rounds ---------- */
+.ladder{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:5px;
+  overflow:hidden;background:var(--surface);margin-bottom:26px}
+.rnd{display:grid;grid-template-columns:150px 1fr 190px;gap:0;border-bottom:1px solid var(--line-soft);
+  align-items:center}
+.rnd:last-child{border-bottom:0}
+@media(max-width:820px){.rnd{grid-template-columns:1fr}}
+.rnd>div{padding:15px 18px}
+.rnd .who{border-right:1px solid var(--line-soft)}
+.rnd .rn{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase}
+.rnd .rt{font-family:Archivo,sans-serif;font-size:15px;font-weight:600;margin-top:3px}
+.rnd .art{font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.rnd .art b{color:var(--ink);font-weight:500}
+.meter{border-left:1px solid var(--line-soft);display:flex;flex-direction:column;gap:5px}
+.meter .mrow{display:flex;align-items:center;gap:8px}
+.meter .ml{font-family:Archivo,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);width:56px;flex:none}
+.pips{display:flex;gap:2px}
+.pip{width:8px;height:8px;border-radius:1px;background:var(--line)}
+.pip.on{background:var(--gate)}
+.pip.beh.on{background:var(--pass)}
+.axes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.axes{grid-template-columns:1fr}}
+.axis{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:18px 20px}
+.axis h4{margin:0 0 4px;font-family:Archivo,sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:.14em;text-transform:uppercase}
+.axis.h h4{color:var(--gate)} .axis.v h4{color:var(--unv)}
+.axis .tag{font-size:13.5px;color:var(--muted);margin:0 0 12px}
+.axis dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}
+.axis dt{color:var(--muted)} .axis dd{margin:0;color:var(--ink-2)}
+pre.trace{background:var(--surface-2);border:1px solid var(--line-soft);border-radius:4px;
+  padding:15px 17px;overflow-x:auto;font-family:"JetBrains Mono",monospace;font-size:12.5px;
+  line-height:1.65;color:var(--ink-2);margin:0}
+pre.trace b{color:var(--gate-ink);font-weight:700}
+pre.trace i{color:var(--pass);font-style:normal;font-weight:700}
+
 /* ---------- skills ---------- */
 .filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:22px}
 .filters button{font-family:Archivo,sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;
@@ -243,6 +280,7 @@ footer a{color:var(--gate-ink)}
       <div><dt>Findings</dt><dd>27</dd></div>
       <div><dt>Fatal</dt><dd class="hot">5</dd></div>
       <div><dt>Stages</dt><dd>3</dd></div>
+      <div><dt>Round budget</dt><dd>4</dd></div>
       <div><dt>Skills needed</dt><dd>10</dd></div>
     </dl>
   </div>
@@ -338,7 +376,70 @@ footer a{color:var(--gate-ink)}
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">03</span><h2>Where each skill fires</h2></div>
+    <div class="shead"><span class="snum">03</span><h2>“I don’t know what to do yet” is a round, not a blocker</h2></div>
+    <p class="sub">A run is a sequence of rounds, each a complete BEGIN/MIDDLE/END, with the human
+      gate between them. You can’t write behavioral criteria for an idea you haven’t decided how to
+      build — so an early round’s verifiable output is a <b>decision</b>, not code.</p>
+
+    <p style="margin:0 0 18px;font-size:16.5px;max-width:70ch">Take
+      <em>“I have an idea to implement a Hermes agent that triages my inbox.”</em> Nothing there is
+      buildable. The <b>round-zero rule</b> — start at the first round whose criteria you can write
+      without already knowing the answer — sends it to orientation.</p>
+
+    <div class="ladder" id="ladder"></div>
+
+    <p class="sub" style="margin-bottom:18px">The trick that keeps early rounds honest: a research
+      round’s criteria check the artifact’s <b>shape</b> — a file at a path, three options, a costs
+      section per option, a recommendation naming what would falsify it. All red before the file
+      exists, all machine-checkable, none of them <code>UNVERIFIABLE</code>. The machine checks
+      shape; <b>you check substance at the round gate.</b> Rounds therefore <em>relieve</em> pressure
+      on the UNVERIFIABLE budget rather than spending it.</p>
+
+    <div class="axes">
+      <div class="axis h">
+        <h4>Rounds — horizontal</h4>
+        <p class="tag">Time. Human-gated. Produces the next contract.</p>
+        <dl>
+          <dt>Advances by</dt><dd>you accepting a round</dd>
+          <dt>Gate</dt><dd>every time</dd>
+          <dt>Bounded by</dt><dd>a round budget, default 4</dd>
+          <dt>Fixes</dt><dd>“we learned the goal was wrong”</dd>
+        </dl>
+      </div>
+      <div class="axis v">
+        <h4>Recursion — vertical</h4>
+        <p class="tag">Decomposition. Automatic. Invisible to you.</p>
+        <dl>
+          <dt>Advances by</dt><dd>a slice failing at a named seam</dd>
+          <dt>Gate</dt><dd>none, within a round</dd>
+          <dt>Bounded by</dt><dd>depth_remaining + the ledger</dd>
+          <dt>Fixes</dt><dd>“this criterion is too big to flip at once”</dd>
+        </dl>
+      </div>
+    </div>
+
+    <p class="sub" style="margin:26px 0 12px">A round can contain recursion. Recursion never crosses
+      a round boundary:</p>
+    <pre class="trace">round 3 BEGIN   contract ratified, gate red
+        MIDDLE  slice attempted → check.sh → <b>#1 still FAIL</b>
+                named seam: the classifier never receives the parsed subject
+                ├── child a: "parser emits a subject field"       → <i>green</i>
+                └── child b: "classifier reads the subject field" → <i>green</i>
+        MIDDLE  re-run the <b>ORIGINAL</b> #1 check_cmd → <i>PASS</i>
+        END     fresh agent, re-hash, mutation control → <i>green</i>
+        ─────── human gate: accept / again / split ───────
+round 4 BEGIN   fresh contract, seeded by round 3's result</pre>
+
+    <p class="sub" style="margin-top:26px">And when rounds would be ceremony, skip them. <em>“Add
+      exponential backoff to the orders client, we’ve already agreed on the approach”</em> goes
+      straight to a build round: the criterion is writable today, so orientation and plan rounds
+      would only add the overhead-cosplay the critics warned about.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><h2>Where each skill fires</h2></div>
     <p class="sub">All 24 shipped skills, wired to the stage that needs them. Click any one for the
       invariant it actually defends.</p>
     <div class="filters" id="filters"></div>
@@ -348,7 +449,7 @@ footer a{color:var(--gate-ink)}
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">04</span><h2>What the original idea got wrong</h2></div>
+    <div class="shead"><span class="snum">05</span><h2>What the original idea got wrong</h2></div>
     <p class="sub">The brief asked for the idea to be refined, not just implemented. These are the
       places research and adversarial review said it needed correcting.</p>
     <div class="refs" id="refs"></div>
@@ -357,7 +458,7 @@ footer a{color:var(--gate-ink)}
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">05</span><h2>Five ways the first draft died</h2></div>
+    <div class="shead"><span class="snum">06</span><h2>Five ways the first draft died</h2></div>
     <p class="sub">Two adversarial critics — one hunting cost and safety, one hunting ceremony a model
       would skip — returned 27 findings against the synthesized spec. These five were fatal. Two were
       found independently by both critics, which is the strongest signal available that they are real.</p>
@@ -367,7 +468,7 @@ footer a{color:var(--gate-ink)}
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">06</span><h2>What the marketplace still lacks</h2></div>
+    <div class="shead"><span class="snum">07</span><h2>What the marketplace still lacks</h2></div>
     <p class="sub">Red Gate is a protocol, not an implementation. Ten skills would have to exist for
       it to run — three of them before it can run at all.</p>
     <div class="gaps" id="gaps"></div>
@@ -439,6 +540,24 @@ function render(){
 document.getElementById("reset").addEventListener("click",()=>{
   CRITERIA.forEach((c,i)=>state[i]=c.v); render();
 });
+
+const ROUNDS=[
+ {n:"round 1",t:"Orientation",art:"A <b>decision brief</b>: ≥3 options, costs and “fails if” per option, a primary source each, one recommendation naming what would falsify it.",shape:5,beh:0},
+ {n:"round 2",t:"Plan",art:"An <b>ordered slice list</b>, each slice naming its layers and a proposed check_cmd, first slice required to cross every layer.",shape:4,beh:1},
+ {n:"round 3",t:"Build",art:"<b>Working code.</b> “A message with subject <code>Invoice #42</code> lands in the Bills label” — pytest, one slice, no stub at the proving seam.",shape:0,beh:5},
+ {n:"round 4",t:"Consolidation",art:"The slice <b>widened in place</b>: more message shapes, the ambiguous cases, the failure paths.",shape:1,beh:4}
+];
+document.getElementById("ladder").innerHTML=ROUNDS.map(r=>{
+  const pips=(k,cls)=>Array.from({length:5},(_,i)=>
+    `<span class="pip ${cls} ${i<k?'on':''}"></span>`).join("");
+  return `<div class="rnd">
+    <div class="who"><div class="rn">${r.n}</div><div class="rt">${r.t}</div></div>
+    <div class="art">${r.art}</div>
+    <div class="meter">
+      <div class="mrow"><span class="ml">Shape</span><span class="pips">${pips(r.shape,'')}</span></div>
+      <div class="mrow"><span class="ml">Behavior</span><span class="pips">${pips(r.beh,'beh')}</span></div>
+    </div></div>`;
+}).join("");
 
 const SKILLS=[{"skill": "docs-hygiene", "plugin": "docs-hygiene", "stage": "BEGIN", "role": "Re-verifies instruction-file claims before they become contract assumptions", "invariant": "A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. When a checked claim is UNAMBIGUOUS — source and doc plainly disagree on a checkable fact — the instruction file is FIXED IN PLACE, in the same pass: edit the file itself. Do not merely flag it, and do not convert it into a question for the user to answer…"}, {"skill": "fleet-playbook-curator", "plugin": "fleet-playbook-curator", "stage": "BEGIN", "role": "Optional — when the idea’s context spans multiple repos", "invariant": "The fleet-playbook is a curated INDEX that only says where truth lives and when it was read: every substantive claim carries a `repo@sha:path` citation and an \"as-of\" stamp, uncited claims are omitted or flagged stale rather than asserted, and the agent's interpretation reaches `main` only through a reviewed PR while the deterministic detector auto-commits only facts. Everything below exists to keep that true.…"}, {"skill": "grill-me", "plugin": "grill-me", "stage": "BEGIN", "role": "Bounded 5-question interview turns a one-line idea into falsifiable criteria", "invariant": "ALWAYS size a branch's interrogation depth to its stakes tier (reversibility x blast-radius, computed per branch, not once for the whole session) and ALWAYS attach a stated recommendation to every question asked, so the user can accept-in-one-word or push back — NEVER run a fixed-depth/fixed-count question script regardless of stakes, and NEVER emit a bare question with no answer for the user to react to."}, {"skill": "wayfinder", "plugin": "wayfinder", "stage": "BEGIN", "role": "Types criteria as dependency tickets and computes the dispatchable frontier", "invariant": "A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only…"}, {"skill": "codebase-design", "plugin": "codebase-design", "stage": "MIDDLE", "role": "3+ scored candidates when the slice commits a durable boundary", "invariant": "Before committing to an interface (a module boundary, class API, or function signature that ≥2 call sites will depend on, or that crosses a service/team/persistence boundary, or that is expensive to change later): ALWAYS produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one — NEVER let the first workable interface ship unexamined. The chosen…"}, {"skill": "diagnosing-bugs", "plugin": "diagnosing-bugs", "stage": "MIDDLE", "role": "Ranked falsifiable hypotheses when a slice fails to flip its criterion", "invariant": "A bug fix must never begin with a code change: a ranked, falsifiable hypothesis list — each entry stating its claim, its supporting evidence, and the specific observation that would prove it false — must be written down before any diagnostic or fix code is written. Any temporary debug instrumentation added while testing those hypotheses must always carry one fixed, consistent, grep-able tag and must NEVER ship…"}, {"skill": "find-before-build", "plugin": "find-before-build", "stage": "MIDDLE", "role": "Named searches for an existing equivalent before any new abstraction", "invariant": "A new abstraction (helper, wrapper, utility, dependency) is ALWAYS preceded by named searches for an existing equivalent with their results shown — and NEVER introduced when an existing equivalent was found and usable."}, {"skill": "graveyard", "plugin": "graveyard", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "A repository original is deleted ONLY after its backup bundle is confirmed present in the private graveyard; the skill never deletes repos itself — it emits a guarded script the user reviews and runs."}, {"skill": "orchestrate", "plugin": "orchestrate", "stage": "MIDDLE", "role": "Read-only fan-out template with frozen context and adversarial verifiers", "invariant": "A fan-out must fact-check itself: only claims that withstood an adversarial verifier survive into the synthesis, so plausible-but-wrong findings produced by a fleet of agents never read as authoritative."}, {"skill": "plugin-factory", "plugin": "plugin-factory", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "**Every plugin this factory produces starts valid, wired, and RED.** Valid: the `plugin.json` parses and its name matches the directory. Wired: an entry is added to the marketplace lockfile. Red: the generated `evals/cheap/checks.sh` fails closed until a human replaces it with real checks. The factory never emits a skeleton that could show green with zero safety coverage — a green new plugin must be earned by…"}, {"skill": "tailscale-wif", "plugin": "tailscale-wif", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "WIF auth is **secretless**. Only the **public** `oauth-client-id` and `audience` are stored — and they belong in repo **variables**, never secrets. The job that authenticates to Tailscale always carries `permissions: id-token: write`, and it passes **exactly one** auth mode. No long-lived Tailscale credential (a REST API key, an OAuth client secret) is ever stored to enable a run: each run mints a fresh GitHub…"}, {"skill": "tracer-bullets", "plugin": "tracer-bullets", "stage": "MIDDLE", "role": "Defines the one-criterion vertical slice; forbids stubbing the proving seam", "invariant": "A tracer bullet is a real, end-to-end, kept-and-built-upon slice through every layer of the system (or claim) — it must ALWAYS touch every layer for real, and it must NEVER be thrown away like a prototype/spike; a prototype/spike answers a question and gets discarded, a tracer bullet becomes the skeleton of the final thing."}, {"skill": "dev-diary", "plugin": "dev-diary", "stage": "END", "role": "Post-run capture of the slice and its unmet criteria", "invariant": "Turn a day of scattered work into one entry scannable in fifteen seconds and trustworthy to a future self — the value is judgment (which two or three things mattered and why), not transcription."}, {"skill": "dev-diary-review", "plugin": "dev-diary", "stage": "END", "role": "Revises a past run’s entry without losing what still holds", "invariant": "Revise an existing entry to make it truer without losing what already holds — editing is not rewriting: preserve every bullet that still stands."}, {"skill": "prove-the-undo", "plugin": "prove-the-undo", "stage": "END", "role": "Restore path exercised before any irreversible criterion goes green", "invariant": "An irreversible action is ALWAYS preceded by a named restore path that was actually exercised (restored, diffed, or dry-run-verified) in this session — and NEVER justified by the mere existence of an unverified backup."}, {"skill": "second-opinion", "plugin": "voice", "stage": "END", "role": "Offered, not forced, on architectural or confidence-flagged verdicts", "invariant": "**ALWAYS** confirm a subagent-spawning tool exists before starting, and report counts that equal what actually ran. **NEVER** run unbidden, and never emit this skill's output format without having dispatched the work it describes."}, {"skill": "verify-before-claim", "plugin": "verify-before-claim", "stage": "END", "role": "The verdict is check.sh output, run — never asserted", "invariant": "A claim of fact, completion, or reproduction must ALWAYS be backed by the specific check that would prove it false, performed directly — and NEVER asserted as settled when that check wasn't run; residual uncertainty must ALWAYS be flagged explicitly, never smoothed into confident-sounding prose."}, {"skill": "context-handoff", "plugin": "context-handoff", "stage": "CROSS", "role": "Pointer-only continue/clear/delegate decision at every node boundary", "invariant": "At every phase boundary, the continue / clear / handoff / delegate / compact choice must ALWAYS be reached by walking the one ordered decision tree top-to-bottom — continue, then clear, then handoff, then delegate, then compact, first match wins — never guessed ad hoc, never invoked mid-phase (mid-phase there is nothing to decide: continue, or split remaining work into a subagent), and never jumped to out of…"}, {"skill": "egress-gate", "plugin": "egress-gate", "stage": "CROSS", "role": "Enumerates what leaves the machine before any transmitting check_cmd", "invariant": "Content leaving the machine is ALWAYS enumerated (what, to whom) before the transmitting call is made — and secrets, credentials, or content from outside the task's stated scope are NEVER included in an outbound payload."}, {"skill": "human-voice", "plugin": "voice", "stage": "CROSS", "role": "Verdict-first prose at each of the three human gates", "invariant": "**ALWAYS** put the verdict first, and let no load-bearing claim survive unverified without being marked. **NEVER** invoke `second-opinion` unprompted — offer it and wait. \"Marked\" means the exception rule in Step 3, not a tag on every line: tag the verdict, tag the exceptions, and state once that the rest is verified."}, {"skill": "machine-voice", "plugin": "voice", "stage": "CROSS", "role": "Compresses envelope notes to the word caps", "invariant": "**ALWAYS** confirm the element matches the list below before compressing. **NEVER** apply these layers to prose a human reads — that is `human-voice`'s."}, {"skill": "scope-fence", "plugin": "scope-fence", "stage": "CROSS", "role": "Every hunk traces to a criterion id; discoveries recorded, never folded in", "invariant": "Every hunk in the produced diff ALWAYS traces to the stated task; out-of-scope discoveries are ALWAYS recorded as findings and NEVER folded into the same change."}, {"skill": "semver-gate", "plugin": "semver-gate", "stage": "CROSS", "role": "Per-action autonomy lookup; MAJOR breaks the autonomous run and asks", "invariant": "A MAJOR-classified action must never be taken without explicit, specific prior human sign-off on that exact action and mechanism — not inferred from a prior adjacent confirmation, not assumed from a general instruction, not skipped under time pressure or retry pressure, and never routed around when a separate structural block (classifier, permission denial, API-level policy) fires after sign-off was already…"}, {"skill": "stop-rule", "plugin": "stop-rule", "stage": "CROSS", "role": "Declares the attempt bound whose exhaustion forces a re-plan checkpoint", "invariant": "Attempts at one objective are ALWAYS counted against a bound declared up front, and hitting the bound ALWAYS produces a stop-and-report with current state and ranked hypotheses — NEVER a further attempt on momentum."}];
 const STAGES=["BEGIN","MIDDLE","END","CROSS"];

@@ -30,8 +30,9 @@ END is a fresh agent executing the contract.
 > No MIDDLE work begins until a `check.sh` exists that **executes and returns
 > FAIL on every checkable criterion**. No criterion is ever marked green except
 > by a fresh agent running that same pinned script and producing evidence on
-> disk. Criteria are ratified once and never edited — a wrong contract is
-> corrected by spawning a child with new criteria, never by rewriting the
+> disk. Criteria are ratified once **per round** and never edited — a wrong
+> contract is corrected by spawning a child within the round, or by letting the
+> round end and seeding the next round's fresh contract, never by rewriting the
 > ratified one.
 
 Criteria that cannot go red are not criteria. That is the whole design in one
@@ -57,7 +58,7 @@ merely implementing.
 | "Handoffs must be token-efficient" | Half right, half dangerous. Compressing the *criteria* is goal drift. | Pointerize anything re-readable from the environment; criteria travel **verbatim**, never paraphrased. |
 | (omitted) the default shape | Fan-out costs ~15x a single agent. For a simple idea, orchestration is waste. | The default path is a **linear single-writer chain**. Orchestration is an escalation triggered by observed failure. |
 | "Tracer bullet" | Without a number it degrades into a partial layer. | One criterion flipped, every named layer touched, **no stub at the proving seam**, and a hard tool-call budget that aborts rather than grows. |
-| Immutable criteria + real learning | A contradiction the idea leaves unresolved. | Legitimate mid-flight learning enters as a **child with new criteria**, keeping drift detectable without a human unblocking every correction. |
+| Immutable criteria + real learning | A contradiction the idea leaves unresolved. | **Rounds.** A run is a sequence of contracts, each written fresh and seeded by the previous round's approved output — so learning advances the run instead of editing a ratified file. Within a round, a child with new criteria handles the smaller case. |
 
 ---
 
@@ -153,6 +154,194 @@ the build transcript.
 
 ---
 
+## Rounds — the horizontal axis
+
+A run is not one contract. It is a **sequence of rounds**, each a complete
+BEGIN/MIDDLE/END, with the human gate sitting *between* rounds. This is where
+"I have an idea to implement a Hermes agent that does xyz" actually enters the
+protocol: you cannot write behavioral criteria for an idea you have not decided
+how to build yet, so the first round's verifiable output is **not code — it is a
+decision**.
+
+### The round-zero rule
+
+> Start at the first round whose criteria you can write **without already
+> knowing the answer.** If you cannot write criteria for the work, write
+> criteria for the **artifact that will tell you what the work is.**
+
+"I don't know what to do yet" is not a blocker to the red gate. It selects the
+round type.
+
+| Round type | The END artifact | Criteria check | Who judges substance |
+|---|---|---|---|
+| **Orientation** | A decision brief: options, costs, a recommendation | The brief's *shape* | Human, at the round gate |
+| **Plan** | An ordered slice list, each with a proposed `check_cmd` | The plan's *shape* | Human, at the round gate |
+| **Build** | Working code flipping one criterion | The system's *behavior* | `check.sh`, mechanically |
+| **Consolidation** | The slice widened in place | Behavior, at more inputs | `check.sh`, mechanically |
+
+### The escalating-verifiability ladder
+
+This is what makes early rounds honest rather than a loophole. A research round's
+criteria are **structurally checkable even when its content is a judgment call**:
+you do not check "is this plan good" (unverifiable, and inviting a fake
+`check_cmd`), you check "does this artifact have the structure a reviewable plan
+must have" — a file at a path, three options, a costs section per option, a
+falsifiable recommendation. The machine checks shape; **the human checks
+substance at the round gate.** The two meet exactly there.
+
+So the ratio shifts as the problem becomes known:
+
+```
+round 1  orientation   shape ■■■■■□□□□□  behavior          ← "idk what to do"
+round 2  plan          shape ■■■■□□□□□□  behavior
+round 3  build         shape □□□□□□■■■■  behavior          ← first real slice
+round 4  consolidate   shape □□□□□□□■■■  behavior
+```
+
+A useful consequence: rounds **relieve pressure on `UNVERIFIABLE`** rather than
+adding to it. Without rounds, "produce a good plan" is an unverifiable criterion
+and the cap gets spent immediately. With rounds, it decomposes into checkable
+shape plus a human gate, and the `UNVERIFIABLE` budget stays available for the
+genuinely unjudgeable.
+
+### How rounds chain
+
+Each round's contract is written **fresh at its own BEGIN**, seeded by the
+previous round's approved output. Nothing is edited. That is the release valve
+the single-contract framing was missing:
+
+```
+round N   END → human accepts the artifact
+                        ↓
+round N+1 BEGIN → the accepted artifact is the input that makes
+                  the next contract writable at all
+```
+
+The clearest case is round 2 → round 3: **an approved plan literally contains
+the next round's criteria.** The plan round's job is to produce the thing that
+makes the build round's contract writable.
+
+### Rounds are not recursion
+
+Two different axes, and conflating them is the easy mistake:
+
+| | **Rounds** (horizontal) | **Recursion** (vertical) |
+|---|---|---|
+| Advances by | Human accepting a round | A slice failing at a named seam |
+| Gate | Human, every time | None — automatic within a round |
+| Produces | The next contract | Sub-criteria under the current one |
+| Bounded by | A round budget declared at run start | `depth_remaining` + the ledger |
+| Fixes | "We learned the goal was wrong" | "This criterion is too big to flip at once" |
+
+A round can contain recursion. Recursion never crosses a round boundary.
+
+### Round budget
+
+The run declares a round budget up front (default: **4**). Hitting it is not
+failure — it is a stop-and-report on the whole run, with what shipped, what did
+not, and the next round's proposed criteria. Only the human funds another. This
+prevents the round loop from becoming an unbounded "one more round" of the exact
+kind `stop-rule` exists to stop.
+
+---
+
+## Worked examples
+
+### A. "I have an idea to implement a Hermes agent that triages my inbox"
+
+Nothing here is buildable yet — there is no decision about approach, boundaries,
+or what "triage" means. Round-zero rule sends this to an **orientation round**.
+
+**Round 1 — orientation.** BEGIN's ≤5 questions establish the one thing that
+matters: the approach is undecided. `CRITERIA.md` is therefore about the brief:
+
+```
+#1  docs/hermes-triage/decision-brief.md exists
+    check_cmd: test -f docs/hermes-triage/decision-brief.md
+#2  It presents at least 3 candidate approaches
+    check_cmd: test "$(rg -c '^## Option ' docs/hermes-triage/decision-brief.md)" -ge 3
+#3  Every option carries a Costs and a "Fails if" subsection
+    check_cmd: [ "$(rg -c '^### Costs')" = "$(rg -c '^## Option ')" ] && …
+#4  Every option cites at least one primary source URL
+    check_cmd: …one https:// inside each option block…
+#5  It ends in one recommendation naming what would falsify it
+    check_cmd: rg -q '^## Recommendation' && rg -q '^\*\*Falsified if:\*\*'
+```
+
+All five are **red at BEGIN** — the file does not exist, so every check fails
+honestly, and the preflight is clean because `rg` and `test` are harness tools,
+not the subject. Nothing is `UNVERIFIABLE`.
+
+MIDDLE is the one place the raw idea's "fan out for creativity" is exactly
+right: this round's work is **reads**, so `orchestrate` fans out read-only
+agents across approaches (rules engine / embedding classifier / LLM-per-message
+/ hybrid), and a single writer composes the brief.
+
+END: a fresh agent runs `check.sh` — the brief's shape is verified
+mechanically. Then **you** read it and pick an option. That choice is round 2's
+input, and it is the natural human gate.
+
+**Round 2 — plan.** Criteria are again shape, now on the plan: an ordered slice
+list, each slice naming the layers it crosses and a *proposed* `check_cmd`, with
+the first slice required to cross every layer end to end. Its END produces the
+thing that makes round 3 writable.
+
+**Round 3 — build, first tracer bullet.** Now the criteria are behavioral,
+lifted from the approved plan:
+
+```
+#1  A message with subject "Invoice #42" lands in the "Bills" label
+    check_cmd: pytest tests/triage/test_end_to_end.py::test_invoice_to_bills
+```
+
+One slice, every layer the plan named, no stub at the proving seam. If it fails
+at a named seam — say the classifier boundary — **recursion happens inside round
+3**, with no human gate, until the round's END either goes green or reports out.
+
+**Round 4 — consolidation.** Widen the slice: more message shapes, the ambiguous
+cases, the failure paths.
+
+The whole shape: **four human gates, four contracts, one idea** — and the human
+was asked exactly four questions of consequence, each about an artifact that
+already existed for them to react to.
+
+### B. When rounds are ceremony — skip them
+
+"Add exponential backoff to the orders client, we've already agreed on the
+approach." The approach is decided, the layers are known, the criterion is
+writable today:
+
+```
+#1  The client retries a 503 three times with growing delay
+    check_cmd: pytest tests/test_client.py::test_backoff
+```
+
+Round-zero rule puts this straight into a **build round**. There is no
+orientation round and no plan round, because their outputs already exist in the
+user's head and the criteria can be written without them. Inserting them would
+be exactly the overhead-cosplay the adversarial critics warned about.
+
+### C. The two axes in one run
+
+Round 3 above, in detail:
+
+```
+round 3 BEGIN   contract ratified, gate red
+        MIDDLE  slice attempted → check.sh → #1 still FAIL
+                named seam: the classifier never receives the parsed subject
+                ├── child a: "parser emits a subject field"      → green
+                └── child b: "classifier reads the subject field" → green
+        MIDDLE  re-run the ORIGINAL #1 check_cmd → PASS
+        END     fresh agent, re-hash, mutation control → green
+        ─────── human gate: accept / again / split ───────
+round 4 BEGIN   fresh contract, seeded by round 3's result
+```
+
+The children are automatic and invisible to you. The gate is at the round
+boundary. That is the whole distinction.
+
+---
+
 ## Recursion
 
 Every node is the same BEGIN/MIDDLE/END.
@@ -218,14 +407,18 @@ Rules:
 
 ## Where the human is
 
-Three touchpoints, and only one is blocking:
+Three touchpoints **per round** — and since a run is a sequence of rounds, the
+END verdict of one round is the same moment as the decision to fund the next.
+Only one is blocking:
 
 1. The ≤5 BEGIN interview questions, each with a silence-acceptable default.
 2. **Ratification** of `CRITERIA.md` after the red gate proves it falsifiable —
    the only mandatory approval. On ratification timeout the run releases its
    leases and ledger reservation, persists state, and exits **PARKED** and
    resumable rather than blocking overnight.
-3. The END verdict: accept / again / split.
+3. The **round gate**: accept / again / split — and, on accept, whether the
+   accepted artifact seeds another round or the run is done. This is where a
+   decision brief gets its option picked and a plan gets approved.
 
 Between gates it runs autonomously. It breaks out only for `semver-gate` MAJOR
 actions, `egress-gate` transmissions, or a depth/attempt cap breach. `stop`
