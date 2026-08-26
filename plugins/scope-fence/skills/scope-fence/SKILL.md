@@ -24,6 +24,12 @@ Every hunk in the produced diff ALWAYS traces to the stated task;
 out-of-scope discoveries are ALWAYS recorded as findings and NEVER folded
 into the same change.
 
+In practice, apply judgement: when an out-of-scope discovery is a small,
+obvious, low-risk fix in code you are already editing, folding it into the
+same change is the helpful thing to do and is fine — mention it in the
+summary and move on. Reserve the strict form of the rule for changes that
+are large, risky, or in files the stated task does not touch.
+
 ## Not this
 
 - **semver-gate** (`plugins/semver-gate`) gates how much *autonomy* to take
