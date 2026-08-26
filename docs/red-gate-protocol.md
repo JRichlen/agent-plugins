@@ -669,6 +669,13 @@ Its verdict: Red Gate's invariants live in prose the model is asked to honor,
 while the field has moved the same invariants into code — hooks, tool classes,
 pinned constraint blocks. The protocol should compile.
 
+## Implementation plan
+
+The plan-round artifact for building this protocol — the concrete file tree
+(two new plugins, three amendments), five build slices each with a proposed
+verifier, and the CI cost sequencing — is
+[`red-gate-implementation-plan.md`](red-gate-implementation-plan.md).
+
 ## Interactive map
 
 An interactive representation of this protocol — the red-gate simulator, all 24
