@@ -11,8 +11,15 @@ adversarial critics. The critics returned 27 findings, five of them fatal; the
 fatal fixes are folded into this document and recorded in
 [Corrections](#corrections-applied-after-adversarial-review).
 
-**One line:** turn a one-line idea into a red-by-default `check.sh`, flip one
-criterion green with a real vertical slice, then let a fresh agent run the script.
+**One line:** turn a one-line idea into a **verifier proven able to fail**, flip
+one criterion green with a real thin slice, then let someone who did not do the
+work run the verifier — round after round, in any domain of the SDLC or AI-DLC.
+
+`check.sh` appears throughout this document as the **code-domain reference
+implementation** of the verifier, because shell is where the mechanics are
+easiest to state exactly. It is not the protocol. Read "check.sh" as "the
+verifier"; [The verifier, generalized](#the-verifier-generalized) gives the
+mapping for research, planning, docs, ops, and judged work.
 
 ---
 
@@ -27,16 +34,53 @@ END is a fresh agent executing the contract.
 
 ## The invariant
 
-> No MIDDLE work begins until a `check.sh` exists that **executes and returns
-> FAIL on every checkable criterion**. No criterion is ever marked green except
-> by a fresh agent running that same pinned script and producing evidence on
-> disk. Criteria are ratified once **per round** and never edited — a wrong
-> contract is corrected by spawning a child within the round, or by letting the
-> round end and seeding the next round's fresh contract, never by rewriting the
-> ratified one.
+> No MIDDLE work begins until a **verifier** exists that **runs and rejects the
+> current state on every checkable criterion**. No criterion is ever marked
+> green except by that same pinned verifier, executed by a party that did not
+> do the work, producing evidence. Criteria are ratified once **per round** and
+> never edited — a wrong contract is corrected by spawning a child within the
+> round, or by letting the round end and seeding the next round's fresh
+> contract, never by rewriting the ratified one.
 
-Criteria that cannot go red are not criteria. That is the whole design in one
-sentence.
+Criteria that cannot be rejected are not criteria. That is the whole design in
+one sentence.
+
+---
+
+## The verifier, generalized
+
+Red Gate is a process model for executing tasks, not a shell-script convention.
+The load-bearing property is never "it is bash" — it is four properties any
+verifier must have, whatever the domain:
+
+1. **Runnable** — it executes against the current state, on demand, without the
+   worker's cooperation.
+2. **Proven able to fail** — it was run at BEGIN and rejected the starting
+   state. A verifier that has never said no is not a verifier.
+3. **Pinned** — its definition cannot be edited by the party doing the work.
+4. **Independently executed** — at END it is run by a party that did not do
+   the work: a fresh agent, a different tier, or the human at the round gate.
+
+What that concretely is varies by task domain:
+
+| Task domain | The verifier | "Proven red" means | Coupling control |
+|---|---|---|---|
+| Code | Test suite / `check.sh` / CI tier | Tests fail before the change | Revert the hunk, must re-fail |
+| Research / orientation | Shape checks on the brief + the human round gate | The artifact does not exist yet | The human rejects substance shape cannot see |
+| Planning | Shape checks on the slice list + approval gate | No plan file, no proposed criteria | Each slice's proposed verifier must itself be red-able |
+| Docs / knowledge | `docs-hygiene` audit against current repo state | The claim is absent or stale today | Re-audit after an unrelated change; claim must survive |
+| Ops / infra | A probe or synthetic check against the live system | The endpoint 404s / the alert fires | Tear down the change; probe must go red again |
+| Judged output (prose, design) | An LLM rubric **with a negative control** | The stub/baseline fails the rubric | The calibration case: a gutted input must not pass |
+
+The last row is the important one, and this marketplace has already built it:
+the behavioral eval tier's **calibration cases** are exactly the mutation
+control translated to judged verifiers — a stub that passes anyway proves the
+rubric measures the model, not the work. The repo's own three eval tiers are
+the verifier ladder applied to itself: cheap = shape, behavioral = judged with
+negative control, deep = end-to-end in a sandbox. Red Gate does not invent a
+new verification scheme; it applies the one this repo already trusts to every
+task the system executes.
+
 
 ---
 
@@ -483,6 +527,69 @@ one-liners a human will rubber-stamp.
 
 ---
 
+## The operating loop — self-learning and growing
+
+Zoom out and Red Gate is not a workflow; it is the **process model of an
+agentic operating system**, and this marketplace is that system's disk. The
+parts map directly:
+
+| OS concept | In this system |
+|---|---|
+| Process | A round (one BEGIN/MIDDLE/END) |
+| Kernel loop | The round chain: accept → seed → next contract |
+| Scheduler | `wayfinder`'s dependency frontier |
+| Syscall gates | `semver-gate` (privilege), `egress-gate` (network) |
+| Resource limits | The spend ledger, `depth_remaining`, `stop-rule` bounds |
+| Programs | Skills — single-invariant, composable |
+| Package manager | The marketplace itself (`/plugin install <name>@jrichlen`) |
+| Episodic memory | `dev-diary` — what happened, what mattered, why |
+| Semantic index | `fleet-playbook-curator` — a living map that cites sources |
+| Memory consistency | `docs-hygiene` — stale claims caught before trusted |
+| Process genesis | `plugin-factory` — new programs start valid, wired, RED |
+| Immune system | The three eval tiers gating every program change |
+
+### The growth loop
+
+"Self-learning" is not a property a prompt can grant; it is a **pipeline the
+exhaust of every run flows through**. Each round already emits learning
+exhaust as a side effect of the discipline: `stop-rule` reports with ranked
+hypotheses, `scope-fence` findings in `BACKLOG.md`, unmet criteria at round
+gates, `dev-diary` entries. The growth loop is what turns that exhaust into
+new capability:
+
+```
+1. EMIT        every run: stop-reports, findings, unmet criteria, diary entries
+2. CONSOLIDATE dev-diary (episodic) + fleet-playbook-curator (semantic)
+3. DETECT      the same failure shape or manual ritual recurring across runs
+                → a candidate skill, named as an invariant
+4. SCAFFOLD    plugin-factory: valid, wired, RED by default
+5. GATE        cheap tier (shape) → behavioral tier with calibration
+                (does the skill beat the bare model?) → deep tier if safety
+6. LOAD        merged = the OS grew a new program; every later run composes it
+```
+
+Step 5 is what separates growing from accreting. A candidate skill that cannot
+beat its calibration stub is the system trying to memorize noise — the
+behavioral tier's negative controls exist precisely to reject it (this repo
+has already done so: verify-before-claim's pack documents six scenarios,
+six rejections). Growth is **eval-gated**, so the skill set compounds only
+where a measured invariant earned its slot.
+
+This document is itself one turn of the loop: the 12-agent run that produced
+it emitted the "10 skills the marketplace still lacks" list below — detected
+gaps, named as invariants, waiting at step 4.
+
+### Where the loop is not yet closed
+
+Steps 1, 2, 4, 5, 6 exist today as shipped plugins and CI. Step 3 —
+**recurrence detection across runs** — is the missing organ: nothing today
+reads a month of diary entries and stop-reports and says "this failure shape
+has now appeared four times; here is the invariant that would prevent it."
+Until it exists, the human is the detector, which is a fine bootstrap and a
+real bottleneck. It belongs on the gap list as much as anything there.
+
+---
+
 ## What the marketplace still lacks
 
 Red Gate is a protocol, not yet an implementation. These are the skills it would
@@ -505,6 +612,10 @@ need — ordered by whether the protocol can run at all without them.
   rather than per-template JSON inside `orchestrate`.
 - **`spend-ledger`** — cumulative tokens/tool-calls across the whole recursion.
 - **`harvest`** — deterministic sibling reducer with a dedupe rule.
+- **`recurrence-detector`** — reads accumulated diary entries, stop-reports,
+  and findings across runs; surfaces failure shapes seen ≥N times as candidate
+  invariants for `plugin-factory`. The missing organ that closes the growth
+  loop.
 
 **Refinement:**
 - **`fanout-budget`** — how many divergent read-only subagents, justified

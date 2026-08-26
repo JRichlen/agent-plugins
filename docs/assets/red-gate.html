@@ -183,6 +183,24 @@ pre.trace{background:var(--surface-2);border:1px solid var(--line-soft);border-r
 pre.trace b{color:var(--gate-ink);font-weight:700}
 pre.trace i{color:var(--pass);font-style:normal;font-weight:700}
 
+/* ---------- operating loop ---------- */
+.osmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:26px}
+.osrow{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:12px 15px;
+  display:flex;flex-direction:column;gap:3px}
+.osrow .osc{font-family:Archivo,sans-serif;font-size:10px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted)}
+.osrow .osv{font-size:14.5px;line-height:1.4;color:var(--ink)}
+.osrow .osv code{font-size:12.5px}
+.growth{border:1px solid var(--line);border-radius:5px;overflow:hidden;background:var(--surface)}
+.gstep{display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid var(--line-soft)}
+.gstep:last-child{border-bottom:0}
+@media(max-width:700px){.gstep{grid-template-columns:1fr}}
+.gstep .gk{padding:13px 16px;font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;
+  color:var(--gate-ink);background:var(--surface-2);border-right:1px solid var(--line-soft)}
+.gstep .gv{padding:13px 16px;font-size:14.5px;line-height:1.45;color:var(--ink-2)}
+.gstep .gv b{color:var(--ink);font-weight:500}
+.gstep.missing .gk{color:var(--unv);background:var(--unv-soft)}
+
 /* ---------- skills ---------- */
 .filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:22px}
 .filters button{font-family:Archivo,sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;
@@ -271,9 +289,11 @@ footer a{color:var(--gate-ink)}
   <div class="wrap">
     <p class="eyebrow">Protocol · agent-plugins marketplace</p>
     <h1>Red<span class="sep">·</span>Gate</h1>
-    <p class="thesis">Turn a one-line idea into a <b>red-by-default</b> <code>check.sh</code>, flip
-      one criterion green with a real vertical slice, then let a <b>fresh agent</b> run the script.
-      Criteria that cannot go red are not criteria.</p>
+    <p class="thesis">An operating loop for tasks across the SDLC and AI&#8209;DLC: turn a one-line
+      idea into a <b>verifier proven able to fail</b>, flip one criterion green with a real thin
+      slice, then let <b>someone who didn't do the work</b> run the verifier — round after round.
+      <code>check.sh</code> is just the code domain's instance. Criteria that cannot be rejected
+      are not criteria.</p>
     <dl class="manifest">
       <div><dt>Skills mapped</dt><dd>24</dd></div>
       <div><dt>Agents run</dt><dd>12</dd></div>
@@ -281,7 +301,7 @@ footer a{color:var(--gate-ink)}
       <div><dt>Fatal</dt><dd class="hot">5</dd></div>
       <div><dt>Stages</dt><dd>3</dd></div>
       <div><dt>Round budget</dt><dd>4</dd></div>
-      <div><dt>Skills needed</dt><dd>10</dd></div>
+      <div><dt>Skills needed</dt><dd>11</dd></div>
     </dl>
   </div>
 </header>
@@ -298,7 +318,9 @@ footer a{color:var(--gate-ink)}
         <div id="crits"></div>
         <p class="hint">A criterion that is already green proves nothing — it was true before you
           started. An <span class="mono">UNVERIFIABLE</span> criterion needs a human countersignature
-          at BEGIN, and never counts toward the gate.</p>
+          at BEGIN, and never counts toward the gate. And <span class="mono">check.sh</span> is only
+          the code domain's verifier — a shape check on a research brief, a docs audit, an ops
+          probe, or a judged rubric with a negative control is the same gate in another domain.</p>
       </div>
       <div class="gatebox">
         <div class="gate" id="gate" data-state="blocked">
@@ -439,7 +461,42 @@ round 4 BEGIN   fresh contract, seeded by round 3's result</pre>
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">04</span><h2>Where each skill fires</h2></div>
+    <div class="shead"><span class="snum">04</span><h2>An operating system that grows its own programs</h2></div>
+    <p class="sub">Zoom out and Red Gate is the process model of an agentic OS, and the marketplace
+      is its disk. The organs already exist — skills are programs, evals are the immune system,
+      plugin-factory is process genesis. Self-learning is not a prompt property; it is a pipeline
+      the exhaust of every run flows through.</p>
+
+    <div class="osmap">
+      <div class="osrow"><span class="osc">Process</span><span class="osv">a round — one BEGIN/MIDDLE/END</span></div>
+      <div class="osrow"><span class="osc">Scheduler</span><span class="osv"><code>wayfinder</code>'s dependency frontier</span></div>
+      <div class="osrow"><span class="osc">Syscall gates</span><span class="osv"><code>semver-gate</code> (privilege) · <code>egress-gate</code> (network)</span></div>
+      <div class="osrow"><span class="osc">Resource limits</span><span class="osv">spend ledger · depth_remaining · <code>stop-rule</code></span></div>
+      <div class="osrow"><span class="osc">Episodic memory</span><span class="osv"><code>dev-diary</code> — what happened and why it mattered</span></div>
+      <div class="osrow"><span class="osc">Semantic index</span><span class="osv"><code>fleet-playbook-curator</code> — a map that cites sources</span></div>
+      <div class="osrow"><span class="osc">Process genesis</span><span class="osv"><code>plugin-factory</code> — new programs start valid, wired, RED</span></div>
+      <div class="osrow"><span class="osc">Immune system</span><span class="osv">three eval tiers gating every program change</span></div>
+    </div>
+
+    <div class="growth">
+      <div class="gstep"><div class="gk">1 EMIT</div><div class="gv">Every run sheds learning exhaust as a side effect of the discipline: stop-reports with ranked hypotheses, scope-fence findings, unmet criteria, diary entries.</div></div>
+      <div class="gstep"><div class="gk">2 CONSOLIDATE</div><div class="gv"><b>dev-diary</b> keeps the episodes; <b>fleet-playbook-curator</b> keeps the index.</div></div>
+      <div class="gstep missing"><div class="gk">3 DETECT</div><div class="gv">The same failure shape recurring across runs becomes a candidate skill, named as an invariant. <b>The missing organ</b> — today the human is the detector.</div></div>
+      <div class="gstep"><div class="gk">4 SCAFFOLD</div><div class="gv"><b>plugin-factory</b>: valid, wired, red by default.</div></div>
+      <div class="gstep"><div class="gk">5 GATE</div><div class="gv">Cheap tier checks shape; the behavioral tier's <b>calibration cases</b> demand the skill beat the bare model — a candidate that can't is the system memorizing noise, and gets rejected.</div></div>
+      <div class="gstep"><div class="gk">6 LOAD</div><div class="gv">Merged = the OS grew a new program. Every later run composes it. The loop compounds.</div></div>
+    </div>
+
+    <p class="sub" style="margin-top:22px">Growth is <b>eval-gated</b>, which is what separates
+      growing from accreting — this repo has already rejected a skill's worth of scenarios that
+      couldn't beat their calibration stub, six for six. This page is itself one turn of the loop:
+      the run that produced it detected the gap list in section 08.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">05</span><h2>Where each skill fires</h2></div>
     <p class="sub">All 24 shipped skills, wired to the stage that needs them. Click any one for the
       invariant it actually defends.</p>
     <div class="filters" id="filters"></div>
@@ -449,7 +506,7 @@ round 4 BEGIN   fresh contract, seeded by round 3's result</pre>
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">05</span><h2>What the original idea got wrong</h2></div>
+    <div class="shead"><span class="snum">06</span><h2>What the original idea got wrong</h2></div>
     <p class="sub">The brief asked for the idea to be refined, not just implemented. These are the
       places research and adversarial review said it needed correcting.</p>
     <div class="refs" id="refs"></div>
@@ -458,7 +515,7 @@ round 4 BEGIN   fresh contract, seeded by round 3's result</pre>
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">06</span><h2>Five ways the first draft died</h2></div>
+    <div class="shead"><span class="snum">07</span><h2>Five ways the first draft died</h2></div>
     <p class="sub">Two adversarial critics — one hunting cost and safety, one hunting ceremony a model
       would skip — returned 27 findings against the synthesized spec. These five were fatal. Two were
       found independently by both critics, which is the strongest signal available that they are real.</p>
@@ -468,7 +525,7 @@ round 4 BEGIN   fresh contract, seeded by round 3's result</pre>
 
 <section>
   <div class="wrap">
-    <div class="shead"><span class="snum">07</span><h2>What the marketplace still lacks</h2></div>
+    <div class="shead"><span class="snum">08</span><h2>What the marketplace still lacks</h2></div>
     <p class="sub">Red Gate is a protocol, not an implementation. Ten skills would have to exist for
       it to run — three of them before it can run at all.</p>
     <div class="gaps" id="gaps"></div>
@@ -642,6 +699,7 @@ const GAPS=[
  ["handoff-envelope","structural","The typed parent↔child schema as a reusable skill rather than per-template JSON inside orchestrate."],
  ["spend-ledger","structural","Cumulative tokens and tool calls across the whole recursion, not just per message."],
  ["harvest","structural","A deterministic sibling reducer with a dedupe rule, so a successful branch is never lost behind a failed one."],
+ ["recurrence-detector","structural","Reads accumulated diary entries and stop-reports across runs; surfaces failure shapes seen \u2265N times as candidate invariants. Closes the growth loop."],
  ["fanout-budget","refinement","How many divergent read-only subagents to spawn, justified against a single linear agent."],
  ["escalate","refinement","Child→parent return-and-renegotiate versus abort versus re-split."],
  ["lease","refinement","File-glob arbitration for the optional parallel mode."]
