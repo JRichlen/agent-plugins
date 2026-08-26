@@ -26,11 +26,11 @@ under all three.
 
 ## Status
 
-Slice 1 of 5 (per `docs/red-gate-implementation-plan.md` at the marketplace
+Slices 1–2 of 5 (per `docs/red-gate-implementation-plan.md` at the marketplace
 root): driver + BEGIN, with the red gate live and executed by the cheap
 tier's dogfood check — a fresh scaffold's `check.sh` must exit red, harness
 failure must be 99, a 127 must be a FAIL, and pinning must record both
-sha256s. `reconcile` (END), an optional hooks enforcement layer (Claude-Code-only;
+sha256s. An optional hooks enforcement layer (Claude-Code-only;
 on another harness the same rules apply as prose discipline), and the
 protocol references are the next slices.
 

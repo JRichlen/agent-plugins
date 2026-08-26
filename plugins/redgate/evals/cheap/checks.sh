@@ -60,6 +60,49 @@ else
 fi
 rm -rf "$_rg_tmp"
 
+group "redgate — reconcile: the independent END (executed, coupled)"
+RECON="$PLUGIN_DIR/skills/reconcile/scripts/reconcile.sh"
+SCAF="$PLUGIN_DIR/skills/criteria-contract/scripts/scaffold-run.sh"
+if [ -f "$RECON" ] && bash -n "$RECON" 2>/dev/null; then
+  ok "reconcile.sh present and parses"
+  # Fixture helper: a run whose criteria PASS, so the ONLY thing that can make
+  # reconcile fail is the gate under test. This coupling is what round 1's
+  # criteria lacked — see .redgate/slice2-reconcile-r2/gates.log.
+  _mkpass() { _d="$(mktemp -d)"; "$SCAF" --slug t --root "$_d" >/dev/null 2>&1;
+    printf '## #1 passes\nlayers: x\nred-because: n/a\ncheck_cmd: true\n' > "$_d/.redgate/t/CRITERIA.md";
+    "$SCAF" --pin t --root "$_d" >/dev/null 2>&1; printf '%s' "$_d"; }
+
+  _d="$(_mkpass)"
+  if "$RECON" --slug t --root "$_d" >/dev/null 2>&1; then ok "positive control: untampered passing run verifies green"; else bad "positive control failed — a clean passing run did not verify"; fi
+  rm -rf "$_d"
+
+  _d="$(_mkpass)"; echo '# tampered' >> "$_d/.redgate/t/check.sh"
+  _out="$("$RECON" --slug t --root "$_d" 2>&1)"; _rc=$?
+  rm -rf "$_d"
+  # rc, not just the message: on a fixture whose criteria PASS, a non-zero exit
+  # can ONLY come from the drift gate acting. Grepping the warning text alone
+  # passes even when the gate is reverted — that was the round-1 defect.
+  if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -qi 'CHECKER drift'; then ok "checker drift on a passing run FAILS the run (exit-coupled)"; else bad "checker drift did not fail a passing run (rc=$_rc)"; fi
+
+  _d="$(_mkpass)"; printf '## #2 also passes\nlayers: x\nred-because: n/a\ncheck_cmd: true\n' >> "$_d/.redgate/t/CRITERIA.md"
+  _out="$("$RECON" --slug t --root "$_d" 2>&1)"; _rc=$?
+  rm -rf "$_d"
+  if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -qi 'CRITERIA drift'; then ok "criteria drift on a passing run FAILS the run (exit-coupled)"; else bad "criteria drift did not fail a passing run (rc=$_rc)"; fi
+
+  _d="$(mktemp -d)"; "$SCAF" --slug t --root "$_d" >/dev/null 2>&1
+  _out="$("$RECON" --slug t --root "$_d" 2>&1 || true)"
+  if printf '%s' "$_out" | grep -qi 'not pinned\|unpinned'; then ok "an unpinned run is refused — never ratified, never graded"; else bad "unpinned run was not refused"; fi
+  "$SCAF" --pin t --root "$_d" >/dev/null 2>&1
+  _out="$("$RECON" --slug t --root "$_d" 2>&1 || true)"
+  if printf '%s' "$_out" | grep -qi 'unmet' && ! printf '%s' "$_out" | grep -qi 'drift'; then ok "an ordinary unmet criterion reads as unmet, never as drift"; else bad "unmet and drift verdicts are not distinguishable"; fi
+  _d2="$_d"
+  _out="$(RG_TEST_DROP_EVIDENCE=1 "$RECON" --slug t --root "$_d2" 2>&1)"; _rc=$?
+  rm -rf "$_d"
+  if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -qi 'evidence'; then ok "a PASS without fresh evidence is REJECTED (exit-coupled)"; else bad "evidence-freshness gate did not fail the run (rc=$_rc)"; fi
+else
+  bad "reconcile.sh missing or does not parse"
+fi
+
 group "redgate — graduated autonomy (semver-gate classified gates)"
 has "$DRIVER" 'semver-gate' "driver imports semver-gate as the gate classifier" "driver lost the semver-gate wiring"
 hasE "$DRIVER" 'any property\s*$|any property' "tie-break inherited (any property MAJOR)" "tie-break rule lost"

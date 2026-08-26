@@ -1,0 +1,5 @@
+# gates.log — round | class | driving-property | outcome
+2 | BEGIN | RED GATE REFUSED TO OPEN — all 4 criteria green before any work | Correct behavior: round 1's CODE was right; only its criteria were weakly coupled. Criteria that are already true are not a build contract.
+2 | MINOR | FINDING: regression tests for already-correct behavior belong in the eval tier (green-expected), not in a Red Gate contract (red-first). Round closed unbuilt; the coupled checks move to plugins/redgate/evals/cheap/checks.sh. | auto-pass with prominent flag
+2 | END  | eval-tier port of the coupled drift checks is PROVEN COUPLED: reverting the drift gate turns exactly 2 checks red; restoring returns them green. Second defect found and fixed en route: asserting on the drift MESSAGE passes even when the gate is reverted, because the warning fires either way — assert the EXIT CODE on a passing fixture instead.
+2 | PATCH | slice 2 closed: reconcile.sh + SKILL.md shipped, 7 executed checks in the eval tier, mutation control proven | auto-pass
