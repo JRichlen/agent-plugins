@@ -1,6 +1,6 @@
 ---
 description: >-
-  Run any idea through Red Gate: human-gated rounds, each a BEGIN/MIDDLE/END process whose BEGIN emits a verifier proven able to fail before work starts, and whose END is that pinned verifier run by a party that did not do the work. Use on /redgate "<idea>", or whenever a task needs its done-criteria proven falsifiable before building.
+  Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work. Use on /redgate "<idea>", or whenever done-criteria must be proven falsifiable before building.
 ---
 
 Invoke the `redgate` skill and follow `skills/redgate/SKILL.md`.
@@ -11,6 +11,11 @@ round: BEGIN via the `criteria-contract` skill (interview ≤5 questions,
 scaffold `.redgate/<slug>/` with `skills/criteria-contract/scripts/scaffold-run.sh`,
 write 3–7 criteria, prove the gate red, ratify, pin), MIDDLE as one
 tracer-bullet slice with a single writer, END by running the pinned
-`check.sh` from a context that did not do the work. Stop at the round gate:
-accept / again / split is the human's call, as is funding the next round
-against the manifest's round budget.
+`check.sh` from a context that did not do the work. At the round gate, classify with
+semver-gate's four-property test: PATCH (strictly derived from an approved
+plan slice, verifier green, no escalator) auto-passes and is logged to
+gates.log; MINOR auto-passes with a prominent flag and standing veto; MAJOR —
+orientation decisions, plan approval, first ratification, UNVERIFIABLE
+countersignatures, fence/budget changes, anything irreversible — stops for a
+structured human question. Funding rounds beyond the manifest budget is
+always MAJOR.

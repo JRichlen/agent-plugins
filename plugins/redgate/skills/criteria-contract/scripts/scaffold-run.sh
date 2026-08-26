@@ -59,9 +59,17 @@ round=1
 round_budget=$ROUNDS
 depth_remaining=2
 attempts_per_criterion=2
+autonomy=classified
+approved_plan_sha256=
 criteria_sha256=
 check_sha256=
 EOF
+
+# The gate ledger: every round-gate decision appends one line here —
+# round | gate class (PATCH/MINOR/MAJOR) | driving property | outcome.
+# An auto-pass that cannot cite its qualifying conditions is a protocol
+# violation; MAJOR decisions record the human's answer, never a default.
+printf '# gates.log — round | class | driving-property | outcome\n' > "$RUN/gates.log"
 
 cat > "$RUN/CRITERIA.md" <<'EOF'
 # CRITERIA — replace every TEMPLATE block, keep the numbering

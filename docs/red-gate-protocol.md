@@ -201,7 +201,9 @@ the build transcript.
 ## Rounds — the horizontal axis
 
 A run is not one contract. It is a **sequence of rounds**, each a complete
-BEGIN/MIDDLE/END, with the human gate sitting *between* rounds. This is where
+BEGIN/MIDDLE/END, with a **classified gate** sitting *between* rounds — PATCH
+auto-passes, MINOR passes-and-flags, MAJOR blocks on the human (see
+[Graduated autonomy](#graduated-autonomy--the-classified-round-gate)). This is where
 "I have an idea to implement a Hermes agent that does xyz" actually enters the
 protocol: you cannot write behavioral criteria for an idea you have not decided
 how to build yet, so the first round's verifiable output is **not code — it is a
@@ -283,7 +285,8 @@ A round can contain recursion. Recursion never crosses a round boundary.
 
 The run declares a round budget up front (default: **4**). Hitting it is not
 failure — it is a stop-and-report on the whole run, with what shipped, what did
-not, and the next round's proposed criteria. Only the human funds another. This
+not, and the next round's proposed criteria. Extending the budget is an
+always-MAJOR gate — only the human funds another. This
 prevents the round loop from becoming an unbounded "one more round" of the exact
 kind `stop-rule` exists to stop.
 
@@ -323,7 +326,8 @@ agents across approaches (rules engine / embedding classifier / LLM-per-message
 
 END: a fresh agent runs `check.sh` — the brief's shape is verified
 mechanically. Then **you** read it and pick an option. That choice is round 2's
-input, and it is the natural human gate.
+input, and it is an always-MAJOR gate — the orientation decision steers every
+round beneath it.
 
 **Round 2 — plan.** Criteria are again shape, now on the plan: an ordered slice
 list, each slice naming the layers it crosses and a *proposed* `check_cmd`, with
@@ -345,7 +349,9 @@ at a named seam — say the classifier boundary — **recursion happens inside r
 **Round 4 — consolidation.** Widen the slice: more message shapes, the ambiguous
 cases, the failure paths.
 
-The whole shape: **four human gates, four contracts, one idea** — and the human
+The whole shape: **four classified gates, four contracts, one idea** — two of
+them MAJOR (orientation, plan approval), two auto-passing as PATCH once the
+plan envelope exists — and the human
 was asked exactly four questions of consequence, each about an artifact that
 already existed for them to react to.
 
@@ -377,7 +383,7 @@ round 3 BEGIN   contract ratified, gate red
                 └── child b: "classifier reads the subject field" → green
         MIDDLE  re-run the ORIGINAL #1 check_cmd → PASS
         END     fresh agent, re-hash, mutation control → green
-        ─────── human gate: accept / again / split ───────
+        ─── gate: PATCH (derived from approved plan) → auto-pass, logged ───
 round 4 BEGIN   fresh contract, seeded by round 3's result
 ```
 
@@ -412,7 +418,8 @@ tree, not just a node.
 
 **Termination.** One field, `depth_remaining`, counting down from a single
 number set at BEGIN, terminating at 0. Also terminal: no legal split, two failed
-attempts, or ledger remainder below the child floor. Only the human extends.
+attempts, or ledger remainder below the child floor. Extension is an
+always-MAJOR gate — only the human extends.
 On termination `stop-rule` reports state plus ranked hypotheses.
 
 **Harvest.** The parent's END lists every child's per-criterion table and
@@ -449,24 +456,59 @@ Rules:
 
 ---
 
-## Where the human is
+## Graduated autonomy — the classified round gate
 
-Three touchpoints **per round** — and since a run is a sequence of rounds, the
-END verdict of one round is the same moment as the decision to fund the next.
-Only one is blocking:
+The round gate is no longer an unconditional human stop. Every gate decision
+is **classified with `semver-gate`'s four-property test** (reversibility,
+blast radius, contract change, cost to undo) and its tie-break rule, imported
+verbatim: **any single property landing MAJOR makes the whole gate MAJOR.**
 
-1. The ≤5 BEGIN interview questions, each with a silence-acceptable default.
-2. **Ratification** of `CRITERIA.md` after the red gate proves it falsifiable —
-   the only mandatory approval. On ratification timeout the run releases its
-   leases and ledger reservation, persists state, and exits **PARKED** and
-   resumable rather than blocking overnight.
-3. The **round gate**: accept / again / split — and, on accept, whether the
-   accepted artifact seeds another round or the run is done. This is where a
-   decision brief gets its option picked and a plan gets approved.
+The governing idea: **autonomy flows downhill from an approved plan.** A
+human-ratified plan is the *autonomy envelope*; rounds that execute strictly
+inside it pass their gates automatically, and anything that would leave the
+envelope escalates.
 
-Between gates it runs autonomously. It breaks out only for `semver-gate` MAJOR
-actions, `egress-gate` transmissions, or a depth/attempt cap breach. `stop`
-halts at any turn.
+| Class | Gate behavior | Qualifies when |
+|---|---|---|
+| **PATCH** | Auto-pass. Logged to the gate ledger, folded into the round summary; the next round seeds automatically. | ALL of: build/consolidation round · verifier green via independent END · zero `UNVERIFIABLE` · diff inside the declared fence · the round's criteria are a strict derivation of a human-approved plan slice · no escalator fired. |
+| **MINOR** | Auto-pass **with a prominent flag** — called out at the moment it happens, staged separately revertible, with a standing veto. Never a blocking question. | Durable-but-revertible artifacts inside the approved direction: new files, a plan amendment that reorders approved slices, a widened consolidation. |
+| **MAJOR** | **Block on a structured human question** naming the specific decision and mechanism. A prior adjacent "yes" does not transfer. | Any escalator below, or any semver-gate property landing MAJOR. |
+
+**Always MAJOR — the escalators (never auto-passed, never softened):**
+
+- The **orientation decision** — choosing the approach steers every downstream
+  round; it is a contract change for the whole run.
+- The **plan round's approval** — this IS the autonomy envelope being drawn.
+  No plan approval, no PATCH rounds anywhere beneath it.
+- The **first ratification** of a run's contract, and any `UNVERIFIABLE`
+  countersignature (by definition a human observation).
+- **Fence widening**, **round-budget or depth extension**, and the run's
+  **final acceptance**.
+- Anything `semver-gate`'s own table calls MAJOR: irreversible actions
+  (`prove-the-undo` first), protection toggles, `egress-gate` transmissions
+  to unnamed destinations.
+
+**Derived ratification.** When an approved plan lists slices each carrying a
+proposed verifier, a build round whose criteria are byte-derivable from its
+plan slice may **auto-ratify as PATCH**, with the derivation logged. Any
+deviation from the plan slice — added criteria, changed check shapes,
+different layers — is a contract change and escalates to MAJOR. This is what
+keeps auto-ratification from becoming self-ratification: the human approved
+these exact criteria once, at plan approval, at a higher altitude.
+
+**The gate ledger.** Every gate decision — class, the property that drove it,
+and the outcome — is appended to `.redgate/<slug>/gates.log`. Auto-passed
+gates are auditable after the fact; a MINOR flag carries a pointer to its
+ledger line so the veto is one reference away. An auto-pass that cannot cite
+its qualifying conditions is a protocol violation, not a judgment call.
+
+**What survives from the old model.** The ≤5 interview questions keep their
+silence-acceptable defaults. Ratification timeout still parks the run
+(releases leases and reservations, persists state, exits resumable). `stop`
+still halts at any turn. And precedence is inherited from semver-gate
+unchanged: a coded rule (`autoMode` pattern, harness permission) always wins
+over this classification, and the system prompt's care principle is the
+ground truth the table serves.
 
 ---
 

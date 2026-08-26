@@ -1,6 +1,6 @@
 # AGENTS.md — redgate
 
-Run any idea through Red Gate: human-gated rounds, each a BEGIN/MIDDLE/END process whose BEGIN emits a verifier proven able to fail before work starts, and whose END is that pinned verifier run by a party that did not do the work. Use on /redgate "<idea>", or whenever a task needs its done-criteria proven falsifiable before building.
+Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work.
 
 ## How to use it
 
@@ -27,6 +27,12 @@ load-bearing is prose plus plain bash — no Claude-Code primitive is required:
   `check.sh` in a fresh session,
   or hand the human the verdict table — the requirement is that the party
   who did the work never grades it; the mechanism adapts per harness.
+- **Round gates are classified, not defaulted to the human**: PATCH (strictly
+  derived from an approved plan slice, verifier green, no escalator)
+  auto-passes and appends to `gates.log`; MINOR auto-passes with a prominent
+  flag and standing veto; MAJOR — orientation decisions, plan approval, first
+  ratification, UNVERIFIABLE countersignatures, fence/budget changes,
+  anything irreversible — always stops for a structured human question.
 - Full protocol: `docs/red-gate-protocol.md` at the marketplace root.
 
 ## Status: slice 1 of 5
