@@ -1,3 +1,15 @@
+<!--
+  Artifact-publish SOURCE, not a standalone page. This file is deliberately a
+  document FRAGMENT: the Claude artifact publisher wraps it in its own
+  <!doctype html><head>...</head><body> skeleton at publish time, so declaring
+  a doctype (or html/head/body tags) here would nest a second one on every
+  republish. The published page therefore renders in standards mode.
+
+  Consequence to know: opening this file directly from disk puts the browser
+  in quirks mode, which can shift the box model and line-height. Read it via
+  the published artifact rather than file://, or wrap it yourself if you need
+  a local standalone copy.
+-->
 <title>Red Gate</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -260,7 +272,8 @@ footer a{color:var(--gate-ink)}
           </div>
           <div class="gate-foot">
             <b>Not red</b> means harness failure only — no verdict line, reserved exit 99, or a dirty
-            preflight. A <code>check_cmd</code> exiting non-zero, 127 included, is a legitimate FAIL.
+            preflight, which covers only the harness's own prerequisites and never the binaries under test.
+            A <code>check_cmd</code> exiting non-zero, 127 included, is a legitimate FAIL.
             <button class="reset" id="reset">Reset to red</button>
           </div>
         </div>
@@ -288,7 +301,7 @@ footer a{color:var(--gate-ink)}
           <li><code>sha256</code> of <b>both</b> files pinned into the manifest.</li>
         </ul>
         <p class="exit">EXIT <b>gate red + ratified</b><br>two files exist · every checkable
-          criterion FAIL · preflight clean</p>
+          criterion FAIL · harness preflight clean</p>
       </div>
       <div class="stage">
         <h3>Middle</h3>

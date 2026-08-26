@@ -82,10 +82,15 @@ Trigger: `/redgate "<one-line idea>"`.
      `/dev/null`, tees each command's output to `evidence/<n>.out`, and prints
      `#n PASS|FAIL|UNVERIFIABLE`.
 5. **The red gate.** `check.sh` runs. It must emit a verdict line per criterion,
-   and every checkable criterion must be **FAIL**. A *preflight* (`command -v`
-   for each binary, existence for each path) must come back clean — harness
-   failure exits with reserved code `99` and is **not** red. A `check_cmd` that
-   exits non-zero for any reason, including 127, **is** a legitimate FAIL.
+   and every checkable criterion must be **FAIL**. A *preflight* must come back
+   clean — harness failure exits with reserved code `99` and is **not** red.
+   Preflight covers **only the harness's own prerequisites**: the interpreter
+   and utilities `check.sh` itself invokes (`bash`, `timeout`, `tee`, the
+   evidence directory being writable). It deliberately does **not** probe the
+   binaries or paths *under test* — a missing subject binary is the normal
+   greenfield starting state, and probing for it would flag the very absence
+   the criterion exists to measure. A `check_cmd` that exits non-zero for any
+   reason, including 127, **is** a legitimate FAIL.
 6. **Coupling control.** Each criterion records *why* it is red (absent vs.
    present-but-wrong) and carries a **positive control**: the same check shape
    run against a known-good target, returning PASS today. No control, no gate.
@@ -267,7 +272,7 @@ because a future edit that quietly undoes one of them would reopen a known hole.
 |---|---|---|
 | 1 | Only `CRITERIA.md` was sha-pinned. `check.sh` lives in the repo and the MIDDLE writer could edit it — rewriting a curl assertion to `echo '#3 PASS'` produces a green run. *(Found by both critics.)* | Pin `check.sh` too; re-hash both at END; `.redgate/**` on a deny-list no lease can cover. |
 | 2 | Recursion rewrote the parent criterion's `check_cmd` to "all child checks green" — mutating the sha-pinned file, so **every successful recursion self-destructed** on the drift check. *(Found by both critics.)* | Delegation moves to a mutable `DELEGATION.md`; `CRITERIA.md` keeps the original command; the parent re-runs *that* for its verdict. |
-| 3 | "A crash is not red" deadlocked greenfield work: `foo --version` on an unbuilt CLI exits 127, so the gate could never go red and MIDDLE never dispatched. | "Not red" now means only *harness* failure (no verdict line emitted, reserved exit 99, preflight dirty). A `check_cmd` exiting non-zero — 127 included — is a legitimate FAIL. |
+| 3 | "A crash is not red" deadlocked greenfield work: `foo --version` on an unbuilt CLI exits 127, so the gate could never go red and MIDDLE never dispatched. | "Not red" now means only *harness* failure (no verdict line emitted, reserved exit 99, or a dirty preflight — where preflight covers only the harness's own prerequisites, never the binaries under test). A `check_cmd` exiting non-zero — 127 included — is a legitimate FAIL. |
 | 4 | Red proved a check *currently fails*, not that it is **coupled** to the criterion. `grep -q RETRY src/client.go` goes green when a comment containing RETRY is added. | Positive control at BEGIN + **mutation control** at END: revert the core hunk, re-run; a check that still passes is `UNVERIFIABLE`, not green. |
 | 5 | Budget halved per child but not across siblings, with no global ledger — four criteria spawning two children each consumed 4x the root cap while every local rule reported compliance. | One child pool per parent split by all siblings, debited from a single run-scoped ledger, under a run-level ceiling that terminates the whole tree. |
 
