@@ -1,0 +1,521 @@
+<title>Red Gate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<style>
+:root{
+  --paper:#EEF1F4; --surface:#F7F9FB; --surface-2:#E4E9EE; --ink:#151A21; --ink-2:#3C4753;
+  --muted:#67737F; --line:#CCD5DD; --line-soft:#DDE4EA;
+  --gate:#B02A43; --gate-soft:#F3DDE1; --gate-ink:#8A2036;
+  --pass:#2C6E52; --pass-soft:#DCEBE3;
+  --unv:#8A6516; --unv-soft:#F0E7D2;
+  --shadow:0 1px 2px rgba(21,26,33,.06),0 8px 24px -12px rgba(21,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1218; --surface:#151B23; --surface-2:#1C242E; --ink:#E7EDF3; --ink-2:#B9C5D1;
+    --muted:#8494A2; --line:#2C3742; --line-soft:#222B35;
+    --gate:#E4677E; --gate-soft:#3A1A22; --gate-ink:#F2A2B0;
+    --pass:#6FC49B; --pass-soft:#12281F;
+    --unv:#D6AC5C; --unv-soft:#2A2213;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1218; --surface:#151B23; --surface-2:#1C242E; --ink:#E7EDF3; --ink-2:#B9C5D1;
+  --muted:#8494A2; --line:#2C3742; --line-soft:#222B35;
+  --gate:#E4677E; --gate-soft:#3A1A22; --gate-ink:#F2A2B0;
+  --pass:#6FC49B; --pass-soft:#12281F;
+  --unv:#D6AC5C; --unv-soft:#2A2213;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:Newsreader,Georgia,serif; font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px}
+h1,h2,h3,h4,.ui{font-family:Archivo,"Helvetica Neue",Arial,sans-serif}
+h2,h3{text-wrap:balance}
+code,kbd,.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+a{color:var(--gate-ink)}
+:focus-visible{outline:2px solid var(--gate);outline-offset:2px;border-radius:3px}
+
+/* ---------- masthead ---------- */
+.mast{border-bottom:1px solid var(--line);background:var(--surface)}
+.mast .wrap{padding-top:52px;padding-bottom:36px}
+.eyebrow{font-family:Archivo,sans-serif;font-size:11.5px;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 18px}
+h1{font-size:clamp(46px,8vw,86px);line-height:.94;font-weight:700;letter-spacing:-.035em;margin:0}
+h1 .sep{color:var(--gate)}
+.thesis{font-size:clamp(19px,2.3vw,23px);line-height:1.5;color:var(--ink-2);max-width:60ch;margin:22px 0 0}
+.thesis b{color:var(--ink);font-weight:500}
+.manifest{display:flex;flex-wrap:wrap;gap:0;margin-top:34px;border:1px solid var(--line);
+  border-radius:4px;overflow:hidden;background:var(--paper)}
+.manifest div{flex:1 1 130px;padding:12px 16px;border-right:1px solid var(--line-soft)}
+.manifest div:last-child{border-right:0}
+.manifest dt{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 3px}
+.manifest dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:19px;font-weight:700;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.manifest dd.hot{color:var(--gate)}
+
+/* ---------- sections ---------- */
+section{padding:64px 0;border-bottom:1px solid var(--line-soft)}
+.shead{display:flex;align-items:baseline;gap:14px;margin:0 0 8px}
+.snum{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--gate);
+  letter-spacing:.06em;padding-top:6px}
+h2{font-size:clamp(27px,3.4vw,36px);font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.12}
+.sub{color:var(--muted);max-width:66ch;margin:10px 0 30px;font-size:16.5px}
+
+/* ---------- gate sim ---------- */
+.sim{display:grid;grid-template-columns:1.35fr .95fr;gap:22px;align-items:start}
+@media(max-width:860px){.sim{grid-template-columns:1fr}}
+.term{background:var(--surface);border:1px solid var(--line);border-radius:5px;overflow:hidden;
+  box-shadow:var(--shadow)}
+.term-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+  background:var(--surface-2)}
+.term-bar .dot{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.term-bar .path{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted)}
+.crit{display:flex;gap:12px;align-items:flex-start;padding:13px 16px;border-bottom:1px solid var(--line-soft);
+  cursor:pointer;background:none;border-left:0;border-right:0;border-top:0;width:100%;text-align:left;
+  font:inherit;color:inherit;transition:background .12s}
+.crit:hover{background:var(--surface-2)}
+.crit:last-of-type{border-bottom:0}
+.vd{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:3px 7px;border-radius:3px;flex:none;min-width:96px;text-align:center;margin-top:2px}
+.vd.fail{background:var(--gate-soft);color:var(--gate-ink)}
+.vd.pass{background:var(--pass-soft);color:var(--pass)}
+.vd.unv{background:var(--unv-soft);color:var(--unv)}
+.cbody{flex:1;min-width:0}
+.cid{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+.ctext{font-size:15.5px;line-height:1.45;color:var(--ink)}
+.ccmd{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);
+  margin-top:5px;word-break:break-all}
+.hint{padding:11px 16px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line-soft);
+  background:var(--surface-2)}
+
+.gatebox{position:sticky;top:18px}
+.gate{border:1px solid var(--line);border-radius:5px;overflow:hidden;background:var(--surface);
+  box-shadow:var(--shadow)}
+.gate-status{padding:20px;border-bottom:1px solid var(--line);transition:background .25s}
+.gate-status .lbl{font-family:Archivo,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.gate-status .val{font-family:Archivo,sans-serif;font-size:26px;font-weight:700;letter-spacing:-.02em;
+  line-height:1.12}
+.gate-status .why{font-size:14.5px;color:var(--ink-2);margin-top:8px;line-height:1.45}
+.gate[data-state="blocked"] .gate-status{background:var(--gate-soft)}
+.gate[data-state="blocked"] .val{color:var(--gate-ink)}
+.gate[data-state="open"] .gate-status{background:var(--pass-soft)}
+.gate[data-state="open"] .val{color:var(--pass)}
+.bar{height:6px;background:var(--gate);transition:background .25s}
+.gate[data-state="open"] .bar{background:var(--pass)}
+.gate-foot{padding:14px 20px;font-size:13.5px;color:var(--muted)}
+.gate-foot b{color:var(--ink);font-weight:500}
+.reset{margin-top:14px;font-family:Archivo,sans-serif;font-size:12.5px;font-weight:600;
+  background:none;border:1px solid var(--line);border-radius:4px;padding:7px 13px;color:var(--ink-2);
+  cursor:pointer}
+.reset:hover{border-color:var(--gate);color:var(--gate-ink)}
+
+/* ---------- stage spine ---------- */
+.spine{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.spine{grid-template-columns:1fr}}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:22px;
+  display:flex;flex-direction:column;gap:12px}
+.stage h3{margin:0;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gate)}
+.stage .lead{font-size:16.5px;line-height:1.5;margin:0;color:var(--ink)}
+.stage ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.stage li{font-size:14.5px;line-height:1.45;color:var(--ink-2);padding-left:16px;position:relative}
+.stage li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:1.5px;background:var(--gate)}
+.exit{margin-top:auto;padding-top:13px;border-top:1px solid var(--line-soft);
+  font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);line-height:1.5}
+.exit b{color:var(--gate-ink);font-weight:700}
+
+/* ---------- skills ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:22px}
+.filters button{font-family:Archivo,sans-serif;font-size:12px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;padding:7px 13px;border-radius:3px;border:1px solid var(--line);
+  background:var(--surface);color:var(--muted);cursor:pointer;transition:all .13s}
+.filters button:hover{color:var(--ink)}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:11px}
+.sk{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:15px;
+  text-align:left;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:7px;
+  border-left:3px solid var(--line);transition:transform .13s,border-color .13s,box-shadow .13s}
+.sk:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.sk[data-stage="BEGIN"]{border-left-color:var(--gate)}
+.sk[data-stage="MIDDLE"]{border-left-color:var(--unv)}
+.sk[data-stage="END"]{border-left-color:var(--pass)}
+.sk[data-stage="CROSS"]{border-left-color:var(--muted)}
+.sk.dim{opacity:.24}
+.sk .nm{font-family:"JetBrains Mono",monospace;font-size:13.5px;font-weight:700;color:var(--ink)}
+.sk .stg{font-family:Archivo,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted)}
+.sk .rl{font-size:14px;line-height:1.42;color:var(--ink-2)}
+
+dialog{border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);
+  max-width:600px;width:calc(100% - 40px);padding:0;box-shadow:0 24px 70px -20px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(10,14,19,.62)}
+.dlg{padding:26px}
+.dlg .stg{font-family:Archivo,sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--gate);margin-bottom:7px}
+.dlg h3{font-family:"JetBrains Mono",monospace;font-size:19px;margin:0 0 4px;font-weight:700}
+.dlg .rl{color:var(--muted);font-size:15px;margin:0 0 18px}
+.dlg .invlbl{font-family:Archivo,sans-serif;font-size:10px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.dlg .inv{font-size:16px;line-height:1.55;border-left:2px solid var(--gate);padding-left:14px;
+  color:var(--ink);margin:0}
+.dlg button{margin-top:22px;font-family:Archivo,sans-serif;font-size:12.5px;font-weight:600;
+  background:var(--ink);color:var(--paper);border:0;border-radius:4px;padding:9px 17px;cursor:pointer}
+
+/* ---------- refinements ---------- */
+.refs{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:5px;
+  overflow:hidden;background:var(--surface)}
+.ref{display:grid;grid-template-columns:1fr 1.15fr;gap:0;border-bottom:1px solid var(--line-soft)}
+.ref:last-child{border-bottom:0}
+@media(max-width:800px){.ref{grid-template-columns:1fr}}
+.ref>div{padding:17px 19px}
+.ref .was{border-right:1px solid var(--line-soft);background:var(--surface-2)}
+.ref .lbl{font-family:Archivo,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;margin-bottom:7px}
+.ref .was .lbl{color:var(--muted)}
+.ref .now .lbl{color:var(--gate)}
+.ref p{margin:0;font-size:15px;line-height:1.5}
+.ref .was p{color:var(--ink-2)}
+
+/* ---------- fatals ---------- */
+.fatals{display:flex;flex-direction:column;gap:11px}
+.fat{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:18px 20px;
+  display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start}
+.fat .n{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--gate);
+  background:var(--gate-soft);border-radius:3px;padding:4px 8px;line-height:1}
+.fat h4{margin:0 0 7px;font-size:16.5px;font-weight:600;letter-spacing:-.01em;line-height:1.35}
+.fat .sc{font-size:14.5px;color:var(--ink-2);margin:0 0 11px;line-height:1.5}
+.fat .fx{font-size:14.5px;margin:0;line-height:1.5;padding-left:14px;border-left:2px solid var(--pass);
+  color:var(--ink)}
+.fat .fx b{font-family:Archivo,sans-serif;font-size:10px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--pass);display:block;margin-bottom:3px}
+.both{display:inline-block;font-family:Archivo,sans-serif;font-size:9.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--gate-ink);background:var(--gate-soft);
+  padding:2px 6px;border-radius:3px;margin-left:7px;vertical-align:middle}
+
+/* ---------- gaps ---------- */
+.gaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:11px}
+.gap{background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:15px}
+.gap .nm{font-family:"JetBrains Mono",monospace;font-size:13.5px;font-weight:700;margin-bottom:5px}
+.gap p{margin:0;font-size:14px;line-height:1.45;color:var(--ink-2)}
+.gap .tier{font-family:Archivo,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:8px}
+.gap[data-tier="blocking"] .tier{color:var(--gate)}
+.gap[data-tier="structural"] .tier{color:var(--unv)}
+.gap[data-tier="refinement"] .tier{color:var(--muted)}
+
+footer{padding:40px 0 60px;color:var(--muted);font-size:14.5px}
+footer a{color:var(--gate-ink)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">Protocol · agent-plugins marketplace</p>
+    <h1>Red<span class="sep">·</span>Gate</h1>
+    <p class="thesis">Turn a one-line idea into a <b>red-by-default</b> <code>check.sh</code>, flip
+      one criterion green with a real vertical slice, then let a <b>fresh agent</b> run the script.
+      Criteria that cannot go red are not criteria.</p>
+    <dl class="manifest">
+      <div><dt>Skills mapped</dt><dd>24</dd></div>
+      <div><dt>Agents run</dt><dd>12</dd></div>
+      <div><dt>Findings</dt><dd>27</dd></div>
+      <div><dt>Fatal</dt><dd class="hot">5</dd></div>
+      <div><dt>Stages</dt><dd>3</dd></div>
+      <div><dt>Skills needed</dt><dd>10</dd></div>
+    </dl>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">01</span><h2>The gate opens only when everything fails</h2></div>
+    <p class="sub">This is the counterintuitive core, so try it. Every checkable criterion must
+      execute and come back <b>FAIL</b> before any work is allowed to start. Click a verdict to
+      flip it and watch the gate.</p>
+    <div class="sim">
+      <div class="term">
+        <div class="term-bar"><span class="dot"></span><span class="path mono">.redgate/add-retry/check.sh</span></div>
+        <div id="crits"></div>
+        <p class="hint">A criterion that is already green proves nothing — it was true before you
+          started. An <span class="mono">UNVERIFIABLE</span> criterion needs a human countersignature
+          at BEGIN, and never counts toward the gate.</p>
+      </div>
+      <div class="gatebox">
+        <div class="gate" id="gate" data-state="blocked">
+          <div class="bar"></div>
+          <div class="gate-status">
+            <div class="lbl">Red gate</div>
+            <div class="val" id="gval">BLOCKED</div>
+            <div class="why" id="gwhy"></div>
+          </div>
+          <div class="gate-foot">
+            <b>Not red</b> means harness failure only — no verdict line, reserved exit 99, or a dirty
+            preflight. A <code>check_cmd</code> exiting non-zero, 127 included, is a legitimate FAIL.
+            <button class="reset" id="reset">Reset to red</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">02</span><h2>One shape, all the way down</h2></div>
+    <p class="sub">Every node runs the same three stages — the root triggered by
+      <code>/redgate "&lt;idea&gt;"</code>, and every child spawned beneath it. Each stage has a
+      hard exit condition; nothing advances without it.</p>
+    <div class="spine">
+      <div class="stage">
+        <h3>Begin</h3>
+        <p class="lead">Write a contract, then prove it can fail.</p>
+        <ul>
+          <li>At most 5 interview questions, one at a time, each with a default that silence accepts.</li>
+          <li>Emit <code>CRITERIA.md</code> (3–7 numbered criteria) and <code>check.sh</code>.</li>
+          <li>Each criterion records <em>why</em> it is red, plus a positive control: the same check
+            shape against a known-good target, passing today.</li>
+          <li>Human ratifies once — shown the actual red output, not seven <code>bash -c</code> lines.</li>
+          <li><code>sha256</code> of <b>both</b> files pinned into the manifest.</li>
+        </ul>
+        <p class="exit">EXIT <b>gate red + ratified</b><br>two files exist · every checkable
+          criterion FAIL · preflight clean</p>
+      </div>
+      <div class="stage">
+        <h3>Middle</h3>
+        <p class="lead">One writer, one vertical slice.</p>
+        <ul>
+          <li>Take the frontier criterion crossing the most layers.</li>
+          <li>Cut <b>one</b> slice that flips exactly that id FAIL→PASS through every layer it names —
+            no stub at the seam the slice exists to prove.</li>
+          <li>Subagents fan out <b>read-only</b>: search, analysis, options. They never edit.</li>
+          <li>Every hunk traces to a criterion id, or is tagged <code>enabling:</code> / counted in a
+            capped <code>incidental</code> bucket.</li>
+          <li><code>.redgate/**</code> is deny-listed. The writer cannot touch the contract or the checker.</li>
+        </ul>
+        <p class="exit">EXIT <b>check.sh re-run</b><br>bound scaled to layer count · first exhaustion
+          is a re-plan, not a failure</p>
+      </div>
+      <div class="stage">
+        <h3>End</h3>
+        <p class="lead">Someone who didn't write it runs the script.</p>
+        <ul>
+          <li>A fresh subagent gets only the criteria, the script, and the diff — never the transcript.</li>
+          <li>Re-hash both files. Either mismatch fails the run outright as drift.</li>
+          <li>PASS requires evidence on disk, written by <code>check.sh</code>, newer than the run start.</li>
+          <li><b>Mutation control:</b> revert the core hunk, re-run. Still passing means it was never
+            coupled — that is UNVERIFIABLE, not green.</li>
+          <li>Verdict, per-criterion table, unmet ids, one next-smallest-slice suggestion.</li>
+        </ul>
+        <p class="exit">EXIT <b>accept / again / split</b><br>split needs a named seam and child
+          criteria already proven red</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">03</span><h2>Where each skill fires</h2></div>
+    <p class="sub">All 24 shipped skills, wired to the stage that needs them. Click any one for the
+      invariant it actually defends.</p>
+    <div class="filters" id="filters"></div>
+    <div class="grid" id="skills"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">04</span><h2>What the original idea got wrong</h2></div>
+    <p class="sub">The brief asked for the idea to be refined, not just implemented. These are the
+      places research and adversarial review said it needed correcting.</p>
+    <div class="refs" id="refs"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">05</span><h2>Five ways the first draft died</h2></div>
+    <p class="sub">Two adversarial critics — one hunting cost and safety, one hunting ceremony a model
+      would skip — returned 27 findings against the synthesized spec. These five were fatal. Two were
+      found independently by both critics, which is the strongest signal available that they are real.</p>
+    <div class="fatals" id="fatals"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="shead"><span class="snum">06</span><h2>What the marketplace still lacks</h2></div>
+    <p class="sub">Red Gate is a protocol, not an implementation. Ten skills would have to exist for
+      it to run — three of them before it can run at all.</p>
+    <div class="gaps" id="gaps"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    Grounded in surveyed patterns rather than invented: orchestrator-worker and the task-description
+    contract (Anthropic), the workflow taxonomy from <em>Building Effective Agents</em>, plan-and-execute
+    (LangChain), ReAct (Yao et al.), Reflexion (Shinn et al.), HTN decomposition, blackboard
+    architecture, contract-net, ADaPT's as-needed decomposition, and Huang et al. (ICLR 2024) on why
+    a model cannot check its own work. Full spec:
+    <code>docs/red-gate-protocol.md</code>.
+  </div>
+</footer>
+
+<dialog id="dlg"><div class="dlg">
+  <div class="stg" id="dstg"></div><h3 id="dnm"></h3><p class="rl" id="drl"></p>
+  <div class="invlbl">The invariant it defends</div><p class="inv" id="dinv"></p>
+  <button id="dclose">Close</button>
+</div></dialog>
+
+<script>
+const CRITERIA=[
+ {id:1,text:"POST /orders with a duplicate delivery id persists exactly one row",cmd:"pytest tests/test_orders.py::test_idempotent",v:"fail"},
+ {id:2,text:"The retry wrapper backs off exponentially on 503",cmd:"pytest tests/test_client.py::test_backoff",v:"fail"},
+ {id:3,text:"CLI `orders sync` exits 0 against the local fixture server",cmd:"orders sync --fixture ./t/fx.json",v:"fail"},
+ {id:4,text:"No handler swallows an exception without logging it",cmd:"rg -c 'except.*:\\s*pass' src/ ; test $? -eq 1",v:"fail"},
+ {id:5,text:"The migration reads cleanly to a reviewer",cmd:"— human observation, countersigned at BEGIN",v:"unv",locked:true}
+];
+const CYCLE={fail:"pass",pass:"fail"};
+const state=CRITERIA.map(c=>c.v);
+
+function render(){
+  const host=document.getElementById("crits");
+  host.innerHTML="";
+  CRITERIA.forEach((c,i)=>{
+    const v=state[i];
+    const b=document.createElement("button");
+    b.className="crit"; b.type="button";
+    b.disabled=!!c.locked;
+    if(c.locked) b.style.cursor="default";
+    b.setAttribute("aria-label",`Criterion ${c.id}: ${c.text}. Currently ${v.toUpperCase()}.`);
+    b.innerHTML=`<span class="vd ${v}">#${c.id} ${v.toUpperCase()}</span>
+      <span class="cbody"><span class="ctext">${c.text}</span>
+      <span class="ccmd">${c.cmd}</span></span>`;
+    b.addEventListener("click",()=>{ if(c.locked)return; state[i]=CYCLE[state[i]]; render(); });
+    host.appendChild(b);
+  });
+  const checkable=CRITERIA.map((c,i)=>({c,v:state[i]})).filter(x=>x.v!=="unv");
+  const green=checkable.filter(x=>x.v==="pass");
+  const gate=document.getElementById("gate");
+  const val=document.getElementById("gval"), why=document.getElementById("gwhy");
+  if(green.length===0){
+    gate.dataset.state="open";
+    val.textContent="RED — DISPATCH";
+    why.innerHTML=`All ${checkable.length} checkable criteria fail. The contract is proven
+      falsifiable, so MIDDLE may take the frontier criterion and cut one slice.`;
+  }else{
+    gate.dataset.state="blocked";
+    val.textContent="BLOCKED";
+    const ids=green.map(x=>"#"+x.c.id).join(", ");
+    why.innerHTML=`${ids} ${green.length===1?"passes":"pass"} before any work was done. A criterion
+      that is already true measures nothing — rewrite it until it fails, or the run proves nothing
+      at the end.`;
+  }
+}
+document.getElementById("reset").addEventListener("click",()=>{
+  CRITERIA.forEach((c,i)=>state[i]=c.v); render();
+});
+
+const SKILLS=[{"skill": "docs-hygiene", "plugin": "docs-hygiene", "stage": "BEGIN", "role": "Re-verifies instruction-file claims before they become contract assumptions", "invariant": "A claim in an instruction file (CLAUDE.md/AGENTS.md/SKILL.md) is NEVER trusted or propagated forward without being re-verified against current repo state first. When a checked claim is UNAMBIGUOUS — source and doc plainly disagree on a checkable fact — the instruction file is FIXED IN PLACE, in the same pass: edit the file itself. Do not merely flag it, and do not convert it into a question for the user to answer…"}, {"skill": "fleet-playbook-curator", "plugin": "fleet-playbook-curator", "stage": "BEGIN", "role": "Optional — when the idea’s context spans multiple repos", "invariant": "The fleet-playbook is a curated INDEX that only says where truth lives and when it was read: every substantive claim carries a `repo@sha:path` citation and an \"as-of\" stamp, uncited claims are omitted or flagged stale rather than asserted, and the agent's interpretation reaches `main` only through a reviewed PR while the deterministic detector auto-commits only facts. Everything below exists to keep that true.…"}, {"skill": "grill-me", "plugin": "grill-me", "stage": "BEGIN", "role": "Bounded 5-question interview turns a one-line idea into falsifiable criteria", "invariant": "ALWAYS size a branch's interrogation depth to its stakes tier (reversibility x blast-radius, computed per branch, not once for the whole session) and ALWAYS attach a stated recommendation to every question asked, so the user can accept-in-one-word or push back — NEVER run a fixed-depth/fixed-count question script regardless of stakes, and NEVER emit a bare question with no answer for the user to react to."}, {"skill": "wayfinder", "plugin": "wayfinder", "stage": "BEGIN", "role": "Types criteria as dependency tickets and computes the dispatchable frontier", "invariant": "A multi-session effort must ALWAYS be represented as a labeled map of typed decision tickets with dependencies made explicit before any ticket is dispatched; planning tickets must NEVER be conflated with or silently converted into execution tickets — a ticket whose true scope turns out to require changing real system state MUST close as resolved-into-a-new-linked-task-ticket, never be relabeled in place; and only…"}, {"skill": "codebase-design", "plugin": "codebase-design", "stage": "MIDDLE", "role": "3+ scored candidates when the slice commits a durable boundary", "invariant": "Before committing to an interface (a module boundary, class API, or function signature that ≥2 call sites will depend on, or that crosses a service/team/persistence boundary, or that is expensive to change later): ALWAYS produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one — NEVER let the first workable interface ship unexamined. The chosen…"}, {"skill": "diagnosing-bugs", "plugin": "diagnosing-bugs", "stage": "MIDDLE", "role": "Ranked falsifiable hypotheses when a slice fails to flip its criterion", "invariant": "A bug fix must never begin with a code change: a ranked, falsifiable hypothesis list — each entry stating its claim, its supporting evidence, and the specific observation that would prove it false — must be written down before any diagnostic or fix code is written. Any temporary debug instrumentation added while testing those hypotheses must always carry one fixed, consistent, grep-able tag and must NEVER ship…"}, {"skill": "find-before-build", "plugin": "find-before-build", "stage": "MIDDLE", "role": "Named searches for an existing equivalent before any new abstraction", "invariant": "A new abstraction (helper, wrapper, utility, dependency) is ALWAYS preceded by named searches for an existing equivalent with their results shown — and NEVER introduced when an existing equivalent was found and usable."}, {"skill": "graveyard", "plugin": "graveyard", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "A repository original is deleted ONLY after its backup bundle is confirmed present in the private graveyard; the skill never deletes repos itself — it emits a guarded script the user reviews and runs."}, {"skill": "orchestrate", "plugin": "orchestrate", "stage": "MIDDLE", "role": "Read-only fan-out template with frozen context and adversarial verifiers", "invariant": "A fan-out must fact-check itself: only claims that withstood an adversarial verifier survive into the synthesis, so plausible-but-wrong findings produced by a fleet of agents never read as authoritative."}, {"skill": "plugin-factory", "plugin": "plugin-factory", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "**Every plugin this factory produces starts valid, wired, and RED.** Valid: the `plugin.json` parses and its name matches the directory. Wired: an entry is added to the marketplace lockfile. Red: the generated `evals/cheap/checks.sh` fails closed until a human replaces it with real checks. The factory never emits a skeleton that could show green with zero safety coverage — a green new plugin must be earned by…"}, {"skill": "tailscale-wif", "plugin": "tailscale-wif", "stage": "MIDDLE", "role": "Domain executor — invoked only when a criterion names it", "invariant": "WIF auth is **secretless**. Only the **public** `oauth-client-id` and `audience` are stored — and they belong in repo **variables**, never secrets. The job that authenticates to Tailscale always carries `permissions: id-token: write`, and it passes **exactly one** auth mode. No long-lived Tailscale credential (a REST API key, an OAuth client secret) is ever stored to enable a run: each run mints a fresh GitHub…"}, {"skill": "tracer-bullets", "plugin": "tracer-bullets", "stage": "MIDDLE", "role": "Defines the one-criterion vertical slice; forbids stubbing the proving seam", "invariant": "A tracer bullet is a real, end-to-end, kept-and-built-upon slice through every layer of the system (or claim) — it must ALWAYS touch every layer for real, and it must NEVER be thrown away like a prototype/spike; a prototype/spike answers a question and gets discarded, a tracer bullet becomes the skeleton of the final thing."}, {"skill": "dev-diary", "plugin": "dev-diary", "stage": "END", "role": "Post-run capture of the slice and its unmet criteria", "invariant": "Turn a day of scattered work into one entry scannable in fifteen seconds and trustworthy to a future self — the value is judgment (which two or three things mattered and why), not transcription."}, {"skill": "dev-diary-review", "plugin": "dev-diary", "stage": "END", "role": "Revises a past run’s entry without losing what still holds", "invariant": "Revise an existing entry to make it truer without losing what already holds — editing is not rewriting: preserve every bullet that still stands."}, {"skill": "prove-the-undo", "plugin": "prove-the-undo", "stage": "END", "role": "Restore path exercised before any irreversible criterion goes green", "invariant": "An irreversible action is ALWAYS preceded by a named restore path that was actually exercised (restored, diffed, or dry-run-verified) in this session — and NEVER justified by the mere existence of an unverified backup."}, {"skill": "second-opinion", "plugin": "voice", "stage": "END", "role": "Offered, not forced, on architectural or confidence-flagged verdicts", "invariant": "**ALWAYS** confirm a subagent-spawning tool exists before starting, and report counts that equal what actually ran. **NEVER** run unbidden, and never emit this skill's output format without having dispatched the work it describes."}, {"skill": "verify-before-claim", "plugin": "verify-before-claim", "stage": "END", "role": "The verdict is check.sh output, run — never asserted", "invariant": "A claim of fact, completion, or reproduction must ALWAYS be backed by the specific check that would prove it false, performed directly — and NEVER asserted as settled when that check wasn't run; residual uncertainty must ALWAYS be flagged explicitly, never smoothed into confident-sounding prose."}, {"skill": "context-handoff", "plugin": "context-handoff", "stage": "CROSS", "role": "Pointer-only continue/clear/delegate decision at every node boundary", "invariant": "At every phase boundary, the continue / clear / handoff / delegate / compact choice must ALWAYS be reached by walking the one ordered decision tree top-to-bottom — continue, then clear, then handoff, then delegate, then compact, first match wins — never guessed ad hoc, never invoked mid-phase (mid-phase there is nothing to decide: continue, or split remaining work into a subagent), and never jumped to out of…"}, {"skill": "egress-gate", "plugin": "egress-gate", "stage": "CROSS", "role": "Enumerates what leaves the machine before any transmitting check_cmd", "invariant": "Content leaving the machine is ALWAYS enumerated (what, to whom) before the transmitting call is made — and secrets, credentials, or content from outside the task's stated scope are NEVER included in an outbound payload."}, {"skill": "human-voice", "plugin": "voice", "stage": "CROSS", "role": "Verdict-first prose at each of the three human gates", "invariant": "**ALWAYS** put the verdict first, and let no load-bearing claim survive unverified without being marked. **NEVER** invoke `second-opinion` unprompted — offer it and wait. \"Marked\" means the exception rule in Step 3, not a tag on every line: tag the verdict, tag the exceptions, and state once that the rest is verified."}, {"skill": "machine-voice", "plugin": "voice", "stage": "CROSS", "role": "Compresses envelope notes to the word caps", "invariant": "**ALWAYS** confirm the element matches the list below before compressing. **NEVER** apply these layers to prose a human reads — that is `human-voice`'s."}, {"skill": "scope-fence", "plugin": "scope-fence", "stage": "CROSS", "role": "Every hunk traces to a criterion id; discoveries recorded, never folded in", "invariant": "Every hunk in the produced diff ALWAYS traces to the stated task; out-of-scope discoveries are ALWAYS recorded as findings and NEVER folded into the same change."}, {"skill": "semver-gate", "plugin": "semver-gate", "stage": "CROSS", "role": "Per-action autonomy lookup; MAJOR breaks the autonomous run and asks", "invariant": "A MAJOR-classified action must never be taken without explicit, specific prior human sign-off on that exact action and mechanism — not inferred from a prior adjacent confirmation, not assumed from a general instruction, not skipped under time pressure or retry pressure, and never routed around when a separate structural block (classifier, permission denial, API-level policy) fires after sign-off was already…"}, {"skill": "stop-rule", "plugin": "stop-rule", "stage": "CROSS", "role": "Declares the attempt bound whose exhaustion forces a re-plan checkpoint", "invariant": "Attempts at one objective are ALWAYS counted against a bound declared up front, and hitting the bound ALWAYS produces a stop-and-report with current state and ranked hypotheses — NEVER a further attempt on momentum."}];
+const STAGES=["BEGIN","MIDDLE","END","CROSS"];
+let active="ALL";
+function paintSkills(){
+  const g=document.getElementById("skills"); g.innerHTML="";
+  SKILLS.forEach(s=>{
+    const b=document.createElement("button");
+    b.className="sk"+(active!=="ALL"&&s.stage!==active?" dim":"");
+    b.dataset.stage=s.stage; b.type="button";
+    b.innerHTML=`<span class="stg">${s.stage}</span><span class="nm">${s.skill}</span>
+      <span class="rl">${s.role}</span>`;
+    b.addEventListener("click",()=>{
+      document.getElementById("dstg").textContent=s.stage+" · "+s.plugin;
+      document.getElementById("dnm").textContent=s.skill;
+      document.getElementById("drl").textContent=s.role;
+      document.getElementById("dinv").textContent=s.invariant;
+      document.getElementById("dlg").showModal();
+    });
+    g.appendChild(b);
+  });
+}
+const fh=document.getElementById("filters");
+["ALL",...STAGES].forEach(st=>{
+  const b=document.createElement("button"); b.type="button";
+  b.textContent=st==="ALL"?`All ${SKILLS.length}`:st+" ("+SKILLS.filter(s=>s.stage===st).length+")";
+  b.setAttribute("aria-pressed",st==="ALL");
+  b.addEventListener("click",()=>{
+    active=st;
+    [...fh.children].forEach(c=>c.setAttribute("aria-pressed",false));
+    b.setAttribute("aria-pressed",true); paintSkills();
+  });
+  fh.appendChild(b);
+});
+document.getElementById("dclose").addEventListener("click",()=>document.getElementById("dlg").close());
+
+const REFS=[
+ ["BEGIN “defines verifiable criteria”","Criteria written but never executed are self-report. A model writes criteria it already believes it meets.","The red gate. check.sh must run and come back FAIL on every checkable criterion before MIDDLE starts."],
+ ["Every output is verifiable","Taste, prose and exploration are not command-checkable, so a hard gate incentivizes fake check_cmds written purely to clear it.","A declared UNVERIFIABLE verdict, capped and individually countersigned at BEGIN — never an END downgrade of a red check."],
+ ["END is “checked against BEGIN’s criteria”","Omits who checks. The common failure is silently rewriting the criteria to match whatever got built.","A fresh agent that did not write the code, handed only criteria, script and diff — plus sha-pinning so drift is mechanical to detect."],
+ ["“Subagents fan out for creativity”","Conflates reading with writing. Concurrent writers on shared code produce conflicting assumptions.","Fan out reads, funnel writes. Exactly one writer per run by default; fan-out is for search, analysis and option generation."],
+ ["Output “can be a plan that breaks the problem into more subagents”","Implies eager decomposition. An eager tree propagates a wrong top-level split through everything beneath it.","Lazy recursion. Attempt the slice first; decompose only at an observed, named failure with sub-criteria already proven red."],
+ ["“Self-similar / recursive”","Self-similarity is a shape, not a termination rule. Unbounded self-similarity is unbounded cost.","A four-part spawn precondition, a shared sibling budget pool, and one depth_remaining counter as the backstop."],
+ ["“Handoffs must be token-efficient”","Half right, half dangerous. Compressing the criteria is goal drift by another name.","Pointerize anything re-readable from the environment. Criteria travel verbatim, excluded from the token cap, never paraphrased."],
+ ["(omitted) the default shape","Fan-out costs roughly 15× a single agent. For a simple idea prompt, orchestration is pure waste.","The default path is a linear single-writer chain. Orchestration is an escalation triggered by observed failure."],
+ ["“Tracer bullet”","Without a number it quietly degrades into a partial layer that never crosses the seam.","One criterion flipped, every named layer touched, no stub at the proving seam, and a hard budget that aborts rather than grows."],
+ ["Immutable criteria + real learning","A contradiction the idea leaves unresolved: a wrong contract has no legal correction path.","Learning enters as a child with new criteria, never as an edit to the ratified one — drift stays detectable."]
+];
+document.getElementById("refs").innerHTML=REFS.map(([a,b,c])=>
+ `<div class="ref"><div class="was"><div class="lbl">As written</div><p>${a}</p>
+  <p style="margin-top:9px;font-size:13.5px;color:var(--muted)">${b}</p></div>
+  <div class="now"><div class="lbl">Refined to</div><p>${c}</p></div></div>`).join("");
+
+const FATALS=[
+ {t:"Only the criteria were pinned — not the checker",both:true,
+  s:"The writer has two tool calls left and criterion 3 will not flip. It edits check.sh, replacing a real curl assertion with echo '#3 PASS'. END re-hashes CRITERIA.md, matches, runs the script, reports green.",
+  f:"Pin sha256 of check.sh too; re-hash both at END; put .redgate/** on a deny-list no MIDDLE lease can cover."},
+ {t:"Every successful recursion destroyed itself",both:true,
+  s:"Criterion 2 fails and spawns two children. Both go green. The parent rewrites criterion 2's check_cmd to “all child checks green” — mutating the sha-pinned file. END detects drift and fails the whole run.",
+  f:"Delegation moves to a mutable DELEGATION.md keyed by criterion id. CRITERIA.md keeps its original command, and the parent re-runs that for its verdict."},
+ {t:"“A crash is not red” deadlocked all greenfield work",
+  s:"The idea is to add a CLI called foo. The check_cmd foo --version exits 127, command not found. The rule says that is not red, so the gate can never go red and MIDDLE is never dispatchable.",
+  f:"Scope “not red” to harness failure alone — no verdict line, reserved exit 99, dirty preflight. A check_cmd exiting non-zero for any reason, 127 included, is a real FAIL."},
+ {t:"Red proved a check fails, not that it measures anything",
+  s:"check_cmd is grep -q RETRY src/client.go. Red today because the word is absent. The slice adds a comment containing RETRY. The criterion flips green. No retry logic exists anywhere.",
+  f:"A positive control at BEGIN, and a mutation control at END: revert the core hunk and re-run. A check that still passes is UNVERIFIABLE, not green."},
+ {t:"Budget halved per child, but never across siblings",
+  s:"The root holds 1M tokens. Four criteria each spawn two children at 500K apiece. Eight children each see budget above the floor and spend it: 4M consumed, four times the root cap, with every local rule reporting compliance.",
+  f:"One child pool per parent that all siblings split, debited from a single run-scoped ledger, under a run-level ceiling that terminates the whole tree."}
+];
+document.getElementById("fatals").innerHTML=FATALS.map((f,i)=>
+ `<div class="fat"><span class="n">F${i+1}</span><div>
+  <h4>${f.t}${f.both?'<span class="both">both critics</span>':''}</h4>
+  <p class="sc">${f.s}</p>
+  <p class="fx"><b>Fix now in the spec</b>${f.f}</p></div></div>`).join("");
+
+const GAPS=[
+ ["criteria-contract","blocking","Writes CRITERIA.md and check.sh from an interviewed idea and enforces the red gate. Nothing produces the BEGIN artifact today."],
+ ["reconcile","blocking","Re-hashes, runs check.sh from a fresh context, scores criterion-by-criterion with evidence pointers and the mutation control."],
+ ["redgate-driver","blocking","The entry-point command that runs BEGIN→MIDDLE→END and blocks each transition. orchestrate is fan-out templates only; wayfinder never executes."],
+ ["recursion-contract","structural","The four-part spawn precondition, budget pooling, and the termination report."],
+ ["handoff-envelope","structural","The typed parent↔child schema as a reusable skill rather than per-template JSON inside orchestrate."],
+ ["spend-ledger","structural","Cumulative tokens and tool calls across the whole recursion, not just per message."],
+ ["harvest","structural","A deterministic sibling reducer with a dedupe rule, so a successful branch is never lost behind a failed one."],
+ ["fanout-budget","refinement","How many divergent read-only subagents to spawn, justified against a single linear agent."],
+ ["escalate","refinement","Child→parent return-and-renegotiate versus abort versus re-split."],
+ ["lease","refinement","File-glob arbitration for the optional parallel mode."]
+];
+document.getElementById("gaps").innerHTML=GAPS.map(([n,t,d])=>
+ `<div class="gap" data-tier="${t}"><div class="tier">${t}</div><div class="nm">${n}</div><p>${d}</p></div>`).join("");
+
+render(); paintSkills();
+</script>
