@@ -322,6 +322,39 @@ sys.exit(1 if fail else 0)
 PY
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 7c. Every references/ doc is linked from its own SKILL.md ---------------
+# A reference file nothing links is shipped but INERT: progressive disclosure is
+# the only way a skill loads it, so an unlinked reference never takes effect.
+# Found by independent verification of the redgate slices: three growth-loop
+# amendment files existed on disk while zero host skills referenced them.
+group "references are reachable from their own SKILL.md"
+python3 - "$REPO_ROOT" <<'PY_ORPHAN'
+import os, sys
+root = sys.argv[1]
+fail = 0
+checked = 0
+for base, dirs, files in os.walk(os.path.join(root, "plugins")):
+    if os.path.basename(base) != "references":
+        continue
+    skill = os.path.join(os.path.dirname(base), "SKILL.md")
+    if not os.path.isfile(skill):
+        continue
+    text = open(skill, encoding="utf-8").read()
+    for fn in sorted(files):
+        if not fn.endswith(".md"):
+            continue
+        checked += 1
+        if f"references/{fn}" in text:
+            continue
+        rel = os.path.relpath(os.path.join(base, fn), root)
+        print(f"  FAIL {rel} is never linked from {os.path.relpath(skill, root)} — shipped but inert")
+        fail += 1
+if fail == 0:
+    print(f"  PASS all {checked} reference docs are linked from their own SKILL.md")
+sys.exit(1 if fail else 0)
+PY_ORPHAN
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 8. Red-by-default sentinel never ships ---------------------------------
 # The scaffolder writes a UUID-shaped sentinel into each new plugin's checks.sh
 # so a freshly scaffolded (unimplemented) plugin is RED until a human writes real

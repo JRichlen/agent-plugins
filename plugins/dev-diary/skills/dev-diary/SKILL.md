@@ -136,3 +136,10 @@ Follow `references/format-guide.md` for the house style. The non-negotiables:
   persists.
 - **This is the user's voice, first-person and terse.** Write the way they'd
   write a note to themselves, not a press release.
+
+## References
+
+- [`references/consolidate-delta.md`](references/consolidate-delta.md) — emit
+  typed `ADD`/`UPDATE`/`REMOVE` deltas and a `SHAPE:` tag alongside the prose
+  entry, so recurring failures are countable by `recurrence-detector` instead
+  of needing a month of prose re-read.

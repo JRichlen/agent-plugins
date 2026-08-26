@@ -18,7 +18,7 @@ compatibility: >-
   subagents, END runs in a fresh one; where it does not, END runs in a
   fresh session or falls to the human at the round gate — the independence
   requirement ports, the mechanism adapts. A Claude-Code hooks enforcement
-  layer is planned as an optional hardening slice, never a dependency.
+  layer ships in this plugin as optional hardening, never a dependency.
 ---
 
 # redgate
@@ -35,7 +35,7 @@ The driver for the Red Gate protocol (`docs/red-gate-protocol.md` in this
 marketplace — read it for the full design and its adversarial corrections).
 A **run** is a sequence of **rounds** with classified gates; every round is one
 BEGIN/MIDDLE/END. This skill drives the run; the `criteria-contract` skill
-(same plugin) owns BEGIN; `reconcile` (next slice) owns END.
+(same plugin) owns BEGIN; `reconcile` (same plugin) owns END.
 
 ## The round-zero rule
 
