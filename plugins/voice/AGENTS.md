@@ -6,7 +6,7 @@ vocabulary. `machine-voice` governs machine-read artifacts — agent traces, log
 status lines, state dumps, schemas — and compresses them. `second-opinion` is an
 offer-only validation pipeline that stress-tests a verdict and re-emits it
 grouped into verified, flagged, and conflict. `ai-writing-mistakes` is a
-wording pass over prose the first skill has already laid out — it removes the
+wording pass over prose the first skill has already laid out. It removes the
 filler that marks text as machine-written, and it is not a fourth voice.
 
 The four ship together because they are one system: the first two partition a
@@ -72,7 +72,7 @@ verification rather than simulate a result.
 The third clause is the one with teeth, and it binds two skills. A model that
 emits a grouped Verified/Flagged/Conflict block and a delta line without having
 dispatched anything has produced a counterfeit of exactly the thing the user
-asked for when they said "are you sure" — indistinguishable from the real
+asked for when they said "are you sure": indistinguishable from the real
 output, and worse than no answer. `ai-writing-mistakes` has the same shape of
 failure at lower stakes: "cleaned that up for you" over prose that was never
 touched, which the user has no way to check without re-reading the draft

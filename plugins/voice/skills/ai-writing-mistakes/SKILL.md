@@ -78,7 +78,12 @@ rate, everywhere, regardless of what the sentence is doing**.
 Two numeric rules, so this is checkable rather than a matter of taste:
 
 - **At most one em dash per paragraph.** A second one in the same paragraph
-  becomes a comma, a colon, or a full stop.
+  becomes a comma, a colon, or a full stop. Three things this counts, because
+  measuring it exposed all three: the unit is one prose paragraph or one list
+  item, so a list of six dashed bullets is six units and not a violation; a
+  matched **pair** setting off a single parenthetical — like this one — is one
+  use, not two; and YAML frontmatter, tables, and code are not prose and are
+  not counted.
 - **At most one hedge per claim.** "may potentially", "could possibly",
   "generally tends to" carry one hedge's meaning at three hedges' cost. Where
   the uncertainty is real, `human-voice`'s `⚠️` or `❓` tag says it once.
