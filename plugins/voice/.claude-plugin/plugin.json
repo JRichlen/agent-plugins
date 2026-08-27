@@ -20,7 +20,7 @@
     "writing",
     "editing",
     "ai-detection",
-    "slop"
+    "prose-quality"
   ],
   "skills": "./skills/",
   "commands": "./commands/"
