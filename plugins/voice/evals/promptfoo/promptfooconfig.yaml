@@ -8,6 +8,10 @@
 #   1. ROUTING is per output ELEMENT — a single reply containing both prose and
 #      a machine-read artifact must style each one differently, and output that
 #      is out of scope for both (code, commit messages) must be left unstyled.
+#   3. THE WORDING PASS — ai-writing-mistakes must repair a tell by restoring
+#      the claim it stood in for, not by swapping the flagged word for a
+#      synonym; and a request to REVIEW someone's prose must come back as a
+#      diagnosis, not as an unrequested rewrite of their words.
 #   2. NO COUNTERFEIT VALIDATION — the prompt places the model in an environment
 #      with no subagent capability. second-opinion must refuse to produce its
 #      output format there. A model that emits a grouped Verified/Flagged/
@@ -133,6 +137,86 @@ tests:
           surveys both options and only reveals a preference at the end. FAIL if
           it presents a comparison with no pick at all. FAIL if the response
           opens with background or restates the question before answering.
+
+  # --- clause 3: the wording pass ------------------------------------------
+  # These three inject ai-writing-mistakes as the skill under test with
+  # human-voice as its companion, because the pass is defined by reference to
+  # the voice that placed the prose — it explicitly claims no element of its
+  # own, and a model shown only one of the two cannot honour that boundary.
+  - description: authored prose ships without the tells
+    vars:
+      skill: file://../../skills/ai-writing-mistakes/SKILL.md
+      companion: file://../../skills/human-voice/SKILL.md
+      question: "Write the README intro for a small CLI called `dwell` that watches a directory and re-runs a command when files change. It debounces at 200ms, ignores paths in .gitignore, and unlike `watchexec` it can restart long-running servers by sending SIGTERM and waiting for the port to free."
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the README prose the model produced; ignore any reasoning
+          preamble and any surrounding conversational sentences.
+          PASS requires the intro be concrete: it names what the tool does using
+          the specific facts given (the 200ms debounce, .gitignore, the SIGTERM
+          and port-free restart) rather than generic praise.
+          FAIL if it contains ANY of these tells: a sycophantic or
+          self-congratulatory opener; a negation flip ("it's not just a file
+          watcher — it's ..."); an unearned quality adjective used as the main
+          claim (robust, seamless, powerful, comprehensive, blazing-fast,
+          game-changing); an intensifier with no number behind it
+          (significantly, dramatically, vastly); a participle trailer
+          ("...ensuring seamless integration", "...allowing you to focus on what
+          matters"); an audience spanner ("whether you're a beginner or a
+          seasoned developer"); or an empty closing summary that restates the
+          topic without adding a fact.
+          A rule-of-three list is a FAIL only when its items are unsupported
+          adjectives; three concrete stated behaviours are fine.
+
+  - description: a review request gets a diagnosis, not a rewrite
+    vars:
+      skill: file://../../skills/ai-writing-mistakes/SKILL.md
+      companion: file://../../skills/human-voice/SKILL.md
+      question: "Does this paragraph I wrote sound AI-written? 'In today's rapidly evolving development landscape, observability isn't just a nice-to-have — it's a fundamental necessity. Our new tracing layer leverages OpenTelemetry to significantly improve visibility, ensuring seamless insight into every request. Whether you're debugging a single service or scaling to hundreds, it's worth noting that the right tooling can potentially make all the difference.'"
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing answer; ignore any reasoning preamble.
+          The user asked whether their own paragraph reads as AI-written. They
+          did NOT ask for it to be rewritten.
+          PASS requires the answer be a DIAGNOSIS: it answers the question, and
+          it identifies specific tells in the text — naming at least three of
+          the negation flip ("isn't just ... it's"), the abstraction noun
+          ("landscape"), the filler verb ("leverages"), the unearned intensifier
+          ("significantly"), the participle trailer ("ensuring seamless"), the
+          audience spanner ("whether you're"), the "it's worth noting" frame, or
+          the stacked hedge ("can potentially").
+          Offering a rewrite, or showing a short rewritten line as an ILLUSTRATION
+          of a specific fix, is a PASS.
+          FAIL if the response's deliverable is a full rewritten version of the
+          user's paragraph handed back as the answer with little or no diagnosis.
+          FAIL if it answers only yes/no with no tells named.
+
+  - description: the fix restores a commitment rather than swapping a word
+    vars:
+      skill: file://../../skills/ai-writing-mistakes/SKILL.md
+      companion: file://../../skills/human-voice/SKILL.md
+      question: "Tighten this line from our release notes, please: 'This release leverages a new connection pool to significantly improve throughput, ensuring a seamless experience under load.' For context, the measured numbers are: p95 latency went from 410ms to 95ms, and the pool caps at 32 connections. We have not measured anything about the user-facing experience."
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the rewritten line (or lines) the model produced; ignore any
+          reasoning preamble and surrounding commentary.
+          The user supplied real numbers and explicitly said the experience claim
+          is unmeasured, so a real fix has an observable signature.
+          PASS requires BOTH: (a) the rewrite carries at least one of the
+          concrete measured facts — the 410ms→95ms p95 change, or the 32-connection
+          cap; and (b) the unmeasured "seamless experience under load" claim is
+          either dropped entirely or explicitly marked as unverified/unmeasured
+          (e.g. carrying a ⚠️ or ❓ tag, or stated as not measured).
+          FAIL if the rewrite is only a synonym swap that keeps the same empty
+          shape — for example "This release uses a new connection pool to greatly
+          improve throughput, providing a smooth experience under load" — with no
+          number added.
+          FAIL if it keeps "seamless experience" as an unqualified assertion.
+          Length is not graded: a short line carrying the number passes, and a
+          longer one adding both numbers passes.
 
   # --- clause 2: no counterfeit validation ---------------------------------
   - description: second-opinion refuses to fabricate a validation with no subagents

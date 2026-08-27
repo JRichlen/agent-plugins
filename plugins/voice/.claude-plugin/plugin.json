@@ -1,7 +1,7 @@
 {
   "name": "voice",
-  "version": "0.0.1",
-  "description": "Route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus second-opinion, an offer-only subagent validation pipeline that never runs unbidden.",
+  "version": "0.1.0",
+  "description": "Route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus ai-writing-mistakes, a wording pass that strips the tells marking prose as machine-written, and second-opinion, an offer-only subagent validation pipeline that never runs unbidden.",
   "author": {
     "name": "Jordan Richlen"
   },
@@ -16,7 +16,11 @@
     "confidence",
     "validation",
     "second-opinion",
-    "communication"
+    "communication",
+    "writing",
+    "editing",
+    "ai-detection",
+    "slop"
   ],
   "skills": "./skills/",
   "commands": "./commands/"

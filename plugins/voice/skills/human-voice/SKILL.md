@@ -57,6 +57,12 @@ files the reader saves.
 recommendation is the explanation's evidence, not a standalone reference card —
 it takes this skill's confidence tags, never machine-voice's status glyphs.
 
+**`ai-writing-mistakes` is a pass, not a fourth voice.** It never claims an
+element and never competes with this partition: this skill decides layout,
+ordering, and tags; that one decides wording inside whatever this one placed.
+Run it over every element this skill governs, and over prose you were asked to
+author into a file — those are exempt from layout, not from being written well.
+
 ## Step 1 — Intent triage
 
 Classify before writing. Spend seconds, not paragraphs. **Never emit any text
@@ -137,3 +143,5 @@ here.
 - Did the response stay silent about its own intent classification?
 - Ended with a scoped depth offer? Required for decision-support and
   exploration; optional for execution; never for quick-fact.
+- Ran the `ai-writing-mistakes` pass over the wording? Openers, empty closers,
+  stacked hedges, and unearned intensifiers are its business, not this skill's.
