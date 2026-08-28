@@ -354,4 +354,167 @@ has "$_HV" 'first line of the response' \
   "human-voice makes verdict placement text-observable" \
   "human-voice lost the observable verdict-placement predicate"
 
-unset _HV _MV _SO _AW _AWREF _REF _AG _HOOK _HANDLER _PROMPT _CFG _n _awn _s _f
+# ══ RULE-LEVEL COVERAGE ═══════════════════════════════════════════════════
+# Everything above defends the plugin's headline clauses. This section covers
+# the rest: every remaining normative rule in every SKILL.md, so that no rule
+# can be deleted or softened without a check going red. The rule-coverage guard
+# at the end of this file is what keeps this section honest as the skills grow.
+
+# --- the four invariants themselves ---------------------------------------
+# Each skill opens with an ALWAYS/NEVER invariant. These were the LEAST covered
+# statements in the plugin: the single most load-bearing sentence in each file
+# had no assertion at all, so all four could have been rewritten wholesale
+# while the suite stayed green.
+group "voice — each skill states its own invariant"
+has "$_HV" 'put the verdict first' \
+  "human-voice invariant: verdict first" \
+  "human-voice lost its ALWAYS clause — the skill's whole point is now unstated and untested"
+has "$_MV" 'confirm the element matches the list below before compressing' \
+  "machine-voice invariant: confirm membership before compressing" \
+  "machine-voice lost its ALWAYS clause — compression is no longer gated on the element matching the list"
+has "$_SO" 'confirm a subagent-spawning tool exists before starting' \
+  "second-opinion invariant: confirm the tool exists first" \
+  "second-opinion lost its ALWAYS clause — the capability gate is unstated"
+has "$_AW" 'fix a tell by restoring what it displaced' \
+  "ai-writing-mistakes invariant: restore what the tell displaced" \
+  "ai-writing-mistakes lost its ALWAYS clause — the commitment rule is unstated"
+
+# --- human-voice: the rules below the layout -------------------------------
+group "voice — human-voice behavioural rules"
+has "$_HV" 'Never emit any text' \
+  "human-voice keeps intent classification silent" \
+  "human-voice no longer forbids narrating its own triage — responses start with 'This looks like a decision-support question'"
+has "$_HV" 'No opinions in a vacuum.' \
+  "human-voice requires auditable evidence behind a pick" \
+  "human-voice lost the no-opinions-in-a-vacuum rule — an untagged, unsourced recommendation becomes legal"
+has "$_HV" 'The stakes test wins.' \
+  "human-voice keeps stakes above confidence for escalation" \
+  "human-voice lost the stakes test — a low-confidence quick fact now escalates to second-opinion and bills for it"
+
+# --- machine-voice: Layer 2 is six rules, and each one binds ---------------
+group "voice — machine-voice Layer 2 rules"
+has "$_MV" 'only for independently meaningful sections' \
+  "Layer 2 constrains headers" \
+  "Layer 2 lost the header rule"
+has "$_MV" 'only for parallel items: same shape, same granularity' \
+  "Layer 2 constrains lists to parallel items" \
+  "Layer 2 lost the list-parallelism rule"
+has "$_MV" 'Two-item comparisons are prose.' \
+  "Layer 2 sets a table threshold" \
+  "Layer 2 lost the table threshold — two-row tables return"
+has "$_MV" 'Always tag the fence language.' \
+  "Layer 2 requires tagged code fences" \
+  "Layer 2 lost the fence-language rule"
+has "$_MV" 'group related items, blank line between groups' \
+  "Layer 2 makes whitespace structural" \
+  "Layer 2 lost the whitespace rule"
+has "$_MV" 'bold the one phrase per paragraph that carries load' \
+  "Layer 2 limits emphasis" \
+  "Layer 2 lost the emphasis rule — bold becomes decoration again"
+# Six bullets, counted: a seventh added silently, or one quietly dropped, is a
+# change to the compression contract and should be deliberate.
+_mvn=$(sed -n '/^### Layer 2 — Vertical/,/^### Layer 3/p' "$_MV" 2>/dev/null | grep -c '^- \*\*')
+if [ "$_mvn" = "6" ]; then
+  ok "Layer 2 still has exactly 6 rules"
+else
+  bad "Layer 2 has $_mvn rules, not 6 — the vertical-compression contract changed size without anyone saying so"
+fi
+
+# --- second-opinion: the reporting rules ----------------------------------
+group "voice — second-opinion reporting rules"
+has "$_SO" 'Never state an outcome for a claim.' \
+  "second-opinion forbids outcomes before results return" \
+  "second-opinion lost the no-outcome-before-return rule — the dispatched-but-empty middle state is unguarded again"
+has "$_SO" 'not merely counted' \
+  "cut claims must be named, not just counted" \
+  "second-opinion no longer requires naming cut claims — a claim can vanish from a verdict as an anonymous integer"
+has "$_SO" 'The delta is mandatory.' \
+  "the validation delta is required even when nothing changed" \
+  "second-opinion lost the mandatory delta — a run that changed nothing can now report nothing"
+has "$_SO" 'Never inflate confidence.' \
+  "sourceless concurrence cannot reach verified" \
+  "second-opinion lost the no-inflation rule — advisors agreeing with no source can now be reported as verified"
+# Four merge groups, counted. Adding a fifth (or dropping Cut) changes the
+# output contract that the precedence order Cut > Conflict > Flagged > Verified
+# is defined over, and would leave that order referring to groups that moved.
+_son=$(sed -n '/^## Step 5 — Merge/,/^## Output format/p' "$_SO" 2>/dev/null | grep -cE '^- (✅|⚠️|❗|\*\*Cut\*\*)')
+if [ "$_son" = "4" ]; then
+  ok "the merge step still has exactly 4 groups"
+else
+  bad "the merge step has $_son groups, not 4 — the output contract changed under the precedence rule that orders them"
+fi
+
+# --- ai-writing-mistakes: the rules the catalogue table does not carry ------
+group "voice — ai-writing-mistakes non-catalogue rules"
+has "$_AW" 'would use domain terms plainly' \
+  "the specialist test protects domain vocabulary" \
+  "ai-writing-mistakes lost the specialist test — 'leverage' in a finance doc and 'delve' in a paper title become defects"
+has "$_AW" 'Uniform rhythm.' \
+  "uniform sentence and paragraph length is named as a tell" \
+  "ai-writing-mistakes lost the uniform-rhythm tell — the one structural tell no word list can catch"
+has "$_AW" 'A list is for parallel items' \
+  "bulletized prose is named as a tell" \
+  "ai-writing-mistakes lost the bulletization tell"
+
+# --- the reference files carry rules too ----------------------------------
+# Both references are loaded on demand and are where the detail lives. Neither
+# was covered beyond a single grep, so either could have been emptied to a stub.
+group "voice — reference files still carry their content"
+has "$_REF" '## Block language' \
+  "lexical-patterns keeps the block-language pattern" \
+  "lexical-patterns lost a named pattern that machine-voice sends the reader to find"
+has "$_REF" '## Headlinese' \
+  "lexical-patterns keeps headlinese" \
+  "lexical-patterns lost headlinese"
+has "$_REF" '## Asyndeton' \
+  "lexical-patterns keeps asyndeton" \
+  "lexical-patterns lost asyndeton"
+has "$_REF" '## Nominal style' \
+  "lexical-patterns keeps nominal style" \
+  "lexical-patterns lost nominal style"
+has "$_MV" 'Four named patterns' \
+  "machine-voice still promises four named patterns" \
+  "machine-voice no longer names the count its reference file must supply"
+has "$_AWREF" 'Invented specificity' \
+  "tells.md keeps the invented-specificity tell (the accuracy-costing one)" \
+  "tells.md lost invented specificity — the tell that costs the reader accuracy rather than attention"
+has "$_AWREF" 'The confident summary of unread material' \
+  "tells.md keeps the unread-material tell" \
+  "tells.md lost the confident-summary-of-unread-material tell"
+
+# --- AGENTS.md is the cross-harness entry point, not decoration ------------
+group "voice — plugin AGENTS.md carries the contract"
+has "$_AG" 'per output element, not per response' \
+  "AGENTS.md states the element-level routing rule" \
+  "AGENTS.md lost the routing rule — the cross-harness entry point no longer describes the partition"
+has "$_AG" 'sits outside that routing decision entirely' \
+  "AGENTS.md states the wording pass claims no element" \
+  "AGENTS.md no longer says the wording pass claims no element"
+has "$_AG" 'NEVER report work you did not' \
+  "AGENTS.md carries the no-counterfeit clause" \
+  "AGENTS.md lost the no-counterfeit clause that binds second-opinion and ai-writing-mistakes together"
+
+
+# ══ THE GUARD: every rule must have a test ════════════════════════════════
+# The sections above are a snapshot. This is the ratchet.
+#
+# rule-coverage.py extracts every normative rule unit from every SKILL.md and
+# fails if any of them has no assertion in THIS file. It reads the assertions
+# out of checks.sh directly, so there is no manifest to fall out of date.
+#
+# Consequence, and the point: adding a rule to a skill without adding a check
+# for it turns the cheap tier red. A rule nobody tests is a rule that can be
+# silently deleted, which is the exact regression class this whole pack exists
+# to catch.
+group "voice — every rule in every skill has an assertion"
+_cov="$(python3 "$PLUGIN_DIR/evals/cheap/rule-coverage.py" "$PLUGIN_DIR/evals/cheap/checks.sh" "$_HV" "$_MV" "$_SO" "$_AW" 2>&1)"
+_covrc=$?
+_covtot=$(printf '%s\n' "$_cov" | awk -F'\t' '/^TOTAL/{print $2}')
+if [ "$_covrc" = "0" ]; then
+  ok "all $_covtot normative rule units across the four skills are asserted"
+else
+  printf '%s\n' "$_cov" | awk -F'\t' '/^UNENFORCED/{print "      " $2 "  " $3}'
+  bad "$(printf '%s\n' "$_cov" | awk -F'\t' '/^TOTAL/{print $4}') rule unit(s) have no assertion in checks.sh — add a check, or the rule can be deleted without the suite noticing"
+fi
+
+unset _HV _MV _SO _AW _AWREF _REF _AG _HOOK _HANDLER _PROMPT _CFG _n _awn _mvn _son _cov _covrc _covtot _s _f

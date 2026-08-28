@@ -60,6 +60,28 @@ run, and none of them claim to be invoked by it.
 tool. Where none exists it is required to decline and fall back to search-based
 verification rather than simulate a result.
 
+## Every rule in this plugin has a test
+
+`evals/cheap/checks.sh` asserts the headline clauses above and, below those, one
+check per remaining normative rule in all four skills — including each skill's
+own ALWAYS/NEVER invariant, which was for a while the least-covered sentence in
+the plugin.
+
+Keeping that true is a ratchet, not a habit. `evals/cheap/rule-coverage.py`
+extracts every normative rule unit from every `SKILL.md` and fails when one has
+no assertion in `checks.sh`, reading the assertions out of `checks.sh` itself so
+there is no manifest to drift.
+
+**So adding a rule to a skill without adding a check for it turns the cheap tier
+red.** If that is you: write the check. The failure names the file and line. A
+rule nobody tests is a rule that can be silently deleted, which is the whole
+regression class this pack exists to catch.
+
+Two contracts are also counted rather than grepped, so resizing them has to be
+deliberate: machine-voice's Layer 2 has exactly six rules, and second-opinion's
+merge step has exactly four groups — the four the precedence order
+`Cut > Conflict > Flagged > Verified` is defined over.
+
 ## The invariant this plugin defends
 
 > ALWAYS route each output element to exactly one voice — prose to
