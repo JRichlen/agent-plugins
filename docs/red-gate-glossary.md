@@ -94,6 +94,73 @@ manifest gains a `closed` marker (a script change, gated by the eval tiers),
 the `gates.log` final entry is the authoritative signal that a run is
 closed. Do not infer "in progress" from `phase=MIDDLE` alone.
 
+## Lexicon v2 — proposed, not yet adopted
+
+The founding vocabulary has three defects the glossary above can pin but
+not fix: **positional names** (BEGIN/MIDDLE/END say *when*, not *what you
+must do* — MIDDLE is the emptiest word in the protocol, naming the actual
+work as filler between two other things), **negative names**
+(UNVERIFIABLE says what a criterion isn't, spending tokens to point away
+from the required behavior), and **one collision** (two unrelated
+"envelopes"). Lexicon v2 replaces them under four rules:
+
+1. **Verbs over positions.** A stage name is an instruction — reading it
+   tells you what to do, so surrounding prose can stop re-explaining it.
+2. **Names that make violations sound wrong.** The invariant should be
+   audible in ordinary sentences: "judging your own work," "dispatching
+   through an unarmed gate," "an unwitnessed taste criterion."
+3. **Say the required behavior, never its absence.**
+4. **One word, one meaning** — no term reused across layers.
+
+### The stages
+
+| Current | Proposed | Why it reinforces behavior |
+|---|---|---|
+| BEGIN | **ARM** | You arm the gate: write criteria, prove each can fire (red), ratify, pin. A tripwire that cannot fire is not armed — "proven able to fail" lives inside the word. "Unarmed dispatch" names the core violation in two words. |
+| MIDDLE | **TRACE** | Fire one tracer: single writer, one slice, through every layer named, no stub at the proving seam. Aligns with the existing tracer-bullet vocabulary instead of sitting beside it. |
+| END | **JUDGE** | The verdict, rendered independently. Nobody judges their own case — END independence, the protocol's hardest-to-enforce invariant, becomes the word's ordinary meaning. "Self-judging" is the violation. |
+
+A round is one **ARM → TRACE → JUDGE** cycle. "The gate is armed" compresses
+"criteria written, proven red, ratified, and pinned" — four clauses into
+two words, which is where the token leanness actually comes from: the verbs
+carry the rules, so prose stops restating them.
+
+### Round types (all verbs, matching)
+
+| Current | Proposed | Why |
+|---|---|---|
+| orientation | **SCOUT** | Go look before deciding; the artifact is what you saw (a decision brief). |
+| plan | **PLAN** | Already a verb; keep. |
+| build | **BUILD** | Already a verb; keep. |
+| consolidation | **WIDEN** | The actual behavior — the slice widened in place — in one word instead of five syllables. |
+
+### The renames that fix defects
+
+| Current | Proposed | Why |
+|---|---|---|
+| UNVERIFIABLE | **WITNESS** | Positive and imperative: this criterion requires a named human witness, countersigned individually. Also removes the standing trap where `check_cmd: UNVERIFIABLE …` runs as a command — `WITNESS:` was never a plausible command. |
+| autonomy envelope | **MANDATE** | Fixes the collision with the handoff envelope outright. "Inside the mandate" / "exceeds the mandate" is how delegated authority is described in ordinary English, which is exactly what an approved plan is. Handoff envelope keeps "envelope" unchallenged. |
+| harness failure (exit 99) | **FAULT** | One word; keeps "failure" reserved for criteria (FAIL). A FAULT is never a verdict. |
+
+Unchanged on purpose: run, round, slice, gate, PATCH/MINOR/MAJOR, pin,
+drift, evidence, fence, contract, Calibration, mutation control, negative
+control, reconcile (the skill name — the JUDGE stage's owner).
+
+### Migration policy (staged, gated)
+
+1. **Now (free):** new prose may use v2 with the v1 term in parentheses on
+   first use; this glossary is the alias table either way.
+2. **Docs sweep (cheap-tier gated):** rename across SKILL.md/references/
+   protocol doc in one commit, keeping a v1→v2 alias table here so old
+   run records stay readable.
+3. **Mechanical rename (MAJOR, human-gated):** `phase=` manifest values,
+   `check.sh` verdict strings, the hook guard's phase matching, and every
+   eval grep that pins v1 strings. This is scripts-and-evals territory —
+   it rides with the PR #75 fix batch or not at all, never as a drive-by.
+
+Committed run records under `.redgate/` are never rewritten — they are
+provenance, and v1 vocabulary inside them is part of the record.
+
 ## Deprecations
 
 - "calibration stub", "calibration control" (eval tier) → **negative control**.
