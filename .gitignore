@@ -27,3 +27,6 @@ plugins/graveyard/evals/pier/jobs/
 # The behavioral tier writes this per run (and the retry wrapper stages under
 # .promptfoo/). Generated, never committed.
 plugins/*/evals/promptfoo/results.json
+
+# Claude Code session state (workflow worktrees, local settings)
+.claude/
