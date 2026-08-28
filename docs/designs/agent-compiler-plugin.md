@@ -65,7 +65,10 @@ discipline it should not try. Three deliberate narrowings:
 
 ## 4. The invariant this plugin defends
 
-Marketplace rule: every plugin leads with the clause its evals defend.
+Following the marketplace's invariant-first convention — the root `AGENTS.md`
+names "the invariant every tier defends" for graveyard, existing plugins' own
+`AGENTS.md` files lead with "The invariant this plugin defends", and
+`plugin-factory` scaffolds that section by default — this plugin's clause is:
 
 > Given the same registry revision, query, and compiler version, compilation
 > produces a **byte-identical canonical AgentImage and identical hash**. The
@@ -187,7 +190,7 @@ bundled `registry/` and fixture queries:
 
 - *Golden:* the fixture query compiles to a pinned hash; repeated compilation is
   byte-identical.
-- *Metamorphic* (handoff §06, directly): re-running with shuffled file discovery
+- *Metamorphic:* (from the handoff's evaluation chapter, directly) re-running with shuffled file discovery
   order changes nothing; adding an unrelated module changes nothing; a read-only
   ceiling never links a write effect.
 - *Fail-closed:* fixtures with a conflicting rule pair, a missing dependency, a
