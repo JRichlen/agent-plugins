@@ -103,6 +103,23 @@ else
   bad "reconcile.sh missing or does not parse"
 fi
 
+group "redgate — reflection at the gate, never as a stage"
+hasE "$DRIVER" 'lesson.*field is mandatory|The lesson field is mandatory' \
+  "driver makes the gate lesson field mandatory" \
+  "the mandatory lesson field is gone — reflection has no teeth"
+hasE "$DRIVER" 'red verdict leaves a durable artifact' \
+  "a red verdict must leave a durable lesson artifact" \
+  "the red-verdict artifact rule is gone — failures stop feeding the next round"
+hasE "$DRIVER" '3 consecutive build gates' \
+  "the consolidation cadence exists (3 consecutive build gates)" \
+  "the consolidation cadence is gone — look-back is invitation-only again"
+has "$SCAFFOLD" 'outcome | lesson' \
+  "scaffold's gates.log header carries the lesson column" \
+  "gates.log header lost the lesson column"
+hasE plugins/redgate/skills/redgate/references/round-types.md '^## Retro' \
+  "round-types.md carries the retro template" \
+  "the retro round template is gone"
+
 group "redgate — graduated autonomy (semver-gate classified gates)"
 has "$DRIVER" 'semver-gate' "driver imports semver-gate as the gate classifier" "driver lost the semver-gate wiring"
 hasE "$DRIVER" 'any property\s*$|any property' "tie-break inherited (any property MAJOR)" "tie-break rule lost"

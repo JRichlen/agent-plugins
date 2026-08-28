@@ -16,7 +16,7 @@ spec), [`../plugins/redgate/skills/redgate/references/calibration.md`](../plugin
 |---|---|
 | **run** | One invocation of the protocol on one idea: a directory `.redgate/<slug>/` plus the sequence of rounds executed under it. A run ends at final acceptance (always-MAJOR) or when its round budget stops it. |
 | **round** | One BEGIN/MIDDLE/END cycle inside a run. Rounds are the *horizontal* axis: each ends at a classified gate, and learning between rounds happens by writing a **fresh** contract, never by editing a pinned one. |
-| **round type** | What the round produces: **orientation** (a decision brief), **plan** (an ordered slice list with proposed verifiers), **build** (a working change flipping one criterion), **consolidation** (a slice widened in place). Selected by the round-zero rule. |
+| **round type** | What the round produces: **orientation** (a decision brief), **plan** (an ordered slice list with proposed verifiers), **build** (a working change flipping one criterion), **consolidation** (a slice widened in place), **retro** (the run's lessons ledger, completed). Selected by the round-zero rule. |
 | **stage** | One of BEGIN / MIDDLE / END *within* a round. BEGIN writes and pins the contract; MIDDLE is the single-writer slice; END is the independent verification. |
 | **slice** | The tracer-bullet unit of MIDDLE work: the smallest change that flips one criterion through every layer it names, with no stub at the proving seam. |
 | **slug** | The kebab-case identifier of a run; names its directory `.redgate/<slug>/`. |
@@ -59,7 +59,9 @@ spec), [`../plugins/redgate/skills/redgate/references/calibration.md`](../plugin
 | **escalator** | A condition that forces MAJOR regardless of other properties: orientation decisions, plan approval, first ratification, UNVERIFIABLE countersignatures, fence widening, budget/depth extension, final acceptance, anything irreversible. Never auto-passed, never softened. |
 | **autonomy envelope** | A human-approved plan. Rounds executing strictly inside it pass their gates automatically; autonomy flows downhill from the approval, never upward from the work. |
 | **derived ratification** | Auto-ratification of a build round whose criteria are byte-derivable from an approved plan slice. Any deviation escalates to MAJOR. This is what keeps auto-ratification from becoming self-ratification. |
-| **gates.log** | The append-only ledger in the run dir: round · class · driving property · outcome. An auto-pass that cannot cite its qualifying conditions is a protocol violation. |
+| **gates.log** | The append-only ledger in the run dir: round · class · driving property · outcome · lesson. An auto-pass that cannot cite its qualifying conditions is a protocol violation. |
+| **lesson** | The mandatory one-line reflection in every gates.log entry — the protocol's answer to "where does Reflect go": at the gate, never as a stage. A red verdict's lesson names what the next contract must encode, and the next round's BEGIN reads prior gates.log files first. |
+| **retro round** | The optional round type whose END artifact is the run's completed lessons ledger; shape-checked, substance judged at the gate. Proposed by default after 3 consecutive build gates (the consolidation cadence). |
 
 ## Budgets and recursion
 

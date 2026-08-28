@@ -392,6 +392,30 @@ boundary. That is the whole distinction.
 
 ---
 
+## Where reflection lives — the stage question, settled
+
+Should rounds gain phases like Reflect, Plan, or Investigate? Researched
+against primary sources (`research/phase-structure-prior-art.md`); the
+answer is **no — three stages encode falsifiability, and the variance
+belongs elsewhere**. Plan and Investigate are round *types* (plan,
+orientation) plus in-stage actions (calibration's infer-first, mid-round
+fact lookups). Reflection lives *between* rounds in every mature
+verified-work loop — Deming's Act, Scrum's per-sprint-not-per-story
+retrospective, Reflexion's after-episode memory — and unenforced in-cycle
+phases evaporate (Beck marks refactor "optionally"; Fowler calls skipping
+it TDD's most common failure). Token-matched self-inspection phases also
+measurably underperform sampling (arXiv 2607.28576, 2310.01798).
+
+So reflection gets teeth as **gate obligations**, not a fourth stage: a
+mandatory one-line `lesson` field in every `gates.log` entry; a red
+verdict's lesson names what the next contract must encode, and the next
+round's BEGIN reads prior `gates.log` files first (the Reflexion
+mechanism); a consolidation cadence — after 3 consecutive build gates, a
+consolidation or retro round is proposed by default; and an optional
+**retro round type** whose END artifact is the completed lessons ledger.
+The driver skill carries the rules; `round-types.md` carries the retro
+template.
+
 ## Recursion
 
 Every node is the same BEGIN/MIDDLE/END.

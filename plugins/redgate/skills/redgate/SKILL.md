@@ -49,6 +49,7 @@ criteria for the artifact that will tell you what the work is.
 | Plan | an ordered slice list + proposed verifiers | its shape | the human, at the gate |
 | Build | working change flipping one criterion | behavior | the verifier |
 | Consolidation | the slice widened in place | behavior | the verifier |
+| Retro | the run's lessons ledger, completed | its shape | the human, at the gate |
 
 "I don't know what to do yet" is not a blocker; it selects the round type.
 And when rounds would be ceremony — the approach is agreed and the criterion
@@ -109,11 +110,29 @@ layers — escalates to MAJOR. The human approved those exact criteria once,
 at plan approval; that is what keeps auto-ratification from becoming
 self-ratification.
 
-**The gate ledger.** Every gate decision — class, driving property, outcome —
-is appended to `.redgate/<slug>/gates.log`. An auto-pass that cannot cite its
-qualifying conditions is a protocol violation, not a judgment call.
-Precedence is semver-gate's own, unchanged: a coded rule (autoMode pattern,
-harness permission) always wins over this classification.
+**The gate ledger.** Every gate decision — class, driving property, outcome,
+**lesson** — is appended to `.redgate/<slug>/gates.log`. An auto-pass that
+cannot cite its qualifying conditions is a protocol violation, not a
+judgment call. Precedence is semver-gate's own, unchanged: a coded rule
+(autoMode pattern, harness permission) always wins over this classification.
+
+**Reflection lives at the gate, never as a stage** (prior art:
+`docs/research/phase-structure-prior-art.md` — unenforced in-cycle phases
+evaporate; reflection between iterations is what every verified-work loop
+does). Three rules give it teeth:
+
+- **The lesson field is mandatory** at every gate: one line, what this round
+  taught. "None" is a legal lesson only at a PATCH gate.
+- **A red verdict leaves a durable artifact**: its lesson names what the
+  next contract must encode, and the next round's BEGIN starts by reading
+  the prior rounds' `gates.log` (including predecessor `-rN` run dirs).
+  That is the Reflexion mechanism — failure feeds the next episode's setup,
+  not a reflective phase inside this one.
+- **Consolidation cadence**: after 3 consecutive build gates with no
+  consolidation or retro round, the driver proposes one as the next round;
+  declining is logged in the gate line. An invitation-only "look back"
+  gets skipped — Polya's own account — so the cadence is the default, not
+  the exception.
 
 ## References
 

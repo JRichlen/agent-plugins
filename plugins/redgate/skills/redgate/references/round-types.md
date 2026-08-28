@@ -66,6 +66,26 @@ check_cmd: <the same test shape, extended cases>
 check_cmd: <a test that asserts the error branch>
 ```
 
+## Retro — consolidate the run's lessons (optional, cadence-triggered)
+
+END artifact: the run's `gates.log` completed into a lessons ledger. Gate
+class: **MINOR** (flagged, standing veto). Runs at most once per run,
+normally at close; the shape is checkable, the substance is judged by the
+human at the gate — the same shape-vs-behavior ladder as orientation.
+
+```
+## #1 Every gate entry in gates.log carries a non-empty lesson field
+check_cmd: ! grep -E '^[0-9]+ \|' .redgate/<slug>/gates.log | grep -vq '\| [^|]+$'
+## #2 Every red verdict in the run has a lesson naming what the next contract must encode
+check_cmd: <count red JUDGE verdicts; count lessons tagged red:; equal>
+## #3 Recurring lesson shapes cite their sightings (recurrence-detector food)
+check_cmd: <each lesson appearing twice carries both round numbers>
+```
+
+Not every run earns one: a T1 tracer's single gate line IS its retro. The
+cadence rule that makes retros recur instead of evaporating lives in the
+driver skill.
+
 ## The one rule every template shares
 
 Every `check_cmd` must be **red before the work and coupled to the work**:
