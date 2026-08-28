@@ -70,12 +70,24 @@ the plugin.
 Keeping that true is a ratchet, not a habit. `evals/cheap/rule-coverage.py`
 extracts every normative rule unit from every `SKILL.md` and fails when one has
 no assertion in `checks.sh`, reading the assertions out of `checks.sh` itself so
-there is no manifest to drift.
+there is no manifest to drift. Coverage is scoped per file: an assertion against
+`$_HV` can only cover a rule in `human-voice`, so a new rule cannot be born
+covered by an unrelated check that happens to share a substring with it.
 
 **So adding a rule to a skill without adding a check for it turns the cheap tier
 red.** If that is you: write the check. The failure names the file and line. A
 rule nobody tests is a rule that can be silently deleted, which is the whole
 regression class this pack exists to catch.
+
+The scope of that claim, stated exactly, because a guard is only worth what it
+actually catches: extraction is **marker-based**. A rule is found when it
+carries `**ALWAYS**`/`**NEVER**` (including inside a blockquote), a bold lead-in
+(`- **Thing** — ...`), a bolded Never/Always/Do not/Don't, or a bullet opening
+with an unbolded normative verb. Those are the forms the four skills use. A
+normative sentence buried unmarked in the middle of a paragraph carries none of
+them, is not extracted, and is therefore not ratcheted — write its check by
+hand. The guard narrows the gap; it does not close it, and it does not replace
+reading the diff.
 
 Two contracts are also counted rather than grepped, so resizing them has to be
 deliberate: machine-voice's Layer 2 has exactly six rules, and second-opinion's

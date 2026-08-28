@@ -137,7 +137,7 @@ group "voice — no counterfeit validation"
 has "$_SO" 'Name the tool you will call' \
   "second-opinion requires naming the subagent tool first (a positive precondition)" \
   "second-opinion lost the name-the-tool precondition — the environment gate has no detection test again"
-has "$_SO" "output format is forbidden" \
+has "$_SO" 'output format is forbidden' \
   "second-opinion forbids its own output format in the ungated case" \
   "second-opinion no longer forbids emitting its format without dispatching — a fabricated validation now satisfies the letter of the gate"
 has "$_SO" 'Counts equal reality.' \
@@ -241,7 +241,9 @@ lacksE "$_AW" 'never use an em dash|do not use em dashes|banned word|forbidden w
 # Grepping "twelve" is not enough: rows can be added or dropped while the word
 # stays. Count the catalogue table, the same way the machine-voice closed list
 # is counted, so silently widening or gutting it is what goes red.
-_awn=$(sed -n '/^| Tell | What it covers for | Fix |/,/^$/p' "$_AW" 2>/dev/null | grep -c '^| \*\*')
+# All table lines minus the header and its separator, NOT just rows with a bold
+# lead: a row written without one would otherwise not be counted.
+_awn=$(( $(sed -n '/^| Tell | What it covers for | Fix |/,/^$/p' "$_AW" 2>/dev/null | grep -c '^|') - 2 ))
 if [ "$_awn" = "12" ]; then
   ok "the catalogue table still has exactly 12 tells"
 else
@@ -437,7 +439,9 @@ has "$_SO" 'Never inflate confidence.' \
 # Four merge groups, counted. Adding a fifth (or dropping Cut) changes the
 # output contract that the precedence order Cut > Conflict > Flagged > Verified
 # is defined over, and would leave that order referring to groups that moved.
-_son=$(sed -n '/^## Step 5 — Merge/,/^## Output format/p' "$_SO" 2>/dev/null | grep -cE '^- (✅|⚠️|❗|\*\*Cut\*\*)')
+# Counted generically (any bullet), NOT by the four known glyphs: a fifth group
+# introduced with a new glyph would leave a glyph-specific count sitting at 4.
+_son=$(sed -n '/^## Step 5 — Merge/,/^## Output format/p' "$_SO" 2>/dev/null | grep -c '^- ')
 if [ "$_son" = "4" ]; then
   ok "the merge step still has exactly 4 groups"
 else
@@ -507,7 +511,8 @@ has "$_AG" 'NEVER report work you did not' \
 # silently deleted, which is the exact regression class this whole pack exists
 # to catch.
 group "voice — every rule in every skill has an assertion"
-_cov="$(python3 "$PLUGIN_DIR/evals/cheap/rule-coverage.py" "$PLUGIN_DIR/evals/cheap/checks.sh" "$_HV" "$_MV" "$_SO" "$_AW" 2>&1)"
+_cov="$(python3 "$PLUGIN_DIR/evals/cheap/rule-coverage.py" "$PLUGIN_DIR/evals/cheap/checks.sh" \
+  "_HV=$_HV" "_MV=$_MV" "_SO=$_SO" "_AW=$_AW" 2>&1)"
 _covrc=$?
 _covtot=$(printf '%s\n' "$_cov" | awk -F'\t' '/^TOTAL/{print $2}')
 if [ "$_covrc" = "0" ]; then
