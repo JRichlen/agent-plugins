@@ -7,11 +7,11 @@ below gives a criteria template you can copy into `CRITERIA.md`.
 The ladder: early rounds check an artifact's **shape** (machine-checkable
 even when its content is a judgment call, with the human judging substance at
 the gate); later rounds check **behavior**. This is what keeps a research
-round honest instead of spending the `UNVERIFIABLE` budget on "is this good?".
+round honest instead of spending the `WITNESS` budget on "is this good?".
 
-## Orientation — the approach is undecided
+## Scout — the approach is undecided
 
-END artifact: a decision brief. Gate class: **always MAJOR** — the approach
+Judged artifact: a decision brief. Gate class: **always MAJOR** — the approach
 steers every round beneath it.
 
 ```
@@ -27,8 +27,8 @@ check_cmd: grep -q '^## Recommendation' docs/<slug>/decision-brief.md && grep -q
 
 ## Plan — the approach is chosen, the slices are not
 
-END artifact: an ordered slice list. Gate class: **always MAJOR** — this
-approval *is* the autonomy envelope being drawn.
+Judged artifact: an ordered slice list. Gate class: **always MAJOR** — this
+approval *is* the mandate being drawn.
 
 ```
 ## #1 The plan exists and lists ordered slices
@@ -41,7 +41,7 @@ check_cmd: grep -A6 '^### Slice 1' docs/<slug>/plan.md | grep -qi 'end to end\|e
 
 ## Build — the criteria are writable today
 
-END artifact: working change. Gate class: **PATCH** when strictly derived
+Judged artifact: working change. Gate class: **PATCH** when strictly derived
 from an approved plan slice, verifier green, no escalator.
 
 ```
@@ -54,9 +54,9 @@ check_cmd: <the test / probe / audit that fails today>
 One criterion per slice, every named layer touched for real, **no stub at the
 seam the slice exists to prove**.
 
-## Consolidation — widen the slice in place
+## Widen — the slice widened in place
 
-END artifact: the same behavior at more inputs. Gate class: **PATCH**, same
+Judged artifact: the same behavior at more inputs. Gate class: **PATCH**, same
 conditions.
 
 ```
@@ -68,10 +68,10 @@ check_cmd: <a test that asserts the error branch>
 
 ## Retro — consolidate the run's lessons (optional, cadence-triggered)
 
-END artifact: the run's `gates.log` completed into a lessons ledger. Gate
+Judged artifact: the run's `gates.log` completed into a lessons ledger. Gate
 class: **MINOR** (flagged, standing veto). Runs at most once per run,
 normally at close; the shape is checkable, the substance is judged by the
-human at the gate — the same shape-vs-behavior ladder as orientation.
+human at the gate — the same shape-vs-behavior ladder as a scout round.
 
 ```
 ## #1 Every gate entry in gates.log carries a non-empty lesson field
@@ -91,6 +91,6 @@ driver skill.
 Every `check_cmd` must be **red before the work and coupled to the work**:
 run it now (it must fail), and after the slice, revert the core hunk and run
 it again (it must fail again). A check that survives the revert is
-`UNVERIFIABLE`, not proven — and assert on **exit codes, not messages**: a
+`WITNESS`, not proven — and assert on **exit codes, not messages**: a
 grep for a warning string passes even when the gate that should act was
 removed.

@@ -1,11 +1,11 @@
 ---
 name: redgate
 description: >-
-  Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated
+  Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated
   autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate,
-  so derived work auto-passes inside a human-approved plan envelope while
-  orientation decisions, plan approval, and irreversible actions always block
-  on the human. BEGIN emits a verifier proven able to fail; END is that
+  so derived work auto-passes inside a human-approved mandate while
+  scout decisions, plan approval, and irreversible actions always block
+  on the human. ARM emits a verifier proven able to fail; JUDGE is that
   pinned verifier run by a party that did not do the work. Use on
   /redgate "<idea>", or whenever done-criteria must be proven falsifiable
   before building.
@@ -15,7 +15,7 @@ compatibility: >-
   subagent-spawning tool, no Workflow tool required. It runs identically
   under Claude Code, Codex (which reads this plugin's AGENTS.md natively),
   and GitHub Copilot (via `apm compile -t copilot`). Where a harness offers
-  subagents, END runs in a fresh one; where it does not, END runs in a
+  subagents, JUDGE runs in a fresh one; where it does not, JUDGE runs in a
   fresh session or falls to the human at the round gate — the independence
   requirement ports, the mechanism adapts. A Claude-Code hooks enforcement
   layer ships in this plugin as optional hardening, never a dependency.
@@ -25,7 +25,7 @@ compatibility: >-
 
 ## Invariant
 
-No MIDDLE work begins until a verifier exists that runs and rejects the current state on every checkable criterion — and no criterion is ever marked green except by that same pinned verifier, executed independently of the party that did the work, producing evidence on disk.
+No TRACE work begins until a verifier exists that runs and rejects the current state on every checkable criterion — and no criterion is ever marked green except by that same pinned verifier, executed independently of the party that did the work, producing evidence on disk.
 
 Criteria that cannot be rejected are not criteria.
 
@@ -34,8 +34,8 @@ Criteria that cannot be rejected are not criteria.
 The driver for the Red Gate protocol (`docs/red-gate-protocol.md` in this
 marketplace — read it for the full design and its adversarial corrections).
 A **run** is a sequence of **rounds** with classified gates; every round is one
-BEGIN/MIDDLE/END. This skill drives the run; the `criteria-contract` skill
-(same plugin) owns BEGIN; `reconcile` (same plugin) owns END.
+ARM/TRACE/JUDGE. This skill drives the run; the `criteria-contract` skill
+(same plugin) owns ARM; `reconcile` (same plugin) owns JUDGE.
 
 ## The round-zero rule
 
@@ -43,12 +43,12 @@ Start at the first round whose criteria you can write **without already
 knowing the answer**. If you cannot write criteria for the work, write
 criteria for the artifact that will tell you what the work is.
 
-| Round type | END artifact | The verifier checks | Substance judged by |
+| Round type | Judged artifact | The verifier checks | Substance judged by |
 |---|---|---|---|
-| Orientation | a decision brief | its shape | the human, at the gate |
+| Scout | a decision brief | its shape | the human, at the gate |
 | Plan | an ordered slice list + proposed verifiers | its shape | the human, at the gate |
 | Build | working change flipping one criterion | behavior | the verifier |
-| Consolidation | the slice widened in place | behavior | the verifier |
+| Widen | the slice widened in place | behavior | the verifier |
 | Retro | the run's lessons ledger, completed | its shape | the human, at the gate |
 
 "I don't know what to do yet" is not a blocker; it selects the round type.
@@ -64,18 +64,18 @@ is writable today — go straight to a build round.
    write the calibration block into the `CRITERIA.md` header so the pin
    covers it. A **T0** task is declined by the protocol — do it directly,
    no run dir.
-1. **BEGIN** — invoke `criteria-contract`: interview (≤5 questions total,
+1. **ARM** — invoke `criteria-contract`: interview (≤5 questions total,
    calibration questions included, defaults accepted by silence), emit
    `CRITERIA.md` + `check.sh` into `.redgate/<slug>/`, prove the gate red,
    get ratification (which ratifies the calibration block with it), pin
    both files.
-2. **MIDDLE** — one writer, one tracer-bullet slice flipping one criterion
+2. **TRACE** — one writer, one tracer-bullet slice flipping one criterion
    through every layer it names, no stub at the proving seam. Subagents (or
    parallel sessions) fan out **read-only**. Every hunk traces to a criterion
    id (`scope-fence`); the attempt bound is declared up front (`stop-rule`),
    scaled to the layers the criterion names. Never edit `.redgate/<slug>/`
    contents after ratification — not the criteria, not the checker.
-3. **END** — run `.redgate/<slug>/check.sh` from a context that did not do
+3. **JUDGE** — run `.redgate/<slug>/check.sh` from a context that did not do
    the work (fresh subagent, fresh session, or the human), after re-hashing
    both pinned files against the manifest. `verify-before-claim` governs the
    verdict: no unrun PASS, ever.
@@ -86,18 +86,18 @@ is writable today — go straight to a build round.
 ## The classified round gate
 
 Autonomy flows downhill from an approved plan: a human-ratified plan is the
-**autonomy envelope**, and rounds executing strictly inside it pass their
+**mandate**, and rounds executing strictly inside it pass their
 gates automatically.
 
 | Class | Behavior | Qualifies when |
 |---|---|---|
-| PATCH | Auto-pass; append to `gates.log`; fold into the summary; seed the next round | ALL of: build/consolidation round · verifier green via independent END · zero UNVERIFIABLE · diff inside the fence · criteria strictly derived from a human-approved plan slice · no escalator |
+| PATCH | Auto-pass; append to `gates.log`; fold into the summary; seed the next round | ALL of: build/widen round · verifier green via independent JUDGE · zero WITNESS · diff inside the fence · criteria strictly derived from a human-approved plan slice · no escalator |
 | MINOR | Auto-pass **with a prominent flag** and a standing veto; staged separately revertible; never a blocking question | Durable-but-revertible artifacts inside the approved direction |
 | MAJOR | **Stop.** Structured question naming the specific decision and mechanism; a prior adjacent "yes" does not transfer | Any escalator, or any semver-gate property landing MAJOR |
 
-**Always MAJOR — never auto-passed, never softened:** the orientation
-decision; the plan round's approval (the envelope itself); a run's first
-ratification and every UNVERIFIABLE countersignature; fence widening;
+**Always MAJOR — never auto-passed, never softened:** the scout
+decision; the plan round's approval (the mandate itself); a run's first
+ratification and every WITNESS countersignature; fence widening;
 round-budget or depth extension; the run's final acceptance; and anything
 semver-gate's own table calls MAJOR (irreversible actions — `prove-the-undo`
 first — protection toggles, `egress-gate` transmissions to unnamed
@@ -124,12 +124,12 @@ does). Three rules give it teeth:
 - **The lesson field is mandatory** at every gate: one line, what this round
   taught. "None" is a legal lesson only at a PATCH gate.
 - **A red verdict leaves a durable artifact**: its lesson names what the
-  next contract must encode, and the next round's BEGIN starts by reading
+  next contract must encode, and the next round's ARM starts by reading
   the prior rounds' `gates.log` (including predecessor `-rN` run dirs).
   That is the Reflexion mechanism — failure feeds the next episode's setup,
   not a reflective phase inside this one.
-- **Consolidation cadence**: after 3 consecutive build gates with no
-  consolidation or retro round, the driver proposes one as the next round;
+- **Widen cadence**: after 3 consecutive build gates with no
+  widen or retro round, the driver proposes one as the next round;
   declining is logged in the gate line. An invitation-only "look back"
   gets skipped — Polya's own account — so the cadence is the default, not
   the exception.
@@ -170,7 +170,7 @@ context budget:
   to pick the next criterion. A wayfinder ticket is a natural *input* to
   `/redgate`.
 - **orchestrate** is fan-out templates for research-and-verify; redgate may
-  use it during a MIDDLE's read-only fan-out, but the single writer and the
+  use it during a TRACE's read-only fan-out, but the single writer and the
   pinned verifier are redgate's own rules.
 - **tracer-bullets** defines the thin slice; redgate is the loop that
   decides *which* slice, proves the gate red first, and verifies after.

@@ -9,7 +9,7 @@ a round boundary.
 1. The node's own tracer bullet was attempted and **failed a verifier run**,
    with evidence on disk. Budget exhaustion is *not* a seam.
 2. The failure has a **named seam** — the specific boundary where it broke.
-3. BEGIN can write **≥2 independently checkable sub-criteria** for that seam,
+3. ARM can write **≥2 independently checkable sub-criteria** for that seam,
    and their verifier **actually runs red** before any child dispatches.
 4. The run-level ledger's remainder exceeds the child floor.
 
@@ -21,11 +21,11 @@ continue. Requirement 3 exists so the precondition is *shown*, not asserted.
 Delegation is recorded in a **separate mutable `DELEGATION.md`** keyed by
 criterion id. `CRITERIA.md` keeps its original `check_cmd`, and the parent
 criterion goes green only when **that original command** runs and passes at
-END.
+JUDGE.
 
 This is what keeps a successful recursion from tripping its own drift
 detector: rewriting the parent's `check_cmd` to "all child checks green"
-would mutate the pinned file, and END would fail the run as drift — every
+would mutate the pinned file, and JUDGE would fail the run as drift — every
 successful recursion destroying itself.
 
 ## Budget
@@ -41,14 +41,14 @@ A run-level cumulative ceiling terminates the whole tree, not just a node.
 ## Termination
 
 One field: **`depth_remaining`**, counting down from a single number set at
-BEGIN, terminating at 0. Also terminal: no legal split, attempts exhausted,
+ARM, terminating at 0. Also terminal: no legal split, attempts exhausted,
 or ledger remainder below the child floor. Extension is an **always-MAJOR**
 gate — only the human extends. On termination, `stop-rule` reports state plus
 ranked hypotheses.
 
 ## Harvest
 
-The parent's END lists **every child's per-criterion table and artifact paths
+The parent's JUDGE lists **every child's per-criterion table and artifact paths
 verbatim**, then re-runs its own original `check_cmd` for the verdict. Without
 this, a successful sibling's work vanishes behind a failed one.
 

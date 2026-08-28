@@ -1,6 +1,6 @@
 # Calibration — sizing the run before it starts
 
-Calibration is BEGIN **step 0**: before any criteria are written, five dials
+Calibration is ARM **step 0**: before any criteria are written, five dials
 are set that decide how much protocol this task deserves, which skills load,
 and where the autonomy floors sit. It is the anti-ceremony mechanism — the
 protocol's answer to "is this overly complex?" is that a calibrated run
@@ -40,7 +40,7 @@ Header shape:
   domain:        code (stated)
   scope:         plugins/redgate/** only; no external effects (inferred)
   taste:         match-repo (inferred — no style ask in the prompt)
-  orchestration: independent-END (inferred — no parallelism need named)
+  orchestration: independent-JUDGE (inferred — no parallelism need named)
   Silence at ratification accepts every inferred value above. -->
 ```
 
@@ -53,7 +53,7 @@ Header shape:
 | **T0 — direct** | An answer, a lookup, a one-file reversible edit whose correctness is obvious on sight | **No run.** The protocol declines to fire; do the thing. Opening a run dir for a T0 task is a calibration error, not diligence. |
 | **T1 — tracer** | One criterion, one slice, writable today | One build round; interview may be zero questions. |
 | **T2 — run** | Several criteria, one coherent goal | A run of rounds under one budget; the default when `/redgate` fires. |
-| **T3 — program** | The goal needs a plan round to even enumerate slices | Orientation and/or plan round first; the approved plan becomes the autonomy envelope. |
+| **T3 — program** | The goal needs a plan round to even enumerate slices | Scout and/or plan round first; the approved plan becomes the mandate. |
 
 Tier escalators: any irreversible action or external transmission bumps the
 floor to ≥T2 regardless of size — the round exists to hold the gate, not the
@@ -65,7 +65,7 @@ code.
 |---|---|---|
 | **code** | behavior checks — exit codes on passing fixtures | The default ladder top. |
 | **research** | shape checks on the brief — sources cited, claims tagged, question answered | Substance judged by the human at the gate. |
-| **writing/docs** | shape checks + at most 1 UNVERIFIABLE for voice | Taste lives in the UNVERIFIABLE budget, never in a fake `check_cmd`. |
+| **writing/docs** | shape checks + at most 1 WITNESS for voice | Taste lives in the WITNESS budget, never in a fake `check_cmd`. |
 | **ops/config** | behavior checks where probeable; `prove-the-undo` before anything irreversible | Reversibility evidence is part of the contract. |
 | **design** | rubric-scored review as the verifier — all four verifier properties still required | The rubric is pinned like any checker. |
 
@@ -87,7 +87,7 @@ fence-widening escalator: MAJOR, no exceptions.
 
 ### 4. Taste — the quality bar
 
-| Bar | What END demands beyond green |
+| Bar | What JUDGE demands beyond green |
 |---|---|
 | **prototype** | Verifier green. Nothing else; polish criteria are scope creep. |
 | **match-repo** | Green + the diff reads like the surrounding code (naming, comment density, idiom). Default. |
@@ -105,16 +105,16 @@ parallelism needs. Orchestration is a cost, never a signal of seriousness.
 
 | Level | When it is earned |
 |---|---|
-| **solo** | T0–T1 where the human will grade END themselves. |
-| **independent-END** | The default: one writer; only END runs in a fresh context. |
-| **fan-out** | MIDDLE needs parallel **read-only** research (orchestrate templates); still one writer. |
+| **solo** | T0–T1 where the human will grade JUDGE themselves. |
+| **independent-JUDGE** | The default: one writer; only JUDGE runs in a fresh context. |
+| **fan-out** | TRACE needs parallel **read-only** research (orchestrate templates); still one writer. |
 | **recursive** | Only via the four-part spawn precondition, inside a round, within `depth_remaining`. Never chosen at calibration time — recursion is earned by a failed check, not planned in advance. |
 
 Escalating one level mid-run is a MINOR gate (flagged, standing veto);
 jumping levels or touching recursion budgets is MAJOR.
 
 PORTABILITY: subagents are a Claude-Code convenience, not a dependency —
-the discipline is harness-agnostic. On another harness, independent-END is
+the discipline is harness-agnostic. On another harness, independent-JUDGE is
 a fresh session or the human, and fan-out is parallel sessions or serial
 read-only passes; the levels and their escalation rules are unchanged.
 
@@ -133,11 +133,11 @@ with a dial is handled like any contract error:
 
 - **Ceremony creep** — running a four-round protocol on a T0 rename because
   the tool exists. The T0 decline is a feature; use it.
-- **Taste smuggling** — an uncalibrated "production" bar appearing at END as
+- **Taste smuggling** — an uncalibrated "production" bar appearing at JUDGE as
   surprise rejections, or a prototype gold-plated against no stated need.
 - **Orchestration theater** — subagents fanned out because they are
   available, not because the round needs them.
-- **Silent scope drift** — external effects discovered mid-MIDDLE and
+- **Silent scope drift** — external effects discovered mid-TRACE and
   handled inline instead of stopping the gate.
 - **Un-owned inference** — a dial acted on without being written down and
   shown at ratification; an inferred value the human never saw is not a

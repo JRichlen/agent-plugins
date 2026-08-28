@@ -22,7 +22,7 @@ holds — the parent ships references, not content.
 |---|---|
 | `notes` | free text, **first**, ≤80 words |
 | `status` | the child's own verdict |
-| `results[]` | `{id, PASS\|FAIL\|UNVERIFIABLE, evidence_ref}` |
+| `results[]` | `{id, PASS\|FAIL\|WITNESS, evidence_ref}` |
 | `artifacts[]` | paths, never contents |
 | `unmet[]` | criterion ids still red |
 | `blocked` | ≤2 lines |

@@ -1,4 +1,4 @@
-# Red Gate — a recursive BEGIN/MIDDLE/END protocol for skill coordination
+# Red Gate — a recursive ARM/TRACE/JUDGE protocol for skill coordination
 
 **Status:** design of record for how this marketplace's skills compose into one
 automated, interactive process triggered from a one-line idea.
@@ -29,12 +29,12 @@ The marketplace has 24 skills across 21 plugins. Each is a single-invariant
 discipline that works alone. Nothing composes them — there is no answer to
 "I have an idea, now run the right skills in the right order and prove you
 finished." Red Gate is that answer: a self-similar three-stage process where
-BEGIN writes a falsifiable contract, MIDDLE cuts one tracer-bullet slice, and
-END is a fresh agent executing the contract.
+ARM writes a falsifiable contract, TRACE cuts one tracer-bullet slice, and
+JUDGE is a fresh agent executing the contract.
 
 ## The invariant
 
-> No MIDDLE work begins until a **verifier** exists that **runs and rejects the
+> No TRACE work begins until a **verifier** exists that **runs and rejects the
 > current state on every checkable criterion**. No criterion is ever marked
 > green except by that same pinned verifier, executed by a party that did not
 > do the work, producing evidence. Criteria are ratified once **per round** and
@@ -55,10 +55,10 @@ verifier must have, whatever the domain:
 
 1. **Runnable** — it executes against the current state, on demand, without the
    worker's cooperation.
-2. **Proven able to fail** — it was run at BEGIN and rejected the starting
+2. **Proven able to fail** — it was run at ARM and rejected the starting
    state. A verifier that has never said no is not a verifier.
 3. **Pinned** — its definition cannot be edited by the party doing the work.
-4. **Independently executed** — at END it is run by a party that did not do
+4. **Independently executed** — at JUDGE it is run by a party that did not do
    the work: a fresh agent, a different tier, or the human at the round gate.
 
 What that concretely is varies by task domain:
@@ -66,7 +66,7 @@ What that concretely is varies by task domain:
 | Task domain | The verifier | "Proven red" means | Coupling control |
 |---|---|---|---|
 | Code | Test suite / `check.sh` / CI tier | Tests fail before the change | Revert the hunk, must re-fail |
-| Research / orientation | Shape checks on the brief + the human round gate | The artifact does not exist yet | The human rejects substance shape cannot see |
+| Research / scout | Shape checks on the brief + the human round gate | The artifact does not exist yet | The human rejects substance shape cannot see |
 | Planning | Shape checks on the slice list + approval gate | No plan file, no proposed criteria | Each slice's proposed verifier must itself be red-able |
 | Docs / knowledge | `docs-hygiene` audit against current repo state | The claim is absent or stale today | Re-audit after an unrelated change; claim must survive |
 | Ops / infra | A probe or synthetic check against the live system | The endpoint 404s / the alert fires | Tear down the change; probe must go red again |
@@ -86,16 +86,16 @@ task the system executes.
 
 ## Why "the criteria are defined up front" was not enough
 
-The raw idea said BEGIN should define the verifiable output criteria. Research
+The raw idea said ARM should define the verifiable output criteria. Research
 and adversarial review both say that is too weak, in five specific ways. These
 are the **refinements** — the places the original idea needed correcting, not
 merely implementing.
 
 | The original idea | Why it fails | The refinement |
 |---|---|---|
-| BEGIN "defines verifiable criteria" | Criteria written but never executed are self-report. A model writes criteria it already believes it meets. | **The red gate.** `check.sh` must run and come back FAIL on every checkable criterion before MIDDLE starts. |
-| Every output is verifiable | Taste, prose, and exploration are not command-checkable. A hard red gate incentivizes *fake* `check_cmd`s written purely to clear it. | A declared **`UNVERIFIABLE`** verdict, capped and individually human-countersigned at BEGIN — never an END downgrade of a red check. |
-| END is "checked against BEGIN's criteria" | Omits *who* checks. LLMs are poor at autonomous error detection (Huang et al., ICLR 2024); the common failure is silently rewriting criteria to match what was built. | A **fresh agent** that did not write the code, handed only the criteria, the script, and the diff — plus sha-pinning so drift is detected mechanically. |
+| ARM "defines verifiable criteria" | Criteria written but never executed are self-report. A model writes criteria it already believes it meets. | **The red gate.** `check.sh` must run and come back FAIL on every checkable criterion before TRACE starts. |
+| Every output is verifiable | Taste, prose, and exploration are not command-checkable. A hard red gate incentivizes *fake* `check_cmd`s written purely to clear it. | A declared **`WITNESS`** verdict, capped and individually human-countersigned at ARM — never an JUDGE downgrade of a red check. |
+| JUDGE is "checked against ARM's criteria" | Omits *who* checks. LLMs are poor at autonomous error detection (Huang et al., ICLR 2024); the common failure is silently rewriting criteria to match what was built. | A **fresh agent** that did not write the code, handed only the criteria, the script, and the diff — plus sha-pinning so drift is detected mechanically. |
 | "Subagents fan out for creativity" | Conflates reading with writing. Concurrent writers on shared code produce conflicting assumptions (Cognition's single-writer principle; Anthropic's own caveat that orchestrator-worker misfires on code editing). | **Fan out reads, funnel writes.** Fan-out is for search, analysis, and option generation. Exactly one writer per run by default. |
 | An agent's output "can be a plan that breaks the problem into more subagents" | Implies *eager* decomposition. ADaPT shows the opposite ordering wins; an eager tree propagates a wrong top-level split through everything beneath it. | **Lazy recursion.** Attempt the slice first; decompose only at an observed, named failure with demonstrated sub-criteria. |
 | "Self-similar/recursive" | Self-similarity is a shape, not a termination rule. Unbounded self-similarity is unbounded cost. | A four-part **spawn precondition** plus numeric depth/budget backstops. |
@@ -108,7 +108,7 @@ merely implementing.
 
 ## The three stages
 
-### BEGIN — write a contract that is proven falsifiable
+### ARM — write a contract that is proven falsifiable
 
 Trigger: `/redgate "<one-line idea>"`.
 
@@ -120,12 +120,12 @@ Trigger: `/redgate "<one-line idea>"`.
    computes the dispatchable frontier.
 4. **Emit two artifacts** into `.redgate/<slug>/`:
    - `CRITERIA.md` — 3–7 numbered criteria. Each carries a statement, the
-     layers it crosses, and either a `check_cmd` or a declared `UNVERIFIABLE`
+     layers it crosses, and either a `check_cmd` or a declared `WITNESS`
      with a named human observation. **At least two criteria must be checkable,
      and checkable must be the majority.**
    - `check.sh` — runs every `check_cmd` under a hard timeout with stdin from
      `/dev/null`, tees each command's output to `evidence/<n>.out`, and prints
-     `#n PASS|FAIL|UNVERIFIABLE`.
+     `#n PASS|FAIL|WITNESS`.
 5. **The red gate.** `check.sh` runs. It must emit a verdict line per criterion,
    and every checkable criterion must be **FAIL**. A *preflight* must come back
    clean — harness failure exits with reserved code `99` and is **not** red.
@@ -141,13 +141,13 @@ Trigger: `/redgate "<one-line idea>"`.
    run against a known-good target, returning PASS today. No control, no gate.
 7. **Ratify.** The human approves once — shown, per criterion, the statement,
    the actual red output just produced, and one line stating what output will
-   count as green. Each `UNVERIFIABLE` is countersigned individually. `sha256`
+   count as green. Each `WITNESS` is countersigned individually. `sha256`
    of **both** `CRITERIA.md` and `check.sh` is pinned into the run manifest.
 
-Nothing dispatches to MIDDLE until both files exist, the gate is red, and
+Nothing dispatches to TRACE until both files exist, the gate is red, and
 ratification is recorded.
 
-### MIDDLE — one vertical slice, one writer
+### TRACE — one vertical slice, one writer
 
 - **One writer.** Sequential single-writer is the default. Parallel leases exist
   only under an explicit human-enabled parallel mode.
@@ -163,18 +163,18 @@ ratification is recorded.
 - `scope-fence` requires every hunk trace to a criterion id, with two escape
   hatches so the fence does not become a formality: hunks tagged
   `enabling:<id>` with a one-line justification, and an `incidental` bucket
-  capped at ~10% of changed lines. Both are enumerated in the END report.
+  capped at ~10% of changed lines. Both are enumerated in the JUDGE report.
   Out-of-scope discoveries go to a run-scoped `BACKLOG.md` that survives
   context clears.
 - `stop-rule` declares the bound up front, **scaled to the number of layers the
   criterion names**, with discovery and edit/verify budgeted separately. First
   exhaustion is a mandatory re-plan checkpoint, not an attempt-consuming
   failure.
-- `.redgate/**` is on a global deny-list. No MIDDLE lease can cover it. The
+- `.redgate/**` is on a global deny-list. No TRACE lease can cover it. The
   writer cannot touch the criteria or the checker.
 - Re-run `check.sh` after each slice.
 
-### END — a fresh agent runs the pinned script
+### JUDGE — a fresh agent runs the pinned script
 
 `bash .redgate/<slug>/check.sh`, executed by a **fresh subagent that did not
 write the code**, handed only `CRITERIA.md`, `check.sh`, and the diff — never
@@ -185,10 +185,10 @@ the build transcript.
 2. Per criterion: `PASS` only when the command ran and its output exists at
    `evidence/<n>.out`, written by `check.sh` itself and newer than the run's
    start timestamp. A `PASS` whose evidence file is missing or stale is
-   rejected. `UNVERIFIABLE` only where BEGIN declared it.
+   rejected. `WITNESS` only where ARM declared it.
 3. **Mutation control.** Before a criterion is accepted green, revert the
    slice's core hunk and re-run that criterion; it must return to FAIL. A check
-   that still passes after revert is `UNVERIFIABLE`, not green — it was never
+   that still passes after revert is `WITNESS`, not green — it was never
    coupled to the behavior.
 4. `verify-before-claim` forbids an unrun PASS. `prove-the-undo` exercises the
    restore path before any irreversible criterion is marked green.
@@ -201,7 +201,7 @@ the build transcript.
 ## Rounds — the horizontal axis
 
 A run is not one contract. It is a **sequence of rounds**, each a complete
-BEGIN/MIDDLE/END, with a **classified gate** sitting *between* rounds — PATCH
+ARM/TRACE/JUDGE, with a **classified gate** sitting *between* rounds — PATCH
 auto-passes, MINOR passes-and-flags, MAJOR blocks on the human (see
 [Graduated autonomy](#graduated-autonomy--the-classified-round-gate)). This is where
 "I have an idea to implement a Hermes agent that does xyz" actually enters the
@@ -218,7 +218,7 @@ decision**.
 "I don't know what to do yet" is not a blocker to the red gate. It selects the
 round type.
 
-| Round type | The END artifact | Criteria check | Who judges substance |
+| Round type | The Judged artifact | Criteria check | Who judges substance |
 |---|---|---|---|
 | **Orientation** | A decision brief: options, costs, a recommendation | The brief's *shape* | Human, at the round gate |
 | **Plan** | An ordered slice list, each with a proposed `check_cmd` | The plan's *shape* | Human, at the round gate |
@@ -238,28 +238,28 @@ substance at the round gate.** The two meet exactly there.
 So the ratio shifts as the problem becomes known:
 
 ```
-round 1  orientation   shape ■■■■■□□□□□  behavior          ← "idk what to do"
+round 1  scout         shape ■■■■■□□□□□  behavior          ← "idk what to do"
 round 2  plan          shape ■■■■□□□□□□  behavior
 round 3  build         shape □□□□□□■■■■  behavior          ← first real slice
 round 4  consolidate   shape □□□□□□□■■■  behavior
 ```
 
-A useful consequence: rounds **relieve pressure on `UNVERIFIABLE`** rather than
+A useful consequence: rounds **relieve pressure on `WITNESS`** rather than
 adding to it. Without rounds, "produce a good plan" is an unverifiable criterion
 and the cap gets spent immediately. With rounds, it decomposes into checkable
-shape plus a human gate, and the `UNVERIFIABLE` budget stays available for the
+shape plus a human gate, and the `WITNESS` budget stays available for the
 genuinely unjudgeable.
 
 ### How rounds chain
 
-Each round's contract is written **fresh at its own BEGIN**, seeded by the
+Each round's contract is written **fresh at its own ARM**, seeded by the
 previous round's approved output. Nothing is edited. That is the release valve
 the single-contract framing was missing:
 
 ```
-round N   END → human accepts the artifact
+round N   JUDGE → human accepts the artifact
                         ↓
-round N+1 BEGIN → the accepted artifact is the input that makes
+round N+1 ARM → the accepted artifact is the input that makes
                   the next contract writable at all
 ```
 
@@ -297,9 +297,9 @@ kind `stop-rule` exists to stop.
 ### A. "I have an idea to implement a Hermes agent that triages my inbox"
 
 Nothing here is buildable yet — there is no decision about approach, boundaries,
-or what "triage" means. Round-zero rule sends this to an **orientation round**.
+or what "triage" means. Round-zero rule sends this to an **scout round**.
 
-**Round 1 — orientation.** BEGIN's ≤5 questions establish the one thing that
+**Round 1 — scout.** ARM's ≤5 questions establish the one thing that
 matters: the approach is undecided. `CRITERIA.md` is therefore about the brief:
 
 ```
@@ -315,23 +315,23 @@ matters: the approach is undecided. `CRITERIA.md` is therefore about the brief:
     check_cmd: rg -q '^## Recommendation' && rg -q '^\*\*Falsified if:\*\*'
 ```
 
-All five are **red at BEGIN** — the file does not exist, so every check fails
+All five are **red at ARM** — the file does not exist, so every check fails
 honestly, and the preflight is clean because `rg` and `test` are harness tools,
-not the subject. Nothing is `UNVERIFIABLE`.
+not the subject. Nothing is `WITNESS`.
 
-MIDDLE is the one place the raw idea's "fan out for creativity" is exactly
+TRACE is the one place the raw idea's "fan out for creativity" is exactly
 right: this round's work is **reads**, so `orchestrate` fans out read-only
 agents across approaches (rules engine / embedding classifier / LLM-per-message
 / hybrid), and a single writer composes the brief.
 
-END: a fresh agent runs `check.sh` — the brief's shape is verified
+JUDGE: a fresh agent runs `check.sh` — the brief's shape is verified
 mechanically. Then **you** read it and pick an option. That choice is round 2's
-input, and it is an always-MAJOR gate — the orientation decision steers every
+input, and it is an always-MAJOR gate — the scout decision steers every
 round beneath it.
 
 **Round 2 — plan.** Criteria are again shape, now on the plan: an ordered slice
 list, each slice naming the layers it crosses and a *proposed* `check_cmd`, with
-the first slice required to cross every layer end to end. Its END produces the
+the first slice required to cross every layer end to end. Its JUDGE produces the
 thing that makes round 3 writable.
 
 **Round 3 — build, first tracer bullet.** Now the criteria are behavioral,
@@ -344,14 +344,14 @@ lifted from the approved plan:
 
 One slice, every layer the plan named, no stub at the proving seam. If it fails
 at a named seam — say the classifier boundary — **recursion happens inside round
-3**, with no human gate, until the round's END either goes green or reports out.
+3**, with no human gate, until the round's JUDGE either goes green or reports out.
 
 **Round 4 — consolidation.** Widen the slice: more message shapes, the ambiguous
 cases, the failure paths.
 
 The whole shape: **four classified gates, four contracts, one idea** — two of
-them MAJOR (orientation, plan approval), two auto-passing as PATCH once the
-plan envelope exists — and the human
+them MAJOR (scout decision, plan approval), two auto-passing as PATCH once the
+mandate exists — and the human
 was asked exactly four questions of consequence, each about an artifact that
 already existed for them to react to.
 
@@ -367,7 +367,7 @@ writable today:
 ```
 
 Round-zero rule puts this straight into a **build round**. There is no
-orientation round and no plan round, because their outputs already exist in the
+scout round and no plan round, because their outputs already exist in the
 user's head and the criteria can be written without them. Inserting them would
 be exactly the overhead-cosplay the adversarial critics warned about.
 
@@ -376,15 +376,15 @@ be exactly the overhead-cosplay the adversarial critics warned about.
 Round 3 above, in detail:
 
 ```
-round 3 BEGIN   contract ratified, gate red
-        MIDDLE  slice attempted → check.sh → #1 still FAIL
+round 3 ARM   contract ratified, gate red
+        TRACE  slice attempted → check.sh → #1 still FAIL
                 named seam: the classifier never receives the parsed subject
                 ├── child a: "parser emits a subject field"      → green
                 └── child b: "classifier reads the subject field" → green
-        MIDDLE  re-run the ORIGINAL #1 check_cmd → PASS
-        END     fresh agent, re-hash, mutation control → green
+        TRACE  re-run the ORIGINAL #1 check_cmd → PASS
+        JUDGE     fresh agent, re-hash, mutation control → green
         ─── gate: PATCH (derived from approved plan) → auto-pass, logged ───
-round 4 BEGIN   fresh contract, seeded by round 3's result
+round 4 ARM   fresh contract, seeded by round 3's result
 ```
 
 The children are automatic and invisible to you. The gate is at the round
@@ -398,7 +398,7 @@ Should rounds gain phases like Reflect, Plan, or Investigate? Researched
 against primary sources (`research/phase-structure-prior-art.md`); the
 answer is **no — three stages encode falsifiability, and the variance
 belongs elsewhere**. Plan and Investigate are round *types* (plan,
-orientation) plus in-stage actions (calibration's infer-first, mid-round
+scout) plus in-stage actions (calibration's infer-first, mid-round
 fact lookups). Reflection lives *between* rounds in every mature
 verified-work loop — Deming's Act, Scrum's per-sprint-not-per-story
 retrospective, Reflexion's after-episode memory — and unenforced in-cycle
@@ -409,30 +409,30 @@ measurably underperform sampling (arXiv 2607.28576, 2310.01798).
 So reflection gets teeth as **gate obligations**, not a fourth stage: a
 mandatory one-line `lesson` field in every `gates.log` entry; a red
 verdict's lesson names what the next contract must encode, and the next
-round's BEGIN reads prior `gates.log` files first (the Reflexion
-mechanism); a consolidation cadence — after 3 consecutive build gates, a
-consolidation or retro round is proposed by default; and an optional
-**retro round type** whose END artifact is the completed lessons ledger.
+round's ARM reads prior `gates.log` files first (the Reflexion
+mechanism); a widen cadence — after 3 consecutive build gates, a
+widen or retro round is proposed by default; and an optional
+**retro round type** whose Judged artifact is the completed lessons ledger.
 The driver skill carries the rules; `round-types.md` carries the retro
 template.
 
 ## Recursion
 
-Every node is the same BEGIN/MIDDLE/END.
+Every node is the same ARM/TRACE/JUDGE.
 
 **Spawn precondition — all four required, and demonstrated rather than claimed:**
 
 1. The node's own tracer bullet was attempted and **failed a `check.sh` run**,
    with evidence. Budget exhaustion is *not* a seam.
 2. The failure has a **named seam**.
-3. BEGIN can write ≥2 independently checkable sub-criteria for that seam — and
+3. ARM can write ≥2 independently checkable sub-criteria for that seam — and
    their `check.sh` **actually runs red** before the child dispatches.
 4. The run-level ledger's remainder exceeds the child floor.
 
 **Children add checks; they never replace one.** Delegation is recorded in a
 separate mutable `DELEGATION.md` keyed by criterion id. `CRITERIA.md` keeps its
 original `check_cmd`, and the parent criterion goes green only when **that
-original command** runs and passes at END. This is what keeps a successful
+original command** runs and passes at JUDGE. This is what keeps a successful
 recursion from tripping its own drift detector.
 
 **Budget.** The parent reserves one child pool — 50% of its remaining budget —
@@ -441,12 +441,12 @@ every spawn. A run-level cumulative token/tool-call ceiling terminates the whole
 tree, not just a node.
 
 **Termination.** One field, `depth_remaining`, counting down from a single
-number set at BEGIN, terminating at 0. Also terminal: no legal split, two failed
+number set at ARM, terminating at 0. Also terminal: no legal split, two failed
 attempts, or ledger remainder below the child floor. Extension is an
 always-MAJOR gate — only the human extends.
 On termination `stop-rule` reports state plus ranked hypotheses.
 
-**Harvest.** The parent's END lists every child's per-criterion table and
+**Harvest.** The parent's JUDGE lists every child's per-criterion table and
 artifact paths verbatim, then re-runs its own original `check_cmd` for the
 verdict — so a successful sibling's work is never silently lost behind a failed
 one.
@@ -463,7 +463,7 @@ pointers) · `boundary` (1 line) · `lease[]` (globs) ·
 `budget{tool_calls, attempts, tokens, depth_remaining}`
 
 **UP:** `notes` (free text, **first**, ≤80 words) · `status` ·
-`results[{id, PASS|FAIL|UNVERIFIABLE, evidence_ref}]` · `artifacts[]` (paths) ·
+`results[{id, PASS|FAIL|WITNESS, evidence_ref}]` · `artifacts[]` (paths) ·
 `unmet[]` · `blocked` (≤2 lines)
 
 Rules:
@@ -488,23 +488,23 @@ blast radius, contract change, cost to undo) and its tie-break rule, imported
 verbatim: **any single property landing MAJOR makes the whole gate MAJOR.**
 
 The governing idea: **autonomy flows downhill from an approved plan.** A
-human-ratified plan is the *autonomy envelope*; rounds that execute strictly
+human-ratified plan is the *mandate*; rounds that execute strictly
 inside it pass their gates automatically, and anything that would leave the
 envelope escalates.
 
 | Class | Gate behavior | Qualifies when |
 |---|---|---|
-| **PATCH** | Auto-pass. Logged to the gate ledger, folded into the round summary; the next round seeds automatically. | ALL of: build/consolidation round · verifier green via independent END · zero `UNVERIFIABLE` · diff inside the declared fence · the round's criteria are a strict derivation of a human-approved plan slice · no escalator fired. |
+| **PATCH** | Auto-pass. Logged to the gate ledger, folded into the round summary; the next round seeds automatically. | ALL of: build/widen round · verifier green via independent JUDGE · zero `WITNESS` · diff inside the declared fence · the round's criteria are a strict derivation of a human-approved plan slice · no escalator fired. |
 | **MINOR** | Auto-pass **with a prominent flag** — called out at the moment it happens, staged separately revertible, with a standing veto. Never a blocking question. | Durable-but-revertible artifacts inside the approved direction: new files, a plan amendment that reorders approved slices, a widened consolidation. |
 | **MAJOR** | **Block on a structured human question** naming the specific decision and mechanism. A prior adjacent "yes" does not transfer. | Any escalator below, or any semver-gate property landing MAJOR. |
 
 **Always MAJOR — the escalators (never auto-passed, never softened):**
 
-- The **orientation decision** — choosing the approach steers every downstream
+- The **scout decision** — choosing the approach steers every downstream
   round; it is a contract change for the whole run.
-- The **plan round's approval** — this IS the autonomy envelope being drawn.
+- The **plan round's approval** — this IS the mandate being drawn.
   No plan approval, no PATCH rounds anywhere beneath it.
-- The **first ratification** of a run's contract, and any `UNVERIFIABLE`
+- The **first ratification** of a run's contract, and any `WITNESS`
   countersignature (by definition a human observation).
 - **Fence widening**, **round-budget or depth extension**, and the run's
   **final acceptance**.
@@ -540,20 +540,20 @@ ground truth the table serves.
 
 | Stage | Skill | Role |
 |---|---|---|
-| BEGIN | `grill-me` | Bounded 5-question interview turns a one-line idea into falsifiable criteria |
-| BEGIN | `docs-hygiene` | Re-verifies instruction-file claims before they become contract assumptions |
-| BEGIN | `wayfinder` | Types criteria as dependency tickets; computes the dispatchable frontier |
-| BEGIN | `fleet-playbook-curator` | Optional — when the idea's context spans multiple repos |
-| MIDDLE | `tracer-bullets` | Defines the one-criterion vertical slice; forbids stubbing the proving seam |
-| MIDDLE | `find-before-build` | Named searches for an existing equivalent before any new abstraction |
-| MIDDLE | `codebase-design` | 3+ scored candidates when the slice commits a durable boundary |
-| MIDDLE | `diagnosing-bugs` | Ranked falsifiable hypotheses when a slice fails to flip its criterion |
-| MIDDLE | `orchestrate` | Read-only fan-out template with frozen context and adversarial verifiers |
-| MIDDLE | `plugin-factory`, `tailscale-wif`, `graveyard` | Domain executors, invoked only when a criterion names them |
-| END | `verify-before-claim` | The verdict is `check.sh` output, run — never asserted |
-| END | `prove-the-undo` | Restore path exercised before any irreversible criterion goes green |
-| END | `second-opinion` | Offered, not forced, on architectural or confidence-flagged verdicts |
-| END | `dev-diary`, `dev-diary-review` | Post-run capture of the slice and its unmet criteria |
+| ARM | `grill-me` | Bounded 5-question interview turns a one-line idea into falsifiable criteria |
+| ARM | `docs-hygiene` | Re-verifies instruction-file claims before they become contract assumptions |
+| ARM | `wayfinder` | Types criteria as dependency tickets; computes the dispatchable frontier |
+| ARM | `fleet-playbook-curator` | Optional — when the idea's context spans multiple repos |
+| TRACE | `tracer-bullets` | Defines the one-criterion vertical slice; forbids stubbing the proving seam |
+| TRACE | `find-before-build` | Named searches for an existing equivalent before any new abstraction |
+| TRACE | `codebase-design` | 3+ scored candidates when the slice commits a durable boundary |
+| TRACE | `diagnosing-bugs` | Ranked falsifiable hypotheses when a slice fails to flip its criterion |
+| TRACE | `orchestrate` | Read-only fan-out template with frozen context and adversarial verifiers |
+| TRACE | `plugin-factory`, `tailscale-wif`, `graveyard` | Domain executors, invoked only when a criterion names them |
+| JUDGE | `verify-before-claim` | The verdict is `check.sh` output, run — never asserted |
+| JUDGE | `prove-the-undo` | Restore path exercised before any irreversible criterion goes green |
+| JUDGE | `second-opinion` | Offered, not forced, on architectural or confidence-flagged verdicts |
+| JUDGE | `dev-diary`, `dev-diary-review` | Post-run capture of the slice and its unmet criteria |
 | CROSS | `scope-fence` | Every hunk traces to a criterion id; discoveries recorded, never folded in |
 | CROSS | `stop-rule` | Declares the attempt bound whose exhaustion forces a re-plan checkpoint |
 | CROSS | `semver-gate` | Per-action autonomy lookup; MAJOR breaks the autonomous run and asks |
@@ -573,10 +573,10 @@ because a future edit that quietly undoes one of them would reopen a known hole.
 
 | # | Fatal flaw | Fix now in the spec |
 |---|---|---|
-| 1 | Only `CRITERIA.md` was sha-pinned. `check.sh` lives in the repo and the MIDDLE writer could edit it — rewriting a curl assertion to `echo '#3 PASS'` produces a green run. *(Found by both critics.)* | Pin `check.sh` too; re-hash both at END; `.redgate/**` on a deny-list no lease can cover. |
+| 1 | Only `CRITERIA.md` was sha-pinned. `check.sh` lives in the repo and the TRACE writer could edit it — rewriting a curl assertion to `echo '#3 PASS'` produces a green run. *(Found by both critics.)* | Pin `check.sh` too; re-hash both at JUDGE; `.redgate/**` on a deny-list no lease can cover. |
 | 2 | Recursion rewrote the parent criterion's `check_cmd` to "all child checks green" — mutating the sha-pinned file, so **every successful recursion self-destructed** on the drift check. *(Found by both critics.)* | Delegation moves to a mutable `DELEGATION.md`; `CRITERIA.md` keeps the original command; the parent re-runs *that* for its verdict. |
-| 3 | "A crash is not red" deadlocked greenfield work: `foo --version` on an unbuilt CLI exits 127, so the gate could never go red and MIDDLE never dispatched. | "Not red" now means only *harness* failure (no verdict line emitted, reserved exit 99, or a dirty preflight — where preflight covers only the harness's own prerequisites, never the binaries under test). A `check_cmd` exiting non-zero — 127 included — is a legitimate FAIL. |
-| 4 | Red proved a check *currently fails*, not that it is **coupled** to the criterion. `grep -q RETRY src/client.go` goes green when a comment containing RETRY is added. | Positive control at BEGIN + **mutation control** at END: revert the core hunk, re-run; a check that still passes is `UNVERIFIABLE`, not green. |
+| 3 | "A crash is not red" deadlocked greenfield work: `foo --version` on an unbuilt CLI exits 127, so the gate could never go red and TRACE never dispatched. | "Not red" now means only *harness* failure (no verdict line emitted, reserved exit 99, or a dirty preflight — where preflight covers only the harness's own prerequisites, never the binaries under test). A `check_cmd` exiting non-zero — 127 included — is a legitimate FAIL. |
+| 4 | Red proved a check *currently fails*, not that it is **coupled** to the criterion. `grep -q RETRY src/client.go` goes green when a comment containing RETRY is added. | Positive control at ARM + **mutation control** at JUDGE: revert the core hunk, re-run; a check that still passes is `WITNESS`, not green. |
 | 5 | Budget halved per child but not across siblings, with no global ledger — four criteria spawning two children each consumed 4x the root cap while every local rule reported compliance. | One child pool per parent split by all siblings, debited from a single run-scoped ledger, under a run-level ceiling that terminates the whole tree. |
 
 Notable non-fatal corrections also folded in: the 300-token cap excluded
@@ -601,7 +601,7 @@ parts map directly:
 
 | OS concept | In this system |
 |---|---|
-| Process | A round (one BEGIN/MIDDLE/END) |
+| Process | A round (one ARM/TRACE/JUDGE) |
 | Kernel loop | The round chain: accept → seed → next contract |
 | Scheduler | `wayfinder`'s dependency frontier |
 | Syscall gates | `semver-gate` (privilege), `egress-gate` (network) |
@@ -663,11 +663,11 @@ need — ordered by whether the protocol can run at all without them.
 
 **Blocking:**
 - **`criteria-contract`** — writes `CRITERIA.md` + `check.sh` from an
-  interviewed idea and enforces the red gate. Nothing produces the BEGIN
+  interviewed idea and enforces the red gate. Nothing produces the ARM
   artifact today.
 - **`reconcile`** — re-hashes, runs `check.sh` from a fresh context, scores
   criterion-by-criterion with evidence pointers and the mutation control.
-- **`redgate-driver`** — the entry-point command that runs BEGIN→MIDDLE→END and
+- **`redgate-driver`** — the entry-point command that runs ARM→TRACE→JUDGE and
   blocks each transition on its exit condition. `orchestrate` is fan-out
   templates only; `wayfinder` never executes.
 
@@ -701,15 +701,15 @@ load-bearing ones:
   raw traces. Also the source of the ~15x token-cost figure that makes linear
   the default here.
 - **Task-description contract** (same) — objective / output format / tools /
-  boundary. This *is* the BEGIN stage rendered as a message payload.
+  boundary. This *is* the ARM stage rendered as a message payload.
 - **Anthropic's workflow taxonomy** (*Building Effective Agents*) — prompt
   chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer;
   and its own guidance to prefer the simplest pattern that works.
 - **Plan-and-execute** (LangChain) — plan once with a strong model, execute with
   cheaper ones, replan only when a result invalidates the plan.
-- **ReAct** (Yao et al., arXiv:2210.03629) — the inner loop of any MIDDLE slice.
-- **Reflexion** (Shinn et al., NeurIPS 2023) — a failed END emits a critique
-  that re-enters BEGIN, making the process a loop rather than one-shot.
+- **ReAct** (Yao et al., arXiv:2210.03629) — the inner loop of any TRACE slice.
+- **Reflexion** (Shinn et al., NeurIPS 2023) — a failed JUDGE emits a critique
+  that re-enters ARM, making the process a loop rather than one-shot.
 - **HTN decomposition** (arXiv:2511.12901) — the formal justification for
   self-similarity: a node is primitive or compound, and the verifier at each
   level is what keeps recursion sound.
@@ -730,7 +730,7 @@ The canonical vocabulary — every load-bearing term, the collision rulings
 (Calibration vs negative control, stage vs `phase`, verifier harness vs
 agent harness), and the run lifecycle verbs — lives at
 [`red-gate-glossary.md`](red-gate-glossary.md). The run-sizing layer that
-precedes every BEGIN — five dials (tier, domain, scope, taste,
+precedes every ARM — five dials (tier, domain, scope, taste,
 orchestration), the T0 decline, and the recalibration rules — is specified
 in the redgate plugin at
 [`../plugins/redgate/skills/redgate/references/calibration.md`](../plugins/redgate/skills/redgate/references/calibration.md).

@@ -29,7 +29,7 @@ group "redgate — red-gate semantics stated"
 hasE "$CONTRACT" '127 included, is a legitimate FAIL' "127-is-FAIL is stated" "127-is-FAIL rule lost"
 hasE "$CONTRACT" 'It never probes' "preflight scoped to harness only" "preflight scope rule lost"
 hasE "$CONTRACT" 'sha256 of BOTH files' "both-files pinning stated" "both-files pinning lost"
-hasE "$CONTRACT" 'at most 1 UNVERIFIABLE' "UNVERIFIABLE cap stated" "UNVERIFIABLE cap lost"
+hasE "$CONTRACT" 'at most 1 WITNESS' "WITNESS cap stated" "WITNESS cap lost"
 hasE "$DRIVER" 'never crosses a round' "rounds-vs-recursion boundary stated" "rounds-vs-recursion boundary lost"
 
 group "redgate — scaffold dogfood: the gate is actually red"
@@ -47,10 +47,10 @@ if "$SCAFFOLD" --slug ci-dogfood --root "$_rg_tmp" >/dev/null 2>&1; then
   printf '\n## #9 missing subject binary\nlayers: cli\nred-because: absent\ncheck_cmd: rg-ci-not-a-binary --version\n' >> "$_crit"
   _out="$(bash "$_rg_tmp/.redgate/ci-dogfood/check.sh" 2>/dev/null || true)"
   if printf '%s' "$_out" | grep -q '^#9 FAIL$'; then ok "a 127 check_cmd is a FAIL, not a harness error"; else bad "127 check_cmd was not reported as FAIL"; fi
-  if "$SCAFFOLD" --pin ci-dogfood --root "$_rg_tmp" >/dev/null 2>&1 && grep -q '^phase=MIDDLE$' "$_rg_tmp/.redgate/ci-dogfood/manifest" && [ "$(grep -c '^[a-z_]*sha256=[0-9a-f]\{64\}$' "$_rg_tmp/.redgate/ci-dogfood/manifest")" -eq 2 ]; then
+  if "$SCAFFOLD" --pin ci-dogfood --root "$_rg_tmp" >/dev/null 2>&1 && grep -q '^phase=TRACE$' "$_rg_tmp/.redgate/ci-dogfood/manifest" && [ "$(grep -c '^[a-z_]*sha256=[0-9a-f]\{64\}$' "$_rg_tmp/.redgate/ci-dogfood/manifest")" -eq 2 ]; then
     ok "pin writes both sha256s and flips phase to MIDDLE"
   else
-    bad "pin did not record both sha256s + phase=MIDDLE"
+    bad "pin did not record both sha256s + phase=TRACE"
   fi
   if "$SCAFFOLD" --pin ci-dogfood --root "$_rg_tmp" >/dev/null 2>&1; then bad "re-pin was allowed — a pinned contract must never re-pin"; else ok "re-pin refused"; fi
   if grep -q '^autonomy=classified$' "$_rg_tmp/.redgate/ci-dogfood/manifest"; then ok "manifest declares autonomy=classified"; else bad "manifest missing autonomy=classified"; fi
@@ -124,8 +124,8 @@ group "redgate — graduated autonomy (semver-gate classified gates)"
 has "$DRIVER" 'semver-gate' "driver imports semver-gate as the gate classifier" "driver lost the semver-gate wiring"
 hasE "$DRIVER" 'any property\s*$|any property' "tie-break inherited (any property MAJOR)" "tie-break rule lost"
 hasE "$DRIVER" 'Always MAJOR' "the always-MAJOR escalator list exists" "the always-MAJOR escalator list is gone"
-hasE "$DRIVER" 'orientation' "orientation decisions are an escalator" "orientation escalator lost"
-hasE "$DRIVER" 'UNVERIFIABLE countersignature' "UNVERIFIABLE countersignatures stay human" "UNVERIFIABLE escalator lost"
+hasE "$DRIVER" 'scout' "scout decisions are an escalator" "scout escalator lost"
+hasE "$DRIVER" 'WITNESS countersignature' "WITNESS countersignatures stay human" "WITNESS escalator lost"
 hasE "$DRIVER" 'never auto-passed, never softened' "MAJOR can never be auto-passed" "the never-auto-pass clause is gone"
 hasE "$DRIVER" 'byte-derivable' "derived ratification requires strict plan derivation" "derived-ratification rule lost"
 hasE "$DRIVER" 'self-ratification' "self-ratification guard stated" "self-ratification guard lost"

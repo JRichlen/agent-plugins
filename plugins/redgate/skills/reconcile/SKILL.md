@@ -1,7 +1,7 @@
 ---
 name: reconcile
 description: >-
-  The END stage of Red Gate: verify a round from a context that did not do
+  The JUDGE stage of Red Gate: verify a round from a context that did not do
   the work. Refuse an unratified run, re-hash both pinned artifacts and fail
   on drift, run the pinned verifier yourself, accept a PASS only with
   evidence written this run, then apply the mutation control. Use to close
@@ -23,7 +23,7 @@ A criterion is marked green ONLY when the pinned verifier was run by a party
 that did not do the work, both pinned artifacts still hash to their ratified
 values, and the harness wrote evidence for that criterion during THIS run —
 and a check that survives reverting the hunk it claims to measure is
-UNVERIFIABLE, never proven.
+WITNESS, never proven.
 
 ## Running it
 
@@ -58,7 +58,7 @@ the writer's blind spots.
 A green check proves a command succeeded. It does not prove the check
 measures the criterion. Before accepting a round: **revert the slice's core
 hunk and re-run.** A criterion that stays green was never coupled — it is
-`UNVERIFIABLE`, not proven, and says so in the report.
+`WITNESS`, not proven, and says so in the report.
 
 Assert on **behavior, not messages.** A check that greps for a warning string
 passes even when the gate that should act has been removed, because the
@@ -78,6 +78,6 @@ otherwise pass, a non-zero exit can only come from the gate under test.
 The contract is pinned; it is never edited. A round whose criteria turn out
 to be wrong closes with an honest verdict and seeds the **next round's fresh
 contract** — or, when the criteria are already green before any work, the
-gate refuses to open at BEGIN and the round is closed unbuilt. Criteria that
+gate refuses to open at ARM and the round is closed unbuilt. Criteria that
 are already true are regression tests, and regression tests belong in the
 eval tier, where green-is-expected is the correct semantics.

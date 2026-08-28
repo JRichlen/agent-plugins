@@ -1,6 +1,6 @@
 # redgate
 
-Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work. Use on /redgate "<idea>", or whenever done-criteria must be proven falsifiable before building.
+Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. ARM emits a verifier proven able to fail; JUDGE is that pinned verifier run by a party that did not do the work. Use on /redgate "<idea>", or whenever done-criteria must be proven falsifiable before building.
 
 ## Install
 
@@ -27,7 +27,7 @@ under all three.
 ## Status
 
 All five slices (per `docs/red-gate-implementation-plan.md` at the marketplace
-root): driver + BEGIN, with the red gate live and executed by the cheap
+root): driver + ARM, with the red gate live and executed by the cheap
 tier's dogfood check — a fresh scaffold's `check.sh` must exit red, harness
 failure must be 99, a 127 must be a FAIL, and pinning must record both
 sha256s. An optional hooks enforcement layer (Claude-Code-only;

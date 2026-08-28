@@ -9,6 +9,8 @@ for m in .redgate/*/manifest; do
   slug=$(sed -n 's/^slug=//p' "$m" | head -1)
   phase=$(sed -n 's/^phase=//p' "$m" | head -1)
   round=$(sed -n 's/^round=//p' "$m" | head -1)
-  [ "$phase" = "MIDDLE" ] && echo "redgate: run '$slug' is mid-round $round (phase=$phase) — its contract is pinned and must not be edited."
+  case "$phase" in
+    TRACE|MIDDLE) echo "redgate: run '$slug' is mid-round $round (phase=$phase) — its contract is pinned and must not be edited." ;;
+  esac
 done
 exit 0

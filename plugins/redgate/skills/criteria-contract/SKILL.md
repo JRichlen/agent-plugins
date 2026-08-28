@@ -1,7 +1,7 @@
 ---
 name: criteria-contract
 description: >-
-  The BEGIN stage of Red Gate: turn an interviewed idea into CRITERIA.md and
+  The ARM stage of Red Gate: turn an interviewed idea into CRITERIA.md and
   check.sh in .redgate/<slug>/, prove the gate red (every checkable
   criterion FAIL, harness preflight clean), get human ratification, and pin
   the sha256 of both files into the run manifest. Use at the start of every
@@ -18,7 +18,7 @@ compatibility: >-
 
 ## Invariant
 
-BEGIN emits two artifacts — `CRITERIA.md` and `check.sh` — and MIDDLE is
+ARM emits two artifacts — `CRITERIA.md` and `check.sh` — and TRACE is
 ALWAYS blocked until `check.sh` has executed with a clean harness preflight
 and returned FAIL on every checkable criterion, the human has ratified, and
 the sha256 of BOTH files is pinned in the manifest. A criterion that cannot
@@ -40,9 +40,9 @@ go red is NEVER accepted as a criterion.
    `manifest` carrying phase, budgets, and empty pin slots.
 3. **Write 3–7 numbered criteria.** Each carries: the statement, the layers
    it crosses, why it is red today (absent vs present-but-wrong), and either
-   a `check_cmd` or a declared `UNVERIFIABLE` with a named human
+   a `check_cmd` or a declared `WITNESS` with a named human
    observation. **At least two criteria must be checkable and checkable must
-   be the majority; at most 1 UNVERIFIABLE** (2 only with explicit human
+   be the majority; at most 1 WITNESS** (2 only with explicit human
    opt-in). Where a check shape has a known-good target, record the
    **positive control** — the same shape passing there today.
 4. **Run the red gate**: `bash .redgate/<slug>/check.sh`.
@@ -56,18 +56,18 @@ go red is NEVER accepted as a criterion.
    - The gate is red only when every checkable criterion printed FAIL.
 5. **Ratify**: show the human, per criterion, the statement, the literal red
    output just produced, and one line stating what output will count as
-   green. Each UNVERIFIABLE is countersigned individually. Never present
+   green. Each WITNESS is countersigned individually. Never present
    bare shell one-liners as the thing to approve.
 6. **Pin**: `scripts/scaffold-run.sh --pin <slug>` writes the sha256 of both
    `CRITERIA.md` and `check.sh` into the manifest and flips phase to
-   `MIDDLE`. From here neither file is ever edited — a wrong contract is
+   `TRACE`. From here neither file is ever edited — a wrong contract is
    corrected by a child (in-round) or the next round's fresh contract.
 
 ## Failure modes this exists to stop
 
 - Criteria written but never executed — self-report wearing a checklist.
 - A fake `check_cmd` written purely to clear the gate for a taste criterion
-  (that is what UNVERIFIABLE, capped and countersigned, is for).
+  (that is what WITNESS, capped and countersigned, is for).
 - "command not found" treated as not-red, deadlocking greenfield work.
-- The writer relaxing the checker mid-MIDDLE — the pin makes it drift,
-  and END's re-hash makes drift fatal.
+- The writer relaxing the checker mid-TRACE — the pin makes it drift,
+  and JUDGE's re-hash makes drift fatal.

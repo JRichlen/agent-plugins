@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# reconcile.sh — the independent END of a Red Gate round.
+# reconcile.sh — the JUDGE stage of a Red Gate round — the independent verdict.
 #
 # Usage: reconcile.sh --slug <slug> [--root DIR]
 #
@@ -63,7 +63,7 @@ START=$(date +%s)
 sleep 1                      # ensure evidence mtimes are strictly newer than START
 VERDICTS="$(bash "$RUN/check.sh" 2>&1)"; VRC=$?
 if [ "$VRC" -eq 99 ]; then
-  echo "reconcile: harness failure (exit 99) — not a verdict; fix the harness" >&2
+  echo "reconcile: FAULT (exit 99) — not a verdict; fix the harness" >&2
   printf '%s\n' "$VERDICTS" >&2
   exit 1
 fi
@@ -98,8 +98,8 @@ while IFS= read -r line; do
       fi ;;
     FAIL)
       printf '#%s\tFAIL\tevidence/%s.out\n' "$n" "$n"; fails=$((fails+1)) ;;
-    UNVERIFIABLE)
-      printf '#%s\tUNVERIFIABLE\tdeclared at BEGIN; human observation required\n' "$n" ;;
+    WITNESS|UNVERIFIABLE)
+      printf '#%s\tWITNESS\tdeclared at ARM; human observation required\n' "$n" ;;
   esac
 done <<< "$VERDICTS"
 echo "---"
@@ -113,5 +113,5 @@ if [ "$fails" -gt 0 ]; then
   exit 1
 fi
 echo "reconcile: VERDICT PASS — $green criteria green, each with evidence written this run"
-echo "reconcile: mutation control — revert the slice's core hunk and re-run; a criterion still green is UNVERIFIABLE, not proven"
+echo "reconcile: mutation control — revert the slice's core hunk and re-run; a criterion still green is WITNESS-in-fact, not proven"
 exit 0

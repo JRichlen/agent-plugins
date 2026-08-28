@@ -4,8 +4,8 @@
 #
 # Reads a PreToolUse payload on stdin. Denies any write that targets a Red
 # Gate run's ratified contract (CRITERIA.md, check.sh, manifest) while that
-# run's phase is MIDDLE. Before ratification the contract is still being
-# written, so BEGIN-phase writes are allowed.
+# run's phase is TRACE (legacy: MIDDLE). Before ratification the contract is
+# still being written, so ARM-phase writes are allowed.
 #
 # The rule it compiles: nothing a round can write may gate that round.
 #
@@ -30,11 +30,11 @@ run="${path%%/.redgate/*}/.redgate/$(printf '%s' "${path#*/.redgate/}" | cut -d/
 [ -f "$run/manifest" ] || exit 0
 
 phase="$(sed -n 's/^phase=//p' "$run/manifest" | head -1)"
-[ "$phase" = "MIDDLE" ] || exit 0
+case "$phase" in TRACE|MIDDLE) : ;; *) exit 0 ;; esac
 
 case "${path##*/}" in
   CRITERIA.md|check.sh|manifest)
-    echo "redgate: DENY — $path belongs to a ratified contract whose round is in MIDDLE." >&2
+    echo "redgate: DENY — $path belongs to a ratified contract whose round is in TRACE." >&2
     echo "A wrong contract is corrected by a child within the round, or by the next round's fresh contract — never by editing the ratified one." >&2
     exit 2 ;;
 esac
