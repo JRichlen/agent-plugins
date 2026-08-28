@@ -322,6 +322,28 @@ jobs:
               + (([ .gradingResult.componentResults[]? | select(.pass==false) | .reason ] | join("\n---\n")))
               + "\n(overall reason: " + ((.gradingResult.reason // "") | tostring) + ")\n"
           ' results.json || echo "jq parse fell through — see artifact"
+      - name: capture example snapshot from real results
+        if: steps.touched.outputs.paid == 'true'
+        # Extract this plugin's real with-skill/without-skill pair from the graded
+        # results into docs/examples/data/<plugin>.json — the raw material for the
+        # published gallery. Uploaded as an artifact (not committed from CI); a
+        # maintainer or a follow-up job commits the refreshed snapshots, which the
+        # pages workflow then publishes. Never fabricates: a run with no usable
+        # pair simply skips and the previous snapshot stands.
+        working-directory: ${{ github.workspace }}
+        run: |
+          evals/paid/capture-example.sh \
+            "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" \
+            "${{ matrix.plugin }}" \
+            --commit "${{ github.sha }}" \
+            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+      - name: upload captured example snapshot
+        if: always() && steps.touched.outputs.paid == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-snapshot-${{ matrix.plugin }}
+          path: docs/examples/data/${{ matrix.plugin }}.json
+          if-no-files-found: ignore
       - name: upload results.json
         if: always() && steps.touched.outputs.paid == 'true'
         uses: actions/upload-artifact@v4

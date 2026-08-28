@@ -1,0 +1,52 @@
+# Publish the skill example gallery (docs/examples/) to GitHub Pages.
+#
+# The gallery is generated deterministically from committed snapshots by
+# docs/build-examples.sh, so this workflow just regenerates (to prove the
+# committed index.html is in sync), then deploys docs/ as the Pages site. No
+# API keys, no model calls — the real transcripts are already captured into
+# docs/examples/data/ by the behavioral tier's capture step and committed.
+#
+# One-time manual step (cannot be done from a workflow): in the repo,
+# Settings → Pages → Build and deployment → Source = GitHub Actions.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One in-flight deploy at a time; don't cancel a running publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: regenerate and verify the gallery is in sync
+        # Fail the publish if the committed index.html drifted from its data —
+        # the same guard the cheap tier runs, enforced again at publish time.
+        run: docs/build-examples.sh --check
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

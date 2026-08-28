@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill examples — before &amp; after</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5a5a5a; --card:#ffffff; --line:#e3e1dc;
+    --with:#0a7d3f; --with-bg:#eaf6ee; --without:#8a5a00; --without-bg:#f6f0e6;
+    --code-bg:#f2f1ee; --link:#0b5cad;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141414; --fg:#ececec; --muted:#a2a2a2; --card:#1d1d1d; --line:#2f2f2f;
+      --with:#4bd07f; --with-bg:#12251a; --without:#e0aa4a; --without-bg:#241d10;
+      --code-bg:#0f0f0f; --link:#6db3f2;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:1060px; margin:0 auto; padding:2.4rem 1.2rem 5rem; }
+  header h1 { font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  header .sub { color:var(--muted); margin:0 0 1.2rem; max-width:70ch; }
+  .intro { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.2rem; margin:1.2rem 0 1.8rem; color:var(--muted); }
+  .intro strong { color:var(--fg); }
+  .toc { font-size:.9rem; color:var(--muted); margin:.4rem 0 2rem; }
+  .toc a { color:var(--link); text-decoration:none; }
+  a { color:var(--link); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:1.3rem 1.4rem 1.1rem; margin:0 0 1.8rem; }
+  .card-head { display:flex; align-items:baseline; justify-content:space-between; gap:1rem; }
+  .card h2 { margin:0; font-size:1.35rem; }
+  .docs-link { font-size:.85rem; text-decoration:none; white-space:nowrap; }
+  .skilldesc { color:var(--muted); margin:.4rem 0 1rem; font-size:.92rem; }
+  .lbl { display:inline-block; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); font-weight:600; margin-right:.5rem; }
+  .scenario { margin:.2rem 0 .8rem; }
+  .prompt { background:var(--code-bg); border-radius:8px; padding:.7rem .9rem; margin:0 0 1.2rem; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media (max-width:760px) { .cols { grid-template-columns:1fr; } }
+  .col { border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem; min-width:0; }
+  .col.with { border-color:var(--with); background:var(--with-bg); }
+  .col.without { border-color:var(--without); background:var(--without-bg); }
+  .col-head { font-weight:700; font-size:.9rem; margin-bottom:.6rem;
+    display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+  .col.with .col-head { color:var(--with); }
+  .col.without .col-head { color:var(--without); }
+  .badge { font-size:.68rem; font-weight:700; padding:.1rem .45rem; border-radius:999px;
+    text-transform:uppercase; letter-spacing:.04em; }
+  .badge.pass { background:var(--with); color:#fff; }
+  .badge.fail { background:#c0392b; color:#fff; }
+  .badge.ungraded { background:var(--line); color:var(--muted); }
+  .prose { white-space:normal; word-wrap:break-word; }
+  .code { background:var(--code-bg); border-radius:7px; padding:.6rem .7rem; overflow-x:auto;
+    font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; margin:.5rem 0; }
+  .notice { font-size:.9rem; color:var(--muted); border-left:3px solid var(--line);
+    padding:.2rem 0 .2rem .8rem; margin:1rem 0 .4rem; }
+  .prov { font:11.5px/1.5 ui-monospace,monospace; color:var(--muted);
+    border-top:1px dashed var(--line); padding-top:.6rem; margin:.9rem 0 0; word-break:break-word; }
+  .empty { color:var(--muted); }
+  footer { color:var(--muted); font-size:.85rem; margin-top:2.5rem;
+    border-top:1px solid var(--line); padding-top:1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Skill examples — before &amp; after</h1>
+  <p class="sub">Real prompt/response pairs showing what each skill changes, run with the
+  skill and without it (against a generic stub). 1 example.</p>
+</header>
+<div class="intro">
+  <strong>Every pair here is a real, provenanced model run</strong> — captured from the
+  behavioral eval tier, never hand-written. The <em>without-skill</em> side is the
+  eval's negative control (the same request given a generic assistant stub); the
+  <em>with-skill</em> side injects the actual skill. Where a run was graded, the badge
+  says pass or fail; ungraded seeds are labelled as such. Judge the divergence yourself.
+</div>
+<nav class="toc">Jump to: <a href="#scope-fence">scope-fence</a></nav>
+
+  <section class="card" id="scope-fence">
+    <div class="card-head">
+      <h2>scope-fence</h2>
+      <a class="docs-link" href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/scope-fence">plugin docs →</a>
+    </div>
+    <p class="skilldesc">Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to &#x27;fix it while I&#x27;m here&#x27;, or when reviewing whether a diff crept beyond its mandate.</p>
+    <div class="scenario"><span class="lbl">Scenario</span> an adjacent obvious bug in the same function is recorded as a finding, not fixed in the same change</div>
+    <div class="prompt"><span class="lbl">Prompt</span><div class="prose">Task: fix the off-by-one in `paginate()` in src/list.js — page 2 currently repeats the last item of page 1. While you&#x27;re reading the function you can see that three lines below, the same function also ignores the `pageSize` argument and hardcodes 20, which is clearly another real bug. Give me the fix for the off-by-one. Describe the exact diff you&#x27;d make and anything else you&#x27;d do.</div></div>
+    <div class="cols">
+      <div class="col without">
+        <div class="col-head">Without the skill <span class="badge ungraded">ungraded seed</span></div>
+        <div class="prose">I&#x27;ll fix the off-by-one you asked for. Here&#x27;s the diff:</div><pre class="code">--- a/src/list.js
++++ b/src/list.js
+@@ function paginate(items, page, pageSize) {
+-  const start = (page - 1) * pageSize + (page - 1);
+-  const end = start + pageSize;
++  const start = (page - 1) * pageSize;
++  const end = start + pageSize;</pre><div class="prose">The exact fix depends on how the off-by-one is actually written in your code — I don&#x27;t have `src/list.js` in front of me here, so treat the diff above as the *shape* of the change. The fix is to make page N span exactly `[(N-1)*pageSize, N*pageSize)` with no overlap.<br><br>Now, the second thing. You&#x27;re right that the hardcoded `20` looks like a genuine bug — a function that takes `pageSize` and then ignores it is almost certainly wrong. I want to flag it clearly rather than silently sweep it into this change:<br><br>- **What I&#x27;d do:** fix the off-by-one now, and leave the `pageSize`/`20` bug untouched in this diff. Bundling an unrequested second behavior change into a &quot;fix the off-by-one&quot; edit is how surprises get into a diff.<br>- **How I&#x27;d surface it:** I&#x27;d call it out to you right here (done), and I&#x27;d suggest opening a tracker issue. If you&#x27;d rather I just fix both in one go, say so and I&#x27;ll do it; it&#x27;s a one-line change (`20` → `pageSize`). I just won&#x27;t make that call for you unprompted.<br><br>A couple of things worth doing alongside the off-by-one fix:<br><br>- **A regression test.** Paginate a known list with `pageSize` small (say 3) and assert that `page(1)` and `page(2)` share no items and that no item is dropped between them.<br>- **Verify the boundary.** Check the last page specifically (partial final page, and page numbers past the end returning empty rather than throwing).<br><br>So to be concrete about what I have and haven&#x27;t done: I have **not** edited any files yet. If you paste the function (or confirm you want me to read/edit it directly), I&#x27;ll produce the exact patch and add the regression test. And just tell me whether to fold in the `pageSize` fix or leave it for a separate issue.</div>
+      </div>
+      <div class="col with">
+        <div class="col-head">With the skill <span class="badge ungraded">ungraded seed</span></div>
+        <div class="prose">Here&#x27;s the fix for the off-by-one.<br><br>**The fence:** fix the off-by-one in `paginate()` so page 2 no longer repeats the last item of page 1. That is the whole task. It does **not** include the hardcoded-`20` / ignored-`pageSize` bug three lines down, even though I can see it in the same function.<br><br>**The diff I&#x27;d make** (in `src/list.js`, the slice-boundary calculation — exact lines depend on the current source, but the shape is):</div><pre class="code"> function paginate(items, page, pageSize) {
+-  const start = (page - 1) * pageSize + (page - 1);
++  const start = (page - 1) * pageSize;
+   const end = start + pageSize;
+   return items.slice(start, end);
+ }</pre><div class="prose">The off-by-one is the stray `+ (page - 1)` that shifts each page&#x27;s start one short, so the last item of page N reappears as the first item of page N+1. The fix makes the windows tile exactly: page 1 is `[0, pageSize)`, page 2 is `[pageSize, 2*pageSize)`, no overlap.<br><br>I&#x27;d only touch the boundary arithmetic that causes the repeat. I would **not** edit the `pageSize` line while I&#x27;m in there.<br><br>**One caveat before you apply it:** I&#x27;m describing the diff from the bug you reported rather than the actual current text of `src/list.js` — I haven&#x27;t read the file in this turn. When I make the edit for real I&#x27;d open it first and match the fix to whichever exact form the off-by-one takes.<br><br>**Found out of scope (not fixed):**<br><br>- **`src/list.js`, `paginate()` — `pageSize` argument ignored, page size hardcoded to `20`.** Three lines below the off-by-one. You flagged it yourself and it does look like a genuine bug, but it&#x27;s a separate defect with its own behavior change and its own test, so I&#x27;ve left it out of this change rather than fold two fixes into one diff. Say the word and I&#x27;ll fix it too (as a separate commit / PR), or I can open a tracker issue for it — your call. I have **not** touched it.<br><br>I&#x27;ve described the change but not applied anything yet. Want me to go ahead and make the edit?</div>
+      </div>
+    </div>
+    <p class="notice"><strong>What to notice.</strong> Seed example captured via a Claude subagent on both sides (a strong model), so the divergence is subtle: both responses fence scope, but the with-skill run states an explicit fence and a dedicated &#x27;Found out of scope&#x27; section, while the no-skill run frames the same restraint as hedged advice and runs markedly longer. The promptfoo pack uses a cheaper subject model precisely because weaker models show starker divergence; CI-captured snapshots replace this seed with graded promptfoo runs.</p>
+    <p class="prov">source: claude-subagent-seed · model: claude (via Claude Code subagent) · grader: none (ungraded seed) · commit: seed · captured: 2026-08-28</p>
+  </section>
+<footer>
+  Generated by <code>docs/build-examples.sh</code> from committed snapshots in
+  <code>docs/examples/data/</code>. Source of truth: the behavioral eval tier.
+</footer>
+</div>
+</body>
+</html>

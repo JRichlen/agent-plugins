@@ -813,6 +813,55 @@ else
 fi
 rm -rf "$_tmp"
 
+# --- 19. Example gallery (docs/examples) is in sync and non-fabricated -------
+# The published before/after gallery is a VERIFICATION surface: every card is a
+# real, provenanced with-skill/without-skill model run captured from the eval
+# tier (docs/examples/data/*.json), rendered to docs/examples/index.html by
+# docs/build-examples.sh. Guard offline that the committed HTML is in sync with
+# the data (so a stale page can't ship), and that no snapshot ships without the
+# two outputs and provenance that make it verifiable rather than marketing.
+# Coupled: edit a snapshot without regenerating, or drop a snapshot's provenance,
+# and this goes red.
+group "example gallery — sync and provenance"
+if docs/build-examples.sh --check >/dev/null 2>&1; then
+  ok "examples: index.html is in sync with docs/examples/data/"
+else
+  bad "examples: index.html is STALE — run docs/build-examples.sh"
+fi
+python3 - "$REPO_ROOT" <<'PYE'
+import glob, json, os, sys
+root = sys.argv[1]
+fail = 0
+found = 0
+for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json"))):
+    found += 1
+    name = os.path.basename(f)
+    try:
+        s = json.load(open(f))
+    except Exception as e:
+        print(f"  FAIL examples/{name}: invalid JSON ({e})"); fail += 1; continue
+    prob = []
+    for k in ("plugin", "prompt", "with_skill", "without_skill", "provenance"):
+        if not s.get(k): prob.append(f"missing {k}")
+    for side in ("with_skill", "without_skill"):
+        if isinstance(s.get(side), dict) and not (s[side].get("output") or "").strip():
+            prob.append(f"{side} has no output")
+    prov = s.get("provenance") or {}
+    for k in ("source", "model"):
+        if not prov.get(k): prob.append(f"provenance missing {k}")
+    # a plugin snapshot must name a real installed plugin
+    if s.get("plugin") and not os.path.isdir(os.path.join(root, "plugins", s["plugin"])):
+        prob.append(f"plugin '{s['plugin']}' is not installed")
+    if prob:
+        print(f"  FAIL examples/{name}: " + "; ".join(prob)); fail += 1
+    else:
+        print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
+if found == 0:
+    print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
+sys.exit(1 if fail else 0)
+PYE
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
