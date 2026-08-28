@@ -410,6 +410,12 @@ jobs:
           # Subject model only — routing verdicts are checked by regex, no grader.
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
+      - name: statistical gate (per-scenario k-of-N pass rate)
+        if: steps.touched.outputs.routing == 'true'
+        # repeat:5 in the config expands each scenario into 5 rows; this enforces
+        # a >=0.8 per-scenario floor so a lucky single pass can't read as green
+        # (gap #4). Fail-closed if the run did not actually repeat.
+        run: evals/paid/pass-rate.sh evals/routing/results.json --floor 0.8 --min-runs 3
       - name: show failing routes
         if: always() && steps.touched.outputs.routing == 'true'
         working-directory: evals/routing

@@ -38,6 +38,12 @@ providers:
 
 evaluateOptions:
   maxConcurrency: 3
+  # Statistical rigor (gap #4): a stochastic router that passes a scenario ~55%
+  # of the time is a coin-flip at n=1. Run each scenario 5x; evals/paid/pass-rate.sh
+  # then enforces a per-scenario k-of-N floor so a single lucky pass can't stay
+  # green. 5 was chosen as the smallest N that distinguishes "usually passes"
+  # from "coin flip" at the 0.8 floor while keeping this (grader-free) pack cheap.
+  repeat: 5
 
 defaultTest:
   vars:

@@ -767,6 +767,52 @@ sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
+# Gap #4: the routing pack runs each scenario repeat:5 times and pass-rate.sh
+# enforces a per-scenario floor so a lucky single pass can't read green. Guard
+# offline that (a) the pack still declares repeat, (b) CI still invokes the gate,
+# and (c) pass-rate.sh genuinely fails a below-floor run and passes an at-floor
+# one — run against synthetic fixtures so the gate is mutation-proven without a
+# model call. Coupled: drop repeat, unwire the gate, or invert its verdict and
+# this goes red.
+group "statistical gate — pass-rate floor bites"
+if grep -qE '^\s*repeat:\s*[0-9]+' evals/routing/promptfooconfig.yaml; then
+  ok "routing pack declares repeat: (scenarios run more than once)"
+else
+  bad "routing pack lost its repeat: — n=1 greens are uninterpretable again"
+fi
+if grep -q 'pass-rate.sh' .github/workflows/evals.yml; then
+  ok "CI wires pass-rate.sh into the routing job"
+else
+  bad "CI no longer invokes pass-rate.sh — the statistical floor is not enforced"
+fi
+_pr="evals/paid/pass-rate.sh"
+_tmp="$(mktemp -d)"
+python3 - "$_tmp" <<'PYF'
+import json, sys
+d = sys.argv[1]
+def rows(desc, n, passes): return [{"testCase":{"description":desc},"success":(i<passes)} for i in range(n)]
+json.dump({"results":{"results": rows("A",5,5)+rows("B",5,4)}}, open(d+"/good.json","w"))   # 1.0, 0.8
+json.dump({"results":{"results": rows("A",5,5)+rows("C",5,2)}}, open(d+"/bad.json","w"))    # 0.4 -> below 0.8
+json.dump({"results":{"results": rows("A",1,1)}}, open(d+"/under.json","w"))                # n=1 -> fail-closed
+PYF
+if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
+else
+  bad "pass-rate: at-floor run wrongly failed — floor logic broken"
+fi
+if bash "$_pr" "$_tmp/bad.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  bad "pass-rate: a below-floor scenario (0.4) passed — the gate does not bite"
+else
+  ok "pass-rate: a below-floor scenario (0.4) fails the run"
+fi
+if bash "$_pr" "$_tmp/under.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  bad "pass-rate: an n=1 run passed — fail-closed repeat guard broken"
+else
+  ok "pass-rate: an n=1 (un-repeated) run fails closed"
+fi
+rm -rf "$_tmp"
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
