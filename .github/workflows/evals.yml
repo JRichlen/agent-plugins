@@ -368,6 +368,67 @@ jobs:
               exit 1 ;;
           esac
 
+  # ── routing tier (roster-level trigger routing) ───────────────────────────
+  # Gap #5: every per-plugin behavioral pack tests its skill alone, but users
+  # install ~23 at once and mis-routing between them is invisible to those packs.
+  # This job gives the model the full description roster and labeled requests and
+  # checks it routes correctly (deterministic regex on the model's ROUTE: line —
+  # no grader key needed, subject model only). Runs when the routing pack OR any
+  # skill description that feeds the roster changes; skipped legs say so out loud,
+  # same contract as the behavioral tier.
+  routing-eval:
+    name: routing tier (roster trigger routing)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: touched
+        with:
+          filters: |
+            routing:
+              - 'evals/routing/**'
+              - 'plugins/*/skills/*/SKILL.md'
+              - '.claude-plugin/marketplace.json'
+      - name: roster is in sync before spending on a model call
+        if: steps.touched.outputs.routing == 'true'
+        run: evals/routing/gen-roster.sh --check
+      - uses: actions/setup-node@v4
+        if: steps.touched.outputs.routing == 'true'
+        with:
+          node-version: 22
+      - name: announce that this leg did NOT run
+        if: steps.touched.outputs.routing != 'true'
+        run: |
+          echo "::notice::routing tier SKIPPED — no routing pack or skill-description change in this PR. Green because it did not run, NOT because routing passed."
+      - name: promptfoo eval (routing)
+        if: steps.touched.outputs.routing == 'true'
+        working-directory: evals/routing
+        env:
+          # Subject model only — routing verdicts are checked by regex, no grader.
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
+      - name: show failing routes
+        if: always() && steps.touched.outputs.routing == 'true'
+        working-directory: evals/routing
+        run: |
+          test -f results.json || { echo "no results.json produced"; exit 0; }
+          jq -r '
+            (.results.results // .results // [])[]
+            | select(.success == false)
+            | "=== REQUEST ===\n" + ((.vars.request // .testCase.vars.request) | tostring)
+              + "\n=== MODEL ROUTE ===\n" + ((.response.output // .output // "") | if type=="string" then . else tojson end) + "\n"
+          ' results.json || echo "jq parse fell through — see artifact"
+      - name: upload routing results
+        if: always() && steps.touched.outputs.routing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: routing-results
+          path: evals/routing/results.json
+          if-no-files-found: ignore
+
   # ── paid multi-plugin gate (ADVISORY — never required) ────────────────────
   # Paid tiers bill per plugin, so a PR that touches more than one plugin's paid
   # surface makes a red paid leg ambiguous and re-bills every touched plugin on a

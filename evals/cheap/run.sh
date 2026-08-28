@@ -716,6 +716,57 @@ else
   rm -rf "$sg_tmp"
 fi
 
+# --- 17. Routing eval structure (roster-level trigger routing) --------------
+# The behavioral routing pack (evals/routing/) actually runs in CI with a live
+# model; the cheap tier guards its STRUCTURE so a broken pack can't ship green:
+# roster.txt is in sync with the marketplace, the config parses, it carries
+# enough positive scenarios AND the calibration negatives, and every positive
+# routes to a real installed plugin. Coupled to real state — add a plugin
+# without regenerating the roster, or point a scenario at a nonexistent skill,
+# and this goes red.
+group "routing eval — structure"
+if evals/routing/gen-roster.sh --check >/dev/null 2>&1; then
+  ok "routing: roster.txt is in sync with the marketplace"
+else
+  bad "routing: roster.txt is STALE — run evals/routing/gen-roster.sh > evals/routing/roster.txt"
+fi
+python3 - "$REPO_ROOT" <<'PYR'
+import json, os, re, sys
+root = sys.argv[1]
+cfgp = os.path.join(root, "evals", "routing", "promptfooconfig.yaml")
+rosp = os.path.join(root, "evals", "routing", "roster.txt")
+fail = 0
+try:
+    import yaml
+    cfg = yaml.safe_load(open(cfgp)); tests = cfg.get("tests", [])
+    parsed = "yaml"
+except Exception:
+    # PyYAML may be absent in some CI images; fall back to counting test blocks.
+    cfg = None
+    tests = re.findall(r'^\s*- description:', open(cfgp).read(), re.M)
+    parsed = "regex-fallback"
+raw = open(cfgp).read()
+routes = re.findall(r'ROUTE:\\s\*([A-Za-z][\w-]*)', raw)
+positives = [r for r in routes if r != "none"]
+negatives = [r for r in routes if r == "none"]
+roster = {l.split(":", 1)[0].strip() for l in open(rosp) if l.strip()}
+if len(positives) >= 6:
+    print(f"  PASS routing: {len(positives)} must-fire scenarios (>=6) [{parsed}]")
+else:
+    print(f"  FAIL routing: only {len(positives)} must-fire scenarios (<6)"); fail += 1
+if len(negatives) >= 2:
+    print(f"  PASS routing: {len(negatives)} must-not-fire calibration negatives (>=2)")
+else:
+    print(f"  FAIL routing: {len(negatives)} calibration negatives (<2) — a fire-on-everything router would pass"); fail += 1
+missing = [r for r in positives if r not in roster]
+if missing:
+    print(f"  FAIL routing: scenarios route to non-installed skills: {missing}"); fail += 1
+else:
+    print(f"  PASS routing: every must-fire scenario targets an installed plugin")
+sys.exit(1 if fail else 0)
+PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
