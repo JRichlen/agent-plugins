@@ -28,6 +28,7 @@ attack ideas reproduced against the real tree and are fixed.
 | 1 | Untrusted-provenance discipline | **Shipped** | `untrusted-data` fences in the redgate UP envelope + both orchestrate verify templates; backtick-defang so worker content cannot break out of the fence; grep-coupled in two eval packs |
 | 2 | Adversarial-input robustness (graveyard) | **Shipped + real bug fixed** | Fuzz group of 8 hostile names; **found and fixed a live command injection** in the delete-script generator (a double-quoted repo name escaped the emitted `BUNDLED=` assignment) via strict `[A-Za-z0-9._-]` validation; defense-by-rejection, mutation-proven |
 | 3 | Mechanical secret-scan gate | **Shipped** | `evals/cheap/secret-gate.sh` — AWS/GitHub/Slack/Anthropic/Google/Stripe/OpenAI keys + PEM headers; negative control; wired into dev-diary + context-handoff |
+| 5 | Roster-level trigger routing | **Shipped** | `evals/routing/` — 8 must-fire + 2 must-not-fire scenarios over the full description roster; deterministic regex on the model's `ROUTE:` line (no grader); cheap-tier §17 guards structure; new advisory `routing-eval` CI job runs the model against a live key |
 | 6 | Cross-plugin composition wiring | **Shipped** | run.sh §13 — every backticked skill reference resolves to an installed plugin/skill (fail-closed, curated non-skill set) |
 | 7 | Context-tax budget | **Shipped** | run.sh §14 — per-plugin chars/est-token table; >1024-char description or >9000-token total fails (measured ~7233 today) |
 | 8 | Version discipline | **Shipped** | run.sh §15 — plugin.json must carry a version (fail-closed), matching marketplace.json when both exist |
@@ -46,11 +47,22 @@ reproduced and are closed.
 
 **Not yet done, and why:**
 
-- **#4 repeat-run statistical baselines** and **#5 roster-level trigger
-  routing** need a live model (OPENROUTER/ANTHROPIC keys) — they are
-  behavioral-tier work, not cheap-tier, and this session ran offline. They
-  remain the highest-leverage *next* batch: #4 gates the whole
-  optimization-loop roadmap.
+- **#4 repeat-run statistical baselines** is the remaining behavioral-tier
+  gap. It is not offline-blocked any more (CI has the keys), but it carries
+  two obstacles a single offline commit cannot honestly clear: (a) a
+  regression baseline must be *seeded from a real run*, a chicken-and-egg
+  that needs one CI pass before the compare means anything; (b) adding
+  `repeat: N` across the existing packs multiplies the spend of the
+  **required** behavioral tier N-fold, which is a cost decision for the
+  owner, not a drive-by — a MAJOR gate by this protocol's own rules.
+  **Ready-to-build design:** run each scenario with `repeat: N` (N≈5),
+  add `evals/paid/pass-rate.sh` that reads `results.json`, computes each
+  scenario's k-of-N pass rate, and fails any scenario below a floor
+  (e.g. <0.8) — so a scenario that passed 1/1 by luck can no longer stay
+  green. Demonstrate it on the new routing pack first (cheap: no grader,
+  not yet required), then propose the roll-out to the required packs as
+  an explicit spend decision. Build it when the owner okays the added
+  per-run cost.
 - **#9 approval-fatigue ledger** and **#10 criteria/verifier corpus index**
   are cheap-tier-shippable but were deprioritized behind the five security-
   and-composition gaps that the themes section flagged as the real blind
