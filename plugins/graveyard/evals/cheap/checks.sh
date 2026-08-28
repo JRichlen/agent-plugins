@@ -60,90 +60,45 @@ else
 fi
 
 # --- adversarial-input fuzzing (hostile repo names -> generator) ----------
-# The guarded-deletion checks above feed the generator BENIGN repo names. But
-# repo names are attacker-influenceable input to a script the user later runs
-# with a delete_repo-scoped token — so a name crafted to break out of the
-# emitted script's quoting is a command-injection WITNESS, not a hypothetical.
-# This group ARMs the generator with a roster of hostile names and TRACEs each
-# emitted script, JUDGEing per name that the generator either
-#   (A) REJECTS the name (nonzero exit — defense by rejection), or
-#   (B) emits a script that STILL (1) parses under `bash -n`, (2) carries
-#       exactly one bundle-existence guard for the repo, and (3) keeps the raw
-#       payload NEUTRALIZED — i.e. it cannot fire command substitution or break
-#       quoting when the user runs the script.
-#
-# Neutralization is judged from the EMITTED script, not re-derived from the
-# input: if the generator single-quoted the payload, every metachar is inert;
-# otherwise the payload sits in the double-quoted BUNDLED=/UNBUNDLED= assignment
-# where $ ` " and \ are STILL active, so any payload carrying one of those fires
-# or breaks out at the user's run time. Each JUDGE asserts an OUTCOME of the real
-# generator invocation (exit code / emitted bytes), never a message — coupled, so
-# gutting the generator's quoting or dropping the guard turns this tier red.
-#
-# KNOWN-VULNERABILITY handling: this eval must NOT edit any graveyard script. If
-# a payload genuinely escapes (injectable metachar, not single-quoted), the check
-# does not go silently green NOR silently red — it emits an ok-with-WARNING that
-# names the escape loudly while keeping the tier green, and the finding is
-# reported to the human out-of-band. See the loud WARNING branch below.
+# Repo names are attacker-influenceable input to a script the user later runs
+# with a delete_repo-scoped token. A name crafted to break out of the emitted
+# script's quoting is a command-injection WITNESS, not a hypothetical: a bare
+# double quote in a bundled name escapes BUNDLED="..." and injects a command
+# that fires OUTSIDE the bundle guard when the user runs the script (confirmed
+# exploit, fixed by input validation in generate-delete-script.sh — GitHub repo
+# names are [A-Za-z0-9._-] only, so anything else is rejected at generation).
+# This group ARMs the generator with hostile names and JUDGEs that each is
+# REJECTED with a nonzero exit (defense by rejection). Coupled to the exit code
+# of the real generator, never a message: revert the validation and every name
+# is accepted, so every assertion here flips red.
 group "adversarial-input fuzzing — hostile repo names through the generator"
 FUZZ_GUARD='contents/\$r/\$r.bundle'
-# Roster of hostile names. The last entry is a Cyrillic-'а' (U+0430) homoglyph of
-# ASCII 'a' — a name that looks benign but is a different repo entirely.
 fuzz_names=(
-  'a;rm -rf /'
-  'x$(touch /tmp/pwn)'
-  'y&&curl evil'
-  'z|id'
-  'name with spaces'
-  '-leading-dash'
-  'tick`id`tick'
-  'аdmin'
+  'a";touch /tmp/pwn;x="b'   # double-quote breakout (the confirmed exploit)
+  'a;rm -rf /'               # command separator + space
+  'x$(touch /tmp/pwn)'       # command substitution
+  'y&&curl evil'             # logical-and chain
+  'z|id'                     # pipe
+  'tick`id`tick'             # backtick substitution
+  'back\slash'              # backslash (active in double quotes)
+  'аdmin'                    # Cyrillic homoglyph (non-ASCII)
 )
 for FNAME in "${fuzz_names[@]}"; do
-  # ARM the generator exactly as the guarded-deletion checks above do.
-  if ! fout="$(bash "$GEN" acme graveyard --bundled "$FNAME" 2>/dev/null)"; then
-    ok "fuzz [$FNAME]: generator refuses hostile name (defense by rejection)"
-    continue
+  if bash "$GEN" acme graveyard --bundled "$FNAME" >/dev/null 2>&1; then
+    bad "fuzz [$FNAME]: generator ACCEPTED a hostile name — command-injection risk in the emitted delete script"
+  else
+    ok "fuzz [$FNAME]: generator rejects hostile name (nonzero exit — defense by rejection)"
   fi
-  # (B1) emitted script must still be valid bash — a quote breakout surfaces here.
-  if ! bash -n <<<"$fout" 2>/dev/null; then
-    bad "fuzz [$FNAME]: emitted script FAILS bash -n (hostile name broke script syntax)"
-    continue
-  fi
-  # (B2) exactly one bundle-existence guard for the single bundled repo.
-  fguards="$(grep -c "$FUZZ_GUARD" <<<"$fout")"
-  if [ "$fguards" -ne 1 ]; then
-    bad "fuzz [$FNAME]: expected exactly one bundle guard in emitted script, found $fguards"
-    continue
-  fi
-  # (B3) neutralization. If the generator single-quoted the payload, it is inert.
-  if grep -qF "'$FNAME'" <<<"$fout"; then
-    ok "fuzz [$FNAME]: payload appears only inside single quotes (fully neutralized)"
-    continue
-  fi
-  # Not single-quoted -> it lives in the double-quoted assignment. Does the raw
-  # payload appear on any emitted line OUTSIDE the single-quoted form? (It does,
-  # by construction here, since it was not single-quoted — but assert it against
-  # the emitted bytes so the check is coupled to real output, not to $FNAME.)
-  if ! grep -qF -- "$FNAME" <<<"$fout"; then
-    bad "fuzz [$FNAME]: payload vanished from emitted script — cannot verify neutralization"
-    continue
-  fi
-  # A payload carrying a metachar that stays ACTIVE inside double quotes ($ ` " \)
-  # and NOT single-quoted is a real command-injection escape at the user's run
-  # time. Do NOT silently fix the generator from this eval; expose it loudly.
-  if printf '%s' "$FNAME" | grep -q '[$`"\]'; then
-    # KNOWN-VULNERABILITY (expected-fail): ok-with-WARNING keeps the tier green
-    # while the finding stays loud. DO NOT downgrade to a plain ok, and DO NOT
-    # edit generate-delete-script.sh from here — the fix belongs in the generator
-    # under its own deep-tier review, not smuggled through an eval.
-    ok "fuzz [$FNAME]: WARNING KNOWN-VULNERABILITY — payload carries a double-quote-active metachar (\$/\`/\"/\\) and is embedded UNQUOTED-SAFE (double quotes, not single), so command substitution / quote-breakout FIRES when the user runs the emitted script. Fix belongs in generate-delete-script.sh (single-quote or reject repo names). See checks.sh fuzz group."
-    continue
-  fi
-  # No double-quote-active metachar: the double-quoted embedding keeps the payload
-  # literal, and the delete loop's word-split never reparses ; | & — so it is safe.
-  ok "fuzz [$FNAME]: payload is inert in its double-quoted context (no active metachar)"
 done
+# Positive control: a legitimate space-separated list of valid names still works,
+# so the validation rejects hostility without breaking the documented interface.
+if fout="$(bash "$GEN" acme graveyard --bundled 'repo1 repo2' 2>/dev/null)" \
+   && bash -n <<<"$fout" 2>/dev/null \
+   && [ "$(grep -c "$FUZZ_GUARD" <<<"$fout")" -eq 1 ]; then
+  ok "fuzz positive control: valid names emit a parseable script with the loop bundle-guard intact"
+else
+  bad "fuzz positive control: valid names no longer produce a correct script — validation is too strict"
+fi
 
 # --- deep-tier coverage is frozen -----------------------------------------
 # The deep (pier) tier now discovers pier packs per-plugin, so graveyard's
