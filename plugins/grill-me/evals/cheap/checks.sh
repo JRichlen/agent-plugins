@@ -27,6 +27,7 @@ for f in \
   "$PLUGIN_DIR/.claude-plugin/plugin.json" \
   "$SKILL" \
   "$REFS/technique.md" \
+  "$REFS/path-consent.md" \
   "$REFS/fact-finding.md" \
   "$REFS/stakes-examples.md" \
   "$PLUGIN_DIR/README.md" \
@@ -82,6 +83,30 @@ has "$SKILL" "second-opinion" \
 hasE "$SKILL" 'orchestrat' \
   "SKILL.md names orchestrate/orchestration-patterns by name" \
   "SKILL.md doesn't name orchestrate/orchestration-patterns — differentiation is incomplete"
+
+# --- (e) anchor + path consent: goal before depth, consent before descent --
+# The waste this stops: a deep question series fired on a branch the user
+# never wanted explored, before goal/outcome were ever confirmed. Easy to
+# silently drop (delete the section, SKILL.md still reads fine), so grep the
+# load-bearing shape: the anchor precedes branch questioning, the consent
+# routing menu exists with all four routes, and the reference is linked from
+# SKILL.md (not just present on disk — an unlinked reference is inert).
+group "grill-me — anchor and path consent"
+hasE "$SKILL" 'No branch questioning before the \*\*anchor\*\*|anchor.*is set' \
+  "SKILL.md requires the anchor before any branch questioning" \
+  "SKILL.md no longer requires an anchor before branch questioning"
+hasE "$SKILL" 'explore / accept / defer / out-of-scope' \
+  "SKILL.md carries the four-route consent menu" \
+  "SKILL.md lost the explore/accept/defer/out-of-scope consent menu"
+has "$SKILL" 'references/path-consent.md' \
+  "SKILL.md links references/path-consent.md" \
+  "path-consent.md is not linked from SKILL.md — the mechanic is inert"
+hasE "$REFS/path-consent.md" 'LIGHT branches never get a consent header' \
+  "path-consent.md exempts LIGHT branches from consent headers" \
+  "the LIGHT exemption is gone — consent spam on trivial branches"
+hasE "$REFS/path-consent.md" 'one-way door cannot be quietly' \
+  "path-consent.md keeps the irreversibility exception on defer" \
+  "the irreversibility exception is gone — one-way doors can be silently deferred"
 
 # --- frontier/round loop mechanic present -----------------------------------
 group "grill-me — frontier/round loop"
