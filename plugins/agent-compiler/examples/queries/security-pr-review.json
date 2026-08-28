@@ -1,0 +1,11 @@
+{
+  "name": "security-pr-reviewer",
+  "role": "reviewer",
+  "task": "pull-request-review",
+  "domains": ["aws", "iam"],
+  "views": ["view.security-reviewer"],
+  "stance": ["adversarial", "evidence-driven"],
+  "environment": "production",
+  "risk": "high",
+  "effectCeiling": ["network", "scm:read"]
+}

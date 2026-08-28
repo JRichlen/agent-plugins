@@ -1,6 +1,26 @@
 # Design: `agent-compiler` plugin
 
-**Status:** Proposed — design only, no implementation in this PR.
+**Status:** Implemented (Phase 1) — the plugin lives at `plugins/agent-compiler/`.
+Three decisions changed between this design and the build, each forced by
+actually running the thing:
+
+1. **Kernel location.** `compile.py` lives at `plugins/agent-compiler/scripts/`,
+   not under `skills/**/scripts/**` — that glob is the CI deep-tier safety
+   surface (deletion-guard scripts), and this kernel performs no effectful
+   action; its invariant is fully provable by the offline cheap tier. This
+   resolves the "wiring caveat" flagged in §7 without touching the gate.
+2. **The hash excludes `registryRevision`.** The first implementation hashed
+   the whole image including a whole-registry content revision — and the
+   metamorphic check immediately caught that adding an *unrelated* module
+   changed an existing image's hash. The hash now covers the content-bearing
+   fields only (query, behavior, views, capabilities, effects, ceiling,
+   compiler version), matching the handoff's own content-addressing model;
+   `registryRevision` stays in the image as build metadata outside the hash.
+3. **One authoring format.** Views and capability interfaces are Markdown
+   modules with the same restricted frontmatter as behavior modules, not
+   separate YAML files — full YAML would need a dependency the cheap tier
+   treats as optional, and one format is simpler to author and to parse
+   deterministically.
 **Source material:** the `agent-compiler-handoff` design package (README, docs 00–08,
 ADRs 0001–0004, JSON schemas, examples, TypeScript scaffold). This document is the
 refinement of that handoff into a plugin that fits this marketplace's conventions.

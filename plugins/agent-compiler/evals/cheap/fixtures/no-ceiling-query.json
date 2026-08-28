@@ -1,0 +1,7 @@
+{
+  "name": "unconstrained",
+  "role": "reviewer",
+  "task": "pull-request-review",
+  "domains": ["aws", "iam"],
+  "views": []
+}

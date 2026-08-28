@@ -44,6 +44,7 @@ multiple machines and want it to resolve identically every time.
 | [**find-before-build**](plugins/find-before-build/) | Search for the existing implementation before writing a new one: name the searches you ran and what they returned before introducing any helper, wrapper, utility, or dependency — and never build a parallel version of a found, usable equivalent. |
 | [**egress-gate**](plugins/egress-gate/) | Before any call that transmits repo or user content off-machine, state what is being sent and to whom — permission modes gate the call, this gates the content; secrets and out-of-scope content never ride in an outbound payload. |
 | [**stop-rule**](plugins/stop-rule/) | A halting discipline for iterative fix loops: declare an attempt bound up front, count honestly, and at the bound stop and report state with ranked hypotheses — never attempt N+1 on momentum. |
+| [**agent-compiler**](plugins/agent-compiler/) | Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, then a stdlib-only kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage with per-line provenance. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry
