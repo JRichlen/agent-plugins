@@ -27,13 +27,15 @@ a line break. The markers:
     blockquote, because an invariant is still an invariant when it is quoted
   - a bold lead-in bullet: `- **Thing** — ...`
   - a bolded Never/Always/Do not/Don't
-  - a bullet opening with an unbolded normative verb: `- Never ...`
+  - a bullet or numbered item opening with an unbolded normative verb
+    (`- Never ...`, `1. Never ...`), straight or curly apostrophe
 
 EXCLUDED, deliberately, because they are not rules:
   - fenced code and the output-format templates inside it
   - blockquoted prose WITHOUT an ALWAYS/NEVER marker (a sample response is an
     illustration, not an instruction)
-  - bare section labels — a bold run that is the whole line AND ends in ':'
+  - bare section labels — a bold run that is the whole line AND ends in ':',
+    unless it carries an ALWAYS/NEVER marker, in which case it is a rule
   - headings
 
 THE RESIDUAL, stated plainly: extraction is marker-based. A normative sentence
@@ -45,10 +47,10 @@ written by hand, the same as before this guard existed.
 import re
 import sys
 
-MARKER_STRONG = re.compile(r"\*\*(ALWAYS|NEVER)\*\*")
-MARKER = re.compile(r"\*\*(ALWAYS|NEVER)\*\*|\*\*(Never|Always|Do not|Don't)\b")
-BOLD_LEAD = re.compile(r"^[-*]\s*\*\*[^*]+\*\*")
-BARE_NORMATIVE = re.compile(r"^[-*]\s*(Never|Always|Do not|Don't)\b")
+MARKER_STRONG = re.compile(r"\*\*(ALWAYS|NEVER)\b")
+MARKER = re.compile(r"\*\*(ALWAYS|NEVER)\b|\*\*(Never|Always|Do not|Don['\u2019]t)\b")
+BOLD_LEAD = re.compile(r"^(?:[-*]|\d+\.)\s*\*\*[^*]+\*\*")
+BARE_NORMATIVE = re.compile(r"^(?:[-*]|\d+\.)\s*(Never|Always|Do not|Don['\u2019]t)\b")
 LABEL_ONLY = re.compile(r"^\*\*[^*]+\*\*:$")     # trailing colon REQUIRED
 
 
@@ -68,7 +70,7 @@ def rule_units(path):
             continue
         if fence:
             continue
-        starts_unit = s.startswith(("- ", "* ")) or s.startswith("#")
+        starts_unit = bool(re.match(r"^(?:[-*]\s|\d+\.\s)", s)) or s.startswith("#")
         if not s or starts_unit:
             if cur:
                 units.append((start, " ".join(cur)))
@@ -84,8 +86,8 @@ def rule_units(path):
     for lineno, u in units:
         if u.startswith(">") and not MARKER_STRONG.search(u):
             continue                                    # illustration, not a rule
-        if LABEL_ONLY.match(u):
-            continue
+        if LABEL_ONLY.match(u) and not MARKER_STRONG.search(u):
+            continue        # a label, unless it carries an ALWAYS/NEVER invariant
         if MARKER.search(u) or BOLD_LEAD.match(u) or BARE_NORMATIVE.match(u):
             yield lineno + offset, u
 

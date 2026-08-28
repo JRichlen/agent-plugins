@@ -460,6 +460,27 @@ has "$_AW" 'A list is for parallel items' \
   "bulletized prose is named as a tell" \
   "ai-writing-mistakes lost the bulletization tell"
 
+# --- the numbered rules: layered layout, and the three compression layers ---
+# Widening the guard to numbered list items surfaced these five. They are rules
+# in exactly the way the bulleted ones are; they were invisible only because the
+# extractor did not treat `1.` as a unit-starter.
+group "voice — numbered rules are rules"
+has "$_HV" 'only what is needed to trust or act on the verdict' \
+  "human-voice constrains the key-facts layer to what the verdict needs" \
+  "human-voice lost the key-facts constraint — the middle layer becomes unbounded"
+has "$_HV" 'Never a bare' \
+  "the depth offer must be scoped, not a bare want-more" \
+  "human-voice lost the scoped-depth-offer rule — responses end with 'want more?' again"
+has "$_MV" 'drop connective tissue, keep content words' \
+  "Layer 1 (Lexical) is stated" \
+  "machine-voice lost Layer 1 — lexical compression is unspecified"
+has "$_MV" 'markdown structure as navigation' \
+  "Layer 2 (Vertical) is stated" \
+  "machine-voice lost Layer 2 — the six rules below it now hang off nothing"
+has "$_MV" 'emojis as typed markers, not decoration' \
+  "Layer 3 (Iconic) is stated" \
+  "machine-voice lost Layer 3 — glyphs become decoration, which is what it forbids"
+
 # --- the reference files carry rules too ----------------------------------
 # Both references are loaded on demand and are where the detail lives. Neither
 # was covered beyond a single grep, so either could have been emptied to a stub.

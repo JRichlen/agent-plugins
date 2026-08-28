@@ -81,13 +81,20 @@ regression class this pack exists to catch.
 
 The scope of that claim, stated exactly, because a guard is only worth what it
 actually catches: extraction is **marker-based**. A rule is found when it
-carries `**ALWAYS**`/`**NEVER**` (including inside a blockquote), a bold lead-in
-(`- **Thing** — ...`), a bolded Never/Always/Do not/Don't, or a bullet opening
-with an unbolded normative verb. Those are the forms the four skills use. A
-normative sentence buried unmarked in the middle of a paragraph carries none of
-them, is not extracted, and is therefore not ratcheted — write its check by
-hand. The guard narrows the gap; it does not close it, and it does not replace
-reading the diff.
+carries any of
+
+- `**ALWAYS**` / `**NEVER**` opening a bold run — including inside a blockquote,
+  and including a bold line ending in a colon, which is a rule and not a label;
+- a bold lead-in on a bullet or numbered item (`- **Thing** — ...`,
+  `1. **Thing** — ...`);
+- a bolded Never / Always / Do not / Don't;
+- a bullet or numbered item opening with an unbolded normative verb
+  (`- Never ...`, `1. Never ...`), straight or curly apostrophe.
+
+Those are the forms the four skills use. A normative sentence buried unmarked in
+the middle of a paragraph carries none of them, is not extracted, and is
+therefore not ratcheted — write its check by hand. The guard narrows the gap; it
+does not close it, and it does not replace reading the diff.
 
 Two contracts are also counted rather than grepped, so resizing them has to be
 deliberate: machine-voice's Layer 2 has exactly six rules, and second-opinion's
