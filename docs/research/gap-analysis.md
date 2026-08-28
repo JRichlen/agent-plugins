@@ -15,6 +15,52 @@ instructions; one scout's structured output tripped the harness's
 instruction-shaped-content filter and was neutralized in transit — its
 findings are recorded here as data like the rest.
 
+## Implementation status (2026-08-28)
+
+Five of the top-10 gaps were implemented this session by a two-workflow
+build→adversarial-verify pass, then hardened against the verification's own
+findings. The verify workflow's worktrees branched from a stale base, so its
+top-level "doesn't exist" verdicts were void — but three of its concrete
+attack ideas reproduced against the real tree and are fixed.
+
+| # | Gap | Status | Guard |
+|---|---|---|---|
+| 1 | Untrusted-provenance discipline | **Shipped** | `untrusted-data` fences in the redgate UP envelope + both orchestrate verify templates; backtick-defang so worker content cannot break out of the fence; grep-coupled in two eval packs |
+| 2 | Adversarial-input robustness (graveyard) | **Shipped + real bug fixed** | Fuzz group of 8 hostile names; **found and fixed a live command injection** in the delete-script generator (a double-quoted repo name escaped the emitted `BUNDLED=` assignment) via strict `[A-Za-z0-9._-]` validation; defense-by-rejection, mutation-proven |
+| 3 | Mechanical secret-scan gate | **Shipped** | `evals/cheap/secret-gate.sh` — AWS/GitHub/Slack/Anthropic/Google/Stripe/OpenAI keys + PEM headers; negative control; wired into dev-diary + context-handoff |
+| 6 | Cross-plugin composition wiring | **Shipped** | run.sh §13 — every backticked skill reference resolves to an installed plugin/skill (fail-closed, curated non-skill set) |
+| 7 | Context-tax budget | **Shipped** | run.sh §14 — per-plugin chars/est-token table; >1024-char description or >9000-token total fails (measured ~7233 today) |
+| 8 | Version discipline | **Shipped** | run.sh §15 — plugin.json must carry a version (fail-closed), matching marketplace.json when both exist |
+
+Everything above is defended by the cheap tier (1147 passed, 0 failed) with
+each new guard mutation-proven: reverting the guard turns the tier red.
+
+**The verification earned its keep.** The single highest-value outcome was #2:
+an adversarial agent, even against a stale tree, confirmed a real
+command-injection exploit in the one script that deletes repositories — the
+marketplace's flagship irreversible-action safety path. The eval-only fuzz
+group had flagged it as a KNOWN-VULNERABILITY warning; the verify pass proved
+it exploitable; it is now fixed at the source. Two more attack ideas (secret
+patterns missed, fence breakable by a literal triple-backtick) also
+reproduced and are closed.
+
+**Not yet done, and why:**
+
+- **#4 repeat-run statistical baselines** and **#5 roster-level trigger
+  routing** need a live model (OPENROUTER/ANTHROPIC keys) — they are
+  behavioral-tier work, not cheap-tier, and this session ran offline. They
+  remain the highest-leverage *next* batch: #4 gates the whole
+  optimization-loop roadmap.
+- **#9 approval-fatigue ledger** and **#10 criteria/verifier corpus index**
+  are cheap-tier-shippable but were deprioritized behind the five security-
+  and-composition gaps that the themes section flagged as the real blind
+  spot; they are the natural next cheap-tier round.
+- The three **deliberately-not-worth-it** entries below stand.
+- The meta-gaps (security-and-trust-boundaries, portfolio-composition-at-
+  scale, lifecycle governance) are now partially addressed — the provenance
+  fence, secret gate, injection fix, and composition/version checks are all
+  entries in those missing dimensions — but none is closed as a dimension.
+
 ## Synthesis — ranked top 10, themes, and deliberate skips
 
 TOP 10 (ranked by leverage-for-trajectory x unexplored)
