@@ -700,6 +700,17 @@ load-bearing ones:
 
 ---
 
+## Glossary and calibration
+
+The canonical vocabulary — every load-bearing term, the collision rulings
+(Calibration vs negative control, stage vs `phase`, verifier harness vs
+agent harness), and the run lifecycle verbs — lives at
+[`red-gate-glossary.md`](red-gate-glossary.md). The run-sizing layer that
+precedes every BEGIN — five dials (tier, domain, scope, taste,
+orchestration), the T0 decline, and the recalibration rules — is specified
+in the redgate plugin at
+[`../plugins/redgate/skills/redgate/references/calibration.md`](../plugins/redgate/skills/redgate/references/calibration.md).
+
 ## Pattern corpus
 
 A full corpus of the agentic patterns AI leaders are using — 88 unique

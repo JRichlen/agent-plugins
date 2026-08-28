@@ -18,6 +18,11 @@ natively (Codex, and Copilot via `apm compile -t copilot`, which aggregates
 installed APM dependencies into the generated .github/copilot-instructions.md file). Everything
 load-bearing is prose plus plain bash — no Claude-Code primitive is required:
 
+- **Calibrate before BEGIN**: set the five sizing dials — tier, domain,
+  scope, taste, orchestration — per
+  `skills/redgate/references/calibration.md`; a T0 task is done directly
+  with no run, and the calibration block lives in the `CRITERIA.md` header
+  so the pin covers it.
 - **BEGIN / red gate / pin**: run `scaffold-run.sh`, write criteria, run
   `check.sh` (exit 1 = red = dispatchable; exit 99 = harness failure, never
   red; a check_cmd exiting non-zero — 127 included — is a legitimate FAIL),

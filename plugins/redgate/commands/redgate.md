@@ -5,9 +5,14 @@ description: >-
 
 Invoke the `redgate` skill and follow `skills/redgate/SKILL.md`.
 
-Take the idea given as the argument. Apply the round-zero rule to pick the
-round type (orientation / plan / build / consolidation), then drive one
-round: BEGIN via the `criteria-contract` skill (interview ≤5 questions,
+Take the idea given as the argument. **Calibrate first** per
+`skills/redgate/references/calibration.md`: set tier, domain, scope, taste,
+and orchestration (infer, label stated/inferred, ask only load-bearing
+unknowns). A T0 task is done directly with no run — say so and do it. For
+T1+, apply the round-zero rule to pick the round type (orientation / plan /
+build / consolidation), then drive one round: BEGIN via the
+`criteria-contract` skill (interview ≤5 questions total including
+calibration, calibration block written into the CRITERIA.md header,
 scaffold `.redgate/<slug>/` with `skills/criteria-contract/scripts/scaffold-run.sh`,
 write 3–7 criteria, prove the gate red, ratify, pin), MIDDLE as one
 tracer-bullet slice with a single writer, END by running the pinned

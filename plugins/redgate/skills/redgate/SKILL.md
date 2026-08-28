@@ -56,9 +56,18 @@ is writable today — go straight to a build round.
 
 ## Driving a round
 
-1. **BEGIN** — invoke `criteria-contract`: interview (≤5 questions, defaults
-   accepted by silence), emit `CRITERIA.md` + `check.sh` into
-   `.redgate/<slug>/`, prove the gate red, get ratification, pin both files.
+0. **Calibrate** — before any criteria, set the five dials (tier, domain,
+   scope, taste, orchestration) per
+   [`references/calibration.md`](references/calibration.md): infer first,
+   ask only load-bearing unknowns inside the shared ≤5-question budget, and
+   write the calibration block into the `CRITERIA.md` header so the pin
+   covers it. A **T0** task is declined by the protocol — do it directly,
+   no run dir.
+1. **BEGIN** — invoke `criteria-contract`: interview (≤5 questions total,
+   calibration questions included, defaults accepted by silence), emit
+   `CRITERIA.md` + `check.sh` into `.redgate/<slug>/`, prove the gate red,
+   get ratification (which ratifies the calibration block with it), pin
+   both files.
 2. **MIDDLE** — one writer, one tracer-bullet slice flipping one criterion
    through every layer it names, no stub at the proving seam. Subagents (or
    parallel sessions) fan out **read-only**. Every hunk traces to a criterion
@@ -111,6 +120,9 @@ harness permission) always wins over this classification.
 Load these when the situation calls for them — they stay out of the default
 context budget:
 
+- [`references/calibration.md`](references/calibration.md) — the five
+  sizing dials (tier, domain, scope, taste, orchestration), the T0 decline,
+  and the recalibration rules.
 - [`references/round-types.md`](references/round-types.md) — criteria
   templates per round type, and the shape-vs-behavior ladder.
 - [`references/handoff-envelope.md`](references/handoff-envelope.md) — the

@@ -29,6 +29,11 @@ go red is NEVER accepted as a criterion.
 1. **Interview** (`grill-me` posture): at most 5 questions, one at a time,
    each with a proposed default that silence accepts. Collect: the goal, the
    layers involved, what "done" observably looks like, what is out of scope.
+   The driver's calibration questions (tier, domain, scope, taste,
+   orchestration — see the redgate skill's `references/calibration.md`)
+   share this same budget; the resulting calibration block goes into the
+   `CRITERIA.md` header comment, so ratifying and pinning the contract
+   ratifies and pins the calibration with it.
 2. **Scaffold**: run `scripts/scaffold-run.sh --slug <slug>` (add
    `--root DIR` outside the repo root). It creates `.redgate/<slug>/` with a
    `CRITERIA.md` template, the `check.sh` harness, an `evidence/` dir, and a
