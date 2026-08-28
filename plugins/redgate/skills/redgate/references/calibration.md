@@ -9,7 +9,14 @@ declined by the protocol itself.
 
 ## The prompting contract
 
-Calibration is **dynamic prompting under a budget**, not a questionnaire:
+Calibration is **dynamic prompting under a budget**, not a questionnaire.
+The questioning posture is `grill-me`'s, inherited via the
+criteria-contract interview: one question at a time, a stated
+recommendation attached to every question, silence accepts the default.
+The dependency runs one way — calibration adopts grill-me's posture and its
+stakes math (grill-me's per-branch stakes tier, reversibility × blast
+radius, is the same computation as the scope and tier escalators below);
+grill-me stays generic and knows nothing about these dials.
 
 - **Infer first.** Read the idea, the repo, and the conversation; propose a
   value for every dial. Each value is labeled **stated** (the human said it)
