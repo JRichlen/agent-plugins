@@ -6,8 +6,13 @@
 # API keys, no model calls — the real transcripts are already captured into
 # docs/examples/data/ by the behavioral tier's capture step and committed.
 #
-# One-time manual step (cannot be done from a workflow): in the repo,
-# Settings → Pages → Build and deployment → Source = GitHub Actions.
+# Pages is configured to deploy from GitHub Actions BY this workflow: the
+# configure-pages step below runs with enablement:true, which sets the repo's
+# Pages build source to "GitHub Actions" via the API using the pages:write token
+# — no manual Settings click needed. It self-provisions on the first run on main
+# (or a manual "Run workflow" via workflow_dispatch). If org/repo policy forbids
+# a token from enabling Pages, that one API call is the only thing that falls
+# back to a maintainer doing Settings → Pages → Source = GitHub Actions once.
 name: pages
 
 on:
@@ -38,6 +43,11 @@ jobs:
         # the same guard the cheap tier runs, enforced again at publish time.
         run: docs/build-examples.sh --check
       - uses: actions/configure-pages@v5
+        with:
+          # Set the repo's Pages source to GitHub Actions via the API on first
+          # run — this is what "configure Pages to deploy from Actions" means,
+          # done from the workflow instead of the Settings UI.
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
