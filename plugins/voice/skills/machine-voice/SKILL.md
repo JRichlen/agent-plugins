@@ -44,6 +44,10 @@ The split is **per element, not per response**. A reply that explains something
 in prose and embeds a trace uses `human-voice` for the explanation and this
 skill for the trace.
 
+`ai-writing-mistakes` does not run here. Its subject is filler in prose a human
+reads; compression has already removed that surface, and its rewrites would
+expand what this skill exists to shrink.
+
 ## Precedence — read before applying the list
 
 The list above is not the last word. Two rules beat it, in this order.

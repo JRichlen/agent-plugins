@@ -102,3 +102,50 @@ is currently `enabled=true`.
 
 If a change would weaken any clause above, it must not merge until the relevant
 tier is green. When in doubt, run the next tier down.
+
+## Demonstration discipline — REQUIRED on every skill change
+
+Any PR that creates or edits a skill — a `SKILL.md`, anything under a skill's
+`references/`, or the command that invokes it — must carry a **PR comment
+demonstrating that skill applied to real input**, with the before and after
+visible in the comment.
+
+The tiers above prove different things, and none of them proves this one:
+
+| Tier | What it proves | What it cannot show |
+|---|---|---|
+| cheap | The load-bearing sentences are still present | Whether they mean anything |
+| behavioral | A model given the skill changes its behaviour | Whether the change is worth having |
+| deep | The safety invariant holds across harnesses | Anything about non-safety skills |
+| **demonstration** | **What the skill actually does to real material** | Nothing a reviewer has to take on faith |
+
+A reviewer can read a green check and still have no idea whether a skill earns
+its slot. The demonstration is the only artifact that answers that, and it is
+cheap: run the skill, paste what happened.
+
+### What counts
+
+- **Real input.** Prose, code, or a repo file that existed before you wrote the
+  skill. Your own draft is fine and is often the best choice — you can edit it
+  freely, and a skill catching its own author is worth more than one catching a
+  strawman.
+- **The actual run.** Apply the skill and paste the result. Show the input, the
+  output, and the specific rule that produced each change.
+- **The misses.** Say what the skill did not catch, got wrong, or flagged
+  where you disagreed. A demonstration with no misses is a sales pitch.
+
+### What does not count
+
+- A description of what the skill *would* do.
+- An example lifted from the skill's own documentation — the skill agreeing
+  with itself proves nothing.
+- A summary of the diff. That belongs in the PR body; this is the skill running.
+
+> **Never post a demonstration you did not actually run.** This is the same
+> clause `voice` defends twice — a fabricated validation, and a cleanup claimed
+> over an unchanged draft. A demonstration is worse than either, because it is
+> the evidence a reviewer merges on.
+
+Not machine-enforced, and it cannot be: the cheap tier is offline and cannot
+read a PR comment. This is a review gate — do not approve a skill change whose
+demonstration comment is missing, and say so rather than merging around it.
