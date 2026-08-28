@@ -125,3 +125,18 @@ if grep -q 'VERDICT-WINS' "$B"; then
 else
   bad "pipelined-verdict-wins dropped VERDICT-WINS — refuted claims can survive into the recommendation"
 fi
+
+group "orchestrate — untrusted-data fence cannot be broken out of"
+# A worker string containing a literal triple-backtick would close the
+# untrusted-data fence early and let the remainder read as instructions. Both
+# claim-consuming templates must defang backticks in the payload before
+# embedding it (mapping each to U+02CB). Grep the backtick-free tail of that
+# replacement; coupled — remove the defang and the check goes red.
+for _t in derived-verify pipelined-verdict-wins; do
+  _f="$PLUGIN_DIR/skills/orchestrate/templates/$_t.workflow.js"
+  if grep -qF "u02cb" "$_f"; then
+    ok "fence: $_t defangs backticks in untrusted payload (no fence breakout)"
+  else
+    bad "fence: $_t embeds untrusted payload without defanging backticks — fence breakout possible"
+  fi
+done

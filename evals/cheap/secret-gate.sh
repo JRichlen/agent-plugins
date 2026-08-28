@@ -47,6 +47,9 @@ slack-token	xox[baprs]-[A-Za-z0-9-]{10,}
 generic-api-key	[Aa][Pp][Ii][_-]?[Kk][Ee][Yy][[:space:]]*[:=][[:space:]]*["']?[A-Za-z0-9_/+.=-]{20,}
 private-key-header	-----BEGIN [A-Z ]*PRIVATE KEY-----
 anthropic-api-key	sk-ant-[A-Za-z0-9_-]{8,}
+google-api-key	AIza[0-9A-Za-z_-]{35}
+stripe-live-key	sk_live_[0-9A-Za-z]{16,}
+openai-api-key	sk-(proj-)?[A-Za-z0-9_-]{20,}
 EOF
 )"
 
