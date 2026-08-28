@@ -113,6 +113,8 @@ Follow `references/format-guide.md` for the house style. The non-negotiables:
   tokens, keys, and credentials the user pasted. **Never** copy a secret into a
   committed entry — this repo lives on GitHub. If a token is relevant, write
   "rotated the Tailscale API key", never the key itself.
+  Before writing an entry off-machine, run `evals/cheap/secret-gate.sh` (in the
+  marketplace repo) over the draft — a mechanical WITNESS that redaction held.
 - **Link to durable anchors.** Commit hashes, repo names, PR numbers — not
   transcript paths, which are local and disappear.
 

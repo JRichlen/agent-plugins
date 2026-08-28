@@ -1,0 +1,8 @@
+# Negative-control fixture for evals/cheap/secret-gate.sh — a fake diary-style
+# exhaust file carrying an obviously-FAKE AWS access key id. The cheap tier's
+# negative control stages a COPY of this file OUTSIDE /fixtures/ and asserts the
+# scanner exits 1 on it; at THIS path the /fixtures/ allowlist exempts it, so
+# the always-on tier stays green. The key below is not, and never was, real.
+
+Today I wired the deploy pipeline. Pasting the credential here for later:
+aws_access_key_id = AKIAAAAAAAAAAEXAMPLE

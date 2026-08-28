@@ -97,6 +97,8 @@ the most commonly mis-reached-for: never use it just because you want to
 summarize progress. Reaching HANDOFF requires naming which concrete thing is
 crossing which concrete boundary (harness / directory / person / parallel
 fork) — if you can't name it, this branch does not match.
+Before a handoff artifact travels off-machine, run `evals/cheap/secret-gate.sh`
+(in the marketplace repo) over the draft — a mechanical scan for pasted secrets.
 
 ### 4. DELEGATE (subagent)
 
