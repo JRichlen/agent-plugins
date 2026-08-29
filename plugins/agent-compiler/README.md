@@ -47,6 +47,10 @@ ever). The CLI above is the identical surface for any harness without MCP.
   (the image is the contract; other harnesses get sibling renderers).
 - `scripts/mcp_server.py` — the auto-started MCP facade (stdlib-only JSON-RPC
   over stdio), declared under `mcpServers` in `.claude-plugin/plugin.json`.
+- `hooks/` — two reinforcement hooks (Claude Code only; a convenience,
+  not a dependency — the skill carries the same rules on any other harness): a
+  prompt-time nudge toward the MCP tools on agent-building intent, and a
+  guard that denies hand-edits of compiled artifacts.
 - `registry/` — starter modules; `--registry` accepts any directory, so your
   repo can carry its own.
 - `evals/cheap/` — golden, metamorphic, and fail-closed checks run by the

@@ -15,6 +15,15 @@ The commands a user invokes are `commands/agent-compile.md` and
 agent definition file). A starter registry lives in `registry/`; a golden
 query/image pair in `examples/`.
 
+`hooks/hooks.json` registers two Claude Code hooks that reinforce the
+boundary mechanically: `hooks/suggest-compiler.py` (UserPromptSubmit) injects
+a pointer to the compiler's MCP tools when a prompt reads like agent-building
+intent, and `hooks/guard-compiled-agents.py` (PreToolUse) denies hand-edits
+of any file carrying the renderer's imageHash header. PORTABILITY: hooks are
+Claude-Code-only machinery and a convenience, not a dependency — on any other
+harness the skill prose carries the same two rules, and both scripts are
+plain stdin/stdout filters a different harness could re-wire.
+
 `scripts/mcp_server.py` is the read-only MCP facade over the same kernel —
 declared in `.claude-plugin/plugin.json` under `mcpServers.kernel`, so Claude
 Code starts it automatically when the plugin is enabled, exposing `inspect`,
