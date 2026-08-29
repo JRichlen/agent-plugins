@@ -246,3 +246,93 @@ group "redgate — disambiguated from siblings"
 has "$DRIVER" 'wayfinder' "driver disambiguates vs wayfinder" "wayfinder disambiguation lost"
 has "$DRIVER" 'orchestrate' "driver disambiguates vs orchestrate" "orchestrate disambiguation lost"
 has "$DRIVER" 'tracer-bullets' "driver disambiguates vs tracer-bullets" "tracer-bullets disambiguation lost"
+
+group "redgate — verifier corpus index (executed, coupled)"
+# Gap #10: verifiers are the most expensive artifact a run produces and the
+# only one that resets to zero each run. criteria-index.sh builds
+# .redgate/INDEX.md so the next ARM reuses shapes that survived — and marks
+# demoted (WITNESS-in-fact) shapes so they are never reused as proof. These
+# checks EXECUTE the indexer against a fixture corpus: gut the demotion logic,
+# the status parser, or the --check drift gate and this group goes red.
+CIDX="$PLUGIN_DIR/skills/criteria-contract/scripts/criteria-index.sh"
+if [ -f "$CIDX" ] && bash -n "$CIDX" 2>/dev/null; then ok "criteria-index.sh exists and parses"; else bad "criteria-index.sh missing or fails bash -n"; fi
+_ci_tmp="$(mktemp -d)"
+mkdir -p "$_ci_tmp/.redgate/fx-run"
+printf 'slug=fx-run\nphase=TRACE\n' > "$_ci_tmp/.redgate/fx-run/manifest"
+cat > "$_ci_tmp/.redgate/fx-run/CRITERIA.md" <<'FIX'
+## #1 a checkable criterion
+layers: script
+red-because: absent
+check_cmd: true
+## #2 a demoted criterion
+layers: script
+red-because: absent
+check_cmd: true
+## #3 a witness criterion
+layers: taste
+red-because: absent
+WITNESS: the human observes it reads well
+FIX
+printf '# gates.log — round | class | driving-property | disposition | outcome | lesson\n1 | END | mutation control | auto | MUTATION CONTROL demotes #2 | not coupled\n' > "$_ci_tmp/.redgate/fx-run/gates.log"
+bash "$CIDX" --root "$_ci_tmp" >/dev/null 2>&1
+if grep -qE '^\| fx-run \| 1 \| checkable' "$_ci_tmp/.redgate/INDEX.md" 2>/dev/null; then
+  ok "index: a check_cmd criterion is indexed as checkable"
+else
+  bad "index: checkable criterion missing or mis-statused"
+fi
+if grep -qE '^\| fx-run \| 2 \| demoted' "$_ci_tmp/.redgate/INDEX.md" 2>/dev/null; then
+  ok "index: a mutation-demoted criterion is marked demoted (never reused as proof)"
+else
+  bad "index: demotion from gates.log is not honored — a WITNESS-in-fact shape could be reused as a positive control"
+fi
+if grep -qE '^\| fx-run \| 3 \| witness' "$_ci_tmp/.redgate/INDEX.md" 2>/dev/null; then
+  ok "index: a WITNESS criterion is marked witness"
+else
+  bad "index: WITNESS criterion missing or mis-statused"
+fi
+if bash "$CIDX" --check --root "$_ci_tmp" >/dev/null 2>&1; then
+  ok "index: --check passes on a freshly built index"
+else
+  bad "index: --check fails on a fresh build — the sync gate is broken"
+fi
+sed 's/| fx-run | 1 |/| fx-run | 99 |/' "$_ci_tmp/.redgate/INDEX.md" > "$_ci_tmp/t" && mv "$_ci_tmp/t" "$_ci_tmp/.redgate/INDEX.md"
+if bash "$CIDX" --check --root "$_ci_tmp" >/dev/null 2>&1; then
+  bad "index: --check passed on a tampered index — drift is invisible"
+else
+  ok "index: --check fails on a tampered index (drift gate bites)"
+fi
+rm -rf "$_ci_tmp"
+# The committed real index must stay in sync with the committed run corpus —
+# applicable only where the real corpus exists (repo root; skip in synthetic roots).
+if ls .redgate/*/manifest >/dev/null 2>&1; then
+  if [ ! -f .redgate/INDEX.md ]; then
+    bad "run corpus exists but .redgate/INDEX.md is missing — build it with criteria-index.sh"
+  elif bash "$CIDX" --check >/dev/null 2>&1; then
+    ok "committed .redgate/INDEX.md is in sync with the run corpus"
+  else
+    bad "committed .redgate/INDEX.md drifted from the run corpus — rebuild with criteria-index.sh"
+  fi
+else
+  ok "no run corpus in this root — committed-index sync not applicable"
+fi
+has "$CONTRACT" 'INDEX.md' \
+  "ARM consults the corpus index before writing check_cmds" \
+  "the consult-the-index step is gone — every ARM reinvents its verifiers"
+hasE "$CONTRACT" 'demoted.*never be reused|never be reused as proof' \
+  "ARM forbids reusing demoted shapes as proof" \
+  "the demoted-shape prohibition is gone"
+
+group "redgate — gate disposition column (approval-fatigue raw signal)"
+# Gap #9's redgate half: gates.log carries what the human actually DID at each
+# gate, so recurrence-detector's gate-report.sh can tell a calibrated mandate
+# from rubber-stamping. Lesson stays the LAST field (round-types' retro check
+# depends on that), disposition sits before outcome.
+has "$SCAFFOLD" 'disposition | outcome | lesson' \
+  "scaffold's gates.log header carries the disposition column (lesson still last)" \
+  "gates.log header lost the disposition column — approval fatigue is unmeasurable"
+hasE "$DRIVER" 'approved.*/.*revised.*/.*declined|`approved`/`revised`/`declined`' \
+  "driver defines the MAJOR disposition vocabulary" \
+  "the MAJOR disposition vocabulary is gone from the driver"
+hasE "$DRIVER" 'rubber-stamping' \
+  "driver states why the disposition exists (fatigue vs calibration)" \
+  "the disposition rationale is gone"

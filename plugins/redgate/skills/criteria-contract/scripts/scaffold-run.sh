@@ -72,13 +72,18 @@ check_sha256=
 EOF
 
 # The gate ledger: every round-gate decision appends one line here —
-# round | gate class (PATCH/MINOR/MAJOR) | driving property | outcome | lesson.
-# The lesson field is mandatory at every gate (one line; the reflection the
-# protocol keeps between rounds, not inside them); after a red verdict it
-# names what the next contract must encode. An auto-pass that cannot cite
-# its qualifying conditions is a protocol violation; MAJOR decisions record
-# the human's answer, never a default.
-printf '# gates.log — round | class | driving-property | outcome | lesson\n' > "$RUN/gates.log"
+# round | gate class (PATCH/MINOR/MAJOR) | driving property | disposition |
+# outcome | lesson.
+# The disposition field records what the human actually did at the gate —
+# auto (PATCH, no human) · silent / vetoed (MINOR standing veto) ·
+# approved / revised / declined (MAJOR) — so the approval-fatigue report
+# (recurrence-detector's gate-report.sh) can tell a calibrated mandate from
+# rubber-stamping. The lesson field is mandatory at every gate (one line;
+# the reflection the protocol keeps between rounds, not inside them); after
+# a red verdict it names what the next contract must encode. An auto-pass
+# that cannot cite its qualifying conditions is a protocol violation; MAJOR
+# decisions record the human's answer, never a default.
+printf '# gates.log — round | class | driving-property | disposition | outcome | lesson\n' > "$RUN/gates.log"
 
 cat > "$RUN/CRITERIA.md" <<'EOF'
 # CRITERIA — replace every TEMPLATE block, keep the numbering

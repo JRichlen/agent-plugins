@@ -46,7 +46,12 @@ one.
    `BACKLOG.md`, unmet criteria and `gates.log` from `.redgate/*/`, diary
    entries, and any typed deltas (see the `consolidate-delta` references in
    `dev-diary` and `fleet-playbook-curator` — deltas are what make this
-   greppable rather than a re-read of prose).
+   greppable rather than a re-read of prose). For the gate ledgers, run
+   `scripts/gate-report.sh`: it tallies gates per class, breaks down the
+   recorded human dispositions, and flags **approval fatigue** — a MAJOR
+   streak 100% approved unchanged, or a standing veto never once exercised.
+   A fatigue flag is itself a sighting: the failure shape is "the human
+   checkpoint has stopped discriminating," and it clusters like any other.
 2. **Cluster by failure shape, not by surface.** "The test was flaky" and
    "the check passed for the wrong reason" are the same shape — an
    uncoupled verifier — wearing different words. Name the shape as a

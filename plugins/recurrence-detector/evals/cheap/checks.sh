@@ -40,3 +40,54 @@ done
 hasE plugins/dev-diary/skills/dev-diary/references/consolidate-delta.md 'A new tag for the' "reused shape tags are required (a new tag defeats the count)" "the tag-reuse rule is gone"
 hasE plugins/plugin-factory/skills/plugin-factory/references/judge-calibration.md 'six scenarios, six rejections' "the measured discrimination bar is cited" "the measured bar citation is gone"
 hasE plugins/plugin-factory/skills/plugin-factory/references/judge-calibration.md 'never a silencing|never deletes|Do not delete the control' "a failing calibration is a finding, not a silencing" "the never-silence rule is gone"
+
+group "recurrence-detector — gate-outcome report (executed, coupled)"
+# Gap #9's DETECT half: gate-report.sh reads every .redgate/*/gates.log and
+# flags approval fatigue — the shape where the human checkpoint has stopped
+# discriminating. These checks EXECUTE the report against fixtures: gut the
+# fatigue detection or the disposition parser and this group goes red. The
+# negative control (a mixed corpus stays unflagged) is what makes the positive
+# mean something.
+GREPORT="$PLUGIN_DIR/skills/recurrence-detector/scripts/gate-report.sh"
+if [ -f "$GREPORT" ] && bash -n "$GREPORT" 2>/dev/null; then ok "gate-report.sh exists and parses"; else bad "gate-report.sh missing or fails bash -n"; fi
+_gr_tmp="$(mktemp -d)"
+mkdir -p "$_gr_tmp/fatigued/.redgate/r" "$_gr_tmp/healthy/.redgate/r"
+{ printf '# gates.log — round | class | driving-property | disposition | outcome | lesson\n'
+  for i in 1 2 3 4 5; do printf '%s | MAJOR | decision %s | approved | granted | none\n' "$i" "$i"; done
+} > "$_gr_tmp/fatigued/.redgate/r/gates.log"
+{ printf '# gates.log — round | class | driving-property | disposition | outcome | lesson\n'
+  printf '1 | MAJOR | plan approval | approved | granted | none\n'
+  printf '2 | MAJOR | fence widening | revised | narrowed first | fence was too wide\n'
+  printf '3 | MAJOR | budget extension | declined | held | overreach\n'
+  printf '1 | PATCH | derived ratification | auto | auto-ratified | none\n'
+  printf '1 | old-format line without class field\n'
+} > "$_gr_tmp/healthy/.redgate/r/gates.log"
+_out_f="$(bash "$GREPORT" --root "$_gr_tmp/fatigued" 2>&1)"; _rc_f=$?
+_out_h="$(bash "$GREPORT" --root "$_gr_tmp/healthy" 2>&1)"; _rc_h=$?
+if [ "$_rc_f" -eq 0 ] && printf '%s' "$_out_f" | grep -q 'approval-fatigue'; then
+  ok "an all-approved MAJOR streak is flagged as approval fatigue"
+else
+  bad "5/5 approved MAJOR gates raised no fatigue flag — rubber-stamping is invisible"
+fi
+if [ "$_rc_h" -eq 0 ] && ! printf '%s' "$_out_h" | grep -q 'approval-fatigue'; then
+  ok "NEGATIVE CONTROL: a mixed approved/revised/declined corpus is not flagged"
+else
+  bad "negative control failed — the fatigue flag fires on healthy corpora (or the report errored)"
+fi
+if printf '%s' "$_out_h" | grep -qE 'MAJOR +3 gates:.*approved=1' && printf '%s' "$_out_h" | grep -qE 'declined=1'; then
+  ok "per-class disposition tallies are computed from the ledger"
+else
+  bad "disposition tallies are wrong or missing"
+fi
+if bash "$GREPORT" --root "$_gr_tmp" >/dev/null 2>&1; then
+  bad "a root with no gates.log reported success — the empty case must refuse (exit 2)"
+else
+  ok "a root with no gate ledgers refuses instead of reporting an empty green"
+fi
+rm -rf "$_gr_tmp"
+hasE "$SKILL" 'gate-report\.sh' \
+  "the gather step runs gate-report.sh over the gate ledgers" \
+  "gate-report.sh is not wired into the gather step"
+hasE "$SKILL" 'approval fatigue|approval-fatigue' \
+  "approval fatigue is named as a clusterable failure shape" \
+  "the approval-fatigue shape is gone from the gather step"
