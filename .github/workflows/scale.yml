@@ -1,0 +1,78 @@
+# Scale/stress tier for redgate and agent-compiler.
+#
+# The cheap tier proves each invariant once, on one fixture, in milliseconds.
+# This workflow runs the two plugins' scale suites, which prove the SAME
+# invariants across hundreds of randomized, isolated trials:
+#
+#   plugins/agent-compiler/evals/scale/  seeded random registries (up to 300
+#     modules) x queries: byte-determinism, discovery-order independence,
+#     metamorphic hash invariance, provenance on every unit, effects inside the
+#     ceiling, and exact-code fail-closed on injected faults.
+#
+#   plugins/redgate/evals/scale/  randomized runs through the whole round
+#     lifecycle: red-from-birth, pin, unmet-vs-drift, partial progress, green,
+#     criteria/checker tamper -> drift, stale evidence -> rejected, and the
+#     guard handler's deny/allow matrix.
+#
+# Both suites are offline, stdlib-only, and free — but they take minutes, not
+# milliseconds, so they live here instead of inside the always-on cheap gate.
+# This check is NOT in the required set; it is evidence, not a merge gate.
+name: scale
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/redgate/**'
+      - 'plugins/agent-compiler/**'
+      - '.github/workflows/scale.yml'
+  pull_request:
+    paths:
+      - 'plugins/redgate/**'
+      - 'plugins/agent-compiler/**'
+      - '.github/workflows/scale.yml'
+  workflow_dispatch:
+    inputs:
+      ac_sizes:
+        description: 'agent-compiler registry sizes (comma-separated module counts)'
+        default: '40,120,300'
+      ac_seeds:
+        description: 'agent-compiler seeds per size'
+        default: '3'
+      rg_runs:
+        description: 'redgate randomized runs'
+        default: '25'
+
+concurrency:
+  group: scale-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  agent-compiler-scale:
+    name: agent-compiler scale (kernel stress)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run the kernel stress suite
+        run: |
+          plugins/agent-compiler/evals/scale/run.sh \
+            --sizes "${{ github.event.inputs.ac_sizes || '40,120,300' }}" \
+            --seeds "${{ github.event.inputs.ac_seeds || '3' }}" \
+            --report agent-compiler-scale-report.json
+      - name: upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-compiler-scale-report
+          path: agent-compiler-scale-report.json
+          if-no-files-found: ignore
+
+  redgate-scale:
+    name: redgate scale (lifecycle stress)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run the round-lifecycle stress suite
+        env:
+          RUNS: ${{ github.event.inputs.rg_runs || '25' }}
+        run: plugins/redgate/evals/scale/run.sh

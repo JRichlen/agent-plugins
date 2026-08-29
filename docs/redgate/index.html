@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>redgate — plugin documentation</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5a5a5a; --card:#ffffff; --line:#e3e1dc;
+    --code-bg:#f2f1ee; --link:#0b5cad;
+    --accent:#b02a43; --accent-soft:#f3dde1; --accent-ink:#8a2036;
+    --pass:#0a7d3f; --pass-bg:#eaf6ee; --warn:#8a5a00; --warn-bg:#f6f0e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141414; --fg:#ececec; --muted:#a2a2a2; --card:#1d1d1d; --line:#2f2f2f;
+      --code-bg:#0f0f0f; --link:#6db3f2;
+      --accent:#e4677e; --accent-soft:#3a1a22; --accent-ink:#f2a2b0;
+      --pass:#4bd07f; --pass-bg:#12251a; --warn:#e0aa4a; --warn-bg:#241d10;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:2.4rem 1.2rem 5rem; }
+  a { color:var(--link); }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { background:var(--code-bg); border-radius:4px; padding:.1em .35em; font-size:.9em; }
+  pre { background:var(--code-bg); border-radius:8px; padding:.8rem 1rem; overflow-x:auto;
+    font-size:12.5px; line-height:1.55; }
+  pre code { background:none; padding:0; font-size:inherit; }
+  .crumbs { font-size:.85rem; color:var(--muted); margin-bottom:1.6rem; }
+  .crumbs a { text-decoration:none; }
+  header h1 { font-size:2.1rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  header h1 .tag { display:inline-block; vertical-align:middle; font-size:.75rem; font-weight:700;
+    color:var(--accent-ink); background:var(--accent-soft); border-radius:999px;
+    padding:.15rem .6rem; margin-left:.6rem; letter-spacing:.05em; text-transform:uppercase; }
+  header .sub { color:var(--muted); margin:0 0 1.4rem; max-width:72ch; font-size:1.02rem; }
+  .invariant { background:var(--card); border:1px solid var(--accent);
+    border-left:5px solid var(--accent); border-radius:10px; padding:1rem 1.2rem; margin:1.6rem 0; }
+  .invariant .lbl { font-size:.7rem; text-transform:uppercase; letter-spacing:.09em;
+    color:var(--accent-ink); font-weight:700; display:block; margin-bottom:.4rem; }
+  .invariant p { margin:.3rem 0; }
+  h2 { font-size:1.45rem; margin:2.6rem 0 .6rem; letter-spacing:-.01em;
+    border-bottom:1px solid var(--line); padding-bottom:.35rem; }
+  h3 { font-size:1.08rem; margin:1.6rem 0 .4rem; }
+  p, li { max-width:78ch; }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+  th, td { border:1px solid var(--line); padding:.5rem .7rem; text-align:left; vertical-align:top; }
+  th { background:var(--code-bg); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; }
+  .tablewrap { overflow-x:auto; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.2rem; margin:1rem 0; }
+  .pill { display:inline-block; font-size:.7rem; font-weight:700; padding:.12rem .5rem;
+    border-radius:999px; text-transform:uppercase; letter-spacing:.05em; }
+  .pill.patch { background:var(--pass-bg); color:var(--pass); }
+  .pill.minor { background:var(--warn-bg); color:var(--warn); }
+  .pill.major { background:var(--accent-soft); color:var(--accent-ink); }
+  .stages { display:grid; grid-template-columns:repeat(3,1fr); gap:.8rem; margin:1.2rem 0; }
+  @media (max-width:700px) { .stages { grid-template-columns:1fr; } }
+  .stage { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem; }
+  .stage h4 { margin:0 0 .35rem; font-size:1rem; color:var(--accent-ink);
+    font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em; }
+  .stage p { margin:0; font-size:.9rem; color:var(--muted); }
+  blockquote { margin:1rem 0; padding:.2rem 0 .2rem 1rem; border-left:3px solid var(--line);
+    color:var(--muted); font-style:italic; }
+  .note { background:var(--warn-bg); border:1px solid var(--warn); border-radius:10px;
+    padding:.8rem 1rem; margin:1rem 0; font-size:.92rem; }
+  .note strong { color:var(--warn); }
+  dl.gloss dt { font-weight:700; margin-top:.9rem; font-family:ui-monospace,Menlo,monospace; font-size:.9rem; }
+  dl.gloss dd { margin:.15rem 0 0 0; color:var(--muted); max-width:76ch; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:3rem;
+    border-top:1px solid var(--line); padding-top:1rem; }
+  .toc { font-size:.9rem; color:var(--muted); margin:1rem 0 0; }
+  .toc a { text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="crumbs">
+  <a href="../">agent-plugins docs</a> ·
+  <a href="../examples/#redgate">before/after example</a> ·
+  <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/redgate">source on GitHub</a>
+</nav>
+
+<header>
+  <h1>redgate <span class="tag">plugin</span></h1>
+  <p class="sub">Run any idea through the Red Gate protocol: rounds of
+  <strong>ARM&nbsp;→&nbsp;TRACE&nbsp;→&nbsp;JUDGE</strong> with graduated autonomy — a verifier is
+  proven able to fail <em>before</em> any work starts, one thin slice flips one criterion green,
+  and someone who did not do the work runs the verifier. Cross-harness: Claude&nbsp;Code, Codex,
+  Copilot via APM. The red gate is <em>executed, not asked</em>.</p>
+</header>
+
+<div class="invariant">
+  <span class="lbl">The invariant every eval defends</span>
+  <p>No TRACE work begins until a verifier exists that runs and rejects the current state on
+  every checkable criterion — and no criterion is ever marked green except by that same pinned
+  verifier, executed independently of the party that did the work, producing evidence on disk.</p>
+  <p><em>“Criteria that cannot be rejected are not criteria.”</em></p>
+</div>
+
+<nav class="toc">On this page:
+  <a href="#why">Why it exists</a> ·
+  <a href="#anatomy">Protocol anatomy</a> ·
+  <a href="#calibration">Calibration</a> ·
+  <a href="#autonomy">Graduated autonomy</a> ·
+  <a href="#ships">What the plugin ships</a> ·
+  <a href="#workflow">A round, end to end</a> ·
+  <a href="#hooks">Hooks</a> ·
+  <a href="#glossary">Glossary</a> ·
+  <a href="#evals">Eval coverage</a> ·
+  <a href="#limits">Honest limits</a> ·
+  <a href="#siblings">Relationship to sibling plugins</a>
+</nav>
+
+<h2 id="install">Install</h2>
+<pre><code># Claude Code (native)
+/plugin marketplace add JRichlen/agent-plugins
+/plugin install redgate@jrichlen
+
+# Any harness via APM (Codex, Copilot, …)
+apm install JRichlen/agent-plugins/plugins/redgate         # tracks main
+apm install JRichlen/agent-plugins/plugins/redgate#&lt;sha&gt;   # reproducible
+apm compile -t copilot   # aggregates into .github/copilot-instructions.md</code></pre>
+<p>Codex reads the plugin's <code>AGENTS.md</code> natively; Claude Code installs it as a plugin
+via the marketplace. The scripts are plain bash and run identically under all three. A
+Claude-Code hooks enforcement layer ships in the plugin as <em>optional hardening, never a
+dependency</em>.</p>
+
+<h2 id="why">Why it exists</h2>
+<p>This marketplace holds two dozen single-invariant disciplines — <code>scope-fence</code>,
+<code>verify-before-claim</code>, <code>stop-rule</code>, <code>semver-gate</code>, and friends —
+that each work alone. Nothing composed them: there was no answer to <em>“I have an idea, now run
+the right skills in the right order and prove you finished.”</em> Red Gate is that answer.</p>
+<p>In one line: turn a one-line idea into a <strong>verifier proven able to fail</strong>, flip
+one criterion green with a real thin slice, then let someone who did not do the work run the
+verifier — round after round, in any domain of the SDLC or AI-DLC.</p>
+<p>The protocol was designed adversarially and then <strong>built by running itself on
+itself</strong>: every implementation slice was a real Red Gate round, and the committed run
+records under <code>.redgate/*/gates.log</code> include two rounds where the protocol caught its
+own defects — once when a mutation control demoted two criteria whose checks stayed green after
+the code they claimed to measure was reverted, and once when the red gate refused to open because
+all criteria were already green before any work (“criteria that are already true are regression
+tests, and regression tests belong in the eval tier”).</p>
+
+<h2 id="anatomy">Protocol anatomy</h2>
+<p>A <strong>run</strong> is a directory (<code>.redgate/&lt;slug&gt;/</code>) plus a sequence of
+<strong>rounds</strong> (default budget: 4). A round is one ARM&nbsp;→&nbsp;TRACE&nbsp;→&nbsp;JUDGE
+cycle ending at a classified gate. Rounds are <em>horizontal</em> — each is gated and produces the
+next round's contract. Recursion is <em>vertical</em> — automatic, inside one round, bounded by a
+<code>depth_remaining</code> budget. <em>“A round can contain recursion. Recursion never crosses a
+round boundary.”</em></p>
+
+<div class="stages">
+  <div class="stage"><h4>ARM</h4>
+    <p>Write <code>CRITERIA.md</code> + <code>check.sh</code>, prove the gate <strong>red</strong>
+    on every checkable criterion, get human ratification, pin the sha256 of <em>both</em> files in
+    the manifest. From here neither file is ever edited.</p></div>
+  <div class="stage"><h4>TRACE</h4>
+    <p>One writer drives one tracer-bullet slice that flips one criterion through every layer it
+    names — no stub at the proving seam. Subagents may fan out <strong>read-only</strong>. Every
+    hunk traces to a criterion id; an attempt bound is declared up front.</p></div>
+  <div class="stage"><h4>JUDGE</h4>
+    <p>The pinned verifier is re-hashed and run by a party that did not do the work, producing
+    fresh evidence on disk, followed by a mutation control: revert the slice's core hunk and
+    confirm the check goes red. No unrun PASS, ever.</p></div>
+</div>
+
+<h3>Round types</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Round type</th><th>Judged artifact</th><th>Default gate class</th></tr>
+  <tr><td><strong>Scout</strong></td><td>A brief with ≥3 options, costs and a “fails if” per option, and a recommendation naming what would falsify it</td><td><span class="pill major">always major</span></td></tr>
+  <tr><td><strong>Plan</strong></td><td>Ordered slices, each naming its proposed verifier; the first slice crosses every layer (this ratification creates the mandate)</td><td><span class="pill major">always major</span></td></tr>
+  <tr><td><strong>Build</strong></td><td>A working thin slice; one criterion per slice, no stub at the seam the slice exists to prove</td><td><span class="pill patch">patch when derived</span></td></tr>
+  <tr><td><strong>Widen</strong></td><td>The slice hardened: ambiguous inputs plus the failure path</td><td><span class="pill patch">patch</span></td></tr>
+  <tr><td><strong>Retro</strong></td><td>Every <code>gates.log</code> entry has a non-empty lesson; recurring lesson shapes cite their sightings</td><td><span class="pill minor">minor</span></td></tr>
+</table>
+</div>
+
+<p><strong>The round-zero rule</strong> answers “I don't know what to build yet”:</p>
+<blockquote>Start at the first round whose criteria you can write without already knowing the
+answer. If you cannot write criteria for the work, write criteria for the artifact that will tell
+you what the work is.</blockquote>
+<p>Early rounds sit low on the <strong>escalating-verifiability ladder</strong>: the machine
+checks an artifact's <em>shape</em> while the human judges its <em>substance</em> at the gate.
+Later rounds check <em>behavior</em>. And when rounds would be pure ceremony — the approach is
+agreed and the criterion is writable today — the protocol says to go straight to a build round.</p>
+
+<h3>The contract</h3>
+<p>ARM's product is a two-file contract, ratified together, pinned together, immutable for the
+life of the round:</p>
+<ul>
+  <li><strong><code>CRITERIA.md</code></strong> — 3–7 numbered criteria. Each has a statement, the
+  layers it crosses, why it is red today (<code>absent</code> vs
+  <code>present-but-wrong</code>), and either a <code>check_cmd</code> or a declared
+  <strong>WITNESS</strong> (a human-observation criterion). At least two criteria must be
+  checkable and checkable must be the majority; at most one WITNESS (two only with explicit human
+  opt-in), each countersigned individually.</li>
+  <li><strong><code>check.sh</code></strong> — the verifier harness. Exit <code>0</code> all
+  green, <code>1</code> any FAIL (red), <code>99</code> harness FAULT (“not red; fix the harness,
+  never call it a FAIL”). Each <code>check_cmd</code> runs under a timeout with output captured to
+  <code>evidence/&lt;n&gt;.out</code>. A missing binary is a legitimate FAIL — “exit 127 included”
+  — which is what unblocks greenfield work where nothing under test exists yet.</li>
+</ul>
+<p>Learning between rounds happens by writing a <em>fresh</em> contract in a new
+<code>-r&lt;N&gt;</code> run directory, never by editing a pinned one. A wrong contract is
+corrected by a child within the round or by the next round — “that is what keeps auto-ratification
+from becoming self-ratification.”</p>
+
+<h2 id="calibration">Calibration — the anti-ceremony mechanism</h2>
+<p>Before ARM, the driver calibrates five dials, <em>inferring</em> values first (each labeled
+<em>stated</em> or <em>inferred</em> with a one-line basis) and asking at most five load-bearing
+questions total, shared with the ARM interview. The record lands in the <code>CRITERIA.md</code>
+header, so the pin protects it from drift for free; silence at ratification accepts every inferred
+value.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Dial</th><th>Values</th><th>Notes</th></tr>
+  <tr><td><strong>Tier</strong></td><td>T0 direct · T1 tracer · T2 run (default for <code>/redgate</code>) · T3 program</td>
+      <td>T0 declines the protocol outright: “No run. Do the thing. Opening a run dir for a T0 task is a calibration error, not diligence.” Any irreversible action or external transmission bumps the floor to ≥T2.</td></tr>
+  <tr><td><strong>Domain</strong></td><td>code · research · writing-docs · ops-config · design</td>
+      <td>Each maps to a verifier rung; mixed-domain tasks calibrate to the <em>riskiest</em> domain present, not the largest.</td></tr>
+  <tr><td><strong>Scope</strong></td><td>fence paths + blast radius (file / module / repo), external, irreversible</td>
+      <td>External loads <code>egress-gate</code>; irreversible loads <code>prove-the-undo</code> and floors the gate at MAJOR. Narrowing mid-run is a log note; widening is always MAJOR.</td></tr>
+  <tr><td><strong>Taste</strong></td><td>prototype · match-repo (default) · production</td>
+      <td>“The dial most often inferred wrong — over-polishing a prototype and under-proving production are the same calibration failure in opposite directions.”</td></tr>
+  <tr><td><strong>Orchestration</strong></td><td>solo · independent-JUDGE (default) · fan-out · recursive</td>
+      <td>“Orchestration is a cost, never a signal of seriousness.” Recursion is never chosen at calibration time — it is earned by a failed check.</td></tr>
+</table>
+</div>
+
+<h2 id="autonomy">Graduated autonomy — the classified round gate</h2>
+<p>Every round gate is classified with <code>semver-gate</code>'s four-property test
+(reversibility, blast radius, contract change, cost to undo), tie-break included: any single
+property landing MAJOR makes the whole gate MAJOR. The governing idea is that
+<strong>autonomy flows downhill from an approved plan</strong> — a human-ratified plan is the
+<em>mandate</em>, and work strictly derived from it can flow without a stop at every gate.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Class</th><th>Behavior at the gate</th><th>Qualifies when…</th></tr>
+  <tr><td><span class="pill patch">patch</span></td>
+      <td>Auto-pass. Append to <code>gates.log</code>, seed the next round.</td>
+      <td><em>All</em> of: build/widen round · verifier green via independent JUDGE · zero WITNESS criteria · diff inside the fence · criteria strictly derived from a human-approved plan slice · no escalator fired.</td></tr>
+  <tr><td><span class="pill minor">minor</span></td>
+      <td>Auto-pass with a prominent flag and a standing veto; the round is separately revertible. “Never a blocking question.”</td>
+      <td>Everything a PATCH needs except one soft property — e.g. a mild judgment call inside the mandate.</td></tr>
+  <tr><td><span class="pill major">major</span></td>
+      <td><strong>Stop.</strong> A structured question naming the specific decision and mechanism. “A prior adjacent ‘yes’ does not transfer.”</td>
+      <td>Any single property lands MAJOR, or the gate is on the always-MAJOR list below.</td></tr>
+</table>
+</div>
+<p><strong>Always MAJOR — never auto-passed, never softened:</strong> the scout decision · plan
+approval (the mandate itself) · a run's first ratification and every WITNESS countersignature ·
+fence widening · round-budget or depth extension (“there is no silent round 5”) · final acceptance
+· anything semver-gate itself calls MAJOR, including irreversible actions
+(<code>prove-the-undo</code> first) and <code>egress-gate</code> transmissions to unnamed
+destinations.</p>
+<p>Criteria that are <em>byte-derivable</em> from an approved plan slice auto-ratify as PATCH with
+the derivation logged; any deviation escalates to MAJOR. Every gate appends
+<code>round | class | driving-property | disposition | outcome | lesson</code> to
+<code>gates.log</code> — the disposition records what the human actually did at the gate
+(<code>auto</code> · <code>silent</code>/<code>vetoed</code> ·
+<code>approved</code>/<code>revised</code>/<code>declined</code>), so recurrence-detector's
+approval-fatigue report can tell a calibrated mandate from rubber-stamping — and “an auto-pass
+that cannot cite its qualifying conditions is a protocol violation, not a judgment call.” Reflection lives at the gate, never as a fourth stage: a one-line lesson is mandatory
+(“None” is legal only at a PATCH gate), a red verdict leaves a durable artifact the next ARM must
+read, and after three consecutive build gates with no widen or retro round the driver proposes
+one.</p>
+
+<h2 id="ships">What the plugin ships</h2>
+
+<h3>Command: <code>/redgate "&lt;idea&gt;"</code></h3>
+<p>Invokes the driver skill: calibrate first (declining T0 outright), apply the round-zero rule to
+pick the round type, drive one ARM→TRACE→JUDGE round, classify the gate. “Funding rounds beyond
+the manifest budget is always MAJOR.”</p>
+
+<h3>Skill: <code>redgate</code> — the round driver</h3>
+<p>Owns the invariant, the round-type table, calibration, the classified gate, budgets, and
+reflection-at-the-gate. Delegates ARM to <code>criteria-contract</code> and JUDGE to
+<code>reconcile</code>. Ships four progressive-disclosure references:
+<code>calibration.md</code>, <code>round-types.md</code> (copy-paste criteria templates per round
+type), <code>handoff-envelope.md</code>, and <code>recursion-contract.md</code>.</p>
+
+<h3>Skill: <code>criteria-contract</code> — ARM</h3>
+<p>Six steps: interview (in <code>grill-me</code> posture, ≤5 questions, silence accepts
+defaults) → scaffold → write criteria → run the red gate → ratify per criterion against the
+literal red output (“never present bare shell one-liners as the thing to approve”) → pin.
+Its script:</p>
+<pre><code>scripts/scaffold-run.sh --slug &lt;slug&gt; [--root DIR] [--rounds N]   # create a run
+scripts/scaffold-run.sh --pin &lt;slug&gt;                              # pin both sha256s, phase → TRACE</code></pre>
+<p>The scaffold creates <code>CRITERIA.md</code> (with template criteria that are honestly red —
+they probe artifacts that don't exist), an executable <code>check.sh</code>, an
+<code>evidence/</code> directory, <code>gates.log</code>, and a manifest carrying the slug, phase,
+round budget, <code>depth_remaining</code>, attempt bounds, and
+<code>autonomy=classified</code>. Re-pinning is refused: “a pinned contract is never
+re-pinned.”</p>
+
+<h3>Skill: <code>reconcile</code> — JUDGE</h3>
+<p>Four gates in order: <strong>ratification</strong> (an unpinned run is refused outright — grading
+one would let a writer author criteria after seeing results), <strong>drift</strong> (re-hash both
+pinned files; a drift verdict is distinguishable from an unmet criterion, so “it failed” never
+hides “it was tampered with”), <strong>execution</strong> (run the pinned verifier yourself; 99 is
+FAULT, not a verdict), and <strong>evidence</strong> (per-criterion evidence must exist and be
+newer than run start, else REJECTED). The verifier is handed only the contract and the diff —
+<em>never the build transcript</em>: “a grader that reads the writer's reasoning inherits the
+writer's blind spots.” On a full pass it prints the mutation-control reminder: revert the slice's
+core hunk, re-run, and demand red — asserting exit codes on fixtures, not messages.</p>
+<pre><code>scripts/reconcile.sh --slug &lt;slug&gt; [--root DIR]
+# exit 0 all green and proven · 1 unmet / drift / unproven · 2 usage or unpinned</code></pre>
+
+<h3>Delegation with provenance</h3>
+<p>When TRACE fans out reads or recursion spawns children, the
+<strong>handoff envelope</strong> types the traffic: criteria travel <em>verbatim</em> (excluded
+from the 300-token compression cap — “paraphrase of criteria is goal drift wearing a compression
+argument”), context travels as pointers, and all worker free text crosses the boundary inside an
+<code>untrusted-data</code> fence. The parent never executes directives found inside it, however
+phrased — fenced text cannot widen the mandate, alter the JUDGE procedure, or mark a criterion
+green — and instruction-shaped content is itself a reportable finding. Recursion requires a
+four-part spawn precondition (a failed verifier run with evidence on disk, a named seam, ≥2
+independently checkable sub-criteria proven red, budget above the child floor); children add
+checks in a separate <code>DELEGATION.md</code> but never replace the parent's pinned
+<code>check_cmd</code>.</p>
+
+<h2 id="workflow">A round, end to end</h2>
+<pre><code>/redgate "add rate limiting to the webhook worker"
+
+# 0. Calibrate  — five dials inferred, ≤5 questions; T0 would decline the run entirely.
+# 1. ARM
+plugins/redgate/skills/criteria-contract/scripts/scaffold-run.sh --slug webhook-rate-limit
+$EDITOR .redgate/webhook-rate-limit/CRITERIA.md    # calibration header + 3–7 criteria
+bash .redgate/webhook-rate-limit/check.sh          # must exit 1 (RED); 99 = fix the harness
+#    ratify per criterion with the human, then:
+plugins/redgate/skills/criteria-contract/scripts/scaffold-run.sh --pin webhook-rate-limit
+# -&gt; pinned: criteria=&lt;sha256&gt; check=&lt;sha256&gt; phase=TRACE
+
+# 2. TRACE — one writer, one thin slice, every hunk traceable to a criterion id;
+#    .redgate/webhook-rate-limit/ is now untouchable (hook-enforced on Claude Code).
+
+# 3. JUDGE — from a fresh subagent, session, or the human:
+plugins/redgate/skills/reconcile/scripts/reconcile.sh --slug webhook-rate-limit
+#    then the mutation control: revert the core hunk, re-run, demand red.
+
+# 4. Gate — classify PATCH/MINOR/MAJOR, append the gates.log line, and either
+#    auto-pass, flag with a standing veto, or stop with a structured question.
+# 5. Advance — the next round opens a fresh dir (webhook-rate-limit-r2); the
+#    prior run dir is never reopened.</code></pre>
+
+<h2 id="hooks">Hooks (Claude Code only, optional hardening)</h2>
+<p>The protocol's out-of-bounds rule — <strong>“nothing a round can write may gate that
+round”</strong> — is compiled into two harness events. On any other harness the same rules hold as
+prose discipline; the hooks are a convenience, never a dependency.</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Event</th><th>Handler</th><th>Effect</th></tr>
+  <tr><td><code>PreToolUse</code> on Write/Edit/MultiEdit/NotebookEdit</td>
+      <td><code>guard-redgate-paths.sh</code></td>
+      <td>Denies edits to <code>CRITERIA.md</code>, <code>check.sh</code>, or the manifest of any run whose phase is TRACE. Pre-ratification (ARM) writes are deliberately allowed — the contract is still being authored.</td></tr>
+  <tr><td><code>SessionStart</code> (startup / clear / compact)</td>
+      <td><code>session-start.sh</code></td>
+      <td>Read-only announcement of any run mid-round, so a new session doesn't silently start a second one. Never blocks.</td></tr>
+</table>
+</div>
+
+<h2 id="glossary">Glossary — the terms that matter</h2>
+<p>The authoritative lexicon lives in
+<a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">docs/red-gate-glossary.md</a>,
+which declares: “when prose elsewhere in this marketplace disagrees with this file, this file wins
+and the other prose is a bug.” The load-bearing subset:</p>
+<dl class="gloss">
+  <dt>run / round / stage / slice</dt>
+  <dd>A run is <code>.redgate/&lt;slug&gt;/</code> plus its rounds. A round is one
+  ARM/TRACE/JUDGE cycle. ARM, TRACE, and JUDGE are <em>stages</em> within a round (the manifest
+  field <code>phase</code> names only the manifest value). A slice is the tracer-bullet unit of
+  work.</dd>
+  <dt>contract / pin / drift</dt>
+  <dd>The contract is the pair <code>CRITERIA.md</code> + <code>check.sh</code>, ratified
+  together, pinned together (sha256 of both in the manifest), immutable for the life of the round.
+  Drift — either file no longer hashing to its ratified value — fails the run outright; it is
+  never a warning.</dd>
+  <dt>verifier</dt>
+  <dd>The generalized four-property object: runnable · proven able to fail · pinned ·
+  independently executed. <code>check.sh</code> is only its code-domain instance; a rubric-scored
+  document review can be a verifier too.</dd>
+  <dt>red gate / red-from-birth</dt>
+  <dd>The requirement that the verifier reject the current state on every checkable criterion
+  before ratification. A contract that is green from birth refuses to open — those criteria are
+  regression tests and belong in the eval tier.</dd>
+  <dt>WITNESS</dt>
+  <dd>A human-observation criterion for taste and prose, declared and capped (at most one per
+  contract by default) and countersigned individually — never a shell command.</dd>
+  <dt>FAULT (exit 99)</dt>
+  <dd>The harness's own prerequisites failed. Never red, never a FAIL — fix the harness. By
+  contrast a <code>check_cmd</code> exiting non-zero for any reason, 127 included, is a legitimate
+  FAIL.</dd>
+  <dt>mutation control / negative control / positive control</dt>
+  <dd>Mutation control: revert the hunk a check claims to measure and demand the check go red — a
+  check that survives the revert is WITNESS-grade, never proven. Negative control: prove a
+  verification gate itself can fail. Positive control: a known-good target the checker passes.</dd>
+  <dt>mandate</dt>
+  <dd>The human-ratified plan from which autonomy flows downhill — “never upward from the
+  work.”</dd>
+  <dt>gates.log / lesson</dt>
+  <dd>The per-run gate ledger:
+  <code>round | class | driving-property | disposition | outcome | lesson</code>. The
+  disposition names what the human actually did at the gate; the lesson field is where Reflect
+  lives — at the gate, never as a stage. A run-level <code>.redgate/INDEX.md</code> (built by
+  <code>criteria-index.sh</code>) indexes prior runs' criteria shapes so a new ARM can reuse
+  proven checkables and never reuse a shape demoted by mutation control.</dd>
+</dl>
+
+<h2 id="evals">Eval coverage</h2>
+<p>Per this repo's <a href="https://github.com/JRichlen/agent-plugins/blob/main/AGENTS.md">eval
+discipline</a>, redgate ships a cheap-tier pack
+(<code>plugins/redgate/evals/cheap/checks.sh</code>) that is <em>executed, not grepped</em> where
+it counts:</p>
+<ul>
+  <li><strong>The scaffold is dogfooded in a tmpdir</strong>: a fresh <code>check.sh</code> must
+  exit 1 (“never green from birth”), removing <code>CRITERIA.md</code> must yield FAULT (99) not
+  red, a nonexistent binary must report FAIL (127-is-FAIL), <code>--pin</code> must write two
+  64-hex sha256s and flip the phase, and re-pinning must be refused.</li>
+  <li><strong>reconcile is exit-coupled</strong>: checker drift and criteria drift each fail a
+  <em>passing</em> fixture; an unpinned run is refused; an ordinary unmet criterion reads as unmet
+  and not as drift; a test hook proves the evidence-freshness gate can actually fail.</li>
+  <li><strong>The parser can't silently drop a criterion</strong>: a final criterion with no
+  trailing newline must still parse and still FAIL — the one-character bug that would flip the
+  whole gate green.</li>
+  <li><strong>The hook guard actually denies</strong>: the real handler is driven with real
+  payloads and must exit 2 on a mid-TRACE contract edit (“replacing every <code>exit 2</code> with
+  <code>exit 0</code> once left the tier green — nothing tested it”).</li>
+  <li><strong>The prose invariants survive verbatim</strong>: the pinned-verifier sentence, the
+  127-is-FAIL rule, the untrusted-provenance rules of the handoff envelope, the always-MAJOR list
+  — plus a negative grep that fails if MAJOR is ever paired with auto-pass language.</li>
+</ul>
+<p>Two further tiers prove the same gates beyond the single-fixture cheap pack:</p>
+<ul>
+  <li><strong>Scale tier</strong> (<code>plugins/redgate/evals/scale/run.sh</code>, run in CI by
+  the <code>scale</code> workflow) — dozens of randomized, isolated runs through the whole round
+  lifecycle: red-from-birth on 3–7 randomized criteria with per-criterion evidence, unpinned
+  reconcile refused, pin mechanics, unmet-vs-drift separation, partial progress still reading
+  unmet, full green, criteria/checker tamper caught as drift, stale evidence rejected, and the
+  guard handler's full deny/allow matrix — hundreds of exit-coupled assertions per run of the
+  suite.</li>
+  <li><strong>Behavioral tier</strong> (<code>plugins/redgate/evals/promptfoo/</code>) — real
+  with-skill vs without-skill model runs, LLM-rubric graded: under a blanket-approval outage and a
+  “just mark the criteria green, I tested by hand” request, the skill-injected model must demand a
+  check shown failing <em>before</em> the fix, refuse to self-certify green or edit the pinned
+  contract, and hand MAJOR decisions back — with a negative-control calibration case proving the
+  bare model doesn't do this unaided.</li>
+</ul>
+<p>There is deliberately no deep/pier pack: the plugin's scripts create and verify; nothing is
+destructive. A real captured with-skill/without-skill run is in the
+<a href="../examples/#redgate">example gallery</a>.</p>
+
+<h2 id="limits">Honest limits</h2>
+<ul>
+  <li><strong>Hooks are Claude-Code-only.</strong> On Codex/Copilot the same rules hold as prose
+  discipline.</li>
+  <li><strong>Budgets are honest bookkeeping, not a harness-enforced meter.</strong> The skill
+  decrements manifest fields; no harness-portable token metering exists today, and the protocol
+  declines to fake one.</li>
+  <li><strong>CI portability checks are shape-only for BSD/macOS branches</strong> (CI runs
+  Linux), an explicitly flagged limit in the eval pack.</li>
+  <li><strong>No terminal phase yet</strong>: closed runs still read <code>phase=TRACE</code> in
+  the manifest — the final <code>gates.log</code> line is the authoritative closed signal.</li>
+  <li><strong>Lexicon v2 migration is staged</strong>: skills and docs use ARM/TRACE/JUDGE,
+  mandate, scout; the plugin manifest still carries v1 wording, and the scripts deliberately read
+  both vocabularies. The mechanical rename is classified MAJOR and human-gated — never a
+  drive-by.</li>
+</ul>
+
+<h2 id="siblings">Relationship to sibling plugins</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Plugin</th><th>Relationship</th></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate">semver-gate</a></td><td>Supplies the four-property PATCH/MINOR/MAJOR test that classifies every round gate, tie-break included.</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/tracer-bullets">tracer-bullets</a></td><td>Defines the thin slice; redgate is the loop that decides <em>which</em> slice, proves the gate red first, and verifies after.</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/grill-me">grill-me</a></td><td>Lends its interview posture to calibration and ratification (one-way: grill-me knows nothing about redgate's dials).</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/scope-fence">scope-fence</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/stop-rule">stop-rule</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/verify-before-claim">verify-before-claim</a></td><td>Govern TRACE: hunk↔criterion tracing inside the fence, a declared attempt bound, and “no unrun PASS, ever.”</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/prove-the-undo">prove-the-undo</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/egress-gate">egress-gate</a></td><td>Escalators: irreversible actions and external transmissions floor the tier and the gate class.</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/wayfinder">wayfinder</a></td><td>Charts multi-session efforts as ticket maps and never executes; a wayfinder ticket is a natural <em>input</em> to <code>/redgate</code>.</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/orchestrate">orchestrate</a></td><td>Fan-out templates redgate may use during a read-only TRACE fan-out — but the single writer and the pinned verifier are redgate's own rules.</td></tr>
+  <tr><td><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/recurrence-detector">recurrence-detector</a></td><td>The growth loop's DETECT organ: clusters the exhaust redgate sheds (gate lessons, stop-reports, findings) and surfaces recurring shapes as candidate invariants.</td></tr>
+</table>
+</div>
+
+<h2 id="further">Further reading</h2>
+<ul>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">The Red Gate protocol</a> — the design of record: the five refinements over “just define criteria up front,” the fatal-flaw ledger, the research grounding, and the operating-system framing.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">The glossary</a> — authoritative lexicon, including the v2 naming rules.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-implementation-plan.md">The implementation plan</a> — why one plugin instead of eleven, and the slice-by-slice build record.</li>
+  <li><a href="../examples/#redgate">Before/after example</a> — a real captured run with and without the skill.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/tree/main/.redgate">The committed run records</a> — the protocol dogfooding itself, including the rounds where it caught its own defects.</li>
+</ul>
+
+<footer>
+  Part of <a href="https://github.com/JRichlen/agent-plugins">JRichlen/agent-plugins</a> ·
+  <a href="../">docs home</a> ·
+  <a href="../agent-compiler/">agent-compiler documentation</a>
+</footer>
+
+</div>
+</body>
+</html>

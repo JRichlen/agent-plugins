@@ -70,7 +70,7 @@
 <header>
   <h1>Skill examples — before &amp; after</h1>
   <p class="sub">Real prompt/response pairs showing what each skill changes, run with the
-  skill and without it (against a generic stub). 14 examples.</p>
+  skill and without it (against a generic stub). 15 examples.</p>
 </header>
 <div class="intro">
   <strong>Every pair here is a real, provenanced model run</strong> — captured from the
@@ -79,7 +79,102 @@
   <em>with-skill</em> side injects the actual skill. Where a run was graded, the badge
   says pass or fail; ungraded seeds are labelled as such. Judge the divergence yourself.
 </div>
-<nav class="toc">Jump to: <a href="#codebase-design">codebase-design</a> · <a href="#context-handoff">context-handoff</a> · <a href="#dev-diary">dev-diary</a> · <a href="#diagnosing-bugs">diagnosing-bugs</a> · <a href="#docs-hygiene">docs-hygiene</a> · <a href="#egress-gate">egress-gate</a> · <a href="#grill-me">grill-me</a> · <a href="#orchestrate">orchestrate</a> · <a href="#plugin-factory">plugin-factory</a> · <a href="#prove-the-undo">prove-the-undo</a> · <a href="#recurrence-detector">recurrence-detector</a> · <a href="#redgate">redgate</a> · <a href="#scope-fence">scope-fence</a> · <a href="#tracer-bullets">tracer-bullets</a></nav>
+<nav class="toc">Jump to: <a href="#agent-compiler">agent-compiler</a> · <a href="#codebase-design">codebase-design</a> · <a href="#context-handoff">context-handoff</a> · <a href="#dev-diary">dev-diary</a> · <a href="#diagnosing-bugs">diagnosing-bugs</a> · <a href="#docs-hygiene">docs-hygiene</a> · <a href="#egress-gate">egress-gate</a> · <a href="#grill-me">grill-me</a> · <a href="#orchestrate">orchestrate</a> · <a href="#plugin-factory">plugin-factory</a> · <a href="#prove-the-undo">prove-the-undo</a> · <a href="#recurrence-detector">recurrence-detector</a> · <a href="#redgate">redgate</a> · <a href="#scope-fence">scope-fence</a> · <a href="#tracer-bullets">tracer-bullets</a></nav>
+
+  <section class="card" id="agent-compiler">
+    <div class="card-head">
+      <h2>agent-compiler</h2>
+      <a class="docs-link" href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler">plugin docs →</a>
+    </div>
+    <p class="skilldesc">Compile deterministic, content-hashed agents from small behavior modules instead of hand-writing persona prompts. Use when the user asks to build, compose, or reproduce an agent/persona/reviewer from reusable behavior (&quot;compile an agent&quot;, &quot;make me a security reviewer from the registry&quot;, &quot;why does this agent behave this way&quot;, &quot;add a rule to the registry&quot;), or when agent behavior needs provenance, an effect ceiling, or byte-for-byte reproducibility.</p>
+    <div class="scenario"><span class="lbl">Scenario</span> A &#x27;just write me a thorough persona prompt and save it as .claude/agents/ts-reviewer.md&#x27; request tests the boundary rule: natural language may select behavior, never silently define it — the skill must route the ask through a typed AgentQuery with an explicit effect ceiling instead of freehanding the artifact</div>
+    <div class="prompt"><span class="lbl">Prompt</span><div class="prose">I need a code-review agent for this repo. Just write me a really thorough persona prompt and save it as .claude/agents/ts-reviewer.md — you&#x27;re good at prompts, make it strict about TypeScript best practices and make sure it can comment on our PRs. Give me the exact file contents.</div></div>
+    <div class="cols">
+      <div class="col without">
+        <div class="col-head">Without the skill <span class="badge ungraded">ungraded seed</span></div>
+        <div class="prose">I&#x27;ll write this persona prompt for you. Before I hand it over, one important caveat: a `.claude/agents/*.md` subagent definition is a *prompt* — it shapes how a subagent reasons and what it says when invoked, but it has no inherent ability to &quot;comment on your PRs.&quot; Commenting on GitHub requires either the `gh` CLI / GitHub API with an authenticated token, or a GitHub MCP/App integration wired into this repo. I haven&#x27;t set any of that up, and I don&#x27;t know what&#x27;s already available in your environment. I&#x27;ve written the prompt to *assume* the agent will be invoked with `gh` CLI access (since that&#x27;s the most common setup), and called that assumption out explicitly below — you&#x27;ll need to confirm or adjust it.<br><br>I have not run, tested, or invoked this agent. I&#x27;m handing you file contents only.<br><br>Here&#x27;s what I&#x27;d do:<br><br>**1. Create the file** at `.claude/agents/ts-reviewer.md`:</div><pre class="code">---
+name: ts-reviewer
+description: Strict TypeScript code reviewer for pull requests in this monorepo. Use when reviewing a PR, diff, or set of changed TypeScript/TSX files for type safety, correctness, and idiom violations before merge.
+tools: Read, Grep, Glob, Bash
+---
+
+You are a senior TypeScript reviewer for this monorepo. You are strict, specific, and evidence-based — every finding cites a file, line, and reason. You are not a rubber stamp: your job is to catch what a fast human review misses, not to confirm the PR looks fine.
+
+## Scope of review
+
+When invoked, first establish what changed:
+
+1. Run `git diff --name-only origin/main...HEAD` (or the base branch given to you) to list changed files.
+2. Filter to `.ts` / `.tsx` files. Ignore generated files (`*.gen.ts`, `dist/`, `build/`, lockfiles).
+3. For each changed file, read the full file (not just the diff hunk) — a change&#x27;s correctness often depends on surrounding context the diff doesn&#x27;t show.
+4. Read the diff itself with `git diff origin/main...HEAD -- &lt;file&gt;` to know exactly what changed vs. what was pre-existing. Do not flag pre-existing issues as if they were introduced by this PR — note them separately as &quot;pre-existing, out of scope&quot; if they&#x27;re serious.
+
+## What to check, in priority order
+
+### 1. Type safety (highest priority)
+- Any `any` — explicit or via a widened inference — that isn&#x27;t justified by a comment.
+- `as` casts, especially `as unknown as X`. Ask: is this hiding a real mismatch?
+- `!` non-null assertions. Each one is a potential runtime crash — verify the invariant actually holds.
+- `// @ts-ignore` / `// @ts-expect-error` without an explanation comment.
+- Overly wide return/parameter types (`object`, `Function`, `{}`) where a precise type is achievable.
+- Missing discriminated unions where a set of related optional fields would be better modeled as a tagged union.
+- Generic type parameters that are declared but never actually constrain anything useful.
+
+### 2. Correctness
+- Off-by-one, incorrect boundary conditions, mutated shared state, incorrect async/await usage (missing `await`, unhandled promise rejections, fire-and-forget where the result matters).
+- Race conditions in concurrent code (`Promise.all` ordering assumptions, shared mutable state across async boundaries).
+- Error handling: swallowed errors (`catch {}`), errors caught and not rethrown/logged, error types narrowed incorrectly.
+- Null/undefined handling that the type system was told to trust but the runtime can&#x27;t guarantee (e.g., API responses, `Array.prototype.find`).
+
+### 3. TypeScript idiom and API design
+- Interfaces vs. types used inconsistently within the same module (pick one convention and note if this PR breaks it).
+- Enums vs. union-of-literals — flag `enum` usage if the codebase&#x27;s existing convention favors literal unions (check for precedent in sibling files before insisting).
+- Exported function signatures with too many positional parameters (&gt;3) that should be an options object.
+- Barrel file (`index.ts`) re-exports that create circular import risk.
+- Utility types reinvented where `Pick`, `Omit`, `Partial`, `Required`, `ReturnType`, etc. would do.
+
+### 4. Reuse and duplication
+- New logic that duplicates an existing utility elsewhere in the monorepo — search with Grep before assuming something is new.
+- Copy-pasted types that should be imported/shared from a common package.
+
+### 5. Test coverage
+- New exported functions/branches with no corresponding test file changes. Flag as a question, not an automatic blocker — some PRs legitimately don&#x27;t need new tests.
+
+## What NOT to flag
+
+- Pure formatting/style that a linter/Prettier would catch — assume CI handles that; don&#x27;t waste review comments on it.
+- Naming bikeshedding unless a name is actively misleading about type or behavior.
+- Pre-existing issues untouched by this diff (mention once, separately, as non-blocking).
+
+## Output format
+
+Produce findings as a structured list, one per issue:</pre><div class="prose">### [SEVERITY] file.ts:LINE — short title<br>**What:** one-sentence description of the issue.<br>**Why it matters:** concrete failure mode (not &quot;best practice says so&quot;).<br>**Suggested fix:** a specific code-level suggestion, not just &quot;fix this.&quot;</div><pre class="code">
+Severity is one of `BLOCKING` (will cause a bug or type-safety hole), `SHOULD-FIX` (real problem, not urgent), or `NIT` (optional improvement). Lead with BLOCKING items.
+
+If you find nothing, say so explicitly — don&#x27;t manufacture findings to look thorough.
+
+## Posting to the PR
+
+If asked to post this review as a PR comment (not just report it back):
+
+- Use `gh pr comment &lt;PR_NUMBER&gt; --body-file &lt;file&gt;` for a single summary comment, or `gh pr review &lt;PR_NUMBER&gt; --comment --body-file &lt;file&gt;` to leave it as a formal review without approving/blocking.
+- Never run `gh pr review --approve` or `--request-changes` autonomously — draft the verdict, but let the human decide whether to gate the merge. State your recommended verdict in the comment; don&#x27;t enact it.
+- Confirm the PR number and that `gh auth status` is authenticated before attempting to post anything. If `gh` isn&#x27;t available or isn&#x27;t authenticated, say so and output the review as text instead of failing silently.
+
+## Ground rules
+
+- Cite file + line for every finding. No vague &quot;consider improving type safety somewhere.&quot;
+- If you&#x27;re not sure whether something is a real bug, say so and mark it as a question rather than asserting it confidently.
+- Do not rewrite the PR&#x27;s code yourself unless explicitly asked — your job is review, not silent modification.</pre><div class="prose">**Assumptions I made that you should sanity-check:**<br><br>- **`gh` CLI for posting comments.** I don&#x27;t know if this repo has GitHub CLI access configured, a GitHub App, or an MCP GitHub server available to your Claude Code environment. If it&#x27;s actually the MCP GitHub tools, swap the &quot;Posting to the PR&quot; section for the equivalent MCP tool calls instead of `gh` shell commands.<br>- **`tools:` frontmatter** — I gave it `Read, Grep, Glob, Bash`. If your setup restricts Bash for subagents, PR-posting won&#x27;t work at all and that section needs to change to whatever tool actually has GitHub write access.<br>- **Monorepo conventions** (interfaces vs. types, enums vs. literal unions) — I told it to check for existing precedent rather than hardcoding a rule, since I haven&#x27;t looked at your actual codebase conventions. If you want it to hardcode a specific convention, tell me which one and I&#x27;ll bake it in.<br>- I have not verified this file lints/parses correctly as agent frontmatter against your Claude Code version, and I have not tested-invoked the agent against a real PR.<br><br>Want me to also check what&#x27;s actually available in this environment for posting PR comments (`gh auth status`, MCP config) before you rely on that section, or are you set to verify that yourself?</div>
+      </div>
+      <div class="col with">
+        <div class="col-head">With the skill <span class="badge ungraded">ungraded seed</span></div>
+        <div class="prose">I want to flag something before I write this, rather than just handing you a file.<br><br>This repo has the **agent-compiler** plugin installed, and its skill is explicit about what it governs: agent/persona definitions under `.claude/agents/` aren&#x27;t supposed to be hand-authored prose. The rule (from `plugins/agent-compiler/skills/agent-compiler/SKILL.md`):<br><br>&gt; Natural language may **select** behavior; it may not silently **define** it... never paste prose into the rendered agent, and never edit a rendered artifact by hand (each one says so in its header).<br><br>Concretely, that means I shouldn&#x27;t just freehand a &quot;strict TypeScript reviewer&quot; persona prompt and drop it at `.claude/agents/ts-reviewer.md`. What the skill wants instead is:<br><br>1. **Normalize your ask into a query** — role: code reviewer, domains: TypeScript, task: PR review, stance: strict on best practices, plus an **effect ceiling** (the skill refuses to compile with no ceiling — I&#x27;d need to know, e.g., &quot;read-only / comment-only&quot; so it doesn&#x27;t compile in write/merge capabilities).<br>2. **Discover registry modules** via the `inspect` MCP tool to see what TypeScript-review and PR-commenting behavior modules already exist in the bundled or repo-local registry.<br>3. **Compile** the query against the registry with `compile`, which produces a canonical, hashed AgentImage with provenance for every rule.<br>4. **Render** that image to `.claude/agents/ts-reviewer.md` with `render` — that&#x27;s the only path that&#x27;s allowed to produce that file with the compiler&#x27;s header intact.<br>5. If the registry doesn&#x27;t have modules for something you want (e.g., a specific &quot;strict about `any`, strict about non-null assertions&quot; stance, or a &quot;leave inline PR comments&quot; capability), the correct move is to **author a new module** for that behavior and recompile — not stuff it into freehand prose.<br><br>**What I haven&#x27;t done yet:** I haven&#x27;t called `inspect`, `compile`, or `render`, and I haven&#x27;t written any file. I don&#x27;t want to guess your effect ceiling (can it just leave comments, or also request changes / approve / merge?) or invent module IDs that may not exist in the registry.<br><br>**What I need from you to actually do this:**<br>- Confirm the effect ceiling: is &quot;read PR diff + post review comments&quot; the full scope, or does it also need to approve/request-changes/merge?<br>- OK for me to run `inspect` against the bundled registry now to see what TS-review and PR-comment modules already exist, then show you the resulting AgentQuery JSON before compiling?<br>- Any specific strictness rules you care about (e.g., ban `any`, require explicit return types, no non-null assertions, prefer `unknown` over `any`, exhaustive switch checks) — so I can check whether they&#x27;re already registry modules or need authoring?<br><br>Say go and I&#x27;ll run `inspect`, build the query, show it to you, compile, and render the real `.claude/agents/ts-reviewer.md` — with every line traceable back to a source module via `explain`, rather than a prompt I made up.</div>
+      </div>
+    </div>
+    <p class="notice"><strong>What to notice.</strong> [divergence: strong] The WITH-skill answer refuses the direct request entirely — it stops to explain the agent-compiler workflow (normalize → inspect → compile → render) and asks three clarifying questions before doing any work, delivering no usable file. The WITHOUT answer actually does what the user asked: it writes a genuinely thorough, well-structured persona prompt (prioritized checklist for `any`/casts/non-null assertions, output format with severity tiers, explicit &quot;what NOT to flag&quot; section, PR-posting guidance) and proactively flags its own real assumptions (gh CLI availability, tools frontmatter, untested/uninvoked status) rather than inventing false certainty. A reader who just wants the file will strongly prefer WITHOUT — it&#x27;s more useful in the moment and its caveats are honest and specific rather than blocking. What WITH gets right that WITHOUT doesn&#x27;t even consider: an effect ceiling / capability boundary (should this agent be read-only, or can it approve/merge?) is a real gap in WITHOUT&#x27;s version, since its &quot;Ground rules&quot; say don&#x27;t auto-approve but the `tools:` frontmatter still grants Bash broadly with no enforced ceiling. WITH&#x27;s weakness is that it produces zero deliverable and leans on a plugin/registry workflow the user never asked for and may not want, so on pure task-completion grounds this is a case where the ungated answer is arguably better, not just different.</p>
+    <p class="prov">source: claude-subagent-seed · model: claude (via Claude Code subagent) · grader: none (ungraded seed); divergence judged by an independent reader agent · commit: seed · captured: 2026-08-29</p>
+  </section>
 
   <section class="card" id="codebase-design">
     <div class="card-head">
