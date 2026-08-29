@@ -5,5 +5,20 @@
   "author": {
     "name": "Jordan Richlen"
   },
-  "license": "MIT"
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/redgate",
+  "license": "MIT",
+  "keywords": [
+    "red-gate",
+    "verifier",
+    "rounds",
+    "begin-middle-end",
+    "falsifiable",
+    "sdlc",
+    "ai-dlc",
+    "apm",
+    "cross-harness"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
 }
