@@ -164,8 +164,8 @@ cheap: run the skill, paste what happened.
 
 > **Never post a demonstration you did not actually run.** This is the same
 > clause `voice` defends twice — a fabricated validation, and a cleanup claimed
-over an unchanged draft. A demonstration is worse than either, because it is
-the evidence a reviewer merges on.
+> over an unchanged draft. A demonstration is worse than either, because it is
+> the evidence a reviewer merges on.
 
 Not machine-enforced, and it cannot be: the cheap tier is offline and cannot
 read a PR comment. This is a review gate — do not approve a skill change whose
