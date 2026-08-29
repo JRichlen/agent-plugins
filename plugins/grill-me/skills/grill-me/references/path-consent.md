@@ -6,6 +6,17 @@ questions about a branch they never wanted explored. Path consent converts
 the design-tree walk into disclosure — the user sees the map and the price
 before paying for any descent.
 
+## Before the anchor — the decline gate
+
+The anchor is not the first move; triage is. Read the whole plan and tier
+each branch. If **every** branch triages LIGHT end to end, there is no
+session to run — say so briefly ("no session needed") and stop. Do not set
+an anchor for a plan that has nothing above LIGHT to route: the anchor and
+the consent menu exist to price STANDARD/DEEP descents, and a fully-settled
+or all-two-way-door plan has none, so the ceremony would be pure overhead.
+The anchor below is reached only once at least one STANDARD or DEEP branch
+survives triage.
+
 ## The anchor (round 0)
 
 No branch questioning before three slots are set:
@@ -76,6 +87,9 @@ the whole session.
 
 - **Anchorless interrogation** — a deep question series fired before the
   goal and outcome are confirmed; the exact waste this reference removes.
+- **Anchor before decline** — setting an anchor or opening round 0 on a
+  plan that triages LIGHT end to end, instead of declining with "no
+  session needed"; the decline gate above runs first, ahead of the anchor.
 - **Consent spam** — headers on LIGHT branches, or re-asking consent a
   question at a time instead of batching the routing round.
 - **Menu without a recommendation** — a bare "want to explore X?" gives
