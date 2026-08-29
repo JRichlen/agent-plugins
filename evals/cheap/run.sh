@@ -524,6 +524,7 @@ NONSKILL = {
     "derived-verify", "pipelined-verdict-wins",                   # orchestrate workflow templates
     "homelab-board", "ansible-homelab-sim",                       # worked-example artifacts
     "consolidate-delta", "judge-calibration", "path-consent",     # reference docs, not skills
+    "engineering-default",                                        # agent-compiler golden example/registry view
 }
 tok = re.compile(r'`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`')
 fail = 0

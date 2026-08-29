@@ -30,3 +30,4 @@ plugins/*/evals/promptfoo/results.json
 
 # Claude Code session state (workflow worktrees, local settings)
 .claude/
+__pycache__/
