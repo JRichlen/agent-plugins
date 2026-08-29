@@ -1,6 +1,6 @@
 {
   "name": "agent-compiler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Compile deterministic, content-hashed agents from small behavior modules: a skill turns fuzzy intent into a typed AgentQuery, a stdlib-only kernel resolves modules, expands dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage plus a rendered harness-native subagent — never inventing behavior text without provenance.",
   "author": {
     "name": "Jordan Richlen"
@@ -18,5 +18,13 @@
     "persona"
   ],
   "skills": "./skills/",
-  "commands": "./commands/"
+  "commands": "./commands/",
+  "mcpServers": {
+    "kernel": {
+      "command": "python3",
+      "args": [
+        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.py"
+      ]
+    }
+  }
 }

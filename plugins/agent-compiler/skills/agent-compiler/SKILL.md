@@ -31,6 +31,16 @@ Natural language may **select** behavior; it may not silently **define** it.
   rendered agent, and never edit a rendered artifact by hand (each one says
   so in its header).
 
+## Two ways in: MCP tools or the CLI
+
+Installed as a Claude Code plugin, the bundled MCP server (`kernel`, from
+`scripts/mcp_server.py`) starts automatically and exposes the same four pure
+operations as tools: `inspect`, `compile`, `explain`, `render`. Prefer them
+when available — same kernel, same guarantees, no shell round-trip. The CLI
+below is the identical fallback on any harness without MCP; the server is a
+convenience, not a dependency, and it never performs an effectful action
+(`render` returns markdown text; writing the file stays with you).
+
 ## Workflow
 
 1. **Normalize intent into an AgentQuery.** Ask or infer until these are

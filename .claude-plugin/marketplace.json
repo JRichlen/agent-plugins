@@ -398,7 +398,7 @@
     {
       "name": "agent-compiler",
       "description": "Compile deterministic, content-hashed agents from small behavior modules: a skill turns fuzzy intent into a typed AgentQuery, a stdlib-only kernel resolves modules, expands dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage plus a rendered harness-native subagent — never inventing behavior text without provenance.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "source": "./plugins/agent-compiler",
       "author": {
         "name": "Jordan Richlen"

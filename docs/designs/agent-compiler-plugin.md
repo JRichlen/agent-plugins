@@ -1,6 +1,15 @@
 # Design: `agent-compiler` plugin
 
-**Status:** Implemented (Phase 1) — the plugin lives at `plugins/agent-compiler/`.
+**Status:** Implemented through Phase 3 — the plugin lives at
+`plugins/agent-compiler/`. The MCP facade shipped ahead of the original
+phasing: `scripts/mcp_server.py` (stdlib-only JSON-RPC over stdio) exposes
+`inspect`/`compile`/`explain`/`render`, is declared under `mcpServers` in
+`plugin.json` so Claude Code starts it automatically on plugin enable, and —
+per ADR 0003's trust boundary — has no `execute` and performs no effectful
+action. The cheap tier drives a full stdio round-trip asserting the facade
+returns the same golden hash and fail-closed diagnostics as the CLI. The
+typo'd-frontmatter-key miss from the first demonstration is also closed
+(`BAD_MODULE_KEY`, fixture-pinned).
 Three decisions changed between this design and the build, each forced by
 actually running the thing:
 

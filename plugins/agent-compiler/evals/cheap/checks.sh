@@ -18,6 +18,11 @@ if $_ac_py -m py_compile "$_ac_dir/scripts/render_claude_agent.py" 2>/dev/null; 
 else
   bad "scripts/render_claude_agent.py fails py_compile"
 fi
+if $_ac_py -m py_compile "$_ac_dir/scripts/mcp_server.py" 2>/dev/null; then
+  ok "scripts/mcp_server.py compiles (py_compile)"
+else
+  bad "scripts/mcp_server.py fails py_compile"
+fi
 
 _ac_reg="$_ac_dir/registry"
 _ac_query="$_ac_dir/examples/queries/security-pr-review.json"
@@ -81,6 +86,7 @@ _ac_expect_fail() {
 }
 _ac_fx="$_ac_dir/evals/cheap/fixtures"
 _ac_expect_fail conflict     CONFLICT           "$_ac_fx/conflict.md"
+_ac_expect_fail typo-key     BAD_MODULE_KEY     "$_ac_fx/typo-key.md"
 _ac_expect_fail missing-dep  MISSING_DEPENDENCY "$_ac_fx/missing-dep.md"
 _ac_expect_fail cycle        DEPENDENCY_CYCLE   "$_ac_fx/cycle-a.md" "$_ac_fx/cycle-b.md"
 _ac_expect_fail over-ceiling EFFECT_CEILING     "$_ac_fx/over-ceiling.md"
@@ -114,6 +120,46 @@ then
   ok "every emitted behavior unit carries module/source/version provenance"
 else
   bad "a behavior unit was emitted without provenance"
+fi
+
+group "plugin 'agent-compiler': MCP facade — same kernel, same guarantees, over stdio"
+if $_ac_py - "$_ac_dir" "$_ac_golden" <<'PY'
+import json, os, subprocess, sys
+plugin, golden_path = sys.argv[1], sys.argv[2]
+proc = subprocess.Popen(
+    [sys.executable, os.path.join(plugin, "scripts", "mcp_server.py")],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+def rpc(method, params=None, msg_id=None):
+    m = {"jsonrpc": "2.0", "method": method}
+    if msg_id is not None: m["id"] = msg_id
+    if params is not None: m["params"] = params
+    proc.stdin.write(json.dumps(m) + "\n"); proc.stdin.flush()
+    return json.loads(proc.stdout.readline()) if msg_id is not None else None
+init = rpc("initialize", {"protocolVersion": "2025-06-18",
+                          "clientInfo": {"name": "eval", "version": "0"},
+                          "capabilities": {}}, 1)
+assert init["result"]["serverInfo"]["name"] == "agent-compiler", "bad serverInfo"
+rpc("notifications/initialized")
+tools = {t["name"] for t in rpc("tools/list", None, 2)["result"]["tools"]}
+assert tools == {"inspect", "compile", "explain", "render"}, f"tool set drifted: {tools}"
+query = json.load(open(os.path.join(plugin, "examples/queries/security-pr-review.json")))
+r = rpc("tools/call", {"name": "compile", "arguments": {"query": query}}, 3)
+assert not r["result"]["isError"], "golden compile errored via MCP"
+image = json.loads(r["result"]["content"][0]["text"])
+golden = json.load(open(golden_path))
+assert image["hash"] == golden["hash"], "MCP compile hash differs from golden"
+bad_q = {k: v for k, v in query.items() if k != "effectCeiling"}; bad_q["views"] = []
+r = rpc("tools/call", {"name": "compile", "arguments": {"query": bad_q}}, 4)
+assert r["result"]["isError"], "ceiling-less compile did not error via MCP"
+codes = {d["code"] for d in json.loads(r["result"]["content"][0]["text"])["diagnostics"]}
+assert "NO_EFFECT_CEILING" in codes, f"wrong codes via MCP: {codes}"
+proc.stdin.close(); proc.wait(timeout=5)
+assert proc.returncode == 0, "server did not exit cleanly"
+PY
+then
+  ok "MCP stdio round-trip: handshake, tool set, golden hash via compile, fail-closed via facade"
+else
+  bad "MCP facade round-trip failed — facade drifted from the kernel's guarantees"
 fi
 
 rm -rf "$_ac_tmp"

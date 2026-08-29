@@ -30,6 +30,11 @@ module — the hash does not move. Ask for a write capability under a read-only
 ceiling — compilation fails with `EFFECT_CEILING` instead of shipping a
 quietly over-privileged agent.
 
+Installed as a Claude Code plugin, the bundled MCP server starts
+automatically and exposes the same operations as tools — `inspect`,
+`compile`, `explain`, `render` — read-only by construction (no `execute`,
+ever). The CLI above is the identical surface for any harness without MCP.
+
 ## Pieces
 
 - `skills/agent-compiler/SKILL.md` — the boundary discipline: natural language
@@ -40,6 +45,8 @@ quietly over-privileged agent.
   `compile`, `inspect`, `explain`.
 - `scripts/render_claude_agent.py` — AgentImage → Claude Code agent definition
   (the image is the contract; other harnesses get sibling renderers).
+- `scripts/mcp_server.py` — the auto-started MCP facade (stdlib-only JSON-RPC
+  over stdio), declared under `mcpServers` in `.claude-plugin/plugin.json`.
 - `registry/` — starter modules; `--registry` accepts any directory, so your
   repo can carry its own.
 - `evals/cheap/` — golden, metamorphic, and fail-closed checks run by the

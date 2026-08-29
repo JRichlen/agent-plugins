@@ -42,6 +42,10 @@ LIST_KEYS = {
     "roles", "tasks", "domains", "requires", "conflicts_with",
     "supersedes", "capabilities", "effects", "max_effects", "traits",
 }
+# Unknown frontmatter keys fail closed (BAD_MODULE_KEY). Without this, a
+# typo'd key ('task:' for 'tasks:') compiled cleanly and silently deselected
+# the module — found by running the first demonstration, now a diagnostic.
+KNOWN_KEYS = LIST_KEYS | {"id", "kind", "version"}
 
 
 class CompileError(Exception):
@@ -97,6 +101,11 @@ def parse_frontmatter(text, source):
                 "BAD_MODULE",
                 f"{source}:{lineno}: unsupported frontmatter syntax: {line.strip()!r}")])
         key, raw = m.group(1), m.group(2).strip()
+        if key not in KNOWN_KEYS:
+            raise CompileError([diag(
+                "BAD_MODULE_KEY",
+                f"{source}:{lineno}: unknown frontmatter key '{key}' "
+                f"(known: {', '.join(sorted(KNOWN_KEYS))})")])
         current_list_key = None
         if raw == "":
             if key in LIST_KEYS:
