@@ -13,8 +13,9 @@ coverage. Each phase names its verifier (what proves it done).
 | `build-examples.sh` (snapshots → static `index.html`) | shipped, deterministic, cheap-tier `--check` |
 | cheap tier §19 (sync + provenance guard) | shipped, mutation-proven |
 | `pages.yml` (deploy from Actions, `enablement:true`) | shipped, runs on merge to main |
-| behavioral CI captures each pack's snapshot | shipped — **uploads an artifact, does not commit it** |
-| committed snapshots | **1 of 23** (`scope-fence`, subagent seed, ungraded) |
+| behavioral CI captures each pack's snapshot | shipped (artifact) |
+| biweekly review-gated refresh PR | shipped (`refresh-examples.yml`) |
+| committed snapshots | **4 of 23** (scope-fence, prove-the-undo, egress-gate, diagnosing-bugs; subagent seeds, ungraded) |
 
 **Coverage today:** 10 plugins have a promptfoo pack and can auto-capture a
 *graded* example (find-before-build, fleet-playbook-curator, graveyard,
@@ -37,16 +38,18 @@ next step and everything after it is cheap.**
 One plugin end to end: capture script, generator, guard, Pages wiring, one
 real seed. Verifier: cheap tier green, page renders, `--check` couples.
 
-### Phase 2 — close the capture → commit loop
+### Phase 2 — close the capture → commit loop *(done)*
 A scheduled + `workflow_dispatch` **refresh-examples** workflow: run the
 promptfoo packs (keys already in CI), run `capture-example.sh` per plugin,
 and **open a PR** with the updated `docs/examples/data/*.json` + regenerated
 `index.html`. A PR (not a direct push) keeps a human in the loop on what gets
 published — the snapshots are real model output and deserve a glance.
-- Verifier: a dispatch run opens a PR whose diff is only snapshot/HTML changes
-  and whose cheap tier is green; merging it makes new cards appear on Pages.
-- Decision needed: **cadence** (on every behavioral run? weekly? dispatch-only?)
-  and **auto-merge vs review** (recommend: review — real transcripts, low volume).
+- Shipped as `.github/workflows/refresh-examples.yml`: **biweekly** (1st & 15th,
+  06:00 UTC) + `workflow_dispatch`, runs the packs, captures, regenerates, runs
+  the cheap tier, and opens a **review-gated PR** (`peter-evans/create-pull-request`,
+  branch `examples/refresh`, never a direct push). Merging publishes to Pages.
+- Decisions settled by the owner: cadence **biweekly**, **review-gated** (not
+  auto-merge).
 
 ### Phase 3 — widen to the 10 packed plugins *(graded, automatic)*
 Once Phase 2 exists, coverage is a byproduct: each pack's next run captures a
@@ -60,17 +63,18 @@ graded pair. Replace the ungraded scope-fence seed with its graded capture.
   cherry-picked. Encode the rule; the cheap tier already refuses a snapshot
   without both outputs + provenance.
 
-### Phase 4 — the 13 unpacked plugins
+### Phase 4 — the 13 unpacked plugins *(in progress: 3 of 13 seeded)*
 Two honest options per plugin, decided per plugin:
 - **Subagent seed** (like scope-fence now): a real, labelled-ungraded pair,
   available immediately, no pack required.
 - **New promptfoo pack**: the durable answer — gives a graded example *and* a
   behavioral regression test the plugin currently lacks. More work.
-- Recommend: seed the few with obvious before/after value now (prove-the-undo,
-  egress-gate, diagnosing-bugs) for an immediately fuller gallery; grow packs
-  for the rest on the existing behavioral-pack backlog, and let Phase 2 fill
-  them in as graded captures land. A plugin with neither simply has no card —
-  the gallery never fabricates one.
+- **Done:** prove-the-undo, egress-gate, diagnosing-bugs seeded now via real
+  subagent runs (labelled ungraded). Remaining unpacked, in rough priority:
+  tracer-bullets, grill-me, context-handoff, docs-hygiene, codebase-design,
+  orchestrate, plugin-factory, recurrence-detector, redgate, dev-diary. Grow
+  packs for the ones that warrant a behavioral regression test; seed the rest.
+  A plugin with neither simply has no card — the gallery never fabricates one.
 
 ### Phase 5 — polish
 - **Staleness guard**: flag a snapshot older than the `SKILL.md` it demonstrates

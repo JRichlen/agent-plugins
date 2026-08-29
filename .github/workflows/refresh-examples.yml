@@ -1,0 +1,98 @@
+# Biweekly refresh of the skill example gallery (docs/examples/).
+#
+# Runs the behavioral (promptfoo) packs against a live model, captures each
+# plugin's real with-skill/without-skill pair into docs/examples/data/, regenerates
+# the static page, and — if anything changed — opens a REVIEW-GATED pull request
+# with the new snapshots. It never pushes to main directly: the snapshots are real
+# model output and a human eyeballs the PR before they publish (the pages workflow
+# deploys only after the PR merges to main).
+#
+# Cost: this spends real API budget on every packed plugin per run. That is the
+# accepted cost of the biweekly cadence (owner decision). Cadence: the 1st and
+# 15th at 06:00 UTC (~biweekly), plus manual "Run workflow".
+name: refresh-examples
+
+on:
+  schedule:
+    - cron: '0 6 1,15 * *'   # ~biweekly: 1st and 15th, 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      plugins:
+        description: 'Space-separated plugin names to refresh (blank = all packed plugins)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write        # create-pull-request commits to a branch
+  pull-requests: write   # ...and opens the PR
+
+concurrency:
+  group: refresh-examples
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: run packs, capture real example snapshots
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SELECTED: ${{ github.event.inputs.plugins }}
+        run: |
+          set -uo pipefail
+          # Which plugins: the dispatch input, else every plugin with a valid
+          # promptfoo pack (same fail-closed discovery the behavioral tier uses).
+          if [ -n "${SELECTED:-}" ]; then
+            plugins="$SELECTED"
+          else
+            plugins="$(evals/paid/discover-paid-packs.sh promptfoo | jq -r '.[]')"
+          fi
+          echo "refreshing: $plugins"
+          ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for p in $plugins; do
+            cfg="plugins/$p/evals/promptfoo/promptfooconfig.yaml"
+            [ -f "$cfg" ] || { echo "::warning::$p has no promptfoo pack — skipping"; continue; }
+            echo "::group::eval $p"
+            # One eval per pack is enough to capture a representative pair. A pack
+            # that errors does not abort the run — its previous snapshot stands.
+            ( cd "plugins/$p/evals/promptfoo" && npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json ) || echo "::warning::$p eval failed — keeping previous snapshot"
+            evals/paid/capture-example.sh "plugins/$p/evals/promptfoo/results.json" "$p" \
+              --commit "${{ github.sha }}" --captured-at "$ts" || true
+            echo "::endgroup::"
+          done
+      - name: regenerate the gallery page
+        run: docs/build-examples.sh
+      - name: cheap tier must stay green with the new snapshots
+        # A captured snapshot that failed the provenance/sync guard must never
+        # reach a PR — run the same offline tier the branch would run.
+        run: evals/cheap/run.sh
+      - name: open a review-gated PR if anything changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          add-paths: |
+            docs/examples/data/*.json
+            docs/examples/index.html
+          branch: examples/refresh
+          delete-branch: true
+          title: 'examples: refresh gallery from behavioral eval runs'
+          commit-message: |
+            examples: refresh gallery snapshots from behavioral eval runs
+
+            Automated biweekly capture — real with-skill/without-skill pairs from
+            the promptfoo packs, regenerated into docs/examples/index.html. Review
+            the transcripts below before merging; merge publishes them to Pages.
+          body: |
+            ## Biweekly example refresh
+
+            Real, graded with-skill / without-skill pairs captured from the
+            behavioral eval tier and regenerated into the gallery. **Review the
+            transcript diffs before merging** — merging to `main` publishes them
+            to GitHub Pages. Nothing here is hand-written; every pair is model
+            output with provenance. The cheap tier's sync + provenance guard has
+            already passed on this branch.
+          labels: examples, automated
