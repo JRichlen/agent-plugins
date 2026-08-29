@@ -1,15 +1,12 @@
 ---
 name: redgate
 description: >-
-  Jordan's default operating protocol for nontrivial work. Auto-trigger on
-  planning, research, design, building, debugging, refactoring, reviewing,
-  deployment, multi-agent coordination, or external/irreversible actions
-  when success needs explicit criteria and evidence. Calibrate T0 work to a
-  direct response; route T1-T3 through ARM/TRACE/JUDGE with graduated
-  PATCH/MINOR/MAJOR autonomy. Use the harness's interactive ask-question
-  tool for every user decision, approval, multi-select, and confirmation;
-  never dump a long prose questionnaire. Also trigger on /redgate "idea"
-  or whenever done-criteria must be proven falsifiable before building.
+  Default protocol for nontrivial work needing explicit criteria or evidence.
+  Auto-trigger for planning, research, design, implementation, debugging,
+  refactoring, review, deployment, multi-agent coordination, and
+  external/irreversible actions. Handle trivial work directly; route larger
+  work through ARM/TRACE/JUDGE. Use the interactive question tool for
+  decisions and confirmations; never emit prose questionnaires.
 license: MIT
 ---
 
@@ -40,7 +37,7 @@ Claude Code hooks layer is optional hardening, never a dependency.
 
 ## Default routing and interaction contract
 
-Treat Red Gate as Jordan's default router for nontrivial work, even when he
+Treat Red Gate as the default router for nontrivial work, even when the user
 does not name the skill. The common loop is: intake and infer context, clarify
 only a load-bearing ambiguity, plan the smallest safe slice, execute it,
 verify with evidence, report the result, and escalate only when risk or scope

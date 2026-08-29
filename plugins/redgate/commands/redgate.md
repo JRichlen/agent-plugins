@@ -1,10 +1,10 @@
 ---
 description: >-
-  Run work through Red Gate's calibrated ARM/TRACE/JUDGE loop. This is
-  Jordan's default for nontrivial planning, research, design, building,
-  debugging, refactoring, review, deployment, multi-agent coordination, and
-  risky external actions. Use the interactive ask-question tool for every
-  decision and confirmation; never emit a long prose questionnaire.
+  Default protocol for nontrivial work needing explicit criteria or evidence.
+  Auto-trigger for planning, research, design, implementation, debugging,
+  refactoring, review, deployment, multi-agent coordination, and risky
+  external actions. Use interactive choices and confirmations instead of
+  prose questionnaires.
 ---
 
 Invoke the `redgate` skill and follow `skills/redgate/SKILL.md`.

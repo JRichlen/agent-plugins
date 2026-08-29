@@ -2,7 +2,7 @@
 
 Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. ARM emits a verifier proven able to fail; JUDGE is that pinned verifier run by a party that did not do the work.
 
-Redgate is Jordan's default operating protocol for nontrivial planning,
+Redgate is the default operating protocol for nontrivial planning,
 research, design, building, debugging, refactoring, review, deployment,
 multi-agent coordination, security/auth, external writes, and destructive
 actions. Auto-trigger it from the task shape; do not wait for `/redgate`.

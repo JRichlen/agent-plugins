@@ -33,10 +33,10 @@ hasE "$CONTRACT" 'at most 1 WITNESS' "WITNESS cap stated" "WITNESS cap lost"
 hasE "$DRIVER" 'never crosses a round' "rounds-vs-recursion boundary stated" "rounds-vs-recursion boundary lost"
 
 group "redgate — default routing and interactive questions"
-hasE "$DRIVER" "Jordan's default operating protocol" \
-  "driver auto-triggers as Jordan's default protocol" \
+hasE "$DRIVER" "Default protocol for nontrivial work" \
+  "driver auto-triggers as the default protocol" \
   "driver lost the default-protocol trigger"
-hasE "$DRIVER" 'planning, research, design, building, debugging' \
+hasE "$DRIVER" 'planning, research, design, implementation, debugging' \
   "common workflow trigger roster is present" \
   "common workflow trigger roster is missing"
 hasE "$DRIVER" 'interactive ask-question tool' \

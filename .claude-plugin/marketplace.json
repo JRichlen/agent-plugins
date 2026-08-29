@@ -1,6 +1,6 @@
 {
   "name": "jrichlen",
-  "description": "Jordan Richlen's Claude Code plugin marketplace. Each plugin lives under plugins/<name>/ and is added here so it can be installed with /plugin install <name>@jrichlen.",
+  "description": "Cross-harness agent plugin marketplace. Each plugin lives under plugins/<name>/ and is registered here for named installation.",
   "owner": {
     "name": "Jordan Richlen"
   },
@@ -397,7 +397,7 @@
     },
     {
       "name": "redgate",
-      "description": "Jordan's default operating protocol for nontrivial planning, research, design, building, debugging, refactoring, review, deployment, multi-agent coordination, and risky external actions. Calibrates trivial work to a direct response; routes larger work through ARM/TRACE/JUDGE with PATCH/MINOR/MAJOR autonomy. Uses the interactive ask-question tool for tap-ready decisions and confirmations instead of long prose questionnaires.",
+      "description": "Default protocol for nontrivial work needing explicit criteria or evidence. Auto-triggers for planning, research, design, implementation, debugging, refactoring, review, deployment, multi-agent coordination, and risky external actions. Handles trivial work directly; routes larger work through ARM/TRACE/JUDGE and interactive decisions.",
       "version": "0.1.0",
       "source": "./plugins/redgate",
       "author": {
