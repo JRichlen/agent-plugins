@@ -110,10 +110,17 @@ layers — escalates to MAJOR. The human approved those exact criteria once,
 at plan approval; that is what keeps auto-ratification from becoming
 self-ratification.
 
-**The gate ledger.** Every gate decision — class, driving property, outcome,
-**lesson** — is appended to `.redgate/<slug>/gates.log`. An auto-pass that
-cannot cite its qualifying conditions is a protocol violation, not a
-judgment call. Precedence is semver-gate's own, unchanged: a coded rule
+**The gate ledger.** Every gate decision — class, driving property,
+**disposition**, outcome, **lesson** — is appended to
+`.redgate/<slug>/gates.log`. The disposition names what the human actually
+did: `auto` (PATCH, no human) · `silent`/`vetoed` (MINOR standing veto) ·
+`approved`/`revised`/`declined` (MAJOR — the human's answer, never a
+default). It exists so the approval-fatigue report (`recurrence-detector`'s
+`gate-report.sh`) can tell a calibrated mandate from rubber-stamping — a
+MAJOR streak that is 100% `approved` unchanged is a signal, not a
+compliment. An auto-pass that cannot cite its
+qualifying conditions is a protocol violation, not a judgment call.
+Precedence is semver-gate's own, unchanged: a coded rule
 (autoMode pattern, harness permission) always wins over this classification.
 
 **Reflection lives at the gate, never as a stage** (prior art:

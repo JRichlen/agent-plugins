@@ -38,13 +38,18 @@ go red is NEVER accepted as a criterion.
    `--root DIR` outside the repo root). It creates `.redgate/<slug>/` with a
    `CRITERIA.md` template, the `check.sh` harness, an `evidence/` dir, and a
    `manifest` carrying phase, budgets, and empty pin slots.
-3. **Write 3–7 numbered criteria.** Each carries: the statement, the layers
-   it crosses, why it is red today (absent vs present-but-wrong), and either
-   a `check_cmd` or a declared `WITNESS` with a named human
-   observation. **At least two criteria must be checkable and checkable must
-   be the majority; at most 1 WITNESS** (2 only with explicit human
-   opt-in). Where a check shape has a known-good target, record the
-   **positive control** — the same shape passing there today.
+3. **Write 3–7 numbered criteria.** Consult `.redgate/INDEX.md` first
+   (built by `scripts/criteria-index.sh`): a `checkable` shape from a prior
+   run is a candidate positive control to reuse — open that run's
+   `CRITERIA.md` for the actual `check_cmd`; a `demoted` shape stayed green
+   under mutation control and must never be reused as proof. Then each
+   criterion carries: the statement, the layers it crosses, why it is red
+   today (absent vs present-but-wrong), and either a `check_cmd` or a
+   declared `WITNESS` with a named human observation. **At least two
+   criteria must be checkable and checkable must be the majority;
+   at most 1 WITNESS** (2 only with explicit human opt-in). Where a check shape has a
+   known-good target, record the **positive control** — the same shape
+   passing there today.
 4. **Run the red gate**: `bash .redgate/<slug>/check.sh`.
    - Exit `99` = **harness failure** (preflight dirty or no verdict line) —
      not red; fix the harness, never call it a FAIL.
