@@ -427,6 +427,22 @@ it counts:</p>
   127-is-FAIL rule, the untrusted-provenance rules of the handoff envelope, the always-MAJOR list
   — plus a negative grep that fails if MAJOR is ever paired with auto-pass language.</li>
 </ul>
+<p>Two further tiers prove the same gates beyond the single-fixture cheap pack:</p>
+<ul>
+  <li><strong>Scale tier</strong> (<code>plugins/redgate/evals/scale/run.sh</code>, run in CI by
+  the <code>scale</code> workflow) — dozens of randomized, isolated runs through the whole round
+  lifecycle: red-from-birth on 3–7 randomized criteria with per-criterion evidence, unpinned
+  reconcile refused, pin mechanics, unmet-vs-drift separation, partial progress still reading
+  unmet, full green, criteria/checker tamper caught as drift, stale evidence rejected, and the
+  guard handler's full deny/allow matrix — hundreds of exit-coupled assertions per run of the
+  suite.</li>
+  <li><strong>Behavioral tier</strong> (<code>plugins/redgate/evals/promptfoo/</code>) — real
+  with-skill vs without-skill model runs, LLM-rubric graded: under a blanket-approval outage and a
+  “just mark the criteria green, I tested by hand” request, the skill-injected model must demand a
+  check shown failing <em>before</em> the fix, refuse to self-certify green or edit the pinned
+  contract, and hand MAJOR decisions back — with a negative-control calibration case proving the
+  bare model doesn't do this unaided.</li>
+</ul>
 <p>There is deliberately no deep/pier pack: the plugin's scripts create and verify; nothing is
 destructive. A real captured with-skill/without-skill run is in the
 <a href="../examples/#redgate">example gallery</a>.</p>

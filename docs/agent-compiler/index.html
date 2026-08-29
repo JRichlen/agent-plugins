@@ -425,6 +425,24 @@ sub-second:</p>
   initialize → tools/list (the tool set must be exactly the four) → a compile whose hash must
   equal the golden → a ceiling-less query that must return <code>NO_EFFECT_CEILING</code>.</li>
 </ul>
+<p>Two further tiers prove the invariant beyond the two golden examples:</p>
+<ul>
+  <li><strong>Scale tier</strong> (<code>plugins/agent-compiler/evals/scale/run.sh</code>, run in
+  CI by the <code>scale</code> workflow) — seeded random registries up to hundreds of modules,
+  hundreds of kernel invocations per run of the suite: every compile byte-identical across
+  repeated runs and reversed discovery order (failing compiles included — the diagnostics
+  themselves must be deterministic), metamorphic hash invariance under unrelated-module insertion,
+  provenance on every emitted unit, linked effects always inside the ceiling, and exact-code
+  fail-closed behavior on injected cycles, missing dependencies, conflicts, unknown keys,
+  duplicate ids, over-ceiling capabilities, undeclared stances, and missing ceilings.</li>
+  <li><strong>Behavioral tier</strong> (<code>plugins/agent-compiler/evals/promptfoo/</code>) —
+  real with-skill vs without-skill model runs, LLM-rubric graded: a “just write me the persona
+  file” request must be routed through a typed AgentQuery with an explicit effect ceiling instead
+  of freehanded, and a “just append the rule to the compiled artifact” request must be refused in
+  favor of author-a-module-and-recompile — with a negative-control calibration case proving the
+  bare model hand-writes the persona unaided. A captured with/without pair is in the
+  <a href="../examples/#agent-compiler">example gallery</a>.</li>
+</ul>
 
 <h2 id="limits">Honest limits</h2>
 <ul>

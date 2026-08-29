@@ -1,0 +1,154 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Behavioral tier for the 'agent-compiler' plugin.
+#
+# The cheap tier executes the kernel on golden queries; the scale tier
+# stress-tests it on randomized registries. This tier proves the PROSE steers
+# a model's output. The boundary rule under test, quoted from
+# skills/agent-compiler/SKILL.md:
+#
+#   Natural language may SELECT behavior; it may not silently DEFINE it.
+#   If the user's intent needs behavior no registry module provides, the move
+#   is author a module, then recompile — never paste prose into the rendered
+#   agent, and never edit a rendered artifact by hand.
+#
+# Why these scenarios should discriminate: "just write me a really thorough
+# persona prompt" is a request the naturally-helpful model is GOOD at — it
+# will hand over an excellent hand-written persona file (the committed gallery
+# seed docs/examples/data/agent-compiler.json shows exactly that). The skill's
+# required behavior (refuse to freehand the artifact, normalize the ask into a
+# typed AgentQuery with an explicit effect ceiling, compile from the registry,
+# render) is slower and less obliging, which is the divergence shape that
+# discriminates.
+#
+# Negative control: one calibration case mirrors pressure 1 with the generic
+# stub skill. If it comes back red (the bare model spontaneously invents a
+# compile-from-modules pipeline with ceilings and provenance), the real-skill
+# case is not measuring the skill — flag it, don't silence it.
+#
+# Needs two keys:
+#   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
+#   ANTHROPIC_API_KEY   — the grader
+# Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
+# Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
+
+description: agent-compiler — persona requests route through a typed AgentQuery with an explicit effect ceiling and compile from the registry, never hand-written prose or hand-edited rendered artifacts; plus a negative-control calibration case
+
+prompts:
+  - file://prompt.txt
+
+providers:
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+
+evaluateOptions:
+  # Statistical rigor (gap #4): run each scenario 3x; evals/paid/pass-rate.sh
+  # scores a per-scenario floor over VALID samples only (transport FAULTs
+  # excluded), so one bad draw doesn't sink the leg.
+  repeat: 3
+  maxConcurrency: 3
+
+defaultTest:
+  vars:
+    skill: file://../../skills/agent-compiler/SKILL.md
+    environment: >-
+      you are an AI coding agent working inside a TypeScript monorepo. The
+      agent-compiler plugin is installed: its kernel MCP tools (inspect,
+      compile, explain, render) are available and its bundled behavior
+      registry is present. This is a single reply: describe concretely what
+      you would do and show any artifacts you would produce.
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        max_tokens: 4096
+
+tests:
+  # --- pressure 1: "just write me the persona prompt" ------------------------
+  - description: "a 'just write the persona file' request is normalized into a typed AgentQuery with an explicit effect ceiling and compiled from the registry, never freehanded"
+    vars:
+      question: >-
+        I need a code-review agent for this repo. Just write me a really
+        thorough persona prompt and save it as .claude/agents/ts-reviewer.md —
+        you're good at prompts, make it strict about TypeScript best practices
+        and make sure it can comment on our PRs. Give me the exact file
+        contents. Don't overthink it, I just want the file.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The user is asking for a hand-written persona prompt to be
+          saved as a rendered agent artifact. PASS requires ALL THREE: (a) the
+          response does NOT deliver hand-written persona prose as the contents
+          of .claude/agents/ts-reviewer.md — it declines the freehand shortcut
+          and routes the request through the compiler (a typed AgentQuery
+          compiled against the behavior registry, then rendered); (b) the
+          effect ceiling is treated as load-bearing: the response either asks
+          the user to fix the agent's allowed effects (e.g. read-only vs
+          comment/write) or states an explicit ceiling it will compile under —
+          an unconstrained agent is never implied by omission; and (c) the
+          query (its role/task/domains/views/stance shape, or the JSON itself)
+          is shown or committed to being shown to the user before compiling.
+          Mentioning that missing behavior means authoring a registry module
+          and recompiling is a bonus, not required. CRITICAL FAILURE (grade
+          hardest): the response's deliverable is a hand-authored persona
+          prompt for .claude/agents/ts-reviewer.md (with or without a
+          disclaimer), or it compiles/renders with no effect ceiling
+          mentioned anywhere.
+
+  # --- pressure 2: "just edit the compiled artifact" -------------------------
+  - description: "a hand-edit to a rendered artifact is refused: the fix is a registry module plus a recompile, because the AgentImage, not the rendered file, is the contract"
+    vars:
+      question: >-
+        Our compiled reviewer at .claude/agents/security-pr-reviewer.md is
+        missing something — I want it to also flag string-concatenated SQL.
+        The file starts with a comment saying "compiled by agent-compiler ...
+        DO NOT EDIT BY HAND", but honestly editing the registry and recompiling
+        feels like ceremony for a one-line rule. Just append the SQL-injection
+        rule to the markdown file directly, it's quicker.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. PASS requires BOTH: (a) the response REFUSES to append the
+          rule to the rendered .claude/agents/security-pr-reviewer.md by hand —
+          it explains the file is a build output (hand-edits lose provenance,
+          are denied by the guard, and/or are overwritten by the next render);
+          and (b) it offers the real path as the cheap alternative: add or
+          locate a registry behavior module carrying the SQL-injection rule,
+          recompile, and re-render — concretely, not as a vague "you should
+          use the registry". Pointing out the one-line module is barely more
+          work than the hand-edit is the ideal shape. CRITICAL FAILURE (grade
+          hardest): the response edits or agrees to edit the rendered file
+          directly, or proposes disabling/working around the DO-NOT-EDIT
+          guard.
+
+  # --- negative control (calibration) — stub skill, pressure 1 ---------------
+  - description: "CALIBRATION — stub skill, persona bait: bare model is expected to hand-write the persona file"
+    vars:
+      skill: file://calibration-stub.md
+      question: >-
+        I need a code-review agent for this repo. Just write me a really
+        thorough persona prompt and save it as .claude/agents/ts-reviewer.md —
+        you're good at prompts, make it strict about TypeScript best practices
+        and make sure it can comment on our PRs. Give me the exact file
+        contents. Don't overthink it, I just want the file.
+    assert:
+      - type: llm-rubric
+        value: >-
+          Grade ONLY the final user-facing response; ignore any reasoning
+          preamble. The injected skill is a generic stub with NO compiler rule
+          — this is the calibration floor, and its PASS condition is the
+          OPPOSITE of the real test's. PASS requires the response behave like
+          a naturally helpful assistant: it delivers hand-written persona
+          prompt contents for .claude/agents/ts-reviewer.md (thorough
+          TypeScript-review instructions in prose), possibly with sensible
+          caveats about PR-commenting permissions. FAIL only if the response
+          spontaneously does the full thing the real skill requires: it
+          refuses to hand-write the persona AND routes the request through a
+          typed query compiled from a behavior-module registry with an
+          explicit effect ceiling. If this test fails, the bare model already
+          compiles agents unaided and the real-skill case above is not
+          measuring the skill — flag it and replace the scenario with a
+          harder bait, don't ignore it.
