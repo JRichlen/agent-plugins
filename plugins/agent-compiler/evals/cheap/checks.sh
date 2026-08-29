@@ -159,6 +159,56 @@ else
   bad "a stance no view declares compiled anyway — stance validation broken"
 fi
 
+group "plugin 'agent-compiler': hooks — guard compiled artifacts, suggest the compiler"
+if $_ac_py -m py_compile "$_ac_dir/hooks/guard-compiled-agents.py" \
+    && $_ac_py -m py_compile "$_ac_dir/hooks/suggest-compiler.py"; then
+  ok "hook scripts compile (py_compile)"
+else
+  bad "a hook script fails py_compile"
+fi
+if $_ac_py -c "import json; json.load(open('$_ac_dir/hooks/hooks.json'))" 2>/dev/null; then
+  ok "hooks/hooks.json is valid JSON"
+else
+  bad "hooks/hooks.json missing or invalid"
+fi
+$_ac_py "$_ac_dir/scripts/render_claude_agent.py" \
+  --image "$_ac_golden" --out "$_ac_tmp/compiled-agent.md" 2>/dev/null
+_ac_deny="$(printf '%s' "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$_ac_tmp/compiled-agent.md\"}}" \
+  | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py")"
+if printf '%s' "$_ac_deny" | grep -qF '"permissionDecision": "deny"'; then
+  ok "guard hook denies hand-edits of a compiled artifact"
+else
+  bad "guard hook did NOT deny a hand-edit of a compiled artifact"
+fi
+_ac_allow="$(printf '%s' "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$_ac_dir/README.md\"}}" \
+  | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py")"
+if [ -z "$_ac_allow" ]; then
+  ok "guard hook stays silent for ordinary files"
+else
+  bad "guard hook produced output for an ordinary file (over-blocking)"
+fi
+_ac_ctx="$(printf '%s' '{"prompt":"make me a security reviewer agent for this repo"}' \
+  | $_ac_py "$_ac_dir/hooks/suggest-compiler.py")"
+if printf '%s' "$_ac_ctx" | grep -qF '"additionalContext"' \
+    && printf '%s' "$_ac_ctx" | grep -qF 'compile'; then
+  ok "suggest hook injects compiler context on agent-building intent"
+else
+  bad "suggest hook did not fire on agent-building intent"
+fi
+_ac_quiet="$(printf '%s' '{"prompt":"run the agent tests and fix the failing one"}' \
+  | $_ac_py "$_ac_dir/hooks/suggest-compiler.py")"
+if [ -z "$_ac_quiet" ]; then
+  ok "suggest hook stays silent on ordinary prompts"
+else
+  bad "suggest hook fired on an ordinary prompt (noise)"
+fi
+if printf 'not json' | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py" >/dev/null 2>&1 \
+    && printf 'not json' | $_ac_py "$_ac_dir/hooks/suggest-compiler.py" >/dev/null 2>&1; then
+  ok "both hooks fail open on malformed stdin (exit 0)"
+else
+  bad "a hook errored on malformed stdin — a broken hook must never block work"
+fi
+
 group "plugin 'agent-compiler': MCP facade — same kernel, same guarantees, over stdio"
 if $_ac_py - "$_ac_dir" "$_ac_golden" <<'PY'
 import json, os, subprocess, sys
