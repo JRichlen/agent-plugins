@@ -2,11 +2,13 @@
 name: redgate
 description: >-
   Default protocol for nontrivial work needing explicit criteria or evidence.
-  Auto-trigger for planning, research, design, implementation, debugging,
-  refactoring, review, deployment, multi-agent coordination, and
-  external/irreversible actions. Handle trivial work directly; route larger
-  work through ARM/TRACE/JUDGE. Use the interactive question tool for
-  decisions and confirmations; never emit prose questionnaires.
+  Compose it around the most-specific applicable specialist skills rather than
+  replacing them. Auto-trigger for planning, research, design, implementation,
+  debugging, refactoring, review, deployment, multi-agent coordination, and
+  external/irreversible actions when the work needs verified rounds or a
+  classified human gate. Handle trivial work directly; route larger work
+  through ARM/TRACE/JUDGE. Use the harness-native structured question primitive
+  when available and compact textual choices otherwise; never emit prose questionnaires.
 license: MIT
 ---
 
@@ -37,22 +39,34 @@ Claude Code hooks layer is optional hardening, never a dependency.
 
 ## Default routing and interaction contract
 
-Treat Red Gate as the default router for nontrivial work, even when the user
-does not name the skill. The common loop is: intake and infer context, clarify
-only a load-bearing ambiguity, plan the smallest safe slice, execute it,
-verify with evidence, report the result, and escalate only when risk or scope
-requires a human decision. This includes research, design, implementation,
-debugging, refactoring, review, deployment, multi-agent work, security/auth,
-external writes, and destructive actions. Calibration still protects small
-work: T0 questions and obvious reversible edits are handled directly with no
-run directory and no ceremony.
+Treat Red Gate as the default **verification envelope** for nontrivial work,
+even when the user does not name the skill. It is not the universal domain
+router. First route to the most-specific applicable specialist skill or recipe
+for the work itself (`diagnosing-bugs`, `codebase-design`, `orchestrate`,
+`wayfinder`, `scope-fence`, etc.); wrap that work in Red Gate when explicit
+criteria/evidence, iterative verified rounds, or a classified human gate are
+needed. A specialist supplies the domain procedure; Red Gate supplies the
+ARM/TRACE/JUDGE contract around it.
+
+The common loop is: intake and infer context, clarify only a load-bearing
+ambiguity, plan the smallest safe slice, execute it through the applicable
+specialist procedure, verify with evidence, report the result, and escalate
+only when risk or scope requires a human decision. This includes planning,
+research, design, implementation, debugging, refactoring, review, deployment,
+multi-agent work, security/auth, external writes, and destructive actions.
+Calibration still protects small work: T0 questions and obvious reversible
+edits are handled directly with no run directory and no ceremony. A task that
+is fully handled by a specialist skill and needs no explicit evidence contract,
+round loop, or classified gate does not activate Red Gate merely because it is
+nontrivial.
 
 ### Interactive question contract — hard rule
 
-When the harness exposes an interactive ask-question tool (for example
-`AskUserQuestion` or `request_user_input`), use it for every decision,
-ratification, approval, branch choice, WITNESS countersignature, scope or
-budget change, and final acceptance.
+When the harness exposes an interactive ask-question tool or other native
+structured choice/confirmation primitive (for example `AskUserQuestion` or
+`request_user_input`), use it for every decision, ratification, approval,
+branch choice, WITNESS countersignature, scope or budget change, and final
+acceptance. The examples are adapters, not canonical API names.
 
 - Infer first and ask only when the answer changes behavior. Do not ask the
   user to restate context already present in the request, repository, or
@@ -67,16 +81,16 @@ budget change, and final acceptance.
 - Never emit a long-form questionnaire or a numbered prose list that requires
   a large typed response. Free text is a last resort; if unavoidable, ask one
   bounded question that can be answered briefly.
-- Never place a blocking question only in ordinary prose when the tool is
-  available. If the tool is unavailable, emulate the same compact options and
-  accept a one-token answer.
+- Never place a blocking question only in ordinary prose when a structured
+  primitive is available. If no such primitive exists, emulate the same
+  compact options in text and accept a one-token answer.
 - Subagents never interview the user. They return ambiguities to the parent,
   which deduplicates them and owns the interactive question.
 
 The existing shared interview budget remains **at most 5 questions across the
 whole ARM**, not 5 questions per card or per stage. A MAJOR gate always needs
-an explicit tool-based confirmation; silence and adjacent approvals never
-count.
+an explicit confirmation through the best structured interaction capability
+available; silence and adjacent approvals never count.
 
 ## The round-zero rule
 
@@ -101,11 +115,11 @@ is writable today — go straight to a build round.
 0. **Calibrate** — before any criteria, set the five dials (tier, domain,
    scope, taste, orchestration) per
    [`references/calibration.md`](references/calibration.md): infer first,
-   ask only load-bearing unknowns through the interactive question tool inside
-   the shared ≤5-question budget, and
-   write the calibration block into the `CRITERIA.md` header so the pin
-   covers it. A **T0** task is declined by the protocol — do it directly,
-   no run dir.
+   ask only load-bearing unknowns through the harness-native structured
+   question primitive when available (compact textual choices otherwise)
+   inside the shared ≤5-question budget, and write the calibration block into
+   the `CRITERIA.md` header so the pin covers it. A **T0** task is declined by
+   the protocol — do it directly, no run dir.
 1. **ARM** — invoke `criteria-contract`: interview (≤5 questions total,
    calibration questions included, defaults accepted by silence), emit
    `CRITERIA.md` + `check.sh` into `.redgate/<slug>/`, prove the gate red,
@@ -135,7 +149,7 @@ gates automatically.
 |---|---|---|
 | PATCH | Auto-pass; append to `gates.log`; fold into the summary; seed the next round | ALL of: build/widen round · verifier green via independent JUDGE · zero WITNESS · diff inside the fence · criteria strictly derived from a human-approved plan slice · no escalator |
 | MINOR | Auto-pass **with a prominent flag** and a standing veto; staged separately revertible; never a blocking question | Durable-but-revertible artifacts inside the approved direction |
-| MAJOR | **Stop.** Interactive tool confirmation naming the specific decision and mechanism; a prior adjacent "yes" does not transfer | Any escalator, or any semver-gate property landing MAJOR |
+| MAJOR | **Stop.** Structured human confirmation naming the specific decision and mechanism; a prior adjacent "yes" does not transfer | Any escalator, or any semver-gate property landing MAJOR |
 
 **Always MAJOR — never auto-passed, never softened:** the scout
 decision; the plan round's approval (the mandate itself); a run's first
