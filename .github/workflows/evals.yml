@@ -307,7 +307,26 @@ jobs:
         # aggregate gate stayed green because untouched plugins skip. Pin the tool
         # so a third party's release cannot silently disable a required check;
         # bump deliberately and re-read the output when you do.
-        run: npx --yes promptfoo@0.122.0 eval --output results.json
+        #
+        # `|| echo` on purpose: promptfoo exits non-zero if ANY row is red, and a
+        # row is red both for a real rubric failure AND for a transport FAULT (a
+        # 504, an aborted call, an empty body). Letting that exit decide the leg is
+        # exactly the n=1 fragility gap #4 names — a required check going red on
+        # the weather. The statistical gate below reads results.json and is the
+        # real arbiter: it excludes FAULTs and scores a per-scenario floor over the
+        # valid samples. A total crash that writes no results.json still fails,
+        # because pass-rate.sh exits non-zero on a missing/unreadable file.
+        run: npx --yes promptfoo@0.122.0 eval --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
+      - name: statistical gate (per-scenario pass rate, FAULT-excluding)
+        if: steps.touched.outputs.paid == 'true'
+        # repeat:3 in each pack expands every scenario into 3 rows. This enforces a
+        # per-scenario floor over the VALID samples only — a transport FAULT (504,
+        # empty/truncated body) is excluded, not counted as a rubric failure — and
+        # fails CLOSED if a scenario has too few valid samples to judge (an all-504
+        # scenario is "never tested", not "green"). floor 0.6 = majority of 3, so a
+        # single genuinely-flaky draw is absorbed while a mostly-failing scenario
+        # still goes red. This step, not promptfoo's exit code, is the leg's verdict.
+        run: evals/paid/pass-rate.sh "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" --floor 0.6 --min-runs 2 --min-valid 2
       - name: show failing transcripts
         if: always() && steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo

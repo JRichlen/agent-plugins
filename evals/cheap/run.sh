@@ -806,15 +806,42 @@ elif grep -q 'pass-rate.sh' .github/workflows/evals.yml; then
 else
   bad "CI no longer invokes pass-rate.sh — the statistical floor is not enforced"
 fi
+# Every behavioral (rubric) pack must ALSO declare repeat: — a single-shot rubric
+# leg is the same uninterpretable n=1 green the routing pack fixed, and one 504
+# would sink it. Skip-when-absent so the counterfeit synthetic root (no plugins/)
+# stays green; bite only where a real pack is PRESENT but lost its repeat.
+_pf_packs="$(ls -d plugins/*/evals/promptfoo 2>/dev/null || true)"
+if [ -z "$_pf_packs" ]; then
+  ok "statistical gate: no behavioral packs in this root — repeat check not applicable"
+else
+  _missing_repeat=""
+  for _d in $_pf_packs; do
+    _cfg="$_d/promptfooconfig.yaml"
+    [ -f "$_cfg" ] || continue
+    grep -qE '^\s*repeat:\s*[0-9]+' "$_cfg" || _missing_repeat="$_missing_repeat $(basename "$(dirname "$(dirname "$_d")")")"
+  done
+  if [ -n "$_missing_repeat" ]; then
+    bad "behavioral pack(s) lost repeat: —$_missing_repeat — n=1 rubric greens are uninterpretable and a 504 sinks the leg"
+  else
+    ok "every behavioral pack declares repeat: (rubric legs run more than once)"
+  fi
+fi
 _pr="evals/paid/pass-rate.sh"
 _tmp="$(mktemp -d)"
 python3 - "$_tmp" <<'PYF'
 import json, sys
 d = sys.argv[1]
 def rows(desc, n, passes): return [{"testCase":{"description":desc},"success":(i<passes)} for i in range(n)]
+def erow(desc): return {"testCase":{"description":desc},"success":False,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
 json.dump({"results":{"results": rows("A",5,5)+rows("B",5,4)}}, open(d+"/good.json","w"))   # 1.0, 0.8
 json.dump({"results":{"results": rows("A",5,5)+rows("C",5,2)}}, open(d+"/bad.json","w"))    # 0.4 -> below 0.8
 json.dump({"results":{"results": rows("A",1,1)}}, open(d+"/under.json","w"))                # n=1 -> fail-closed
+# FAULT semantics (gap #4, the observed 504): a transport error is an INVALID
+# sample, excluded from the floor — a scenario that really passed its 2 valid
+# attempts must not go red because a 3rd attempt 504'd.
+json.dump({"results":{"results": rows("A",3,3)+[rows("B",3,2)[0],rows("B",3,2)[1],erow("B")]}}, open(d+"/fault-ok.json","w"))
+# ...but an all-FAULT scenario is "never tested", not "green": fail closed.
+json.dump({"results":{"results": rows("A",3,3)+[erow("C"),erow("C"),erow("C")]}}, open(d+"/fault-starved.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -830,6 +857,20 @@ if bash "$_pr" "$_tmp/under.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   bad "pass-rate: an n=1 run passed — fail-closed repeat guard broken"
 else
   ok "pass-rate: an n=1 (un-repeated) run fails closed"
+fi
+# A single transport FAULT must be EXCLUDED, not counted as a rubric failure:
+# scenario B is 2/2 on its valid samples with one 504 dropped -> the run passes.
+if bash "$_pr" "$_tmp/fault-ok.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a transport FAULT (504) is excluded, not scored as a failure"
+else
+  bad "pass-rate: a 504 was counted as a rubric failure — the n=1 fragility is back"
+fi
+# An all-FAULT scenario has zero valid samples -> the model was never actually
+# tested -> must fail CLOSED (a 504 storm is not a green).
+if bash "$_pr" "$_tmp/fault-starved.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an all-504 scenario passed — a FAULT storm read as green (fail-open)"
+else
+  ok "pass-rate: an all-FAULT scenario fails closed (never tested != green)"
 fi
 rm -rf "$_tmp"
 

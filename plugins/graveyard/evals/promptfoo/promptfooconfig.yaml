@@ -144,3 +144,12 @@ tests:
           runs inside a repo context (git -C <mirror> bundle verify <file>), or
           defers to the script that does. It must NOT claim a bare
           `git bundle verify <file>` (with no repo context) is the right way.
+
+evaluateOptions:
+  # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
+  # green was a coin-flip on a stochastic model and a single upstream 504 sank the
+  # whole leg. Run each scenario 3x; evals/paid/pass-rate.sh then scores a per-
+  # scenario floor over the VALID samples only (excluding transport FAULTs like a
+  # 504 or an empty/truncated body), so one bad draw no longer reads as a real
+  # failure. 3 is the cost-conscious N — a touched pack now bills 3x per run.
+  repeat: 3
