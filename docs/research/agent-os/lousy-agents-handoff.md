@@ -60,6 +60,8 @@ Treat Lousy Agents' doctor and `agent-shell` as evidence for a control plane tha
 
 Design a continuous-curation loop where doctor findings, recurrence detection, lessons, and backlog state feed each other. Repeated findings may become candidate invariants or policies; resolved findings should retire cleanly; curators should evolve the portfolio rather than simply report it.
 
+**Receiving-thread resolution:** this lens is now worked through in [`automation-curation-lens.md`](./automation-curation-lens.md). It settles the lane-scoped naming invariant, a seven-concept minimal automation ontology, the hard `Gov`/`Meta` boundary, the meta-curation loop, progressive-disclosure recipe structure, `grill-me` composition, and the adapter capability matrix. Treat that document as the current decision record for automation taxonomy/curation work rather than reopening these questions from scratch.
+
 ### Questions the receiving threads should resolve
 
 - What is the smallest useful canonical ontology?
