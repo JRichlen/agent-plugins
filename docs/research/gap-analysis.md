@@ -46,6 +46,34 @@ it exploitable; it is now fixed at the source. Two more attack ideas (secret
 patterns missed, fence breakable by a literal triple-backtick) also
 reproduced and are closed.
 
+### Gap #4 confirmed empirically (2026-08-29)
+
+The behavioral tier's n=1 problem stopped being theoretical. Two CI runs of
+the **same commit**, with no change to either plugin between them:
+
+| run | `tailscale-wif` | `voice` |
+|---|---|---|
+| 1 | FAIL | pass |
+| 2 | pass | **FAIL** |
+
+Run 1's failure was a subject-model degeneracy (the output emitted `</think>`
+eleven times and truncated; the grader failed it for containing no answer).
+Run 2 failed a different plugin entirely. A different leg failing each run of
+identical content is not a regression — it is the coin-flip the k-of-N floor
+exists to expose, measured rather than argued.
+
+This is normally invisible: the path filter only runs a plugin's leg when that
+plugin is touched, so a whole-tier run almost never happens. Touching the
+shared `evals/paid/` directory ran all ten legs at once and made the flakiness
+observable. The required `behavioral tier (promptfoo)` check is therefore
+red-by-default whenever every leg runs, on any branch.
+
+**The fix is already built and deliberately not rolled out**: `repeat: N` plus
+`evals/paid/pass-rate.sh`'s per-scenario floor, shipped as a tracer on the
+routing pack. Extending it to the ten rubric packs multiplies the *required*
+tier's per-run spend N-fold, which remains the owner's cost decision. This
+table is the evidence for making it.
+
 **Not yet done, and why:**
 
 - **#4 repeat-run statistical baselines** — the *mechanism* now ships as a
