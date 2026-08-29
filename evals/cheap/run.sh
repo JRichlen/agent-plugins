@@ -553,7 +553,13 @@ pfail = 0
 for rel, name in PAIRS:
     path = os.path.join(root, rel)
     if not os.path.isfile(path):
-        print(f"  FAIL curated pair: {rel} does not exist (stale allowlist)"); pfail += 1; continue
+        # Missing file is STALENESS only when the plugin is installed here.
+        # A minimal/synthetic marketplace (counterfeit tier) has neither the
+        # plugin nor the file, which is not a defect — skip it.
+        _plug = rel.split("/")[1] if rel.startswith("plugins/") else ""
+        if _plug and os.path.isdir(os.path.join(root, "plugins", _plug)):
+            print(f"  FAIL curated pair: {rel} does not exist (stale allowlist)"); pfail += 1
+        continue
     if f"`{name}`" not in open(path, encoding="utf-8").read():
         print(f"  FAIL curated pair: {rel} no longer references `{name}` (stale allowlist)"); pfail += 1; continue
     if name not in roster:
@@ -726,11 +732,17 @@ fi
 # without regenerating the roster, or point a scenario at a nonexistent skill,
 # and this goes red.
 group "routing eval — structure"
-if evals/routing/gen-roster.sh --check >/dev/null 2>&1; then
+# Repo-level pack: a marketplace root without evals/routing/ (the counterfeit
+# tier's synthetic root, or a fork that hasn't adopted it) has nothing to check.
+# Absent => skip; present-but-broken => fail.
+if [ ! -f evals/routing/promptfooconfig.yaml ]; then
+  ok "routing: no routing pack in this root — nothing to check"
+elif evals/routing/gen-roster.sh --check >/dev/null 2>&1; then
   ok "routing: roster.txt is in sync with the marketplace"
 else
   bad "routing: roster.txt is STALE — run evals/routing/gen-roster.sh > evals/routing/roster.txt"
 fi
+if [ -f evals/routing/promptfooconfig.yaml ]; then
 python3 - "$REPO_ROOT" <<'PYR'
 import json, os, re, sys
 root = sys.argv[1]
@@ -767,6 +779,7 @@ else:
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 
 # --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
 # Gap #4: the routing pack runs each scenario repeat:5 times and pass-rate.sh
@@ -777,12 +790,18 @@ if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 # model call. Coupled: drop repeat, unwire the gate, or invert its verdict and
 # this goes red.
 group "statistical gate — pass-rate floor bites"
-if grep -qE '^\s*repeat:\s*[0-9]+' evals/routing/promptfooconfig.yaml; then
+# The repeat:/CI-wiring halves only apply where a routing pack exists; the
+# pass-rate.sh fixture halves are repo-independent and always run.
+if [ ! -f evals/routing/promptfooconfig.yaml ]; then
+  ok "statistical gate: no routing pack in this root — repeat/CI wiring not applicable"
+elif grep -qE '^\s*repeat:\s*[0-9]+' evals/routing/promptfooconfig.yaml; then
   ok "routing pack declares repeat: (scenarios run more than once)"
 else
   bad "routing pack lost its repeat: — n=1 greens are uninterpretable again"
 fi
-if grep -q 'pass-rate.sh' .github/workflows/evals.yml; then
+if [ ! -f .github/workflows/evals.yml ]; then
+  ok "statistical gate: no workflow file in this root — CI wiring not applicable"
+elif grep -q 'pass-rate.sh' .github/workflows/evals.yml; then
   ok "CI wires pass-rate.sh into the routing job"
 else
   bad "CI no longer invokes pass-rate.sh — the statistical floor is not enforced"
@@ -824,11 +843,16 @@ rm -rf "$_tmp"
 # Coupled: edit a snapshot without regenerating, or drop a snapshot's provenance,
 # and this goes red.
 group "example gallery — sync and provenance"
-if docs/build-examples.sh --check >/dev/null 2>&1; then
+# Repo-level surface: absent => skip (a minimal marketplace has no gallery);
+# present-but-stale or present-but-unprovenanced => fail.
+if [ ! -x docs/build-examples.sh ]; then
+  ok "example gallery: not present in this root — nothing to check"
+elif docs/build-examples.sh --check >/dev/null 2>&1; then
   ok "examples: index.html is in sync with docs/examples/data/"
 else
   bad "examples: index.html is STALE — run docs/build-examples.sh"
 fi
+if [ -x docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
 import glob, json, os, sys
 root = sys.argv[1]
@@ -862,6 +886,7 @@ if found == 0:
 sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
