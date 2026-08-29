@@ -1,0 +1,198 @@
+# Manual/reusable runner for the Agent OS design-context experiment.
+#
+# This is research evidence, not a required merge gate. Until this workflow is
+# present on the default branch, dispatch it through scale.yml's
+# `ac_sizes=agent-os-smoke` bootstrap; the local reusable-workflow call resolves
+# this file from the same selected branch.
+name: agent-os-experiments
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: 'Pull request to receive the concise experiment summary'
+        required: true
+        type: string
+      budget_usd:
+        description: 'Hard experiment budget in USD (must be > 0 and <= 0.05)'
+        required: false
+        default: '0.05'
+        type: string
+    secrets:
+      OPENROUTER_API_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request to receive the concise experiment summary'
+        required: true
+        type: string
+      budget_usd:
+        description: 'Hard experiment budget in USD (must be > 0 and <= 0.05)'
+        required: true
+        default: '0.05'
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# A paid run must never be canceled by a newer dispatch after it has already
+# spent money. Queue another run for the same PR instead.
+concurrency:
+  group: agent-os-experiment-pr-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Agent OS smoke experiment
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+      AGENT_OS_BUDGET_USD: ${{ inputs.budget_usd }}
+      RESULTS_DIR: experiments/agent-os/results
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: validate target and hard-budget input
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must contain digits only and be greater than zero"
+            exit 2
+          fi
+          gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json number --jq .number >/dev/null
+          echo "valid=true" >> "$GITHUB_OUTPUT"
+          node --input-type=module <<'NODE'
+          const value = process.env.AGENT_OS_BUDGET_USD;
+          if (!/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value ?? "")) {
+            throw new Error("budget_usd must be a plain non-negative decimal");
+          }
+          const budget = Number(value);
+          if (!Number.isFinite(budget) || budget <= 0 || budget > 0.05) {
+            throw new Error("budget_usd must be greater than 0 and no more than 0.05");
+          }
+          console.log(`validated hard budget: $${budget.toFixed(6)}`);
+          NODE
+
+      # These checks are deliberately offline and run before the API key is
+      # exposed to any process or a model-resolution request is made.
+      - name: deterministic offline checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check experiments/agent-os/config.mjs
+          node --check experiments/agent-os/preflight.mjs
+          node --check experiments/agent-os/run.mjs
+          node experiments/agent-os/preflight.mjs --validate-only
+          node --input-type=module <<'NODE'
+          import { CONFIG, loadExperimentInputs } from "./experiments/agent-os/config.mjs";
+          const { scenarios, variants, fingerprint } = await loadExperimentInputs();
+          if (Number(CONFIG.hardBudgetUsd) > 0.05) {
+            throw new Error(`configured hard budget exceeds $0.05: ${CONFIG.hardBudgetUsd}`);
+          }
+          if (scenarios.length !== 6 || variants.length !== 4) {
+            throw new Error(`smoke shape drifted: ${scenarios.length} scenarios x ${variants.length} variants`);
+          }
+          console.log(`offline inputs valid: ${scenarios.length} scenarios x ${variants.length} variants; fingerprint=${fingerprint}`);
+          NODE
+
+      - name: resolve models and prove the conservative budget before inference
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error::OPENROUTER_API_KEY repository secret is not set"
+            exit 1
+          fi
+          node experiments/agent-os/preflight.mjs --out "$RESULTS_DIR"
+
+      - name: run smoke experiment
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node experiments/agent-os/run.mjs \
+            --preflight "$RESULTS_DIR/preflight.json" \
+            --out "$RESULTS_DIR"
+
+      - name: upload raw experiment evidence
+        id: evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-os-experiment-${{ github.run_id }}-${{ github.run_attempt }}
+          path: experiments/agent-os/results
+          if-no-files-found: error
+
+      - name: append concise job summary
+        if: always()
+        env:
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Agent OS smoke experiment"
+            echo
+            echo "- Outcome: $JOB_STATUS"
+            echo "- Requested hard budget: \$$AGENT_OS_BUDGET_USD"
+            echo "- PR target: #$PR_NUMBER"
+            echo "- [Workflow run]($RUN_URL)"
+            if [ -n "${ARTIFACT_URL:-}" ]; then
+              echo "- [Raw evidence artifact]($ARTIFACT_URL)"
+            fi
+            echo
+            if [ -s "$RESULTS_DIR/summary.md" ]; then
+              cat "$RESULTS_DIR/summary.md"
+            else
+              echo "The run did not produce \`summary.md\`; inspect the workflow logs and any uploaded partial evidence."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: comment the target pull request
+        if: always() && steps.target.outputs.valid == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json number --jq .number >/dev/null
+          body="$RUNNER_TEMP/agent-os-experiment-comment.md"
+          {
+            echo "## Agent OS smoke experiment"
+            echo
+            echo "- Outcome: $JOB_STATUS"
+            echo "- Requested hard budget: \$$AGENT_OS_BUDGET_USD"
+            echo "- [Workflow run]($RUN_URL)"
+            if [ -n "${ARTIFACT_URL:-}" ]; then
+              echo "- [Raw evidence artifact]($ARTIFACT_URL)"
+            fi
+            echo
+            if [ -s "$RESULTS_DIR/summary.md" ]; then
+              cat "$RESULTS_DIR/summary.md"
+            else
+              echo "The run did not produce \`summary.md\`; inspect the workflow logs and any uploaded partial evidence."
+            fi
+          } > "$body"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$body"

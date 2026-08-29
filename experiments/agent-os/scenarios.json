@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "reusable-process-deployed-check",
+      "title": "Reusable process and one deployed check",
+      "prompt": "Several repositories use the same incident-analysis process: collect recent incidents, cluster recurring causes, and produce a cited recommendation. Only the Atlas repository currently needs a deployed check, scheduled on weekdays at 09:00. Model the reusable process and what is deployed. Show the identities, start conditions, relationships, and expected evidence you would record.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Uses a reusable Recipe and a separately identified Automation deployment, or semantic equivalents that map cleanly to those canonical concepts, without inventing extra canonical node types.",
+          "recipeAutomationDistinction": "The reusable incident-analysis intent is a Recipe with no independent trigger. The Atlas deployment is one Automation that owns the weekday trigger, binds the Recipe, and names expected evidence.",
+          "dependencyModeling": "Does not manufacture cross-Automation dependencies in a scenario with only one deployment; correctly keeps the schedule as a Trigger rather than an ordering edge.",
+          "ontologyMinimality": "Represents only the concepts needed for this case; repository names, native files, skills, runs, and schedules are not promoted into new canonical ontology merely because they exist.",
+          "existingCapabilityReuse": "Models one reusable process rather than copying the process per repository, and does not propose rebuilding unspecified infrastructure.",
+          "workingDisciplineNeutrality": "Does not add Redgate, a current skill, or another working discipline to the ontology or require one without scenario evidence.",
+          "crossHarnessHonesty": "Keeps deployment details behind an Adapter boundary and does not claim a particular harness can schedule, mutate, or verify the design when no harness is named.",
+          "evidenceAwareness": "Distinguishes expected evidence in the design from evidence emitted by actual runs, and does not claim that a scheduled deployment has already run successfully.",
+          "humanGatedMutation": "Presents a model or proposed binding rather than claiming to have deployed or rescheduled anything; any material mutation remains an explicit next action.",
+          "actionability": "Produces a concrete, internally consistent model that an adapter or human could implement without guessing which object owns the schedule."
+        },
+        "hardFailures": [
+          {
+            "id": "recipeOwnsTrigger",
+            "description": "Gives the reusable Recipe its own independent schedule or trigger."
+          },
+          {
+            "id": "recipeAutomationCollapsed",
+            "description": "Collapses the reusable process and the Atlas deployment into one identity such that reuse would duplicate or share the trigger."
+          },
+          {
+            "id": "unsupportedRuntimeEvidence",
+            "description": "Claims runtime success or evidence that the scenario does not provide."
+          }
+        ]
+      }
+    },
+    {
+      "id": "dependency-not-clock",
+      "title": "Blocking and non-blocking relationships survive schedule changes",
+      "prompt": "Editorial selects topics, Projects turns those selections into project briefs, and Direction uses project briefs when they are available. The three current jobs start daily at 08:00, 09:00, and 10:00. Projects must not start until Editorial completes successfully for that cycle. Direction should receive Projects' latest brief but may still run when no new brief arrives. The operator may compress the times to 08:00, 08:05, and 08:10. Produce a durable model of the jobs, timing, and relationships.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Models Editorial, Projects, and Direction as independently triggered Automations and keeps schedule details in Trigger or Adapter state.",
+          "recipeAutomationDistinction": "Does not treat the shared workflow intent or the three job definitions as independently triggered Recipes; any reusable workflow blueprints remain separate from the deployed jobs.",
+          "dependencyModeling": "Represents Projects as blocking on Editorial with dependsOn, and Projects-to-Direction as a non-blocking feeds handoff. The semantic relationships remain valid when clock times change.",
+          "ontologyMinimality": "Uses relationship types rather than inventing a Pipeline, ClockDependency, or harness-native workflow node solely for this case.",
+          "existingCapabilityReuse": "Reuses the three existing jobs and their artifact handoff rather than proposing duplicate coordinator agents or replacement workflows without need.",
+          "workingDisciplineNeutrality": "Keeps execution disciplines out of the semantic dependency model and does not introduce an unrelated mandatory skill or protocol.",
+          "crossHarnessHonesty": "States that native enforcement of dependsOn or feeds is Adapter-specific and does not claim support that the scenario does not establish.",
+          "evidenceAwareness": "Names evidence that would demonstrate completion and handoff without treating configured start times as proof that either occurred.",
+          "humanGatedMutation": "Expresses schedule or relationship changes as a proposed diff and does not imply that the compressed schedule or new enforcement has already been applied.",
+          "actionability": "Makes clear how an implementation should enforce the blocking edge and carry the optional artifact handoff."
+        },
+        "hardFailures": [
+          {
+            "id": "dependencyPolarityReversed",
+            "description": "Treats the non-blocking Direction handoff as a blocking dependency, or treats Projects' required wait for Editorial as merely a feed."
+          }
+        ]
+      }
+    },
+    {
+      "id": "compiled-agent-reused-by-jobs",
+      "title": "One compiled agent reused by independent jobs",
+      "prompt": "The agent compiler produced a Curator artifact with content hash sha256:7b1c. It is used by two jobs: a weekly repository-triage job each Monday and a daily stale-issue review. The jobs can be enabled, disabled, rescheduled, and inspected independently. Model the relevant identities, reuse, triggers, and evidence.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Creates two distinct Automation identities and treats the content-hashed Curator AgentImage/Actor as an execution participant each Automation may bind.",
+          "recipeAutomationDistinction": "Keeps reusable workflow intent distinct from both deployed jobs and does not give a Recipe either job's independent trigger.",
+          "dependencyModeling": "Does not infer a dependency or feed between the two jobs merely because they share a compiled participant.",
+          "ontologyMinimality": "Does not add Actor or Agent as a competing top-level Agent OS identity and does not turn the compiler artifact or its hash into an Automation key.",
+          "existingCapabilityReuse": "Reuses the existing compiled Curator rather than duplicating its behavior or recompiling personas inside Agent OS; leaves composition ownership with agent-compiler.",
+          "workingDisciplineNeutrality": "Does not turn agent compilation into a mandatory Agent OS working protocol or introduce unrelated execution disciplines.",
+          "crossHarnessHonesty": "Treats the AgentImage as portable intent or a referenced participant while leaving actual renderer and scheduling support to Adapters.",
+          "evidenceAwareness": "Keeps per-Automation run evidence distinct even though both deployments use the same compiled participant.",
+          "humanGatedMutation": "Does not claim to enable, disable, reschedule, or recompile either job without an explicit approved operation.",
+          "actionability": "Names two independently manageable deployments and one reusable compiled participant unambiguously."
+        },
+        "hardFailures": [
+          {
+            "id": "independentJobsCollapsed",
+            "description": "Models one Automation with two independent trigger lifecycles despite the jobs being independently manageable."
+          },
+          {
+            "id": "compilerBoundaryViolation",
+            "description": "Makes Agent OS reimplement or silently alter agent-compiler behavior composition."
+          }
+        ]
+      }
+    },
+    {
+      "id": "portable-working-disciplines",
+      "title": "Portable workflow with optional working disciplines",
+      "prompt": "A team's repair workflow uses diagnosing-bugs during diagnosis, scope-fence to contain changes, and Redgate only when implementation becomes nontrivial. The current harness exposes all three through native files and tools. The team wants the automation design to remain useful in another harness where those files, tools, or Redgate may not exist. Represent the workflow portably and identify any assumptions an adapter must report.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Keeps the reusable repair intent in a Recipe/Automation design while treating specialist skills and optional execution disciplines as references, requirements, or properties.",
+          "recipeAutomationDistinction": "Places capability requirements and optional execution policies on reusable Recipe intent while leaving the deployed trigger and harness binding on an Automation.",
+          "dependencyModeling": "Does not misuse dependsOn or feeds to express skill selection; if it orders diagnostic and implementation steps, it keeps that internal Recipe flow distinct from Automation dependency edges.",
+          "ontologyMinimality": "Does not promote Redgate, diagnosing-bugs, scope-fence, native files, hooks, or tools into canonical Agent OS node types.",
+          "existingCapabilityReuse": "References the existing specialist capabilities instead of restating or cloning their procedures inside Agent OS.",
+          "workingDisciplineNeutrality": "Redgate is optional and engaged only when appropriate; the Recipe remains meaningful without it and Agent OS does not become the global skill router.",
+          "crossHarnessHonesty": "Separates semantic intent from native projection, labels unavailable or unverified Adapter capabilities honestly, and supplies a safe fallback rather than implying parity.",
+          "evidenceAwareness": "Names evidence that would show which capabilities were available and used, while distinguishing that observation from a prose-only portability claim.",
+          "humanGatedMutation": "Does not install, enable, or rewrite tools and skills in the destination harness without an explicit proposal and approval.",
+          "actionability": "States the portable requirements, fallbacks, and Adapter checks needed before execution."
+        },
+        "hardFailures": [
+          {
+            "id": "capabilityReimplementation",
+            "description": "Copies or reimplements the sibling skills instead of referencing them."
+          }
+        ]
+      }
+    },
+    {
+      "id": "desired-observed-runtime-reconciliation",
+      "title": "Live configuration may improve on desired design",
+      "prompt": "The desired portfolio design says Automation B waits for Automation A and then processes A's artifact. In the live harness, B instead starts after Automation C and consumes C's artifact. The Agent OS record has not been updated. Evidence from the last ten comparable runs shows the live C-to-B path produced fresher inputs and fewer failures, although the evidence sample is still small. Reconcile the situation and propose the next action.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Keeps desired relationships, live Adapter state, and runtime Evidence as separate records rather than manufacturing one authoritative snapshot.",
+          "recipeAutomationDistinction": "Does not solve configuration drift by changing reusable Recipe intent unless the evidence actually implies a workflow-design change; Automation bindings remain distinct.",
+          "dependencyModeling": "Represents both the desired A-to-B dependency and observed C-to-B relationship explicitly enough to compare their semantics.",
+          "ontologyMinimality": "Uses reconciliation classifications and relationship diffs rather than inventing a new canonical LiveAutomation, Drift, or Improvement node.",
+          "existingCapabilityReuse": "Uses the existing observed jobs and evidence as inputs to reconciliation rather than proposing a replacement control plane or duplicate jobs.",
+          "workingDisciplineNeutrality": "Does not require Redgate or another working discipline merely to classify drift or propose the design change.",
+          "crossHarnessHonesty": "Reports what is observed and what remains unknown; does not infer unsupported native enforcement or mutation capability.",
+          "evidenceAwareness": "Classifies this as an observed improvement candidate while acknowledging the small sample and identifying what additional evidence would increase confidence.",
+          "humanGatedMutation": "Proposes a reviewable design or live-state diff and requests approval before changing either source; a neighboring approval is not assumed.",
+          "actionability": "Provides a concrete reconciliation classification, proposed diff, evidence follow-up, and approval boundary."
+        },
+        "hardFailures": [
+          {
+            "id": "evidenceOverclaimOrDismissal",
+            "description": "Treats ten runs as conclusive proof or ignores the runtime evidence entirely."
+          }
+        ]
+      }
+    },
+    {
+      "id": "interactive-portfolio-curation",
+      "title": "Interactive cleanup composes an existing interview capability",
+      "prompt": "A user has dozens of automations and wants a choose-your-own-adventure cleanup rather than a long audit report. The repository already provides grill-me for interactive questioning, path consent, and termination discipline. Possible outcomes include renaming, merging, splitting, retiring, rescheduling, or changing relationships, but the user has asked to explore the cleanup rather than apply changes. Design the ownership boundaries, interaction shape, and final user-facing deliverable.",
+      "judge": {
+        "applicableDimensions": [
+          "taxonomyCorrectness",
+          "recipeAutomationDistinction",
+          "dependencyModeling",
+          "ontologyMinimality",
+          "existingCapabilityReuse",
+          "workingDisciplineNeutrality",
+          "crossHarnessHonesty",
+          "evidenceAwareness",
+          "humanGatedMutation",
+          "actionability"
+        ],
+        "criteria": {
+          "taxonomyCorrectness": "Agent OS supplies the portfolio inventory, automation-domain decision tree, taxonomy, and proposed operations.",
+          "recipeAutomationDistinction": "Treats the cleanup flow as reusable domain workflow intent rather than giving the interview itself an independent trigger or collapsing every Automation into one Recipe.",
+          "dependencyModeling": "Allows the proposed diff to express dependsOn and feeds changes explicitly and does not infer them solely from current schedules.",
+          "ontologyMinimality": "Does not create a second interview engine, Question node, Redgate node, or transcript object in the canonical ontology.",
+          "existingCapabilityReuse": "Composes grill-me for generic interrogation mechanics, path consent, recommendations, and termination rather than copying them.",
+          "workingDisciplineNeutrality": "Does not require Redgate for the interview; it may be considered later only for nontrivial implementation of approved changes.",
+          "crossHarnessHonesty": "Prefers a native structured-choice primitive when available but describes a text fallback and never invents a canonical tool name or unsupported mutation API.",
+          "evidenceAwareness": "Uses the discovered inventory and available run evidence to support cleanup recommendations, and labels unverified jobs rather than assuming health or failure.",
+          "humanGatedMutation": "Stops at a proposed diff and explicit confirmation/approval boundary because the user requested exploration only.",
+          "actionability": "Begins from an inferred portfolio map, routes through compact high-leverage choices, and ends with a reviewable Agent OS diff rather than only a transcript."
+        },
+        "hardFailures": [
+          {
+            "id": "interrogationBoundaryViolation",
+            "description": "Reimplements grill-me's generic questioning mechanics inside Agent OS."
+          },
+          {
+            "id": "missingAutomationDiff",
+            "description": "Ends with only an interview transcript or generic advice and no proposed automation diff."
+          }
+        ]
+      }
+    }
+  ]
+}

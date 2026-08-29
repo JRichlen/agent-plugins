@@ -27,6 +27,9 @@ plugins/graveyard/evals/pier/jobs/
 # The behavioral tier writes this per run (and the retry wrapper stages under
 # .promptfoo/). Generated, never committed.
 plugins/*/evals/promptfoo/results.json
+# Agent OS experiment runs preserve their raw evidence in an Actions artifact;
+# the local/generated copy is never source.
+/experiments/agent-os/results/
 
 # Claude Code session state (workflow worktrees, local settings)
 .claude/
