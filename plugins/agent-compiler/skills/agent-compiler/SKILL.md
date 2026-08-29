@@ -41,6 +41,12 @@ below is the identical fallback on any harness without MCP; the server is a
 convenience, not a dependency, and it never performs an effectful action
 (`render` returns markdown text; writing the file stays with you).
 
+Two hooks reinforce this mechanically on Claude Code (a convenience, not a
+dependency — on any other harness these rules bind through this prose alone):
+agent-building prompts get a context pointer to the MCP tools, and any
+hand-edit of a file carrying the renderer's imageHash header is denied with
+the recompile instruction.
+
 ## Workflow
 
 1. **Normalize intent into an AgentQuery.** Ask or infer until these are
