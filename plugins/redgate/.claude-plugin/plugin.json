@@ -1,24 +1,9 @@
 {
   "name": "redgate",
   "version": "0.1.0",
-  "description": "Default protocol for nontrivial work needing explicit criteria or evidence. Auto-triggers for planning, research, design, implementation, debugging, refactoring, review, deployment, multi-agent coordination, and risky external actions. Handles trivial work directly; routes larger work through ARM/TRACE/JUDGE and interactive decisions.",
+  "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates. Compose around the most-specific specialist skill or recipe; Redgate reinforces execution and verification rather than replacing the domain procedure.",
   "author": {
     "name": "Jordan Richlen"
   },
-  "repository": "https://github.com/JRichlen/agent-plugins",
-  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/redgate",
-  "license": "MIT",
-  "keywords": [
-    "red-gate",
-    "verifier",
-    "rounds",
-    "begin-middle-end",
-    "falsifiable",
-    "sdlc",
-    "ai-dlc",
-    "apm",
-    "cross-harness"
-  ],
-  "skills": "./skills/",
-  "commands": "./commands/"
+  "license": "MIT"
 }
