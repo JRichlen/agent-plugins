@@ -15,7 +15,7 @@ coverage. Each phase names its verifier (what proves it done).
 | `pages.yml` (deploy from Actions, `enablement:true`) | shipped, runs on merge to main |
 | behavioral CI captures each pack's snapshot | shipped (artifact) |
 | biweekly review-gated refresh PR | shipped (`refresh-examples.yml`) |
-| committed snapshots | **4 of 23** (scope-fence, prove-the-undo, egress-gate, diagnosing-bugs; subagent seeds, ungraded) |
+| committed snapshots | **14 of 23** — every unpacked plugin (13) plus scope-fence; subagent seeds, ungraded, each with an independently judged divergence |
 
 **Coverage today:** 10 plugins have a promptfoo pack and can auto-capture a
 *graded* example (find-before-build, fleet-playbook-curator, graveyard,
@@ -63,18 +63,25 @@ graded pair. Replace the ungraded scope-fence seed with its graded capture.
   cherry-picked. Encode the rule; the cheap tier already refuses a snapshot
   without both outputs + provenance.
 
-### Phase 4 — the 13 unpacked plugins *(in progress: 3 of 13 seeded)*
+### Phase 4 — the 13 unpacked plugins *(done: 13 of 13 seeded)*
 Two honest options per plugin, decided per plugin:
 - **Subagent seed** (like scope-fence now): a real, labelled-ungraded pair,
   available immediately, no pack required.
 - **New promptfoo pack**: the durable answer — gives a graded example *and* a
   behavioral regression test the plugin currently lacks. More work.
-- **Done:** prove-the-undo, egress-gate, diagnosing-bugs seeded now via real
-  subagent runs (labelled ungraded). Remaining unpacked, in rough priority:
-  tracer-bullets, grill-me, context-handoff, docs-hygiene, codebase-design,
-  orchestrate, plugin-factory, recurrence-detector, redgate, dev-diary. Grow
-  packs for the ones that warrant a behavioral regression test; seed the rest.
-  A plugin with neither simply has no card — the gallery never fabricates one.
+- **Done — all 13 seeded** via real model runs (a 40-agent pass: per plugin a
+  designer read the SKILL.md and built a discriminating scenario, two agents
+  answered it with the skill and with a generic stub, and an independent
+  reader judged the honest divergence). Judged spread: **1 stark, 9 moderate,
+  2 subtle** — published verbatim on each card, so a weak example is visible
+  as weak rather than dressed up.
+- **The subtle ones are the useful signal**, not a failure: `docs-hygiene` and
+  `codebase-design` are where a strong model already does most of what the
+  skill asks unaided. Those are the two best candidates for a real promptfoo
+  pack (a cheaper subject model will show the gap the seed cannot), and the
+  two places to ask whether the skill is earning its context.
+- A plugin with neither seed nor pack simply has no card — the gallery never
+  fabricates one.
 
 ### Phase 5 — polish
 - **Staleness guard**: flag a snapshot older than the `SKILL.md` it demonstrates
