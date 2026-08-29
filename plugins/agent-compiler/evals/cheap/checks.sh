@@ -180,6 +180,20 @@ if printf '%s' "$_ac_deny" | grep -qF '"permissionDecision": "deny"'; then
 else
   bad "guard hook did NOT deny a hand-edit of a compiled artifact"
 fi
+_ac_medeny="$(printf '%s' "{\"tool_name\":\"MultiEdit\",\"tool_input\":{\"file_path\":\"$_ac_tmp/compiled-agent.md\",\"edits\":[{\"old_string\":\"a\",\"new_string\":\"b\"}]}}" \
+  | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py")"
+if printf '%s' "$_ac_medeny" | grep -qF '"permissionDecision": "deny"'; then
+  ok "guard hook denies a MultiEdit of a compiled artifact"
+else
+  bad "MultiEdit bypassed the compiled-artifact guard"
+fi
+_ac_mldeny="$(printf '%s' "{\"tool_name\":\"MultiEdit\",\"tool_input\":{\"edits\":[{\"file_path\":\"$_ac_dir/README.md\"},{\"file_path\":\"$_ac_tmp/compiled-agent.md\"}]}}" \
+  | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py")"
+if printf '%s' "$_ac_mldeny" | grep -qF '"permissionDecision": "deny"'; then
+  ok "guard hook denies a multi-target edit whose second path is compiled"
+else
+  bad "a compiled artifact hidden in a multi-target edit list bypassed the guard"
+fi
 _ac_allow="$(printf '%s' "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$_ac_dir/README.md\"}}" \
   | $_ac_py "$_ac_dir/hooks/guard-compiled-agents.py")"
 if [ -z "$_ac_allow" ]; then

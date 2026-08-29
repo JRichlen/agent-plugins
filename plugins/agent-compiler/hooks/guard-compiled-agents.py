@@ -26,15 +26,32 @@ def main():
     tool = payload.get("tool_name", "")
     if tool not in ("Write", "Edit", "MultiEdit"):
         return 0
-    path = (payload.get("tool_input") or {}).get("file_path", "")
-    if not path or not os.path.isfile(path):
-        return 0
-    try:
-        with open(path, encoding="utf-8", errors="replace") as f:
-            head = f.read(4096)
-    except OSError:
-        return 0
-    if MARKER not in head:
+    tool_input = payload.get("tool_input") or {}
+    # Collect every path the call could touch: the top-level file_path
+    # (Write/Edit, and MultiEdit's single-target shape) plus any per-entry
+    # file_path inside list values (future multi-target shapes) — so a
+    # multi-file call can never slip a compiled artifact past the guard.
+    paths = []
+    if tool_input.get("file_path"):
+        paths.append(tool_input["file_path"])
+    for value in tool_input.values():
+        if isinstance(value, list):
+            for entry in value:
+                if isinstance(entry, dict) and entry.get("file_path"):
+                    paths.append(entry["file_path"])
+    path = ""
+    for candidate in paths:
+        if not os.path.isfile(candidate):
+            continue
+        try:
+            with open(candidate, encoding="utf-8", errors="replace") as f:
+                head = f.read(4096)
+        except OSError:
+            continue
+        if MARKER in head:
+            path = candidate
+            break
+    if not path:
         return 0
     print(json.dumps({
         "hookSpecificOutput": {
