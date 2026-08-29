@@ -24,7 +24,7 @@ taxonomy, recipe authoring, interactive curation, or portability.
 
 Every independently-running automation has one stable human-facing identity:
 
-`<Lane> <Workstream>.<Agent>: <Short Name>`
+`<Lane> <Workstream>.<Automation>: <Short Name>`
 
 Rules:
 
@@ -32,7 +32,7 @@ Rules:
 - Numbering resets within each lane.
 - The first number identifies a workstream inside the lane.
 - The second number identifies an independently scheduled/triggered automation slot inside that workstream.
-- The display token `.Agent` is an operator-facing convention for that independently-running slot; it is **not** the same semantic object as an Actor compiled by `agent-compiler`.
+- The display token `.Automation` is an operator-facing convention for that independently-running slot; it is **not** the same semantic object as an Actor compiled by `agent-compiler`.
 - Internal subagents do **not** get hierarchy numbers unless they independently run.
 - New lanes are earned by distinct recurring work, not created speculatively.
 - Stable names stay stable while their meaning remains valid; curation should reduce churn, not produce it.
