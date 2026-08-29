@@ -18,4 +18,9 @@ Routing is **per output element, not per response**:
   turns that are only a clarifying question or only tool calls → none of them
   apply; ship it unstyled.
 
+`skills/ai-writing-mistakes/SKILL.md` is not part of this choice. It is a
+wording pass that runs after the voice is picked, over anything human-voice
+governs and over prose you were asked to author into a file. It never claims an
+element of its own.
+
 State which voice applies and why in one line, then apply it.
