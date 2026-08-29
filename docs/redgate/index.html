@@ -260,9 +260,12 @@ fence widening · round-budget or depth extension (“there is no silent round 5
 destinations.</p>
 <p>Criteria that are <em>byte-derivable</em> from an approved plan slice auto-ratify as PATCH with
 the derivation logged; any deviation escalates to MAJOR. Every gate appends
-<code>round | class | driving-property | outcome | lesson</code> to <code>gates.log</code> — “an
-auto-pass that cannot cite its qualifying conditions is a protocol violation, not a judgment
-call.” Reflection lives at the gate, never as a fourth stage: a one-line lesson is mandatory
+<code>round | class | driving-property | disposition | outcome | lesson</code> to
+<code>gates.log</code> — the disposition records what the human actually did at the gate
+(<code>auto</code> · <code>silent</code>/<code>vetoed</code> ·
+<code>approved</code>/<code>revised</code>/<code>declined</code>), so recurrence-detector's
+approval-fatigue report can tell a calibrated mandate from rubber-stamping — and “an auto-pass
+that cannot cite its qualifying conditions is a protocol violation, not a judgment call.” Reflection lives at the gate, never as a fourth stage: a one-line lesson is mandatory
 (“None” is legal only at a PATCH gate), a red verdict leaves a durable artifact the next ARM must
 read, and after three consecutive build gates with no widen or retro round the driver proposes
 one.</p>
@@ -400,8 +403,12 @@ and the other prose is a bug.” The load-bearing subset:</p>
   <dd>The human-ratified plan from which autonomy flows downhill — “never upward from the
   work.”</dd>
   <dt>gates.log / lesson</dt>
-  <dd>The per-run gate ledger: <code>round | class | driving-property | outcome | lesson</code>.
-  The lesson field is where Reflect lives — at the gate, never as a stage.</dd>
+  <dd>The per-run gate ledger:
+  <code>round | class | driving-property | disposition | outcome | lesson</code>. The
+  disposition names what the human actually did at the gate; the lesson field is where Reflect
+  lives — at the gate, never as a stage. A run-level <code>.redgate/INDEX.md</code> (built by
+  <code>criteria-index.sh</code>) indexes prior runs' criteria shapes so a new ARM can reuse
+  proven checkables and never reuse a shape demoted by mutation control.</dd>
 </dl>
 
 <h2 id="evals">Eval coverage</h2>
