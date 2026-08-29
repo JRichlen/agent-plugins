@@ -36,6 +36,13 @@ RUN="$ROOT/.redgate/$SLUG"
 
 field() { sed -n "s/^$1=//p" "$RUN/manifest" | head -1; }
 
+# Portable mtime in epoch seconds. `stat -c` is GNU; `stat -f` is BSD/macOS.
+# Getting this wrong made every genuine PASS read as stale on macOS, so no
+# round could ever close there — the cross-harness claim was false.
+_mtime() {
+  stat -c %Y "$1" 2>/dev/null || stat -f %m "$1" 2>/dev/null || echo 0
+}
+
 # ---- 1. ratification gate -------------------------------------------------
 # An unpinned run was never ratified. There is no contract to grade against,
 # and grading one would let a writer author criteria after seeing results.
@@ -89,7 +96,7 @@ while IFS= read -r line; do
       if [ ! -f "$ev" ]; then
         printf '#%s\tREJECTED\tPASS claimed, evidence file missing (%s)\n' "$n" "evidence/$n.out"
         unproven=$((unproven+1))
-      elif [ "$(stat -c %Y "$ev" 2>/dev/null || echo 0)" -lt "$START" ]; then
+      elif [ "$(_mtime "$ev")" -lt "$START" ]; then
         printf '#%s\tREJECTED\tPASS claimed, evidence stale (older than this run)\n' "$n"
         unproven=$((unproven+1))
       else

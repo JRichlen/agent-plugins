@@ -120,12 +120,92 @@ if [ -f "$RECON" ] && bash -n "$RECON" 2>/dev/null; then
   "$SCAF" --pin t --root "$_d" >/dev/null 2>&1
   _out="$("$RECON" --slug t --root "$_d" 2>&1 || true)"
   if printf '%s' "$_out" | grep -qi 'unmet' && ! printf '%s' "$_out" | grep -qi 'drift'; then ok "an ordinary unmet criterion reads as unmet, never as drift"; else bad "unmet and drift verdicts are not distinguishable"; fi
-  _d2="$_d"
-  _out="$(RG_TEST_DROP_EVIDENCE=1 "$RECON" --slug t --root "$_d2" 2>&1)"; _rc=$?
+  rm -rf "$_d"
+  # Evidence-freshness, on a fixture whose criteria PASS. Using the TEMPLATE
+  # fixture here (as this check first did) is uncoupled: its criteria fail
+  # anyway, so rc!=0 arrives via the ordinary FAIL path whether or not the
+  # evidence gate acts — no-opping the gate left the tier green. On _mkpass the
+  # ONLY thing that can produce a non-zero exit is the evidence gate itself.
+  _d="$(_mkpass)"
+  _out="$(RG_TEST_DROP_EVIDENCE=1 "$RECON" --slug t --root "$_d" 2>&1)"; _rc=$?
   rm -rf "$_d"
   if [ "$_rc" -ne 0 ] && printf '%s' "$_out" | grep -qi 'evidence'; then ok "a PASS without fresh evidence is REJECTED (exit-coupled)"; else bad "evidence-freshness gate did not fail the run (rc=$_rc)"; fi
 else
   bad "reconcile.sh missing or does not parse"
+fi
+
+group "redgate — the parser cannot silently drop a criterion"
+# THE invariant-defeating bug: `while IFS= read -r line` drops a final line with
+# no trailing newline, so a FAILING criterion written last simply vanished and
+# check.sh exited 0 — a green gate over unmet criteria. Feed the emitted harness
+# a CRITERIA.md whose last line is unterminated AND fails, then assert the exit
+# code. Remove `|| [ -n "$line" ]` from the emitted read loop and this flips red.
+_nd="$(mktemp -d)"
+"$SCAFFOLD" --slug nl --root "$_nd" >/dev/null 2>&1
+printf '## #1 passes\nlayers: x\nred-because: n/a\ncheck_cmd: true\n\n## #2 fails\nlayers: x\nred-because: n/a\ncheck_cmd: false' > "$_nd/.redgate/nl/CRITERIA.md"
+_nout="$(bash "$_nd/.redgate/nl/check.sh" 2>&1)"; _nrc=$?
+rm -rf "$_nd"
+if [ "$_nrc" -eq 1 ] && printf '%s' "$_nout" | grep -q '^#2 FAIL$'; then
+  ok "a final criterion with no trailing newline is parsed and can still FAIL (exit-coupled)"
+else
+  bad "a trailing-newline-less final criterion was DROPPED (rc=$_nrc) — the gate can report green over unmet criteria"
+fi
+
+group "redgate — portability of the emitted harness and pin"
+# HONEST LIMIT: CI runs Linux, where the GNU branch of each of these always
+# wins, so the BSD/macOS path cannot be EXECUTED here. These are therefore
+# shape checks on the fallbacks, not behavior checks — they prove the portable
+# branch is present, not that it works. The cross-harness claim rests on them.
+hasE "$PLUGIN_DIR/skills/reconcile/scripts/reconcile.sh" 'stat -f %m' \
+  "reconcile has a BSD/macOS mtime fallback (stat -f)" \
+  "reconcile is GNU-only again (stat -c with no BSD fallback) — every PASS reads as stale on macOS"
+lacksE "$SCAFFOLD" '^\s*sed -i ' \
+  "pin avoids bare 'sed -i' (GNU-only; BSD needs -i '')" \
+  "pin uses bare 'sed -i' — aborts mid-pin on BSD, leaving a half-pinned manifest"
+hasE "$SCAFFOLD" 'gtimeout' \
+  "emitted harness tolerates a missing timeout (gtimeout/uncapped fallback)" \
+  "emitted harness hard-requires GNU timeout — absent on stock macOS, so every run FAULTs"
+
+group "redgate — hook guard actually denies (exit-coupled)"
+# Slice 3 is the enforcement layer: it must DENY writes to a pinned contract
+# while the round is mid-TRACE, and stay out of the way otherwise. Nothing
+# tested it, so replacing every `exit 2` with `exit 0` left the tier green.
+# These drive the real handler with real payloads and assert the EXIT CODE
+# (2=deny, 0=allow) — gut the deny path and every one of them flips red.
+_GUARD="$PLUGIN_DIR/hooks/hooks-handlers/guard-redgate-paths.sh"
+if [ -f "$_GUARD" ] && bash -n "$_GUARD" 2>/dev/null; then
+  _gd="$(mktemp -d)"
+  "$SCAFFOLD" --slug g --root "$_gd" >/dev/null 2>&1
+  _payload() { printf '{"tool_name":"Edit","tool_input":{"file_path":"%s"}}' "$1"; }
+  # phase=ARM (pre-ratification): the contract is still being written — ALLOW.
+  if _payload "$_gd/.redgate/g/CRITERIA.md" | bash "$_GUARD" >/dev/null 2>&1; then
+    ok "guard allows contract edits during ARM (pre-ratification)"
+  else
+    bad "guard denied an ARM-phase contract edit — BEGIN/ARM writes must be allowed"
+  fi
+  "$SCAFFOLD" --pin g --root "$_gd" >/dev/null 2>&1   # -> phase=TRACE
+  # phase=TRACE (pinned): editing the ratified contract is drift — DENY (exit 2).
+  _payload "$_gd/.redgate/g/CRITERIA.md" | bash "$_GUARD" >/dev/null 2>&1; _grc=$?
+  if [ "$_grc" -eq 2 ]; then
+    ok "guard DENIES a pinned CRITERIA.md edit mid-TRACE (exit 2)"
+  else
+    bad "guard did not deny a pinned CRITERIA.md edit mid-TRACE (exit $_grc) — the enforcement layer is inert"
+  fi
+  _payload "$_gd/.redgate/g/check.sh" | bash "$_GUARD" >/dev/null 2>&1; _grc=$?
+  if [ "$_grc" -eq 2 ]; then
+    ok "guard DENIES a pinned check.sh edit mid-TRACE (exit 2)"
+  else
+    bad "guard did not deny a pinned check.sh edit mid-TRACE (exit $_grc)"
+  fi
+  # Outside .redgate/ the guard is indifferent — ALLOW.
+  if _payload "$_gd/some/other/file.md" | bash "$_GUARD" >/dev/null 2>&1; then
+    ok "guard is indifferent to paths outside .redgate/"
+  else
+    bad "guard denied a write outside .redgate/ — it is over-reaching"
+  fi
+  rm -rf "$_gd"
+else
+  bad "hook guard missing or does not parse"
 fi
 
 group "redgate — reflection at the gate, never as a stage"

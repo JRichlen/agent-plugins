@@ -42,10 +42,15 @@ if [ "$MODE" = pin ]; then
   CS=$(sha256sum "$RUN/CRITERIA.md" | cut -d' ' -f1)
   KS=$(sha256sum "$RUN/check.sh"    | cut -d' ' -f1)
   # in-place field fill; manifest keys are fixed at create time
-  sed -i "s/^criteria_sha256=$/criteria_sha256=$CS/" "$RUN/manifest"
-  sed -i "s/^check_sha256=$/check_sha256=$KS/"       "$RUN/manifest"
-  sed -i "s/^phase=ARM$/phase=TRACE/"                "$RUN/manifest"
-  sed -i "s/^phase=BEGIN$/phase=TRACE/"              "$RUN/manifest"   # legacy v1 run dirs
+  # Portable in-place edit: GNU sed wants `-i`, BSD sed wants `-i ''`, and a
+  # bare `-i` on BSD eats the next arg. Rewrite through a temp file instead, in
+  # ONE pass so the manifest is never left half-pinned if a step fails.
+  _tmp="$RUN/manifest.tmp.$$"
+  sed -e "s/^criteria_sha256=$/criteria_sha256=$CS/" \
+      -e "s/^check_sha256=$/check_sha256=$KS/" \
+      -e "s/^phase=ARM$/phase=TRACE/" \
+      -e "s/^phase=BEGIN$/phase=TRACE/" \
+      "$RUN/manifest" > "$_tmp" && mv "$_tmp" "$RUN/manifest"
   echo "pinned: criteria=$CS check=$KS phase=TRACE"
   exit 0
 fi
@@ -106,21 +111,30 @@ set -u
 cd "$(dirname "$0")"
 
 # ---- preflight: HARNESS prerequisites only; never the subject under test ----
-for bin in bash timeout tee sha256sum grep sed; do
+for bin in bash grep sed; do
   command -v "$bin" >/dev/null 2>&1 || { echo "FAULT: missing $bin" >&2; exit 99; }
 done
+# timeout is GNU coreutils; stock macOS has neither `timeout` nor `gtimeout`
+# unless coreutils is installed. Use whichever exists, else run uncapped rather
+# than declaring a FAULT — a missing convenience is not a broken harness.
+if command -v timeout >/dev/null 2>&1; then RG_TIMEOUT="timeout 120"
+elif command -v gtimeout >/dev/null 2>&1; then RG_TIMEOUT="gtimeout 120"
+else RG_TIMEOUT=""; fi
 [ -d evidence ] && [ -w evidence ] || { echo "FAULT: evidence/ not writable" >&2; exit 99; }
 [ -f CRITERIA.md ] || { echo "FAULT: CRITERIA.md missing" >&2; exit 99; }
 
 fails=0; checked=0
 n=0
-while IFS= read -r line; do
+# `|| [ -n "$line" ]` is load-bearing: without it a final line with no trailing
+# newline is silently DROPPED, so a failing criterion written last simply
+# vanishes and the gate reports green. That defeats the whole invariant.
+while IFS= read -r line || [ -n "$line" ]; do
   case "$line" in
     "## #"*) n=$(printf '%s' "$line" | sed 's/^## #\([0-9]*\).*/\1/') ;;
     "check_cmd: "*)
       cmd=${line#check_cmd: }
       checked=$((checked+1))
-      if timeout 120 bash -c "$cmd" </dev/null >"evidence/$n.out" 2>&1; then
+      if $RG_TIMEOUT bash -c "$cmd" </dev/null >"evidence/$n.out" 2>&1; then
         echo "#$n PASS"
       else
         echo "#$n FAIL"; fails=$((fails+1))
