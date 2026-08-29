@@ -69,6 +69,13 @@ file, line range) into every AgentImage.
   `capabilities`; the union of their `effects` must fit inside the effective
   ceiling — the intersection of the query's `effectCeiling` and every
   selected view's `max_effects`. No ceiling from either source fails closed.
+- **Applicability conditions**: a module declaring `environments:` or
+  `risks:` selector-matches only when the query's `environment`/`risk` is in
+  the list. Explicit `requires` edges and views named in `query.views` are
+  exact asks and ignore applicability.
+- **Stance validation**: every entry in the query's `stance` must be a trait
+  some selected view declares (`traits:`), or compilation fails with
+  `UNDECLARED_STANCE` — stance is never decorative.
 
 ## AgentQuery
 

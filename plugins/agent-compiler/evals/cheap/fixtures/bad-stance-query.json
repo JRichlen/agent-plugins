@@ -1,0 +1,8 @@
+{
+  "name": "reckless",
+  "role": "engineer",
+  "task": "feature-build",
+  "views": ["view.engineering-default"],
+  "stance": ["reckless"],
+  "effectCeiling": ["filesystem:read"]
+}

@@ -41,6 +41,7 @@ ATTR_RE = re.compile(r'([a-zA-Z_][a-zA-Z0-9_-]*)="([^"]*)"')
 LIST_KEYS = {
     "roles", "tasks", "domains", "requires", "conflicts_with",
     "supersedes", "capabilities", "effects", "max_effects", "traits",
+    "environments", "risks",
 }
 # Unknown frontmatter keys fail closed (BAD_MODULE_KEY). Without this, a
 # typo'd key ('task:' for 'tasks:') compiled cleanly and silently deselected
@@ -210,10 +211,25 @@ def load_registry(registry_dir, discovery_order="sorted"):
 
 # --- resolution --------------------------------------------------------------
 
+def applicable(meta, query):
+    """Applicability conditions (handoff pipeline stage 8): a module that
+    declares `environments`/`risks` matches only when the query's value is in
+    the list. Gates SELECTOR-based inclusion only — an explicit `requires`
+    edge or a view named in query.views is an exact ask and ignores it."""
+    envs = meta.get("environments")
+    if envs and query.get("environment", "") not in envs:
+        return False
+    risks = meta.get("risks")
+    if risks and query.get("risk", "") not in risks:
+        return False
+    return True
+
+
 def resolve_selection(query, modules):
     """Exact, documented selection: views come only from query.views; a
     behavior module is selected when its tasks contain query.task, its roles
-    contain query.role, or its domains intersect query.domains."""
+    contain query.role, or its domains intersect query.domains — and its
+    applicability conditions (environments/risks) accept the query."""
     diagnostics, selected = [], set()
     for vid in query.get("views", []):
         v = modules.get(vid)
@@ -227,6 +243,8 @@ def resolve_selection(query, modules):
         if mod["kind"] != "behavior":
             continue
         meta = mod["meta"]
+        if not applicable(meta, query):
+            continue
         if task and task in meta.get("tasks", []):
             selected.add(mid)
         elif role and role in meta.get("roles", []):
@@ -236,6 +254,26 @@ def resolve_selection(query, modules):
     if diagnostics:
         raise CompileError(diagnostics)
     return selected
+
+
+def validate_stance(query, selected, modules):
+    """Every stance entry must be a trait some selected view declares —
+    otherwise the stance would render as if it meant something while
+    selecting nothing (fail closed, per the house style)."""
+    stance = query.get("stance", [])
+    if not stance:
+        return
+    declared = set()
+    for mid in selected:
+        if modules[mid]["kind"] == "view":
+            declared.update(modules[mid]["meta"].get("traits", []))
+    missing = sorted(set(stance) - declared)
+    if missing:
+        raise CompileError([diag(
+            "UNDECLARED_STANCE",
+            f"stance {missing} is declared by no selected view "
+            f"(declared traits: {sorted(declared)}); add the trait to a view "
+            "or drop it from the query", missing)])
 
 
 def expand_dependencies(selected, modules):
@@ -363,6 +401,7 @@ def compile_image(registry_dir, query, discovery_order="sorted"):
     selected = resolve_selection(query, modules)
     selected = expand_dependencies(selected, modules)
     selected = detect_conflicts(selected, modules)
+    validate_stance(query, selected, modules)
     capabilities, effects, ceiling = link_and_validate_effects(query, selected, modules)
 
     behavior = []

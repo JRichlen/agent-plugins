@@ -37,6 +37,8 @@ as part of the marketplace cheap tier: a committed golden image compared
 byte-for-byte, repeated and discovery-order-reversed compiles diffed,
 unrelated-module hash invariance, one fixture per fail-closed diagnostic
 (`CONFLICT`, `MISSING_DEPENDENCY`, `DEPENDENCY_CYCLE`, `EFFECT_CEILING`,
-`NO_EFFECT_CEILING`, `BAD_MODULE_KEY`) under `evals/cheap/fixtures/`, and a
+`NO_EFFECT_CEILING`, `BAD_MODULE_KEY`, `UNDECLARED_STANCE`) under
+`evals/cheap/fixtures/`, identity/applicability checks against a second
+golden (`engineering-default`), and a
 full MCP stdio round-trip asserting the facade returns the same golden hash
 and the same fail-closed diagnostics as the CLI.

@@ -122,6 +122,43 @@ else
   bad "a behavior unit was emitted without provenance"
 fi
 
+group "plugin 'agent-compiler': identities, applicability, stance"
+_ac_eq="$_ac_dir/examples/queries/engineering-default.json"
+_ac_eg="$_ac_dir/examples/golden/engineering-default.image.json"
+if $_ac_py "$_ac_dir/scripts/compile.py" compile --registry "$_ac_reg" \
+    --query "$_ac_eq" > "$_ac_tmp/eng.json" 2>/dev/null \
+    && [ -f "$_ac_eg" ] && cmp -s "$_ac_tmp/eng.json" "$_ac_eg"; then
+  ok "engineering-default identity compiles byte-identical to its golden"
+else
+  bad "engineering-default identity drifted from examples/golden/engineering-default.image.json"
+fi
+# applicability: prove-the-undo declares risks:[high,critical]; the medium-risk
+# golden must NOT carry it, and raising risk to high must pull it in.
+if grep -qF 'discipline.prove-the-undo' "$_ac_tmp/eng.json"; then
+  bad "risk-gated module leaked into a medium-risk compile (applicability broken)"
+else
+  ok "risk-gated module (prove-the-undo) excluded at risk=medium"
+fi
+$_ac_py - "$_ac_eq" > "$_ac_tmp/eng-high.query.json" <<'PY'
+import json, sys
+q = json.load(open(sys.argv[1])); q["risk"] = "high"
+print(json.dumps(q))
+PY
+if $_ac_py "$_ac_dir/scripts/compile.py" compile --registry "$_ac_reg" \
+    --query "$_ac_tmp/eng-high.query.json" 2>/dev/null | grep -qF 'discipline.prove-the-undo'; then
+  ok "risk-gated module (prove-the-undo) selected at risk=high"
+else
+  bad "risk=high did not select the risk-gated module (applicability broken)"
+fi
+# stance must be declared by a selected view — fail closed otherwise
+_ac_st_out="$($_ac_py "$_ac_dir/scripts/compile.py" compile --registry "$_ac_reg" \
+  --query "$_ac_dir/evals/cheap/fixtures/bad-stance-query.json" 2>/dev/null)"
+if [ $? -ne 0 ] && printf '%s' "$_ac_st_out" | grep -qF '"code":"UNDECLARED_STANCE"'; then
+  ok "undeclared stance is refused (UNDECLARED_STANCE)"
+else
+  bad "a stance no view declares compiled anyway — stance validation broken"
+fi
+
 group "plugin 'agent-compiler': MCP facade — same kernel, same guarantees, over stdio"
 if $_ac_py - "$_ac_dir" "$_ac_golden" <<'PY'
 import json, os, subprocess, sys
@@ -148,7 +185,8 @@ assert not r["result"]["isError"], "golden compile errored via MCP"
 image = json.loads(r["result"]["content"][0]["text"])
 golden = json.load(open(golden_path))
 assert image["hash"] == golden["hash"], "MCP compile hash differs from golden"
-bad_q = {k: v for k, v in query.items() if k != "effectCeiling"}; bad_q["views"] = []
+bad_q = {k: v for k, v in query.items() if k not in ("effectCeiling", "stance")}
+bad_q["views"] = []
 r = rpc("tools/call", {"name": "compile", "arguments": {"query": bad_q}}, 4)
 assert r["result"]["isError"], "ceiling-less compile did not error via MCP"
 codes = {d["code"] for d in json.loads(r["result"]["content"][0]["text"])["diagnostics"]}

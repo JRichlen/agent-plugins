@@ -1,0 +1,11 @@
+{
+  "name": "engineering-default",
+  "role": "engineer",
+  "task": "feature-build",
+  "domains": ["engineering-discipline"],
+  "views": ["view.engineering-default"],
+  "stance": ["pragmatic", "verification-driven"],
+  "environment": "development",
+  "risk": "medium",
+  "effectCeiling": ["filesystem:read", "filesystem:write", "network", "process:spawn", "scm:read"]
+}
