@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-plugins — documentation</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5a5a5a; --card:#ffffff; --line:#e3e1dc;
+    --code-bg:#f2f1ee; --link:#0b5cad;
+    --red:#b02a43; --red-soft:#f3dde1; --red-ink:#8a2036;
+    --blue:#1d5f8a; --blue-soft:#e0edf5; --blue-ink:#164a6d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141414; --fg:#ececec; --muted:#a2a2a2; --card:#1d1d1d; --line:#2f2f2f;
+      --code-bg:#0f0f0f; --link:#6db3f2;
+      --red:#e4677e; --red-soft:#3a1a22; --red-ink:#f2a2b0;
+      --blue:#5aa4d6; --blue-soft:#152736; --blue-ink:#9ecbec;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:860px; margin:0 auto; padding:2.6rem 1.2rem 5rem; }
+  a { color:var(--link); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:var(--code-bg); border-radius:4px; padding:.1em .35em; font-size:.9em; }
+  pre { background:var(--code-bg); border-radius:8px; padding:.8rem 1rem; overflow-x:auto;
+    font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  header h1 { font-size:2rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  header .sub { color:var(--muted); margin:0 0 1.8rem; max-width:70ch; }
+  h2 { font-size:1.3rem; margin:2.2rem 0 .7rem; letter-spacing:-.01em; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  @media (max-width:700px) { .cards { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:1.1rem 1.3rem; display:flex; flex-direction:column; }
+  .card h3 { margin:0 0 .4rem; font-size:1.15rem; }
+  .card h3 a { text-decoration:none; }
+  .card p { margin:0 0 .8rem; color:var(--muted); font-size:.93rem; flex:1; }
+  .pill { display:inline-block; align-self:flex-start; font-size:.68rem; font-weight:700;
+    padding:.12rem .55rem; border-radius:999px; text-transform:uppercase;
+    letter-spacing:.05em; margin-bottom:.6rem; }
+  .pill.red { background:var(--red-soft); color:var(--red-ink); }
+  .pill.blue { background:var(--blue-soft); color:var(--blue-ink); }
+  .links { font-size:.88rem; }
+  ul { padding-left:1.2rem; }
+  li { margin:.3rem 0; max-width:76ch; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:3rem;
+    border-top:1px solid var(--line); padding-top:1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>agent-plugins</h1>
+  <p class="sub">Documentation site for
+  <a href="https://github.com/JRichlen/agent-plugins">JRichlen/agent-plugins</a> — a Claude Code
+  plugin marketplace whose plugins also work with any coding agent (Codex, Cursor, Gemini, …) via
+  standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points.</p>
+</header>
+
+<pre>/plugin marketplace add JRichlen/agent-plugins
+/plugin install &lt;name&gt;@jrichlen</pre>
+
+<h2>Plugin deep dives</h2>
+<div class="cards">
+  <div class="card">
+    <span class="pill red">protocol</span>
+    <h3><a href="redgate/">redgate</a></h3>
+    <p>Run any idea through rounds of ARM → TRACE → JUDGE with graduated autonomy: a verifier is
+    proven able to fail before any work starts, one thin slice flips one criterion green, and
+    someone who did not do the work runs the verifier. Gates classified PATCH/MINOR/MAJOR, so
+    derived work flows inside a human-approved mandate while irreversible decisions always block
+    on the human.</p>
+    <span class="links"><a href="redgate/">documentation →</a></span>
+  </div>
+  <div class="card">
+    <span class="pill blue">compiler</span>
+    <h3><a href="agent-compiler/">agent-compiler</a></h3>
+    <p>Compile deterministic, content-hashed agents from small behavior modules instead of
+    hand-writing persona prompts: fuzzy intent becomes a typed AgentQuery, then a stdlib-only
+    kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an
+    immutable AgentImage with per-line provenance.</p>
+    <span class="links"><a href="agent-compiler/">documentation →</a></span>
+  </div>
+</div>
+
+<h2>Also on this site</h2>
+<ul>
+  <li><a href="examples/">Skill examples — before &amp; after</a>: real, provenanced
+  with-skill/without-skill model runs for the marketplace's skills, captured from the behavioral
+  eval tier and never hand-written.</li>
+</ul>
+
+<h2>In the repository</h2>
+<ul>
+  <li><a href="https://github.com/JRichlen/agent-plugins#plugins">The full plugin table</a> — all
+  plugins in the marketplace, one line each.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">The
+  Red Gate protocol</a>,
+  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">glossary</a>,
+  and
+  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/designs/agent-compiler-plugin.md">agent-compiler
+  design doc</a> — the design records behind the two deep dives above.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/AGENTS.md">The eval
+  discipline</a> — the cheap / behavioral / deep tiers gating every change.</li>
+</ul>
+
+<footer>
+  Served from <code>docs/</code> by GitHub Pages ·
+  <a href="https://github.com/JRichlen/agent-plugins">source</a>
+</footer>
+
+</div>
+</body>
+</html>

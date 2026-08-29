@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-compiler — plugin documentation</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5a5a5a; --card:#ffffff; --line:#e3e1dc;
+    --code-bg:#f2f1ee; --link:#0b5cad;
+    --accent:#1d5f8a; --accent-soft:#e0edf5; --accent-ink:#164a6d;
+    --pass:#0a7d3f; --pass-bg:#eaf6ee; --warn:#8a5a00; --warn-bg:#f6f0e6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141414; --fg:#ececec; --muted:#a2a2a2; --card:#1d1d1d; --line:#2f2f2f;
+      --code-bg:#0f0f0f; --link:#6db3f2;
+      --accent:#5aa4d6; --accent-soft:#152736; --accent-ink:#9ecbec;
+      --pass:#4bd07f; --pass-bg:#12251a; --warn:#e0aa4a; --warn-bg:#241d10;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:900px; margin:0 auto; padding:2.4rem 1.2rem 5rem; }
+  a { color:var(--link); }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  code { background:var(--code-bg); border-radius:4px; padding:.1em .35em; font-size:.9em; }
+  pre { background:var(--code-bg); border-radius:8px; padding:.8rem 1rem; overflow-x:auto;
+    font-size:12.5px; line-height:1.55; }
+  pre code { background:none; padding:0; font-size:inherit; }
+  .crumbs { font-size:.85rem; color:var(--muted); margin-bottom:1.6rem; }
+  .crumbs a { text-decoration:none; }
+  header h1 { font-size:2.1rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  header h1 .tag { display:inline-block; vertical-align:middle; font-size:.75rem; font-weight:700;
+    color:var(--accent-ink); background:var(--accent-soft); border-radius:999px;
+    padding:.15rem .6rem; margin-left:.6rem; letter-spacing:.05em; text-transform:uppercase; }
+  header .sub { color:var(--muted); margin:0 0 1.4rem; max-width:72ch; font-size:1.02rem; }
+  .invariant { background:var(--card); border:1px solid var(--accent);
+    border-left:5px solid var(--accent); border-radius:10px; padding:1rem 1.2rem; margin:1.6rem 0; }
+  .invariant .lbl { font-size:.7rem; text-transform:uppercase; letter-spacing:.09em;
+    color:var(--accent-ink); font-weight:700; display:block; margin-bottom:.4rem; }
+  .invariant p { margin:.3rem 0; }
+  h2 { font-size:1.45rem; margin:2.6rem 0 .6rem; letter-spacing:-.01em;
+    border-bottom:1px solid var(--line); padding-bottom:.35rem; }
+  h3 { font-size:1.08rem; margin:1.6rem 0 .4rem; }
+  p, li { max-width:78ch; }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem; }
+  th, td { border:1px solid var(--line); padding:.5rem .7rem; text-align:left; vertical-align:top; }
+  th { background:var(--code-bg); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; }
+  .tablewrap { overflow-x:auto; }
+  .pipeline { display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem; margin:1.2rem 0; }
+  @media (max-width:760px) { .pipeline { grid-template-columns:repeat(2,1fr); } }
+  .step { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:.8rem .9rem; }
+  .step .n { font-family:ui-monospace,Menlo,monospace; font-size:.72rem; font-weight:700;
+    color:var(--accent-ink); letter-spacing:.06em; }
+  .step h4 { margin:.15rem 0 .3rem; font-size:.95rem; }
+  .step p { margin:0; font-size:.85rem; color:var(--muted); }
+  blockquote { margin:1rem 0; padding:.2rem 0 .2rem 1rem; border-left:3px solid var(--line);
+    color:var(--muted); font-style:italic; }
+  .note { background:var(--warn-bg); border:1px solid var(--warn); border-radius:10px;
+    padding:.8rem 1rem; margin:1rem 0; font-size:.92rem; }
+  dl.gloss dt { font-weight:700; margin-top:.9rem; font-family:ui-monospace,Menlo,monospace; font-size:.9rem; }
+  dl.gloss dd { margin:.15rem 0 0 0; color:var(--muted); max-width:76ch; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:3rem;
+    border-top:1px solid var(--line); padding-top:1rem; }
+  .toc { font-size:.9rem; color:var(--muted); margin:1rem 0 0; }
+  .toc a { text-decoration:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="crumbs">
+  <a href="../">agent-plugins docs</a> ·
+  <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler">source on GitHub</a>
+</nav>
+
+<header>
+  <h1>agent-compiler <span class="tag">plugin</span></h1>
+  <p class="sub"><strong>Agents are compiled, not stored.</strong> Humans author small,
+  addressable behavior modules; a model may turn fuzzy intent into a typed AgentQuery, but
+  everything after that boundary is deterministic: a stdlib-only kernel resolves modules, expands
+  dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable,
+  content-hashed AgentImage that renders into a harness-native agent definition — every line
+  traceable to its source module.</p>
+</header>
+
+<div class="invariant">
+  <span class="lbl">The invariant every eval defends</span>
+  <p>Given the same registry revision, query, and compiler version, compilation produces a
+  byte-identical canonical AgentImage and identical hash; every emitted unit carries provenance to
+  a source module; unresolved conflicts, missing dependencies, dependency cycles, and effects
+  above the query's ceiling fail compilation.</p>
+  <p><em>“Natural language may select behavior; it may not silently define it.”</em></p>
+</div>
+
+<nav class="toc">On this page:
+  <a href="#why">Why it exists</a> ·
+  <a href="#metaphor">The compiler metaphor</a> ·
+  <a href="#pipeline">The pipeline</a> ·
+  <a href="#registry">The registry</a> ·
+  <a href="#ships">What the plugin ships</a> ·
+  <a href="#workflow">Day-to-day use</a> ·
+  <a href="#output">What you get</a> ·
+  <a href="#diagnostics">Diagnostics</a> ·
+  <a href="#evals">Eval coverage</a> ·
+  <a href="#limits">Honest limits</a> ·
+  <a href="#siblings">Relationship to sibling plugins</a>
+</nav>
+
+<h2 id="install">Install</h2>
+<pre><code>/plugin marketplace add JRichlen/agent-plugins
+/plugin install agent-compiler@jrichlen</code></pre>
+<p>No dependencies beyond <code>python3</code> — the kernel, renderer, and MCP server are
+stdlib-only and fully offline. Enabling the plugin auto-starts the <code>kernel</code> MCP server
+(four pure tools: <code>inspect</code>, <code>compile</code>, <code>explain</code>,
+<code>render</code>); the CLI is the identical fallback on any other harness.</p>
+
+<h2 id="why">Why it exists</h2>
+<p>Agent personas are normally hand-written prose blobs: unversioned, unattributable, silently
+over-privileged, non-reproducible, impossible to diff. When one “works,” nobody can say which
+sentence did the work, and when it grows a new power, nobody approved it. agent-compiler replaces
+prose authoring with a compilation pipeline: behavior lives in small, versioned, addressable
+modules in a registry; agents are <em>build outputs</em>.</p>
+<p>The one non-deterministic step is explicitly fenced off — the model may translate fuzzy intent
+(“make me a security reviewer for our AWS PRs”) into a typed query. From the query onward,
+compilation is a pure function. Three claims you can verify yourself in under a minute:</p>
+<ul>
+  <li>Compile it twice — the bytes and the hash are identical.</li>
+  <li>Add an unrelated module to the registry — the hash does not move.</li>
+  <li>Ask for a write capability under a read-only ceiling — compilation fails with
+  <code>EFFECT_CEILING</code> instead of shipping a quietly over-privileged agent.</li>
+</ul>
+
+<h2 id="metaphor">The compiler metaphor, mapped</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Compiler concept</th><th>agent-compiler realization</th></tr>
+  <tr><td>Source files</td><td><strong>Behavior modules</strong> — Markdown with restricted frontmatter and semantic blocks, living in a <code>registry/</code> directory</td></tr>
+  <tr><td>Symbols</td><td><strong>Behavior units</strong> — <code>&lt;rule&gt;</code> / <code>&lt;probe&gt;</code> / <code>&lt;example&gt;</code> / <code>&lt;antipattern&gt;</code> blocks, addressed as <code>&lt;module-id&gt;#&lt;block-id&gt;</code></td></tr>
+  <tr><td>Build invocation and flags</td><td><strong>AgentQuery</strong> — typed JSON: role, task, domains, views, stance, environment, risk, effectCeiling, name</td></tr>
+  <tr><td>Linker and link errors</td><td>Dependency expansion (<code>requires</code>), conflict resolution (<code>conflicts_with</code> / <code>supersedes</code>), capability and effect linking</td></tr>
+  <tr><td>Content-addressed object file</td><td><strong>AgentImage</strong> — one line of canonical JSON with a SHA-256 hash and per-unit provenance</td></tr>
+  <tr><td>Codegen backend</td><td><strong>Renderers</strong> — <code>render_claude_agent.py</code> emits <code>.claude/agents/&lt;name&gt;.md</code>; other harnesses get sibling renderers, versioned separately from the compiler</td></tr>
+  <tr><td>Debug symbols</td><td><code>provenance: {module, version, source, lines}</code> on every unit; <code>explain</code> is the symbol lookup</td></tr>
+  <tr><td><code>-Werror</code></td><td>Structured diagnostics, never downgraded to warnings — the kernel fails closed</td></tr>
+</table>
+</div>
+
+<h2 id="pipeline">The pipeline</h2>
+<div class="pipeline">
+  <div class="step"><span class="n">1</span><h4>Load registry</h4>
+    <p>Walk the registry, parse frontmatter + blocks, reject bad or duplicate ids, compute the
+    registry revision. Any diagnostic here is fatal before resolution starts.</p></div>
+  <div class="step"><span class="n">2</span><h4>Resolve selection</h4>
+    <p>Views only when named in <code>query.views</code>; behavior when task, role, or a domain
+    matches — and only if the module's applicability (environments / risks) admits the query.</p></div>
+  <div class="step"><span class="n">3</span><h4>Expand dependencies</h4>
+    <p>Transitive closure over <code>requires</code>. Cycles fail; unknown ids fail.</p></div>
+  <div class="step"><span class="n">4</span><h4>Detect conflicts</h4>
+    <p>Superseded modules are dropped; any surviving <code>conflicts_with</code> pair fails
+    compilation.</p></div>
+  <div class="step"><span class="n">5</span><h4>Validate stance</h4>
+    <p>Every stance entry must be a trait some selected view declares — stance is never
+    decorative.</p></div>
+  <div class="step"><span class="n">6</span><h4>Link effects</h4>
+    <p>Effective ceiling = query ceiling ∩ every view's <code>max_effects</code>. Capabilities
+    must resolve to interfaces; their effects must fit inside the ceiling. No ceiling at all fails
+    closed.</p></div>
+  <div class="step"><span class="n">7</span><h4>Emit + canonicalize</h4>
+    <p>Units get provenance and a deterministic sort; the query is canonicalized; the image is one
+    line of canonical JSON.</p></div>
+  <div class="step"><span class="n">8</span><h4>Hash</h4>
+    <p>SHA-256 over the canonical bytes. The hash deliberately excludes the registry revision so
+    unrelated modules can't change an image's identity.</p></div>
+</div>
+<p>That last point was a real bug, found by running the kernel rather than reviewing it: hashing
+the whole-registry revision let an unrelated module change an existing image's identity, breaking
+the metamorphic invariance the evals now pin. The registry's own
+<code>discipline.build-run-verify</code> module carries the story as an example block — “a defect
+no amount of re-reading the design had surfaced.”</p>
+
+<h2 id="registry">The registry</h2>
+<p>The bundled registry ships 22 modules across three kinds. <code>--registry</code> accepts any
+directory, so a repo can carry its own; the kernel treats both identically. A module's filesystem
+location never carries meaning — only its <code>id</code> does.</p>
+
+<h3>Module anatomy</h3>
+<pre><code>---
+id: security.iam.review
+kind: behavior
+version: 1.0.0
+tasks: [pull-request-review]
+domains: [aws, iam]
+requires: [behavior.evidence]
+capabilities: [scm.pull_request.read, scm.pull_request.files]
+---
+
+&lt;rule id="least-privilege" strength="must"&gt;
+Evaluate permissions against the minimum privileges required by the stated operation.
+&lt;/rule&gt;
+
+&lt;probe id="wildcard-scope"&gt;
+Are wildcard resources, actions, or principals being introduced?
+&lt;/probe&gt;
+
+&lt;antipattern id="unsupported-vulnerability"&gt;
+Do not describe a theoretical vulnerability without connecting it to
+concrete evidence from the reviewed artifact.
+&lt;/antipattern&gt;</code></pre>
+<p>The frontmatter subset is deliberately tiny — scalars, inline lists, one-level dash lists; “no
+nesting, no multi-line scalars, no anchors.” Anything else is a compile error, never a guess. Even
+an <em>unknown key</em> is fatal (<code>BAD_MODULE_KEY</code>) — added after a typo'd
+<code>task:</code> (singular) compiled cleanly and silently deselected a module. Exactly four
+block kinds exist, none nested.</p>
+
+<h3>The three module kinds</h3>
+<div class="tablewrap">
+<table>
+  <tr><th>Kind</th><th>Role</th><th>In the bundled registry</th></tr>
+  <tr><td><code>view</code></td>
+      <td>An identity: selectors + declared <code>traits</code> + a <code>max_effects</code> ceiling — and <em>no behavior text of its own</em>. “A selector plus a ceiling, not a prompt.”</td>
+      <td><code>view.engineering-default</code> (the marketplace's house style as one addressable identity, with a nine-edge <code>requires</code> fan-out), <code>view.security-reviewer</code> (capped at network + scm:read), <code>view.researcher</code></td></tr>
+  <tr><td><code>behavior</code></td>
+      <td>The actual rules, probes, examples, and antipatterns, selected by task / role / domain.</td>
+      <td><code>behavior.evidence</code> (the universal base, pulled in only via <code>requires</code>); nine <code>discipline.*</code> modules distilled from sibling plugins' invariants; three <code>practice.*</code> modules of attributed external taste (Anthropic agent-authoring, Karpathy, Willison); three <code>preference.typescript.*</code> modules</td></tr>
+  <tr><td><code>capability_interface</code></td>
+      <td>Provider-independent, effect-declaring stubs a behavior module can require. Binding to concrete tools is the human's wiring step.</td>
+      <td><code>scm.pull_request.read</code>, <code>scm.pull_request.files</code> (both <code>network, scm:read</code>), <code>scm.pull_request.comment</code> (<code>scm:write</code> — a live tripwire: any module requiring it fails at link time under a read-only ceiling, “the effect check is structural, not prose”)</td></tr>
+</table>
+</div>
+
+<h3>Selection semantics worth memorizing</h3>
+<ul>
+  <li>Views are selected <em>only</em> when named in <code>query.views</code>.</li>
+  <li>A behavior module is selected when its <code>tasks</code> contain the query task, its
+  <code>roles</code> contain the query role, or its <code>domains</code> intersect the query
+  domains — and only if its declared <code>environments</code>/<code>risks</code> (if any) admit
+  the query. <code>discipline.prove-the-undo</code> is the shipped example: declared
+  <code>risks: [high, critical]</code>, so it is absent at <code>risk: medium</code> and appears
+  at <code>risk: high</code> with no other change.</li>
+  <li><code>requires</code> edges and explicitly named views are <em>exact asks</em> — they bypass
+  applicability gating.</li>
+  <li>Every stance entry must be a trait of a selected view, or compilation fails with
+  <code>UNDECLARED_STANCE</code>.</li>
+</ul>
+
+<h3>The governing ADR</h3>
+<p><a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/docs/adr/0001-identities-are-views-preferences-are-domains.md">ADR
+0001</a> settles how the registry grows: <em>“new registry dimensions are populated as content
+along existing coordinates, not as new module kinds or query coordinates.”</em> An identity is a
+view; a preference is domain-scoped behavior; external material is paraphrased with attribution.
+A first-class <code>identity</code> kind and a <code>preference</code> block were rejected because
+every language addition is effectively permanent once modules are published against it. The
+reopening condition is recorded: if “prefer X over Y” as a should-strength rule reads forced as
+the preference corpus grows, revisit a <code>preference</code> block kind.</p>
+
+<h2 id="ships">What the plugin ships</h2>
+<div class="tablewrap">
+<table>
+  <tr><th>Piece</th><th>What it is</th></tr>
+  <tr><td>Skill <code>agent-compiler</code></td>
+      <td>Governs the one step the kernel cannot: intent → AgentQuery. Interview and infer freely
+      while building the query; show the JSON before compiling; once the query exists, only the
+      kernel decides what the agent is. Ships <code>references/language.md</code>, the module-format
+      spec.</td></tr>
+  <tr><td><code>/agent-compile</code></td>
+      <td>Interview until role, task, domains, views, and ceiling are explicit; show the query;
+      compile; render. “On diagnostics, fix the registry source and recompile; never suppress a
+      failure or paste prose into the rendered output.”</td></tr>
+  <tr><td><code>/agent-inspect</code></td>
+      <td>Pure discovery, no compilation: list modules by kind or tag, show a module's units and
+      edges, or trace a compiled unit back to its source.</td></tr>
+  <tr><td><code>scripts/compile.py</code></td>
+      <td>The deterministic kernel (stdlib-only). Subcommands <code>compile</code>,
+      <code>inspect</code>, <code>explain</code>. Exit 0 success · 1 compile error with structured
+      JSON diagnostics · 2 usage error.</td></tr>
+  <tr><td><code>scripts/render_claude_agent.py</code></td>
+      <td>AgentImage → Claude Code agent markdown, every content line tagged with its unit id.
+      Versioned separately from the compiler so rendering can evolve without invalidating image
+      identity.</td></tr>
+  <tr><td><code>scripts/mcp_server.py</code></td>
+      <td>Stdlib JSON-RPC MCP server, auto-started by Claude Code. Four pure tools:
+      <code>inspect</code>, <code>compile</code>, <code>explain</code>, <code>render</code>.
+      “There is no execute: the server performs no effectful action, writes no files, and makes no
+      network calls.” Even <code>render</code> only returns text — saving the file stays with
+      you.</td></tr>
+  <tr><td>Hook: <code>suggest-compiler.py</code></td>
+      <td>On <code>UserPromptSubmit</code>, spots agent-building intent (“make me a … reviewer
+      agent”) and injects one context line pointing at the compiler. “Conservative by design: no
+      match, no output, no noise.”</td></tr>
+  <tr><td>Hook: <code>guard-compiled-agents.py</code></td>
+      <td>On Write/Edit/MultiEdit, denies hand-edits to any file carrying the
+      <code>compiled by agent-compiler; imageHash:</code> marker — including a multi-file edit
+      whose <em>second</em> path is the compiled artifact. Fails open on malformed input so a
+      broken hook never blocks unrelated work.</td></tr>
+  <tr><td><code>registry/</code></td>
+      <td>The 22-module bundled registry described above.</td></tr>
+  <tr><td><code>examples/</code></td>
+      <td>Two query → golden-image pairs, pinned byte-for-byte by the evals (see below).</td></tr>
+</table>
+</div>
+
+<h2 id="workflow">Day-to-day use</h2>
+<ol>
+  <li><strong>Say what you want.</strong> “Make me a security reviewer for our AWS PRs.” The
+  prompt hook nudges toward the compiler; or invoke <code>/agent-compile</code> directly.</li>
+  <li><strong>The model builds the query and shows it.</strong> Role, task, domains, views,
+  stance, environment, risk — and an effect ceiling. A compile with no ceiling from either the
+  query or a view is refused: “an unconstrained agent must be asked for by listing its effects,
+  never implied by omission.”</li>
+  <li><strong>Discover exact ids.</strong> <code>inspect</code> filters by kind or tag. Fuzzy
+  discovery may <em>suggest</em> ids; the compile step consumes exact ids only.</li>
+  <li><strong>Compile.</strong> Out comes an AgentImage and its hash — or structured diagnostics.
+  On diagnostics, <em>fix the source, not the check</em>: resolve conflicts, add the missing
+  module, raise the ceiling deliberately — never suppress the failure.</li>
+  <li><strong>Render and save.</strong> <code>render</code> returns the agent markdown; you write
+  it to <code>.claude/agents/&lt;name&gt;.md</code>. (That path is Claude Code's location; the
+  AgentImage, not the rendered file, is the contract.)</li>
+  <li><strong>Interrogate it later.</strong> “Why does this agent say X?” →
+  <code>explain --unit security.iam.review#least-privilege</code> → module, version, source file,
+  line range.</li>
+  <li><strong>Missing behavior?</strong> Author a module, then recompile — never paste prose into
+  the rendered agent. The guard hook enforces what the artifact's own header says:
+  <em>DO NOT EDIT BY HAND</em>.</li>
+</ol>
+
+<h3>Try it from the command line</h3>
+<pre><code>cd plugins/agent-compiler
+python3 scripts/compile.py compile \
+  --registry registry \
+  --query examples/queries/security-pr-review.json \
+  --out /tmp/image.json
+python3 scripts/render_claude_agent.py --image /tmp/image.json</code></pre>
+
+<h2 id="output">What you get</h2>
+<p>The rendered artifact for the shipped security-review query — note the provenance comment on
+every content line and the explicit capability-wiring section:</p>
+<pre><code>---
+name: security-pr-reviewer
+description: Compiled reviewer agent for pull-request-review. Effects capped at: network, scm:read.
+---
+
+&lt;!-- compiled by agent-compiler; imageHash: sha256:ccb2af8b…; rendererVersion: 0.1.0;
+     DO NOT EDIT BY HAND — edit the registry modules and recompile --&gt;
+
+# security-pr-reviewer
+
+Stance: adversarial, evidence-driven.
+
+## Rules
+
+- **MUST** Every material finding must include concrete evidence or a precise
+  source reference.  &lt;!-- behavior.evidence#cite-findings --&gt;
+- **MUST** Evaluate permissions against the minimum privileges required by the
+  stated operation.  &lt;!-- security.iam.review#least-privilege --&gt;
+
+## Probes to run
+
+- Could this change allow a principal to cross an existing trust boundary?
+  &lt;!-- security.iam.review#cross-boundary-access --&gt;
+- Are wildcard resources, actions, or principals being introduced?
+  &lt;!-- security.iam.review#wildcard-scope --&gt;
+
+## Never
+
+- Do not present a conclusion whose supporting evidence you have not actually
+  examined in this session.  &lt;!-- behavior.evidence#unsupported-claim --&gt;
+- Do not describe a theoretical vulnerability without connecting it to concrete
+  evidence from the reviewed artifact.  &lt;!-- security.iam.review#unsupported-vulnerability --&gt;
+
+## Required capabilities
+
+This agent needs implementations of these provider-independent
+interfaces; wire them to the tools your harness actually exposes:
+
+- `scm.pull_request.files`
+- `scm.pull_request.read`
+
+Effects this agent may exercise: `network`, `scm:read` (ceiling: network, scm:read).</code></pre>
+<p>The two shipped examples show the two shapes an agent takes: this narrow, capability-linked,
+read-only reviewer (6 units from 2 modules), and <code>engineering-default</code> — the
+daily-driver identity (17 units from 9 modules, zero capabilities, behavior-only under a broad
+ceiling), which also demonstrates applicability: <code>discipline.prove-the-undo</code> joins the
+image only when the query's risk reaches high.</p>
+
+<h2 id="diagnostics">Diagnostics — the fail-closed surface</h2>
+<p>Every failure is a structured <code>{code, severity, message, nodeIds}</code> diagnostic on
+stdout with exit 1, never a warning. The kernel's codes:</p>
+<div class="tablewrap">
+<table>
+  <tr><th>Stage</th><th>Codes</th></tr>
+  <tr><td>Registry load</td><td><code>BAD_REGISTRY</code> · <code>BAD_MODULE</code> · <code>BAD_MODULE_KEY</code> · <code>BAD_MODULE_ID</code> · <code>BAD_MODULE_KIND</code> · <code>BAD_MODULE_VERSION</code> · <code>DUPLICATE_ID</code> · <code>BAD_UNIT_ID</code> · <code>DUPLICATE_UNIT_ID</code></td></tr>
+  <tr><td>Selection + linking</td><td><code>MISSING_VIEW</code> · <code>MISSING_DEPENDENCY</code> · <code>DEPENDENCY_CYCLE</code> · <code>CONFLICT</code> · <code>UNDECLARED_STANCE</code> · <code>NO_EFFECT_CEILING</code> · <code>MISSING_CAPABILITY</code> · <code>EFFECT_CEILING</code></td></tr>
+  <tr><td>MCP facade</td><td><code>BAD_QUERY</code> · <code>BAD_IMAGE</code> · <code>UNKNOWN_UNIT</code> · <code>INTERNAL</code> (surfaced, never a server crash)</td></tr>
+</table>
+</div>
+
+<h2 id="evals">Eval coverage</h2>
+<p>The cheap-tier pack (<code>plugins/agent-compiler/evals/cheap/checks.sh</code>)
+<em>executes the kernel and asserts the invariant on real output</em> — golden, metamorphic, and
+fail-closed — rather than grepping for sentences about it. Offline, stdlib-python + bash,
+sub-second:</p>
+<ul>
+  <li><strong>Golden + determinism + order-independence</strong> — both shipped queries compile to
+  images byte-identical (<code>cmp</code>) to the committed goldens; a second run is
+  byte-identical; <code>--discovery-order reverse</code> is byte-identical.</li>
+  <li><strong>Metamorphic</strong> — dropping an unrelated module into the registry must leave the
+  image hash unchanged. This is the check that caught the original hash bug.</li>
+  <li><strong>Fail-closed, exit-coupled</strong> — fixture registries assert the exact diagnostic:
+  <code>CONFLICT</code>, <code>BAD_MODULE_KEY</code> (the singular-<code>task:</code> typo),
+  <code>MISSING_DEPENDENCY</code>, <code>DEPENDENCY_CYCLE</code>, <code>EFFECT_CEILING</code>,
+  <code>NO_EFFECT_CEILING</code>, <code>UNDECLARED_STANCE</code>; and the golden image must
+  contain no <code>scm:write</code>.</li>
+  <li><strong>Applicability</strong> — <code>prove-the-undo</code> absent at medium risk, present
+  at high.</li>
+  <li><strong>Provenance</strong> — every emitted unit must carry module, source, and
+  version.</li>
+  <li><strong>Hooks, driven with real payloads</strong> — the guard denies an Edit, a MultiEdit,
+  and a multi-target edit whose second path is the compiled file; stays silent for README.md; the
+  suggest hook fires on agent-building intent and stays silent otherwise; both exit 0 on malformed
+  stdin.</li>
+  <li><strong>MCP round-trip</strong> — the server is spawned as a real subprocess:
+  initialize → tools/list (the tool set must be exactly the four) → a compile whose hash must
+  equal the golden → a ceiling-less query that must return <code>NO_EFFECT_CEILING</code>.</li>
+</ul>
+
+<h2 id="limits">Honest limits</h2>
+<ul>
+  <li><strong>No execution, ever, inside this plugin.</strong> The harness is already a scheduler
+  with a permission system; what survives from the effect system is compile-time. The upstream
+  design's <code>execute</code> tool and ExecutionPlan DAG were cut, not deferred.</li>
+  <li><strong>No capability linker yet.</strong> Interfaces are declared and validated against the
+  ceiling, but binding them to concrete MCP servers or tools is the human's wiring step — deferred
+  until a real second provider exists to link against.</li>
+  <li><strong>The renderer doesn't yet emit harness permissions.</strong> The design sketches
+  translating effects into subagent <code>tools:</code> frontmatter and a suggested
+  <code>settings.json</code> block; the shipped renderer emits a prose capabilities section and
+  names the ceiling in the description instead.</li>
+  <li><strong><code>requires</code> bypasses applicability.</strong> A risk-gated module pulled in
+  by an explicit <code>requires</code> edge appears regardless of query risk — edges are exact
+  asks.</li>
+  <li><strong>Registry layering is unresolved.</strong> Where a user's registry lives — plugin,
+  target repo, or both with enterprise-baseline layering — is an open Phase&nbsp;2+ question;
+  today <code>--registry</code> (or <code>$AGENT_COMPILER_REGISTRY</code>) points at exactly one
+  directory.</li>
+  <li><strong>Hooks and MCP auto-start are Claude-Code-only.</strong> On any other harness the
+  skill prose carries the same two rules, and the CLI is the portable substrate.</li>
+  <li><strong>Only the exact frontmatter subset parses.</strong> A feature (it's what catches
+  typos), but a gotcha for module authors.</li>
+</ul>
+
+<h2 id="siblings">Relationship to sibling plugins</h2>
+<p>agent-compiler is, in a real sense, the marketplace's own doctrine made compilable: nine of its
+registry modules are distillations of sibling plugins' invariants, each citing its source —
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/verify-before-claim">verify-before-claim</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/find-before-build">find-before-build</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/stop-rule">stop-rule</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/scope-fence">scope-fence</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/egress-gate">egress-gate</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate">semver-gate</a>,
+<a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/prove-the-undo">prove-the-undo</a>,
+plus two from repo practice (build-run-verify and demonstrate-with-misses). Compiling
+<code>view.engineering-default</code> hands you the house style as one addressable identity.</p>
+<ul>
+  <li><strong><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/graveyard">graveyard</a></strong>
+  is the acknowledged structural precedent: the model orchestrates and explains, but the
+  consequential artifact is produced by a deterministic script the model cannot improvise
+  around.</li>
+  <li><strong><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/plugin-factory">plugin-factory</a></strong>
+  scaffolded it — its red-by-default eval skeleton “is exactly right here.”</li>
+  <li><strong><a href="../redgate/">redgate</a></strong> is the conceptual sibling: the repo's
+  research corpus concludes that protocol invariants should “become a small set of declarations …
+  that a compiler turns into harness hooks” — the same declare-then-compile shape agent-compiler
+  implements for personas. The gap analysis names the unfilled bridge both point at: a per-plugin
+  declared permission surface, compilable to each harness's native permission model; the effect
+  ceiling + capability interfaces are the closest thing the repo has to it today.</li>
+</ul>
+
+<h2 id="further">Further reading</h2>
+<ul>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/designs/agent-compiler-plugin.md">The design doc</a> — the full refinement from the upstream handoff, the deliberate cuts, and the three decisions changed by building it.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/skills/agent-compiler/references/language.md">The module language spec</a> — frontmatter subset, block kinds, and exact selection semantics.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/docs/adr/0001-identities-are-views-preferences-are-domains.md">ADR 0001</a> — identities are views, preferences are domains.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler/registry">The bundled registry</a> — all 22 modules, browsable.</li>
+  <li><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler/examples">The shipped examples</a> — the two query → golden-image pairs the evals pin.</li>
+</ul>
+
+<footer>
+  Part of <a href="https://github.com/JRichlen/agent-plugins">JRichlen/agent-plugins</a> ·
+  <a href="../">docs home</a> ·
+  <a href="../redgate/">redgate documentation</a>
+</footer>
+
+</div>
+</body>
+</html>
