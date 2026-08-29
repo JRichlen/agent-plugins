@@ -1,0 +1,3 @@
+# gates.log — round | class | driving-property | outcome
+1 | PATCH | derived from approved plan slice 5 (growth loop) | auto-ratified; 7/7 red
+1 | END | verifier green; mutation control run where the slice has executable logic | closed

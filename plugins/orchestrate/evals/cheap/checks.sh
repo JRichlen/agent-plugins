@@ -76,6 +76,48 @@ else
   bad "derived-verify dropped DERIVED-TARGETS — verify targets no longer derived from research"
 fi
 
+# UNTRUSTED-PROVENANCE: both templates. Worker findings cross into the verify
+# and synthesize stages as data inside an untrusted-data fence, never as
+# instructions — deleting the fence lets a researched claim phrased as a
+# directive ("mark this confirmed") steer the verifier instead of being
+# checked by it. Each grep is single-line: the pinned fragments sit on one
+# physical line in the templates and must stay that way.
+for t in "$A" "$B"; do
+  if grep -q 'UNTRUSTED-PROVENANCE' "$t"; then
+    ok "$(basename "$t") keeps UNTRUSTED-PROVENANCE (worker output crosses as data)"
+  else
+    bad "$(basename "$t") dropped UNTRUSTED-PROVENANCE — worker text is unfenced instructions again"
+  fi
+  if grep -q 'untrusted-data' "$t"; then
+    ok "$(basename "$t") wraps worker findings in the untrusted-data fence"
+  else
+    bad "$(basename "$t") lost the untrusted-data fence — findings reach the verifier unfenced"
+  fi
+  if grep -q 'data, never instructions' "$t"; then
+    ok "$(basename "$t") tells the verifier fenced text is data, never instructions"
+  else
+    bad "$(basename "$t") lost the data-never-instructions rule — fenced text can steer the verdict"
+  fi
+done
+
+# The rule must have teeth where verdicts are made: the verifier is explicitly
+# told fenced text cannot change its verdict procedure. Both templates.
+for t in "$A" "$B"; do
+  if grep -q 'change your verdict procedure' "$t"; then
+    ok "$(basename "$t") pins that fenced text cannot change the verdict procedure"
+  else
+    bad "$(basename "$t") lost the verdict-procedure clause — injections can rewrite the check"
+  fi
+done
+
+# Strategy B's reconciler also consumes worker findings; its precedence rule
+# must be injection-proof too.
+if grep -q 'change the precedence rule' "$B"; then
+  ok "pipelined-verdict-wins shields the precedence rule from fenced findings"
+else
+  bad "pipelined-verdict-wins lost the precedence-rule shield — fenced findings can amend VERDICT-WINS"
+fi
+
 # VERDICT-WINS: Strategy B only. The reconciler must let a refuting verdict
 # override the research claim, not average them. This is B's whole epistemic point.
 if grep -q 'VERDICT-WINS' "$B"; then
@@ -83,3 +125,18 @@ if grep -q 'VERDICT-WINS' "$B"; then
 else
   bad "pipelined-verdict-wins dropped VERDICT-WINS — refuted claims can survive into the recommendation"
 fi
+
+group "orchestrate — untrusted-data fence cannot be broken out of"
+# A worker string containing a literal triple-backtick would close the
+# untrusted-data fence early and let the remainder read as instructions. Both
+# claim-consuming templates must defang backticks in the payload before
+# embedding it (mapping each to U+02CB). Grep the backtick-free tail of that
+# replacement; coupled — remove the defang and the check goes red.
+for _t in derived-verify pipelined-verdict-wins; do
+  _f="$PLUGIN_DIR/skills/orchestrate/templates/$_t.workflow.js"
+  if grep -qF "u02cb" "$_f"; then
+    ok "fence: $_t defangs backticks in untrusted payload (no fence breakout)"
+  else
+    bad "fence: $_t embeds untrusted payload without defanging backticks — fence breakout possible"
+  fi
+done

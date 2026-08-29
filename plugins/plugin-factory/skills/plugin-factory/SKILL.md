@@ -130,3 +130,11 @@ primitives like hooks and subagents don't port to other harnesses, so if a plugi
 genuinely needs one, say so in its prose with a caveat that the pattern still
 ports even though that primitive doesn't. The cheap tier's portability linter
 enforces exactly this.
+
+## References
+
+- [`references/judge-calibration.md`](references/judge-calibration.md) — the
+  contract for a judged verifier when no deterministic check can defend an
+  invariant: one judge per dimension, hard negatives built in, a mandatory
+  calibration stub, and a failing calibration treated as a finding rather than
+  silenced.

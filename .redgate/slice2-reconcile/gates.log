@@ -1,0 +1,4 @@
+# gates.log — round | class | driving-property | outcome
+1 | PATCH | derived-ratification: criteria byte-derived from approved plan slice 2 ("reconcile: the independent END") | auto-ratified; gate red on 6/6 checkable, 0 UNVERIFIABLE, harness preflight clean
+1 | END  | verifier 6/6 green, evidence written this run | but MUTATION CONTROL demotes #3,#4: both stayed green when the drift gate was reverted — satisfied by the ordinary FAIL path, not by drift detection. Per protocol they are UNVERIFIABLE (not coupled), not proven.
+1 | MINOR | corrective round required inside the approved slice-2 direction; contract is pinned so it is NOT edited — round 2 opens with a fresh, coupled contract | auto-pass with prominent flag; standing veto

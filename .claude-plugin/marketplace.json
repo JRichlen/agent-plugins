@@ -396,6 +396,46 @@
       ]
     },
     {
+      "name": "redgate",
+      "description": "Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work. Use on /redgate \"<idea>\", or whenever done-criteria must be proven falsifiable before building.",
+      "version": "0.0.1",
+      "source": "./plugins/redgate",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "red-gate",
+        "verifier",
+        "rounds",
+        "begin-middle-end",
+        "falsifiable",
+        "sdlc",
+        "ai-dlc",
+        "apm",
+        "cross-harness"
+      ]
+    },
+    {
+      "name": "recurrence-detector",
+      "description": "Close the growth loop's DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.",
+      "version": "0.0.1",
+      "source": "./plugins/recurrence-detector",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "recurrence",
+        "growth-loop",
+        "detect",
+        "failure-shape",
+        "invariant-mining",
+        "memory",
+        "meta"
+      ]
+    },
+    {
       "name": "agent-compiler",
       "description": "Compile deterministic, content-hashed agents from small behavior modules: a skill turns fuzzy intent into a typed AgentQuery, a stdlib-only kernel resolves modules, expands dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage plus a rendered harness-native subagent — never inventing behavior text without provenance.",
       "version": "0.3.0",

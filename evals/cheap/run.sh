@@ -322,6 +322,39 @@ sys.exit(1 if fail else 0)
 PY
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 7c. Every references/ doc is linked from its own SKILL.md ---------------
+# A reference file nothing links is shipped but INERT: progressive disclosure is
+# the only way a skill loads it, so an unlinked reference never takes effect.
+# Found by independent verification of the redgate slices: three growth-loop
+# amendment files existed on disk while zero host skills referenced them.
+group "references are reachable from their own SKILL.md"
+python3 - "$REPO_ROOT" <<'PY_ORPHAN'
+import os, sys
+root = sys.argv[1]
+fail = 0
+checked = 0
+for base, dirs, files in os.walk(os.path.join(root, "plugins")):
+    if os.path.basename(base) != "references":
+        continue
+    skill = os.path.join(os.path.dirname(base), "SKILL.md")
+    if not os.path.isfile(skill):
+        continue
+    text = open(skill, encoding="utf-8").read()
+    for fn in sorted(files):
+        if not fn.endswith(".md"):
+            continue
+        checked += 1
+        if f"references/{fn}" in text:
+            continue
+        rel = os.path.relpath(os.path.join(base, fn), root)
+        print(f"  FAIL {rel} is never linked from {os.path.relpath(skill, root)} — shipped but inert")
+        fail += 1
+if fail == 0:
+    print(f"  PASS all {checked} reference docs are linked from their own SKILL.md")
+sys.exit(1 if fail else 0)
+PY_ORPHAN
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 8. Red-by-default sentinel never ships ---------------------------------
 # The scaffolder writes a UUID-shaped sentinel into each new plugin's checks.sh
 # so a freshly scaffolded (unimplemented) plugin is RED until a human writes real
@@ -452,6 +485,448 @@ for p in mkt.get("plugins", []):
     print(p.get("name", ""))
 PY
 )
+fi
+
+# --- 13. Cross-plugin reference resolution -----------------------------------
+# Plugins name each other in prose: wayfinder points at `grill-me` and
+# `orchestrate`, context-handoff at `dev-diary`, docs-hygiene at `graveyard`,
+# the voice skills at each other. A rename or removal of the referenced plugin
+# leaves the referrer steering the model toward a skill that no longer exists —
+# a broken map, same failure shape as §7 but across plugin boundaries. Roster =
+# every plugin name in marketplace.json + every plugins/*/skills/<name>/ dir.
+# Two COUPLED probes, both asserted by the script's exit code:
+#   (1) DYNAMIC: every backticked hyphenated token (`foo-bar` shape — the
+#       marketplace's skill-name convention) in any SKILL.md or AGENTS.md must
+#       resolve in the roster or appear in the curated NONSKILL ignore set
+#       (ordinary hyphenated prose terms like `api-key`, discovered by actually
+#       grepping the repo). An unknown hyphenated token fails closed: either
+#       the reference is broken, or the ignore set needs a reviewed addition.
+#   (2) CURATED PAIRS: non-hyphenated plugin names (`graveyard`, `orchestrate`)
+#       are indistinguishable from prose, so those live in an explicit
+#       (file, referenced-name) allowlist grepped from the repo. Each pair's
+#       file must still carry the backtick reference (a vanished reference =
+#       stale allowlist = FAIL, keeping the list maintained) and the name must
+#       resolve in the roster.
+group "cross-plugin reference resolution"
+python3 - "$REPO_ROOT" <<'PY'
+import glob, json, os, re, sys
+root = sys.argv[1]
+# Roster: marketplace plugin names + every skill directory name.
+mkt = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+roster = {p.get("name", "") for p in mkt.get("plugins", [])}
+roster |= {os.path.basename(d.rstrip("/"))
+           for d in glob.glob(os.path.join(root, "plugins", "*", "skills", "*", ""))}
+# Hyphenated backtick tokens that are NOT skill references (grepped from the
+# repo; extend only after eyeballing the new token in context).
+NONSKILL = {
+    "oauth-client-id", "oauth-secret", "api-key", "client-id",   # credential nouns
+    "as-of", "general-purpose",                                   # plain prose
+    "derived-verify", "pipelined-verdict-wins",                   # orchestrate workflow templates
+    "homelab-board", "ansible-homelab-sim",                       # worked-example artifacts
+    "consolidate-delta", "judge-calibration", "path-consent",     # reference docs, not skills
+    "engineering-default",                                        # agent-compiler golden example/registry view
+}
+tok = re.compile(r'`([a-z][a-z0-9]*(?:-[a-z0-9]+)+)`')
+fail = 0
+scanned = 0
+files = sorted(glob.glob(os.path.join(root, "plugins", "*", "skills", "*", "SKILL.md")) +
+               glob.glob(os.path.join(root, "plugins", "*", "AGENTS.md")))
+for f in files:
+    if os.path.islink(f):
+        continue
+    scanned += 1
+    for name in sorted(set(tok.findall(open(f, encoding="utf-8").read()))):
+        if name in roster or name in NONSKILL:
+            continue
+        print(f"  FAIL {os.path.relpath(f, root)} references `{name}` — not an installed plugin/skill "
+              f"and not in the curated non-skill set"); fail += 1
+if fail == 0:
+    print(f"  PASS every hyphenated backtick reference in {scanned} SKILL.md/AGENTS.md files resolves")
+# Curated pairs for non-hyphenated plugin names the dynamic probe can't see.
+PAIRS = [
+    ("plugins/docs-hygiene/skills/docs-hygiene/SKILL.md",       "graveyard"),
+    ("plugins/context-handoff/skills/context-handoff/SKILL.md", "orchestrate"),
+    ("plugins/wayfinder/AGENTS.md",                             "orchestrate"),
+    ("plugins/wayfinder/skills/wayfinder/SKILL.md",             "orchestrate"),
+]
+pfail = 0
+for rel, name in PAIRS:
+    path = os.path.join(root, rel)
+    if not os.path.isfile(path):
+        # Missing file is STALENESS only when the plugin is installed here.
+        # A minimal/synthetic marketplace (counterfeit tier) has neither the
+        # plugin nor the file, which is not a defect — skip it.
+        _plug = rel.split("/")[1] if rel.startswith("plugins/") else ""
+        if _plug and os.path.isdir(os.path.join(root, "plugins", _plug)):
+            print(f"  FAIL curated pair: {rel} does not exist (stale allowlist)"); pfail += 1
+        continue
+    if f"`{name}`" not in open(path, encoding="utf-8").read():
+        print(f"  FAIL curated pair: {rel} no longer references `{name}` (stale allowlist)"); pfail += 1; continue
+    if name not in roster:
+        print(f"  FAIL {rel} references `{name}` which is not an installed plugin/skill"); pfail += 1; continue
+print(f"  PASS all {len(PAIRS)} curated non-hyphenated references still present and resolving"
+      if pfail == 0 else f"  ({pfail} curated pair(s) failed)")
+sys.exit(1 if (fail or pfail) else 0)
+PY
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 14. Context-tax budget --------------------------------------------------
+# Every installed plugin pays rent in the model's context window before it does
+# any work: the root CLAUDE.md, each SKILL.md frontmatter description, and each
+# plugin.json description are always-resident surfaces. Nothing bounded that
+# spend, so twenty small additions could quietly crowd out the window this
+# marketplace's skills need to actually run in. This check is the mandate:
+# report the per-plugin bill and fail when (a) any single description exceeds
+# 1024 chars (largest today: tailscale-wif SKILL.md at 995) or (b) the
+# estimated total (chars/4) exceeds 9000 tokens. Measured at authoring time:
+# 28933 chars ≈ 7233 tokens, so 9000 leaves ~20% headroom — enough for a couple
+# of new plugins, tight enough that unbounded description growth goes red here
+# instead of silently taxing every session.
+group "context-tax budget (always-resident surfaces)"
+python3 - "$REPO_ROOT" <<'PY'
+import glob, json, os, sys
+try:
+    import yaml
+except ImportError:
+    print("  SKIP context-tax budget (PyYAML unavailable)"); sys.exit(0)
+root = sys.argv[1]
+MAX_DESC_CHARS = 1024
+BUDGET_TOKENS  = 9000   # measured 2026-08: 7233 est tokens -> ~20% headroom
+fail = 0
+rows = []   # (label, chars)
+claude_md = os.path.join(root, "CLAUDE.md")
+rows.append(("CLAUDE.md (root)", os.path.getsize(claude_md) if os.path.isfile(claude_md) else 0))
+per_plugin = {}
+def take(label, plugin, text):
+    global fail
+    n = len(text)
+    per_plugin[plugin] = per_plugin.get(plugin, 0) + n
+    if n > MAX_DESC_CHARS:
+        print(f"  FAIL {label} description is {n} chars (> {MAX_DESC_CHARS})"); fail += 1
+for m in sorted(glob.glob(os.path.join(root, "plugins", "*", ".claude-plugin", "plugin.json"))):
+    plugin = m.split(os.sep)[-3]
+    take(f"{plugin}/plugin.json", plugin, json.load(open(m)).get("description", "") or "")
+for s in sorted(glob.glob(os.path.join(root, "plugins", "*", "skills", "*", "SKILL.md"))):
+    plugin = s.split(os.sep)[-4]
+    txt = open(s, encoding="utf-8").read()
+    parts = txt.split("---", 2)
+    if not txt.startswith("---") or len(parts) < 3:
+        print(f"  FAIL {os.path.relpath(s, root)} has no parseable frontmatter"); fail += 1; continue
+    try:
+        fm = yaml.safe_load(parts[1]) or {}
+    except Exception:
+        continue  # §4b already reports unparseable frontmatter
+    take(os.path.relpath(s, root), plugin, fm.get("description", "") or "")
+rows += sorted(per_plugin.items())
+total = sum(n for _, n in rows)
+for label, n in rows:
+    print(f"  {label:<28} {n:>6} chars  ~{n // 4:>5} tokens")
+print(f"  {'TOTAL':<28} {total:>6} chars  ~{total // 4:>5} tokens  (budget {BUDGET_TOKENS} tokens)")
+if total // 4 > BUDGET_TOKENS:
+    print(f"  FAIL estimated context tax {total // 4} tokens exceeds the {BUDGET_TOKENS}-token budget"); fail += 1
+if fail == 0:
+    print(f"  PASS all descriptions <= {MAX_DESC_CHARS} chars and total within budget")
+sys.exit(1 if fail else 0)
+PY
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 15. Version drift (marketplace <-> plugin.json) -------------------------
+# marketplace.json entries carry a version and so does each plugin.json; nothing
+# tied them together, so a bumped plugin.json with a stale marketplace entry (or
+# vice versa) would advertise one version and install another. Fail closed: a
+# plugin.json with a missing or empty version field is a FAIL outright, and when
+# the marketplace entry also carries a version the two must be byte-identical.
+group "version drift (marketplace <-> plugin.json)"
+python3 - "$REPO_ROOT" <<'PY'
+import json, os, sys
+root = sys.argv[1]
+mkt = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+fail = 0
+for p in mkt.get("plugins", []):
+    name = p.get("name", "")
+    src = (p.get("source", "") or "").lstrip("./")
+    manifest = os.path.join(root, src, ".claude-plugin", "plugin.json")
+    if not os.path.isfile(manifest):
+        continue  # §3 already reports the missing manifest
+    pv = json.load(open(manifest)).get("version")
+    if not pv:
+        print(f"  FAIL {name}: plugin.json has no version field (fail-closed)"); fail += 1; continue
+    mv = p.get("version")
+    if mv is not None and mv != pv:
+        print(f"  FAIL {name}: marketplace.json version '{mv}' != plugin.json version '{pv}'"); fail += 1; continue
+    print(f"  PASS {name}: version {pv}" + ("" if mv is None else " (matches marketplace entry)"))
+sys.exit(1 if fail else 0)
+PY
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 16. Secret-scan gate on agent-written exhaust --------------------------
+# Agent-written exhaust — redgate gates.log files, dev-diary drafts under docs/
+# — is the surface where a pasted credential ships without any human WITNESS
+# reading it closely. evals/cheap/secret-gate.sh is the mechanical WITNESS
+# (dependency-free grep -E; see its header for the gitleaks/trufflehog upgrade
+# path). Two halves here, both COUPLED to exit codes, never a message grep:
+#   (i)  DISCOVER the exhaust surfaces that actually exist in-repo and scan
+#        each — discovery, not a fixed list, so new .redgate dirs or diary
+#        drafts are covered the day they appear (and absence is a no-op, not
+#        a failure: no exhaust means nothing can have leaked).
+#   (ii) NEGATIVE CONTROL: stage COPIES of the leaky/clean fixtures OUTSIDE
+#        /fixtures/ (the scanner allowlists that segment by design) and assert
+#        exit 1 on the planted fake AWS key and exit 0 on the clean control.
+#        This is what makes the gate falsifiable — gut the scanner's pattern
+#        table and this section, not silence, goes red. The tier stays green
+#        in the synthetic counterfeit root too: the fixtures travel inside the
+#        copied evals/cheap/. FAIL substring: "secret gate".
+group "secret gate (agent-written exhaust)"
+SG="evals/cheap/secret-gate.sh"
+SG_FIXDIR="evals/cheap/fixtures/secret-gate"
+if [ ! -x "$SG" ] || [ ! -f "$SG_FIXDIR/leaky.txt" ] || [ ! -f "$SG_FIXDIR/clean.txt" ]; then
+  bad "secret gate machinery missing (scanner or fixtures) — the exhaust surface is unguarded"
+else
+  # (i) scan every agent-exhaust surface present in-repo
+  sg_found=0
+  while IFS= read -r f; do
+    [ -z "$f" ] && continue
+    sg_found=$((sg_found+1))
+    if out="$("$SG" "$f" 2>&1)"; then
+      ok "secret gate: exhaust clean: $f"
+    else
+      bad "secret gate: secret-shaped string in $f"
+      printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+  done < <({ find .redgate -type f -name 'gates.log' 2>/dev/null; \
+             find docs -maxdepth 1 -type f -name 'dev-diary*' 2>/dev/null; } | sort)
+  [ "$sg_found" -eq 0 ] && ok "secret gate: no agent-exhaust surfaces in-repo (nothing to scan)"
+
+  # (ii) negative control — assert the scanner's teeth on both fixtures
+  sg_tmp="$(mktemp -d)"
+  cp "$SG_FIXDIR/leaky.txt" "$sg_tmp/leaky.txt"
+  cp "$SG_FIXDIR/clean.txt" "$sg_tmp/clean.txt"
+  "$SG" "$sg_tmp/leaky.txt" >/dev/null 2>&1; sg_rc=$?
+  if [ "$sg_rc" -eq 1 ]; then
+    ok "secret gate: negative control — scanner exits 1 on the planted fake AWS key"
+  else
+    bad "secret gate: negative control FAILED — scanner exited $sg_rc (not 1) on the leaky fixture; the gate is blind"
+  fi
+  "$SG" "$sg_tmp/clean.txt" >/dev/null 2>&1; sg_rc=$?
+  if [ "$sg_rc" -eq 0 ]; then
+    ok "secret gate: clean control — scanner exits 0 on secret-free prose"
+  else
+    bad "secret gate: clean control FAILED — scanner exited $sg_rc (not 0) on clean prose; the gate over-flags"
+  fi
+  # allowlist contract: at its in-repo /fixtures/ path the leaky file is exempt,
+  # or the always-on tier could never keep its own negative-control bait.
+  if "$SG" "$SG_FIXDIR/leaky.txt" >/dev/null 2>&1; then
+    ok "secret gate: /fixtures/ allowlist honored (in-repo fixture exempt)"
+  else
+    bad "secret gate: /fixtures/ allowlist broken — the gate flags its own eval fixtures"
+  fi
+  rm -rf "$sg_tmp"
+fi
+
+# --- 17. Routing eval structure (roster-level trigger routing) --------------
+# The behavioral routing pack (evals/routing/) actually runs in CI with a live
+# model; the cheap tier guards its STRUCTURE so a broken pack can't ship green:
+# roster.txt is in sync with the marketplace, the config parses, it carries
+# enough positive scenarios AND the calibration negatives, and every positive
+# routes to a real installed plugin. Coupled to real state — add a plugin
+# without regenerating the roster, or point a scenario at a nonexistent skill,
+# and this goes red.
+group "routing eval — structure"
+# Repo-level pack: a marketplace root without evals/routing/ (the counterfeit
+# tier's synthetic root, or a fork that hasn't adopted it) has nothing to check.
+# Absent => skip; present-but-broken => fail.
+if [ ! -f evals/routing/promptfooconfig.yaml ]; then
+  ok "routing: no routing pack in this root — nothing to check"
+elif evals/routing/gen-roster.sh --check >/dev/null 2>&1; then
+  ok "routing: roster.txt is in sync with the marketplace"
+else
+  bad "routing: roster.txt is STALE — run evals/routing/gen-roster.sh > evals/routing/roster.txt"
+fi
+if [ -f evals/routing/promptfooconfig.yaml ]; then
+python3 - "$REPO_ROOT" <<'PYR'
+import json, os, re, sys
+root = sys.argv[1]
+cfgp = os.path.join(root, "evals", "routing", "promptfooconfig.yaml")
+rosp = os.path.join(root, "evals", "routing", "roster.txt")
+fail = 0
+try:
+    import yaml
+    cfg = yaml.safe_load(open(cfgp)); tests = cfg.get("tests", [])
+    parsed = "yaml"
+except Exception:
+    # PyYAML may be absent in some CI images; fall back to counting test blocks.
+    cfg = None
+    tests = re.findall(r'^\s*- description:', open(cfgp).read(), re.M)
+    parsed = "regex-fallback"
+raw = open(cfgp).read()
+routes = re.findall(r'ROUTE:\\s\*([A-Za-z][\w-]*)', raw)
+positives = [r for r in routes if r != "none"]
+negatives = [r for r in routes if r == "none"]
+roster = {l.split(":", 1)[0].strip() for l in open(rosp) if l.strip()}
+if len(positives) >= 6:
+    print(f"  PASS routing: {len(positives)} must-fire scenarios (>=6) [{parsed}]")
+else:
+    print(f"  FAIL routing: only {len(positives)} must-fire scenarios (<6)"); fail += 1
+if len(negatives) >= 2:
+    print(f"  PASS routing: {len(negatives)} must-not-fire calibration negatives (>=2)")
+else:
+    print(f"  FAIL routing: {len(negatives)} calibration negatives (<2) — a fire-on-everything router would pass"); fail += 1
+missing = [r for r in positives if r not in roster]
+if missing:
+    print(f"  FAIL routing: scenarios route to non-installed skills: {missing}"); fail += 1
+else:
+    print(f"  PASS routing: every must-fire scenario targets an installed plugin")
+sys.exit(1 if fail else 0)
+PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
+
+# --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
+# Gap #4: the routing pack runs each scenario repeat:5 times and pass-rate.sh
+# enforces a per-scenario floor so a lucky single pass can't read green. Guard
+# offline that (a) the pack still declares repeat, (b) CI still invokes the gate,
+# and (c) pass-rate.sh genuinely fails a below-floor run and passes an at-floor
+# one — run against synthetic fixtures so the gate is mutation-proven without a
+# model call. Coupled: drop repeat, unwire the gate, or invert its verdict and
+# this goes red.
+group "statistical gate — pass-rate floor bites"
+# The repeat:/CI-wiring halves only apply where a routing pack exists; the
+# pass-rate.sh fixture halves are repo-independent and always run.
+if [ ! -f evals/routing/promptfooconfig.yaml ]; then
+  ok "statistical gate: no routing pack in this root — repeat/CI wiring not applicable"
+elif grep -qE '^\s*repeat:\s*[0-9]+' evals/routing/promptfooconfig.yaml; then
+  ok "routing pack declares repeat: (scenarios run more than once)"
+else
+  bad "routing pack lost its repeat: — n=1 greens are uninterpretable again"
+fi
+if [ ! -f .github/workflows/evals.yml ]; then
+  ok "statistical gate: no workflow file in this root — CI wiring not applicable"
+elif grep -q 'pass-rate.sh' .github/workflows/evals.yml; then
+  ok "CI wires pass-rate.sh into the routing job"
+else
+  bad "CI no longer invokes pass-rate.sh — the statistical floor is not enforced"
+fi
+# Every behavioral (rubric) pack must ALSO declare repeat: — a single-shot rubric
+# leg is the same uninterpretable n=1 green the routing pack fixed, and one 504
+# would sink it. Skip-when-absent so the counterfeit synthetic root (no plugins/)
+# stays green; bite only where a real pack is PRESENT but lost its repeat.
+_pf_packs="$(ls -d plugins/*/evals/promptfoo 2>/dev/null || true)"
+if [ -z "$_pf_packs" ]; then
+  ok "statistical gate: no behavioral packs in this root — repeat check not applicable"
+else
+  _missing_repeat=""
+  for _d in $_pf_packs; do
+    _cfg="$_d/promptfooconfig.yaml"
+    [ -f "$_cfg" ] || continue
+    grep -qE '^\s*repeat:\s*[0-9]+' "$_cfg" || _missing_repeat="$_missing_repeat $(basename "$(dirname "$(dirname "$_d")")")"
+  done
+  if [ -n "$_missing_repeat" ]; then
+    bad "behavioral pack(s) lost repeat: —$_missing_repeat — n=1 rubric greens are uninterpretable and a 504 sinks the leg"
+  else
+    ok "every behavioral pack declares repeat: (rubric legs run more than once)"
+  fi
+fi
+_pr="evals/paid/pass-rate.sh"
+_tmp="$(mktemp -d)"
+python3 - "$_tmp" <<'PYF'
+import json, sys
+d = sys.argv[1]
+def rows(desc, n, passes): return [{"testCase":{"description":desc},"success":(i<passes)} for i in range(n)]
+def erow(desc): return {"testCase":{"description":desc},"success":False,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
+json.dump({"results":{"results": rows("A",5,5)+rows("B",5,4)}}, open(d+"/good.json","w"))   # 1.0, 0.8
+json.dump({"results":{"results": rows("A",5,5)+rows("C",5,2)}}, open(d+"/bad.json","w"))    # 0.4 -> below 0.8
+json.dump({"results":{"results": rows("A",1,1)}}, open(d+"/under.json","w"))                # n=1 -> fail-closed
+# FAULT semantics (gap #4, the observed 504): a transport error is an INVALID
+# sample, excluded from the floor — a scenario that really passed its 2 valid
+# attempts must not go red because a 3rd attempt 504'd.
+json.dump({"results":{"results": rows("A",3,3)+[rows("B",3,2)[0],rows("B",3,2)[1],erow("B")]}}, open(d+"/fault-ok.json","w"))
+# ...but an all-FAULT scenario is "never tested", not "green": fail closed.
+json.dump({"results":{"results": rows("A",3,3)+[erow("C"),erow("C"),erow("C")]}}, open(d+"/fault-starved.json","w"))
+PYF
+if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
+else
+  bad "pass-rate: at-floor run wrongly failed — floor logic broken"
+fi
+if bash "$_pr" "$_tmp/bad.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  bad "pass-rate: a below-floor scenario (0.4) passed — the gate does not bite"
+else
+  ok "pass-rate: a below-floor scenario (0.4) fails the run"
+fi
+if bash "$_pr" "$_tmp/under.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
+  bad "pass-rate: an n=1 run passed — fail-closed repeat guard broken"
+else
+  ok "pass-rate: an n=1 (un-repeated) run fails closed"
+fi
+# A single transport FAULT must be EXCLUDED, not counted as a rubric failure:
+# scenario B is 2/2 on its valid samples with one 504 dropped -> the run passes.
+if bash "$_pr" "$_tmp/fault-ok.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a transport FAULT (504) is excluded, not scored as a failure"
+else
+  bad "pass-rate: a 504 was counted as a rubric failure — the n=1 fragility is back"
+fi
+# An all-FAULT scenario has zero valid samples -> the model was never actually
+# tested -> must fail CLOSED (a 504 storm is not a green).
+if bash "$_pr" "$_tmp/fault-starved.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an all-504 scenario passed — a FAULT storm read as green (fail-open)"
+else
+  ok "pass-rate: an all-FAULT scenario fails closed (never tested != green)"
+fi
+rm -rf "$_tmp"
+
+# --- 19. Example gallery (docs/examples) is in sync and non-fabricated -------
+# The published before/after gallery is a VERIFICATION surface: every card is a
+# real, provenanced with-skill/without-skill model run captured from the eval
+# tier (docs/examples/data/*.json), rendered to docs/examples/index.html by
+# docs/build-examples.sh. Guard offline that the committed HTML is in sync with
+# the data (so a stale page can't ship), and that no snapshot ships without the
+# two outputs and provenance that make it verifiable rather than marketing.
+# Coupled: edit a snapshot without regenerating, or drop a snapshot's provenance,
+# and this goes red.
+group "example gallery — sync and provenance"
+# Repo-level surface: absent => skip (a minimal marketplace has no gallery);
+# present-but-stale or present-but-unprovenanced => fail.
+if [ ! -x docs/build-examples.sh ]; then
+  ok "example gallery: not present in this root — nothing to check"
+elif docs/build-examples.sh --check >/dev/null 2>&1; then
+  ok "examples: index.html is in sync with docs/examples/data/"
+else
+  bad "examples: index.html is STALE — run docs/build-examples.sh"
+fi
+if [ -x docs/build-examples.sh ]; then
+python3 - "$REPO_ROOT" <<'PYE'
+import glob, json, os, sys
+root = sys.argv[1]
+fail = 0
+found = 0
+for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json"))):
+    found += 1
+    name = os.path.basename(f)
+    try:
+        s = json.load(open(f))
+    except Exception as e:
+        print(f"  FAIL examples/{name}: invalid JSON ({e})"); fail += 1; continue
+    prob = []
+    for k in ("plugin", "prompt", "with_skill", "without_skill", "provenance"):
+        if not s.get(k): prob.append(f"missing {k}")
+    for side in ("with_skill", "without_skill"):
+        if isinstance(s.get(side), dict) and not (s[side].get("output") or "").strip():
+            prob.append(f"{side} has no output")
+    prov = s.get("provenance") or {}
+    for k in ("source", "model"):
+        if not prov.get(k): prob.append(f"provenance missing {k}")
+    # a plugin snapshot must name a real installed plugin
+    if s.get("plugin") and not os.path.isdir(os.path.join(root, "plugins", s["plugin"])):
+        prob.append(f"plugin '{s['plugin']}' is not installed")
+    if prob:
+        print(f"  FAIL examples/{name}: " + "; ".join(prob)); fail += 1
+    else:
+        print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
+if found == 0:
+    print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
+sys.exit(1 if fail else 0)
+PYE
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
 
 # --- summary ----------------------------------------------------------------

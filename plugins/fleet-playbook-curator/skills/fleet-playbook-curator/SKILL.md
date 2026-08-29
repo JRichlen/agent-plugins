@@ -225,3 +225,10 @@ thin Claude-Code wrapper; on any other harness, read this SKILL.md and run the s
 
 The full architecture, the reconciled decomposition, the eval-tier mapping, and the risks
 live in `docs/DESIGN.md` in this plugin.
+
+## References
+
+- [`references/consolidate-delta.md`](references/consolidate-delta.md) — append
+  typed index deltas (`ADD`/`UPDATE`/`REMOVE`, each keeping its citation) to the
+  run log, so a repeatedly-corrected claim reads as a countable failure shape
+  rather than a chore.

@@ -1,0 +1,7 @@
+# Clean-control fixture for evals/cheap/secret-gate.sh — ordinary agent-exhaust
+# prose with NO secret-shaped strings. The cheap tier stages a copy outside
+# /fixtures/ and asserts the scanner exits 0 on it, proving the gate does not
+# over-flag routine text (the other half of the COUPLED negative control).
+
+Today I rotated the Tailscale API key and updated the deploy pipeline. The new
+credential lives in the team vault; this entry records only that it changed.

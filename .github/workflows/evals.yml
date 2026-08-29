@@ -307,7 +307,26 @@ jobs:
         # aggregate gate stayed green because untouched plugins skip. Pin the tool
         # so a third party's release cannot silently disable a required check;
         # bump deliberately and re-read the output when you do.
-        run: npx --yes promptfoo@0.122.0 eval --output results.json
+        #
+        # `|| echo` on purpose: promptfoo exits non-zero if ANY row is red, and a
+        # row is red both for a real rubric failure AND for a transport FAULT (a
+        # 504, an aborted call, an empty body). Letting that exit decide the leg is
+        # exactly the n=1 fragility gap #4 names — a required check going red on
+        # the weather. The statistical gate below reads results.json and is the
+        # real arbiter: it excludes FAULTs and scores a per-scenario floor over the
+        # valid samples. A total crash that writes no results.json still fails,
+        # because pass-rate.sh exits non-zero on a missing/unreadable file.
+        run: npx --yes promptfoo@0.122.0 eval --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
+      - name: statistical gate (per-scenario pass rate, FAULT-excluding)
+        if: steps.touched.outputs.paid == 'true'
+        # repeat:3 in each pack expands every scenario into 3 rows. This enforces a
+        # per-scenario floor over the VALID samples only — a transport FAULT (504,
+        # empty/truncated body) is excluded, not counted as a rubric failure — and
+        # fails CLOSED if a scenario has too few valid samples to judge (an all-504
+        # scenario is "never tested", not "green"). floor 0.6 = majority of 3, so a
+        # single genuinely-flaky draw is absorbed while a mostly-failing scenario
+        # still goes red. This step, not promptfoo's exit code, is the leg's verdict.
+        run: evals/paid/pass-rate.sh "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" --floor 0.6 --min-runs 2 --min-valid 2
       - name: show failing transcripts
         if: always() && steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
@@ -322,6 +341,28 @@ jobs:
               + (([ .gradingResult.componentResults[]? | select(.pass==false) | .reason ] | join("\n---\n")))
               + "\n(overall reason: " + ((.gradingResult.reason // "") | tostring) + ")\n"
           ' results.json || echo "jq parse fell through — see artifact"
+      - name: capture example snapshot from real results
+        if: steps.touched.outputs.paid == 'true'
+        # Extract this plugin's real with-skill/without-skill pair from the graded
+        # results into docs/examples/data/<plugin>.json — the raw material for the
+        # published gallery. Uploaded as an artifact (not committed from CI); a
+        # maintainer or a follow-up job commits the refreshed snapshots, which the
+        # pages workflow then publishes. Never fabricates: a run with no usable
+        # pair simply skips and the previous snapshot stands.
+        working-directory: ${{ github.workspace }}
+        run: |
+          evals/paid/capture-example.sh \
+            "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" \
+            "${{ matrix.plugin }}" \
+            --commit "${{ github.sha }}" \
+            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+      - name: upload captured example snapshot
+        if: always() && steps.touched.outputs.paid == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: example-snapshot-${{ matrix.plugin }}
+          path: docs/examples/data/${{ matrix.plugin }}.json
+          if-no-files-found: ignore
       - name: upload results.json
         if: always() && steps.touched.outputs.paid == 'true'
         uses: actions/upload-artifact@v4
@@ -367,6 +408,73 @@ jobs:
               echo "::error::behavioral tier promptfoo run did not pass (behavioral-run=$RUN)."
               exit 1 ;;
           esac
+
+  # ── routing tier (roster-level trigger routing) ───────────────────────────
+  # Gap #5: every per-plugin behavioral pack tests its skill alone, but users
+  # install ~23 at once and mis-routing between them is invisible to those packs.
+  # This job gives the model the full description roster and labeled requests and
+  # checks it routes correctly (deterministic regex on the model's ROUTE: line —
+  # no grader key needed, subject model only). Runs when the routing pack OR any
+  # skill description that feeds the roster changes; skipped legs say so out loud,
+  # same contract as the behavioral tier.
+  routing-eval:
+    name: routing tier (roster trigger routing)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: touched
+        with:
+          filters: |
+            routing:
+              - 'evals/routing/**'
+              - 'plugins/*/skills/*/SKILL.md'
+              - '.claude-plugin/marketplace.json'
+      - name: roster is in sync before spending on a model call
+        if: steps.touched.outputs.routing == 'true'
+        run: evals/routing/gen-roster.sh --check
+      - uses: actions/setup-node@v4
+        if: steps.touched.outputs.routing == 'true'
+        with:
+          node-version: 22
+      - name: announce that this leg did NOT run
+        if: steps.touched.outputs.routing != 'true'
+        run: |
+          echo "::notice::routing tier SKIPPED — no routing pack or skill-description change in this PR. Green because it did not run, NOT because routing passed."
+      - name: promptfoo eval (routing)
+        if: steps.touched.outputs.routing == 'true'
+        working-directory: evals/routing
+        env:
+          # Subject model only — routing verdicts are checked by regex, no grader.
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
+      - name: statistical gate (per-scenario k-of-N pass rate)
+        if: steps.touched.outputs.routing == 'true'
+        # repeat:5 in the config expands each scenario into 5 rows; this enforces
+        # a >=0.8 per-scenario floor so a lucky single pass can't read as green
+        # (gap #4). Fail-closed if the run did not actually repeat.
+        run: evals/paid/pass-rate.sh evals/routing/results.json --floor 0.8 --min-runs 3
+      - name: show failing routes
+        if: always() && steps.touched.outputs.routing == 'true'
+        working-directory: evals/routing
+        run: |
+          test -f results.json || { echo "no results.json produced"; exit 0; }
+          jq -r '
+            (.results.results // .results // [])[]
+            | select(.success == false)
+            | "=== REQUEST ===\n" + ((.vars.request // .testCase.vars.request) | tostring)
+              + "\n=== MODEL ROUTE ===\n" + ((.response.output // .output // "") | if type=="string" then . else tojson end) + "\n"
+          ' results.json || echo "jq parse fell through — see artifact"
+      - name: upload routing results
+        if: always() && steps.touched.outputs.routing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: routing-results
+          path: evals/routing/results.json
+          if-no-files-found: ignore
 
   # ── paid multi-plugin gate (ADVISORY — never required) ────────────────────
   # Paid tiers bill per plugin, so a PR that touches more than one plugin's paid

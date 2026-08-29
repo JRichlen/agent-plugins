@@ -113,6 +113,8 @@ Follow `references/format-guide.md` for the house style. The non-negotiables:
   tokens, keys, and credentials the user pasted. **Never** copy a secret into a
   committed entry — this repo lives on GitHub. If a token is relevant, write
   "rotated the Tailscale API key", never the key itself.
+  Before writing an entry off-machine, run `evals/cheap/secret-gate.sh` (in the
+  marketplace repo) over the draft — a mechanical WITNESS that redaction held.
 - **Link to durable anchors.** Commit hashes, repo names, PR numbers — not
   transcript paths, which are local and disappear.
 
@@ -136,3 +138,10 @@ Follow `references/format-guide.md` for the house style. The non-negotiables:
   persists.
 - **This is the user's voice, first-person and terse.** Write the way they'd
   write a note to themselves, not a press release.
+
+## References
+
+- [`references/consolidate-delta.md`](references/consolidate-delta.md) — emit
+  typed `ADD`/`UPDATE`/`REMOVE` deltas and a `SHAPE:` tag alongside the prose
+  entry, so recurring failures are countable by `recurrence-detector` instead
+  of needing a month of prose re-read.

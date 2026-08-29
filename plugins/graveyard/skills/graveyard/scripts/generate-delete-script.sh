@@ -36,6 +36,23 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$BUNDLED$UNBUNDLED" ] || die "nothing to delete: pass --bundled and/or --unbundled"
 
+# Repo names become attacker-influenceable input to a script the user later runs
+# with a delete_repo-scoped token. GitHub repo names are restricted to
+# [A-Za-z0-9._-]; anything else — a shell metachar, a quote, whitespace inside a
+# single name, a non-ASCII homoglyph — is either impossible or a quote-breakout
+# attempt, so reject it here rather than embed it in the emitted script. The
+# --bundled/--unbundled values are space-separated LISTS, so validate per token.
+validate_names() {
+  local _list="$1" _label="$2" _n
+  for _n in $_list; do   # intentional word-split: space-separated repo list
+    case "$_n" in
+      *[!A-Za-z0-9._-]*) die "illegal $_label repo name '$_n': GitHub repo names allow only A-Za-z0-9._-" ;;
+    esac
+  done
+}
+validate_names "$BUNDLED"   bundled
+validate_names "$UNBUNDLED" unbundled
+
 cat <<EOF
 #!/usr/bin/env bash
 # Delete original GitHub repos now archived in $OWNER/$GRAVEYARD.

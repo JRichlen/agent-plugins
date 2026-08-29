@@ -1,0 +1,62 @@
+# Publish the skill example gallery (docs/examples/) to GitHub Pages.
+#
+# The gallery is generated deterministically from committed snapshots by
+# docs/build-examples.sh, so this workflow just regenerates (to prove the
+# committed index.html is in sync), then deploys docs/ as the Pages site. No
+# API keys, no model calls — the real transcripts are already captured into
+# docs/examples/data/ by the behavioral tier's capture step and committed.
+#
+# Pages is configured to deploy from GitHub Actions BY this workflow: the
+# configure-pages step below runs with enablement:true, which sets the repo's
+# Pages build source to "GitHub Actions" via the API using the pages:write token
+# — no manual Settings click needed. It self-provisions on the first run on main
+# (or a manual "Run workflow" via workflow_dispatch). If org/repo policy forbids
+# a token from enabling Pages, that one API call is the only thing that falls
+# back to a maintainer doing Settings → Pages → Source = GitHub Actions once.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One in-flight deploy at a time; don't cancel a running publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: regenerate and verify the gallery is in sync
+        # Fail the publish if the committed index.html drifted from its data —
+        # the same guard the cheap tier runs, enforced again at publish time.
+        run: docs/build-examples.sh --check
+      - uses: actions/configure-pages@v5
+        with:
+          # Set the repo's Pages source to GitHub Actions via the API on first
+          # run — this is what "configure Pages to deploy from Actions" means,
+          # done from the workflow instead of the Settings UI.
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
