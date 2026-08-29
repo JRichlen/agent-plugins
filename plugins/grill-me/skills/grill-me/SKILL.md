@@ -41,20 +41,20 @@ starts — shared understanding, not validation or fan-out.
 
 Trigger on "grill me", "interview me about this plan", "stress-test this
 plan", or before a nontrivial multi-step change whose design isn't settled.
-A plan that triages LIGHT end to end gets a brief "no session needed."
 
 ## Anchor, then consent to each path
 
-No branch questioning before the **anchor** is set: the goal, the outcome
+First triage the whole plan: if every branch is LIGHT end to end, there is
+no session — say "no session needed" and stop, before any anchor. Otherwise,
+no branch questioning before the **anchor** is set: the goal, the outcome
 that counts as success, and what is out of scope — inferred from the plan
 text and confirmed in one exchange, never a series. Then, before
 descending into any STANDARD or DEEP branch, present a **path-consent
-header** — the branch, its tier, roughly how many questions it costs, and
-a one-line recommendation for the whole path — and let the user route:
+header** — the branch, its tier, its question cost, and a one-line
+recommendation — and let the user route with one word:
 **explore / accept / defer / out-of-scope**. Only "explore" spends
-questions; headers are batched into one routing round, ordered by
-leverage. Full mechanic, header format, and the irreversibility
-exception: [`references/path-consent.md`](references/path-consent.md).
+questions; headers are batched into one routing round, ordered by leverage.
+Full mechanic and the irreversibility exception: [`references/path-consent.md`](references/path-consent.md).
 
 ## The frontier/round loop
 
