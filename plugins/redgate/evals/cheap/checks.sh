@@ -32,6 +32,35 @@ hasE "$CONTRACT" 'sha256 of BOTH files' "both-files pinning stated" "both-files 
 hasE "$CONTRACT" 'at most 1 WITNESS' "WITNESS cap stated" "WITNESS cap lost"
 hasE "$DRIVER" 'never crosses a round' "rounds-vs-recursion boundary stated" "rounds-vs-recursion boundary lost"
 
+group "redgate — default routing and interactive questions"
+hasE "$DRIVER" "Jordan's default operating protocol" \
+  "driver auto-triggers as Jordan's default protocol" \
+  "driver lost the default-protocol trigger"
+hasE "$DRIVER" 'planning, research, design, building, debugging' \
+  "common workflow trigger roster is present" \
+  "common workflow trigger roster is missing"
+hasE "$DRIVER" 'interactive ask-question tool' \
+  "driver requires the interactive question tool" \
+  "driver no longer requires the interactive question tool"
+hasE "$DRIVER" 'one decision per interaction' \
+  "question rounds stay compact" \
+  "one-decision-per-interaction rule is missing"
+hasE "$DRIVER" 'multi-select' \
+  "multi-select routing is explicit" \
+  "multi-select routing is missing"
+hasE "$DRIVER" 'Never emit a long-form questionnaire' \
+  "long-form questionnaires are forbidden" \
+  "long-form questionnaire prohibition is missing"
+hasE "$CONTRACT" 'interactive ask-question tool' \
+  "ARM interview uses the interactive question tool" \
+  "ARM interview lost its interactive question rule"
+hasE "$DRIVER" 'Subagents never interview the user' \
+  "parent owns user interaction" \
+  "subagent interaction boundary is missing"
+hasE "$DRIVER" 'MAJOR gate always needs' \
+  "MAJOR gates require explicit confirmation" \
+  "MAJOR explicit-confirmation rule is missing"
+
 group "redgate — untrusted provenance (worker output is data)"
 # What this defends: the trust boundary on the UP envelope. If the provenance
 # section is deleted or softened, a child can steer its parent's JUDGE by

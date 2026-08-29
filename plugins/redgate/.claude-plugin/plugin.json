@@ -1,7 +1,7 @@
 {
   "name": "redgate",
-  "version": "0.0.1",
-  "description": "Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work. Use on /redgate \"<idea>\", or whenever done-criteria must be proven falsifiable before building.",
+  "version": "0.1.0",
+  "description": "Jordan's default operating protocol for nontrivial planning, research, design, building, debugging, refactoring, review, deployment, multi-agent coordination, and risky external actions. Calibrates trivial work to a direct response; routes larger work through ARM/TRACE/JUDGE with PATCH/MINOR/MAJOR autonomy. Uses the interactive ask-question tool for tap-ready decisions and confirmations instead of long prose questionnaires.",
   "author": {
     "name": "Jordan Richlen"
   },

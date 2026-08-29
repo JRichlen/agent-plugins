@@ -9,6 +9,22 @@ one or more plugins under `plugins/<name>/`, listed in the root
 /plugin install <name>@jrichlen
 ```
 
+## Jordan's default operating mode
+
+For nontrivial work, auto-trigger `plugins/redgate/skills/redgate/SKILL.md`
+from the task shape instead of waiting for `/redgate`. It is the default router
+for planning, research, design, building, debugging, refactoring, review,
+deployment, multi-agent coordination, security/auth, external writes, and
+destructive actions. Redgate calibration sends T0 work straight through, so
+simple answers and obvious reversible edits remain simple.
+
+All user decisions and confirmations use the harness's interactive
+ask-question tool when available. Present one decision per interaction by
+default as multiple choice, multi-select, or a compact confirmation, with the
+recommended option first. Never dump a long prose questionnaire or force a
+large typed response. Subagents return ambiguities to the parent; only the
+parent interacts with the user.
+
 This `AGENTS.md` is the cross-harness entry point for the *repository* (its
 layout and the eval discipline below). Each plugin ships its own `AGENTS.md`
 describing that plugin's workflow — e.g. `plugins/graveyard/AGENTS.md`. Harnesses

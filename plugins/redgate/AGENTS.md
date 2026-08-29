@@ -2,6 +2,22 @@
 
 Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. ARM emits a verifier proven able to fail; JUDGE is that pinned verifier run by a party that did not do the work.
 
+Redgate is Jordan's default operating protocol for nontrivial planning,
+research, design, building, debugging, refactoring, review, deployment,
+multi-agent coordination, security/auth, external writes, and destructive
+actions. Auto-trigger it from the task shape; do not wait for `/redgate`.
+Calibrate T0 work back to a direct answer or obvious reversible edit so the
+default does not become ceremony.
+
+When an interactive ask-question tool is available, every user decision,
+approval, ratification, multi-select, WITNESS countersignature, scope/budget
+change, and final confirmation goes through it. Ask one decision per call by
+default, offer 2-3 tap-ready options with the recommendation first, and use
+multi-select only for independent choices. Never dump a long prose
+questionnaire or require a large typed response. Free text is a last resort
+and must be one bounded prompt. Subagents return ambiguities to the parent;
+they never interview the user directly.
+
 ## How to use it
 
 Read `skills/redgate/SKILL.md` (the round driver) and
@@ -37,7 +53,7 @@ load-bearing is prose plus plain bash — no Claude-Code primitive is required:
   auto-passes and appends to `gates.log`; MINOR auto-passes with a prominent
   flag and standing veto; MAJOR — scout decisions, plan approval, first
   ratification, WITNESS countersignatures, fence/budget changes,
-  anything irreversible — always stops for a structured human question.
+  anything irreversible — always stops for an interactive tool confirmation.
 - Full protocol: `docs/red-gate-protocol.md` at the marketplace root.
 
 ## Status: all five slices shipped

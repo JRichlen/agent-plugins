@@ -1,24 +1,16 @@
 ---
 name: redgate
 description: >-
-  Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated
-  autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate,
-  so derived work auto-passes inside a human-approved mandate while
-  scout decisions, plan approval, and irreversible actions always block
-  on the human. ARM emits a verifier proven able to fail; JUDGE is that
-  pinned verifier run by a party that did not do the work. Use on
-  /redgate "<idea>", or whenever done-criteria must be proven falsifiable
-  before building.
+  Jordan's default operating protocol for nontrivial work. Auto-trigger on
+  planning, research, design, building, debugging, refactoring, reviewing,
+  deployment, multi-agent coordination, or external/irreversible actions
+  when success needs explicit criteria and evidence. Calibrate T0 work to a
+  direct response; route T1-T3 through ARM/TRACE/JUDGE with graduated
+  PATCH/MINOR/MAJOR autonomy. Use the harness's interactive ask-question
+  tool for every user decision, approval, multi-select, and confirmation;
+  never dump a long prose questionnaire. Also trigger on /redgate "idea"
+  or whenever done-criteria must be proven falsifiable before building.
 license: MIT
-compatibility: >-
-  PORTABILITY: the protocol is prose plus plain bash — no hooks, no
-  subagent-spawning tool, no Workflow tool required. It runs identically
-  under Claude Code, Codex (which reads this plugin's AGENTS.md natively),
-  and GitHub Copilot (via `apm compile -t copilot`). Where a harness offers
-  subagents, JUDGE runs in a fresh one; where it does not, JUDGE runs in a
-  fresh session or falls to the human at the round gate — the independence
-  requirement ports, the mechanism adapts. A Claude-Code hooks enforcement
-  layer ships in this plugin as optional hardening, never a dependency.
 ---
 
 # redgate
@@ -36,6 +28,58 @@ marketplace — read it for the full design and its adversarial corrections).
 A **run** is a sequence of **rounds** with classified gates; every round is one
 ARM/TRACE/JUDGE. This skill drives the run; the `criteria-contract` skill
 (same plugin) owns ARM; `reconcile` (same plugin) owns JUDGE.
+
+The discipline is harness-agnostic and the protocol is portable prose plus
+plain bash: it requires no hooks,
+subagent-spawning tool, or Workflow tool. It runs under Claude Code, Codex
+(which reads this plugin's `AGENTS.md` natively), and GitHub Copilot (via
+`apm compile -t copilot`). Where a harness offers subagents, JUDGE runs in a
+fresh one; otherwise it runs in a fresh session or falls to the human at the
+round gate. The independence requirement ports; the mechanism adapts. The
+Claude Code hooks layer is optional hardening, never a dependency.
+
+## Default routing and interaction contract
+
+Treat Red Gate as Jordan's default router for nontrivial work, even when he
+does not name the skill. The common loop is: intake and infer context, clarify
+only a load-bearing ambiguity, plan the smallest safe slice, execute it,
+verify with evidence, report the result, and escalate only when risk or scope
+requires a human decision. This includes research, design, implementation,
+debugging, refactoring, review, deployment, multi-agent work, security/auth,
+external writes, and destructive actions. Calibration still protects small
+work: T0 questions and obvious reversible edits are handled directly with no
+run directory and no ceremony.
+
+### Interactive question contract — hard rule
+
+When the harness exposes an interactive ask-question tool (for example
+`AskUserQuestion` or `request_user_input`), use it for every decision,
+ratification, approval, branch choice, WITNESS countersignature, scope or
+budget change, and final acceptance.
+
+- Infer first and ask only when the answer changes behavior. Do not ask the
+  user to restate context already present in the request, repository, or
+  conversation.
+- Ask one decision per interaction by default. Combine only tightly coupled
+  choices, never a backlog of questions.
+- Prefer 2-3 tap-ready options with the recommended option first. Use
+  multi-select when several independent choices may all apply; use a compact
+  confirmation when the decision is binary.
+- Put the recommendation and its chief tradeoff in the option labels or short
+  descriptions. Preserve Red Gate's stakes logic without requiring an essay.
+- Never emit a long-form questionnaire or a numbered prose list that requires
+  a large typed response. Free text is a last resort; if unavoidable, ask one
+  bounded question that can be answered briefly.
+- Never place a blocking question only in ordinary prose when the tool is
+  available. If the tool is unavailable, emulate the same compact options and
+  accept a one-token answer.
+- Subagents never interview the user. They return ambiguities to the parent,
+  which deduplicates them and owns the interactive question.
+
+The existing shared interview budget remains **at most 5 questions across the
+whole ARM**, not 5 questions per card or per stage. A MAJOR gate always needs
+an explicit tool-based confirmation; silence and adjacent approvals never
+count.
 
 ## The round-zero rule
 
@@ -60,7 +104,8 @@ is writable today — go straight to a build round.
 0. **Calibrate** — before any criteria, set the five dials (tier, domain,
    scope, taste, orchestration) per
    [`references/calibration.md`](references/calibration.md): infer first,
-   ask only load-bearing unknowns inside the shared ≤5-question budget, and
+   ask only load-bearing unknowns through the interactive question tool inside
+   the shared ≤5-question budget, and
    write the calibration block into the `CRITERIA.md` header so the pin
    covers it. A **T0** task is declined by the protocol — do it directly,
    no run dir.
@@ -93,7 +138,7 @@ gates automatically.
 |---|---|---|
 | PATCH | Auto-pass; append to `gates.log`; fold into the summary; seed the next round | ALL of: build/widen round · verifier green via independent JUDGE · zero WITNESS · diff inside the fence · criteria strictly derived from a human-approved plan slice · no escalator |
 | MINOR | Auto-pass **with a prominent flag** and a standing veto; staged separately revertible; never a blocking question | Durable-but-revertible artifacts inside the approved direction |
-| MAJOR | **Stop.** Structured question naming the specific decision and mechanism; a prior adjacent "yes" does not transfer | Any escalator, or any semver-gate property landing MAJOR |
+| MAJOR | **Stop.** Interactive tool confirmation naming the specific decision and mechanism; a prior adjacent "yes" does not transfer | Any escalator, or any semver-gate property landing MAJOR |
 
 **Always MAJOR — never auto-passed, never softened:** the scout
 decision; the plan round's approval (the mandate itself); a run's first
