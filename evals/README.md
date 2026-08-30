@@ -1,5 +1,12 @@
 # Evals
 
+> This file walks the three graveyard-centric core tiers. The **complete,
+> current inventory of every live tier and CI job** — proves / cannot-prove /
+> trigger / cost / local run for each, plus the shared statistical spine —
+> lives in [../docs/testing.md](../docs/testing.md), which the cheap tier
+> verifies against the live workflows and eval packs
+> (`evals/cheap/check-testing-doc.sh`).
+
 Three tiers, cheapest first. Each catches a different class of regression in the
 graveyard skill. The governing rule of the skill — **never delete a repository
 whose backup isn't verified present** — is checked at every tier, in a

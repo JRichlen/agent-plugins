@@ -929,6 +929,32 @@ PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
 
+# ═══ BEGIN testing-doc drift guard (issue #89) ═══════════════════════════════
+# --- 20. Testing-doc drift (docs/testing.md <-> live tier inventory) ---------
+# docs/testing.md is the authoritative tier inventory, and the standing order
+# (root AGENTS.md) says any PR that adds/removes/renames/re-scopes an eval
+# tier, workflow job, or per-plugin pack must update it in the same PR. This
+# gate makes that order bite: evals/cheap/check-testing-doc.sh derives the
+# live inventory DYNAMICALLY (job names from .github/workflows/*.yml, eval
+# dirs from evals/*/, pack kinds from plugins/*/evals/*/) and compares it —
+# both directions — against the doc's machine-readable LIVE-INVENTORY block.
+# REPO-level gate: active in the real repo (where a MISSING docs/testing.md is
+# itself drift and fails closed), inert in the counterfeit tier's synthetic
+# root — that root copies .github/workflows/evals.yml for §11, so the marker
+# here is evals/counterfeits/, which is never copied into a synthetic root.
+# FAIL substring: "testing-doc drift".
+if [ -d ".github/workflows" ] && [ -d "evals/counterfeits" ] \
+   && [ -f "evals/cheap/check-testing-doc.sh" ]; then
+  group "testing-doc drift (docs/testing.md <-> live tier inventory)"
+  if out="$(bash evals/cheap/check-testing-doc.sh 2>&1)"; then
+    ok "docs/testing.md inventory matches the live workflows, eval dirs, and pack kinds"
+  else
+    bad "testing-doc drift — docs/testing.md and the live tier inventory disagree"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
+# ═══ END testing-doc drift guard ═════════════════════════════════════════════
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
