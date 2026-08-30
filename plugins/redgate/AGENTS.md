@@ -1,6 +1,27 @@
 # AGENTS.md — redgate
 
-Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. ARM emits a verifier proven able to fail; JUDGE is that pinned verifier run by a party that did not do the work.
+Run work through Red Gate as rounds of ARM/TRACE/JUDGE with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. ARM emits a verifier proven able to fail; JUDGE is that pinned verifier run by a party that did not do the work.
+
+Redgate is a **working harness/protocol layer**, not the universal router for
+nontrivial tasks. Route to the most-specific applicable specialist skill or
+recipe for the work itself. Compose Redgate around that procedure when the
+execution benefits from explicit falsifiable criteria, iterative verified
+rounds, or a classified human gate. The specialist owns the domain procedure;
+Redgate reinforces how the work is carried out and verified. Calibration sends
+T0 work straight through, and specialist work with no need for an evidence
+contract or classified gate does not gain Redgate ceremony merely because it
+is complex.
+
+When a harness-native structured choice/confirmation primitive is available,
+use it for decisions, approvals, ratification, multi-selects, WITNESS
+countersignatures, scope/budget changes, and final confirmation. Ask one
+decision per interaction by default, offer 2-3 tap-ready options with the
+recommendation first, and use multi-select only for independent choices. If no
+structured primitive exists, present the same compact options in text and
+accept a short answer. Never dump a long prose questionnaire or require a
+large typed response. Free text is a last resort and must be one bounded
+prompt. Subagents return ambiguities to the parent; they never interview the
+user directly.
 
 ## How to use it
 
@@ -37,7 +58,8 @@ load-bearing is prose plus plain bash — no Claude-Code primitive is required:
   auto-passes and appends to `gates.log`; MINOR auto-passes with a prominent
   flag and standing veto; MAJOR — scout decisions, plan approval, first
   ratification, WITNESS countersignatures, fence/budget changes,
-  anything irreversible — always stops for a structured human question.
+  anything irreversible — always stops for a structured human confirmation
+  using the best interaction primitive the harness provides.
 - Full protocol: `docs/red-gate-protocol.md` at the marketplace root.
 
 ## Status: all five slices shipped

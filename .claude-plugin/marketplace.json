@@ -1,6 +1,6 @@
 {
   "name": "jrichlen",
-  "description": "Jordan Richlen's Claude Code plugin marketplace. Each plugin lives under plugins/<name>/ and is added here so it can be installed with /plugin install <name>@jrichlen.",
+  "description": "Cross-harness agent plugin marketplace. Each plugin lives under plugins/<name>/ and is registered here for named installation.",
   "owner": {
     "name": "Jordan Richlen"
   },
@@ -397,8 +397,8 @@
     },
     {
       "name": "redgate",
-      "description": "Run any idea through Red Gate: rounds of BEGIN/MIDDLE/END with graduated autonomy — each round gate is classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved plan envelope while orientation decisions, plan approval, and irreversible actions always block on the human. BEGIN emits a verifier proven able to fail; END is that pinned verifier run by a party that did not do the work. Use on /redgate \"<idea>\", or whenever done-criteria must be proven falsifiable before building.",
-      "version": "0.0.1",
+      "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates. Compose around the most-specific specialist skill or recipe; Redgate reinforces execution and verification rather than replacing the domain procedure.",
+      "version": "0.1.0",
       "source": "./plugins/redgate",
       "author": {
         "name": "Jordan Richlen"

@@ -11,8 +11,10 @@ declined by the protocol itself.
 
 Calibration is **dynamic prompting under a budget**, not a questionnaire.
 The questioning posture is `grill-me`'s, inherited via the
-criteria-contract interview: one question at a time, a stated
-recommendation attached to every question, silence accepts the default.
+criteria-contract interview: infer first, then use the harness's interactive
+ask-question tool for one decision at a time, with a stated recommendation
+and tap-ready options. Never dump a prose question list. Silence may accept a
+non-gate inferred default; it never accepts a MAJOR gate.
 The dependency runs one way — calibration adopts grill-me's posture and its
 stakes math (grill-me's per-branch stakes tier, reversibility × blast
 radius, is the same computation as the scope and tier escalators below);
@@ -25,8 +27,10 @@ grill-me stays generic and knows nothing about these dials.
 - **Ask only load-bearing unknowns.** A dial earns a question only when the
   inference is genuinely uncertain AND the dials it feeds would change
   behavior. Calibration questions and criteria questions share the same
-  interview budget: **≤5 questions total**, one at a time, each with a
-  default that silence accepts.
+  interview budget: **≤5 questions total**, one interactive tool call at a
+  time by default. Offer 2-3 options with the recommendation first, use
+  multi-select only for independent choices, and use a compact confirmation
+  for binary gates. Free text is a last resort and must be one bounded prompt.
 - **Record where the pin already reaches.** The calibration block is written
   into the header comment of `CRITERIA.md`, above criterion #1. Ratifying
   the contract ratifies the calibration; pinning the contract pins it. No
