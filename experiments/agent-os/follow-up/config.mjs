@@ -29,8 +29,8 @@ export {
 
 export const EXPERIMENT_DIR = path.dirname(fileURLToPath(import.meta.url));
 export const ORIGINAL_ACTUAL_SPEND_USD = "0.006922945";
-export const OVERALL_HARD_CAP_USD = "0.050000000000";
-export const NEW_SPEND_HARD_CAP_USD = "0.043077055000";
+export const OVERALL_HARD_CAP_USD = "0.506922945000";
+export const NEW_SPEND_HARD_CAP_USD = "0.500000000000";
 export const ORIGINAL_SOURCE = Object.freeze({
   repository: "JRichlen/agent-plugins",
   runId: "33281138920",
@@ -66,7 +66,7 @@ export const ARCHIVE_REJUDGE = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
   apiBase: ORIGINAL_CONFIG.apiBase,
   reasoning: Object.freeze({ effort: "none", exclude: true }),
   chatOverheadTokenAllowance: 1_024,

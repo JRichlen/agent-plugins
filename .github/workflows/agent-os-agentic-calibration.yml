@@ -1,0 +1,106 @@
+name: agent-os-agentic-calibration
+
+on:
+  workflow_call:
+    inputs:
+      pr_number: { required: true, type: string }
+      budget_usd: { required: false, default: '1.00', type: string }
+    secrets:
+      OPENROUTER_API_KEY: { required: true }
+  workflow_dispatch:
+    inputs:
+      pr_number: { description: 'Pull request to receive the result summary', required: true, default: '83', type: string }
+      budget_usd: { description: 'One-shot agentic calibration hard cap (maximum $1.00)', required: true, default: '1.00', type: string }
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: agent-os-agentic-calibration-one-shot
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PR_NUMBER: ${{ inputs.pr_number }}
+      AGENT_OS_AGENTIC_BUDGET_USD: ${{ inputs.budget_usd }}
+      RESULTS_DIR: experiments/agent-os/agentic-calibration/results
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: validate offline inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$PR_NUMBER" = "83"
+          node experiments/agent-os/agentic-calibration/test.mjs
+
+      - name: enforce one-shot reservation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker='<!-- agent-os-agentic-calibration-spend-reserved -->'
+          comments="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate --jq '.[].body')"
+          if grep -Fq "$marker" <<<"$comments"; then
+            echo "::error::agentic calibration spend was already reserved"
+            exit 2
+          fi
+          artifact_count="$(gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts?per_page=100" --jq '[.artifacts[] | select(.expired == false and (.name | startswith("agent-os-agentic-calibration-")))] | length')"
+          if [ "$artifact_count" != "0" ]; then
+            echo "::error::a nonexpired agentic calibration artifact already exists"
+            exit 2
+          fi
+
+      - name: live model, route, price, and full-plan preflight
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node experiments/agent-os/agentic-calibration/calibration.mjs --preflight --out "$RESULTS_DIR"
+
+      - name: reserve spend before inference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          marker='<!-- agent-os-agentic-calibration-spend-reserved -->'
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$marker
+          Agent OS agentic trajectory calibration spend reserved by run ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}. No automatic retry is authorized."
+          mkdir -p reservation
+          cp "$RESULTS_DIR/preflight.json" reservation/preflight.json
+          printf '%s\n' "$GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT" > reservation/run.txt
+
+      - name: persist reservation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-os-agentic-calibration-reservation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reservation
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: run bounded agentic trajectories
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: node experiments/agent-os/agentic-calibration/calibration.mjs --run --preflight-file "$RESULTS_DIR/preflight.json" --out "$RESULTS_DIR"
+
+      - name: upload trajectory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-os-agentic-calibration-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RESULTS_DIR }}
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: post concise summary
+        if: always() && hashFiles('experiments/agent-os/agentic-calibration/results/summary.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RESULTS_DIR/summary.md"

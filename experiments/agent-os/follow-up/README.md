@@ -4,7 +4,7 @@ This follow-up isolates one treatment delta: the existing `recipe-aware.md` cont
 
 All candidate and blind primary-judge calls use exact model `openai/gpt-5.6-luna`, exact provider `OpenAI`, and exact standard endpoint tag `openai`. Flex, Fast, fallbacks, tools, web search, retries, and arbitration are disabled. Candidate and primary judge therefore share a model family and may have correlated errors. The optional archive pass compares Luna's rejudgments with the original Nemotron judgments over the exact full stored Nemotron responses from immutable Actions run `33281138920`, with content and provenance digests verified and no review re-windowing. That tests judge-family sensitivity only on the old candidates; it does not cross-validate the new Luna/Luna ablation.
 
-The overall spend cap is $0.05. The original run spent exactly $0.006922945, leaving at most $0.043077055 for all follow-up work. `AGENT_OS_PRIOR_NEW_SPEND_USD` deducts prior follow-up spend, and `AGENT_OS_BUDGET_USD` may only tighten the remaining allowance.
+The follow-up run hard cap is $0.50. The original run spent exactly $0.006922945, so the cumulative experiment cap is $0.506922945. `AGENT_OS_PRIOR_NEW_SPEND_USD` deducts prior follow-up spend, and `AGENT_OS_BUDGET_USD` may only tighten the remaining follow-up allowance. The cap is not a spend target: `cost-baseline.json`, the append-only ledger, and `summary.md` report actual token usage and cost by stage, role, and scenario after the run.
 
 Calls are admitted in stages:
 

@@ -119,6 +119,7 @@ class SpendLedger {
     this.accountingUncertain = false;
     this.unresolvedExposureUpperPico = null;
     this.stageAdmissions = [];
+    this.rows = [];
   }
 
   admitFullStage(stage, calls) {
@@ -226,6 +227,7 @@ class SpendLedger {
       callId: planCall.id,
       stage: planCall.stage,
       phase: planCall.phase,
+      role: planCall.role,
       scenarioId: planCall.scenarioId,
       treatmentId: planCall.treatmentId ?? null,
       replicateIndex: planCall.replicateIndex ?? null,
@@ -254,6 +256,7 @@ class SpendLedger {
       durationMs: Math.round(performance.now() - start),
     };
     await appendFile(this.ledgerPath, `${JSON.stringify(ledgerRow)}\n`);
+    this.rows.push(ledgerRow);
     await appendFile(this.callsPath, `${JSON.stringify({ ...ledgerRow, status: errors.length ? "response-fault" : "success", errors })}\n`);
     await Promise.all([writeFile(`${fileBase}.request.json`, requestText), writeFile(`${fileBase}.response.json`, formattedResponse)]);
     if (errors.length) throw new Error(`${planCall.id}: ${errors.join("; ")}`);
@@ -273,7 +276,7 @@ function verifyPreflight(preflight, inputs, source) {
   if (source && preflight.sourceLineage?.importedDigest !== source.lineage.importedDigest) throw new Error("downloaded source artifact changed after preflight");
   const budget = effectiveNewBudgetPico();
   if (BigInt(preflight.effectiveBudgetPicoUsd) !== budget.budgetPico || BigInt(preflight.priorNewSpendPicoUsd) !== budget.priorNewSpendPico) throw new Error("budget inputs changed after preflight");
-  if (usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + budget.priorNewSpendPico + budget.budgetPico > usdToPico(CONFIG.overallHardCapUsd)) throw new Error("cumulative $0.05 cap is not preserved");
+  if (usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + budget.priorNewSpendPico + budget.budgetPico > usdToPico(CONFIG.overallHardCapUsd)) throw new Error(`cumulative $${CONFIG.overallHardCapUsd} cap is not preserved`);
   const expectedCalls = [
     ...(preflight.mode === "rejudge" ? [] : buildAblationPlan(inputs)),
     ...(preflight.mode === "ablation" ? [] : buildRejudgePlan(source)),
@@ -312,6 +315,89 @@ function rounded(value) {
 
 function mean(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+}
+
+function sumPico(rows, key) {
+  return rows.reduce((sum, row) => sum + BigInt(row[key] ?? 0), 0n);
+}
+
+function averagePico(rows, key) {
+  return rows.length ? picoToUsd(sumPico(rows, key) / BigInt(rows.length)) : null;
+}
+
+function tokenSummary(rows, key) {
+  const known = rows.map((row) => row[key]).filter((value) => Number.isInteger(value) && value >= 0);
+  return { total: known.reduce((sum, value) => sum + value, 0), reportedCalls: known.length, missingCalls: rows.length - known.length };
+}
+
+function summarizeCostGroup(executedRows, plannedCalls) {
+  const actualPico = sumPico(executedRows, "actualCostPicoUsd");
+  const executedMaximumPico = sumPico(executedRows, "maximumCostPicoUsd");
+  const plannedMaximumPico = sumPico(plannedCalls, "maximumCostPicoUsd");
+  const actualValues = executedRows.map((row) => BigInt(row.actualCostPicoUsd));
+  return {
+    completedCalls: executedRows.length,
+    plannedCalls: plannedCalls.length,
+    actualCostUsd: picoToUsd(actualPico),
+    averageActualCostPerCompletedCallUsd: averagePico(executedRows, "actualCostPicoUsd"),
+    minimumActualCallCostUsd: actualValues.length ? picoToUsd(actualValues.reduce((low, value) => value < low ? value : low)) : null,
+    maximumActualCallCostUsd: actualValues.length ? picoToUsd(actualValues.reduce((high, value) => value > high ? value : high)) : null,
+    executedCallsConservativeMaximumUsd: picoToUsd(executedMaximumPico),
+    fullPlanConservativeMaximumUsd: picoToUsd(plannedMaximumPico),
+    actualToFullPlanMaximumRatio: plannedMaximumPico ? rounded(Number(actualPico) / Number(plannedMaximumPico)) : null,
+    promptTokens: tokenSummary(executedRows, "promptTokens"),
+    completionTokens: tokenSummary(executedRows, "completionTokens"),
+    totalTokens: tokenSummary(executedRows, "totalTokens"),
+    totalDurationMs: executedRows.reduce((sum, row) => sum + (Number.isFinite(row.durationMs) ? row.durationMs : 0), 0),
+  };
+}
+
+function groupCost(rows, plannedCalls, key, values) {
+  return values.map((value) => ({
+    [key]: value,
+    ...summarizeCostGroup(rows.filter((row) => row[key] === value), plannedCalls.filter((call) => call[key] === value)),
+  }));
+}
+
+export function buildCostBaseline({ rows, preflight, budgetPico, accountingUncertain }) {
+  const plannedCalls = preflight.calls;
+  const stages = [...new Set(plannedCalls.map((call) => call.stage))].sort((left, right) => left - right);
+  const roles = [...new Set(plannedCalls.map((call) => call.role))];
+  const scenarios = [...new Set(plannedCalls.map((call) => call.scenarioId))];
+  const roleRows = Object.fromEntries(roles.map((role) => [role, rows.filter((row) => row.role === role)]));
+  const pairedRows = rows.filter((row) => row.stage === 1 || row.stage === 2);
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    accountingComplete: !accountingUncertain,
+    pricingBasis: "Actual cost is OpenRouter usage.cost. Conservative maxima use the live, preflight-verified standard OpenAI route price ceiling and deterministic token bounds.",
+    modelResolutions: preflight.modelResolutions.map((resolution) => ({
+      role: resolution.role,
+      requestedModel: resolution.requestedModel,
+      resolvedModel: resolution.resolvedModel,
+      providerName: resolution.endpoint.providerName,
+      endpointTag: resolution.endpoint.tag,
+      maxPrice: resolution.providerRouting.max_price,
+    })),
+    budget: {
+      thisRunHardCapUsd: picoToUsd(budgetPico),
+      originalActualSpendUsd: ORIGINAL_ACTUAL_SPEND_USD,
+      priorFollowUpSpendUsd: preflight.priorNewSpendUsd,
+      cumulativeExperimentHardCapUsd: CONFIG.overallHardCapUsd,
+    },
+    overall: summarizeCostGroup(rows, plannedCalls),
+    byStage: groupCost(rows, plannedCalls, "stage", stages),
+    byRole: groupCost(rows, plannedCalls, "role", roles),
+    byScenario: groupCost(rows, plannedCalls, "scenarioId", scenarios),
+    normalizedUnits: {
+      pairedScenarioCount: CONFIG.expectedScenarioCount,
+      pairedCoreActualCostUsd: picoToUsd(sumPico(pairedRows, "actualCostPicoUsd")),
+      pairedCoreActualCostPerScenarioUsd: picoToUsd(sumPico(pairedRows, "actualCostPicoUsd") / BigInt(CONFIG.expectedScenarioCount)),
+      candidateResponseActualCostUsd: averagePico(roleRows.candidate ?? [], "actualCostPicoUsd"),
+      primaryScenarioJudgmentActualCostUsd: averagePico(roleRows.primaryJudge ?? [], "actualCostPicoUsd"),
+      archiveScenarioRejudgmentActualCostUsd: averagePico(roleRows.rejudge ?? [], "actualCostPicoUsd"),
+    },
+  };
 }
 
 export function compareArchiveJudgment(imported, lunaValidation) {
@@ -388,7 +474,7 @@ function safeInline(value, maximum = 320) {
   return bounded.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("@", "@&#8203;");
 }
 
-function renderSummary({ status, mode, ledger, budgetPico, aggregate, recommendation, rejudge, omittedRejudge, untrustedHardFailureClaims = [], fault }) {
+function renderSummary({ status, mode, ledger, budgetPico, aggregate, recommendation, rejudge, omittedRejudge, costBaseline, untrustedHardFailureClaims = [], fault }) {
   if (status !== "complete") return `# Agent OS follow-up\n\n- Status: **ABORTED**\n- Mode: **${mode}**\n- Recorded known new spend: **$${picoToUsd(ledger.actualPico)}** of **$${picoToUsd(budgetPico)}**\n- Unresolved exposure upper bound: **${ledger.unresolvedExposureUpperPico === null ? "none" : `$${picoToUsd(ledger.unresolvedExposureUpperPico)}`}**\n- Accounting: **${ledger.accountingUncertain ? "UNCERTAIN FOR FINAL ATTEMPT" : "complete for recorded responses"}**\n- Reason: <code>${safeInline(fault)}</code>\n\nPartial raw requests, responses, stage admissions, and the append-only ledger are preserved.\n`;
   const pairRows = aggregate?.pairDeltas?.map((item) => `| ${item.pairId} | ${item.pairRole} | ${item.meanDelta === null ? "n/a" : `${item.meanDelta >= 0 ? "+" : ""}${item.meanDelta.toFixed(4)}`} | ${item.wins}/${item.ties}/${item.losses} | ${item.medianReplicateDelta ?? "n/a"} | ${item.worstReplicateDelta ?? "n/a"} |`).join("\n") ?? "";
   const suppressors = recommendation?.suppressors?.length ? recommendation.suppressors.map((item) => `- ${item.type}${item.scenarioId ? `: ${item.scenarioId}` : ""}${item.reason || item.detail ? ` — ${safeInline(item.reason ?? item.detail)}` : ""}`).join("\n") : "- None";
@@ -430,6 +516,8 @@ function renderSummary({ status, mode, ledger, budgetPico, aggregate, recommenda
   const archiveCaveat = mode === "ablation"
     ? "No archive rejudge ran in ablation-only mode."
     : "The archive comparison tests judge-family sensitivity only on old Nemotron candidates; it does not cross-validate the new Luna-candidate/Luna-judge ablation.";
+  const stageLabels = { 1: "candidate generation", 2: "primary judging", 3: "archive rejudging" };
+  const costRows = costBaseline.byStage.map((row) => `| ${row.stage}: ${stageLabels[row.stage] ?? "stage"} | ${row.completedCalls}/${row.plannedCalls} | ${row.promptTokens.total} | ${row.completionTokens.total} | $${row.actualCostUsd} | $${row.fullPlanConservativeMaximumUsd} |`).join("\n");
   return `# Agent OS follow-up
 
 - Status: **COMPLETE**
@@ -439,6 +527,20 @@ function renderSummary({ status, mode, ledger, budgetPico, aggregate, recommenda
 - Archive rejudge: **${rejudge.length} completed; ${rejudge.filter((item) => item.comparison?.status === "complete").length} validated Luna-vs-Nemotron comparisons; ${omittedRejudge.length} omitted by fixed-prefix budget admission**
 - Strongest paired gain: **${strongest}**
 - Worst paired case: **${weakest}**
+
+## Cost baseline
+
+- Actual / full-plan conservative maximum: **$${costBaseline.overall.actualCostUsd} / $${costBaseline.overall.fullPlanConservativeMaximumUsd}**
+- Paired core cost per scenario: **$${costBaseline.normalizedUnits.pairedCoreActualCostPerScenarioUsd}**
+- Average candidate response: **$${costBaseline.normalizedUnits.candidateResponseActualCostUsd ?? "n/a"}**
+- Average primary scenario judgment: **$${costBaseline.normalizedUnits.primaryScenarioJudgmentActualCostUsd ?? "n/a"}**
+- Average archive scenario rejudgment: **$${costBaseline.normalizedUnits.archiveScenarioRejudgmentActualCostUsd ?? "n/a"}**
+
+| Stage | Completed/planned calls | Prompt tokens | Completion tokens | Actual cost | Full-plan maximum |
+|---|---:|---:|---:|---:|---:|
+${costRows}
+
+Detailed role- and scenario-level measurements are in \`cost-baseline.json\`.
 
 | Contrast pair | Preregistered role | Mean delta | W/T/L | Median replicate | Worst replicate |
 |---|---|---:|---:|---:|---:|
@@ -617,8 +719,10 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       ...[...judgments].flatMap(([scenarioId, judgment]) => (judgment.untrustedHardFailureClaims ?? []).map((claim) => ({ phase: "primary-judge", scenarioId, errors: judgment.errors, ...claim }))),
       ...rejudgeResults.flatMap((result) => (result.untrustedHardFailureClaims ?? []).map((claim) => ({ phase: "rejudge", scenarioId: result.scenarioId, errors: result.errors, ...claim }))),
     ];
-    const summary = renderSummary({ status: "complete", mode: preflight.mode, ledger, budgetPico, aggregate, recommendation, rejudge: rejudgeResults, omittedRejudge, untrustedHardFailureClaims });
+    const costBaseline = buildCostBaseline({ rows: ledger.rows, preflight, budgetPico, accountingUncertain: ledger.accountingUncertain });
+    const summary = renderSummary({ status: "complete", mode: preflight.mode, ledger, budgetPico, aggregate, recommendation, rejudge: rejudgeResults, omittedRejudge, costBaseline, untrustedHardFailureClaims });
     await Promise.all([
+      writeFile(path.join(options.out, "cost-baseline.json"), `${JSON.stringify(costBaseline, null, 2)}\n`),
       writeFile(path.join(options.out, "paired-metrics.json"), `${JSON.stringify(aggregate, null, 2)}\n`),
       writeFile(path.join(options.out, "rejudge.json"), `${JSON.stringify({ sourceLineage: source?.lineage ?? null, diagnostics: rejudgeDiagnostics, results: rejudgeResults, selectedCallIds: selectedRejudge.map((call) => call.id), omittedCallIds: omittedRejudge.map((call) => call.id) }, null, 2)}\n`),
       writeFile(path.join(options.out, "recommendation.json"), `${JSON.stringify(recommendation, null, 2)}\n`),
@@ -627,13 +731,15 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       writeFile(path.join(options.out, "blind-map.json"), `${JSON.stringify(Object.fromEntries([...judgePlans].map(([id, plan]) => [id, plan.blinded.map(({ blindId, candidateCallId }) => ({ blindId, candidateCallId }))])), null, 2)}\n`),
       writeFile(path.join(options.out, "stage-admissions.json"), `${JSON.stringify(ledger.stageAdmissions, null, 2)}\n`),
       writeFile(path.join(options.out, "summary.md"), summary),
-      writeFile(path.join(options.out, "status.json"), `${JSON.stringify({ status: "complete", mode: preflight.mode, actualNewSpendUsd: picoToUsd(ledger.actualPico), originalActualSpendUsd: ORIGINAL_ACTUAL_SPEND_USD, priorNewSpendUsd: preflight.priorNewSpendUsd, cumulativeActualSpendUsd: picoToUsd(usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + BigInt(preflight.priorNewSpendPicoUsd) + ledger.actualPico), budgetUsd: picoToUsd(budgetPico), recommendation: recommendation.selectedTreatment, selectedRejudgeCalls: selectedRejudge.length, omittedRejudgeCalls: omittedRejudge.length }, null, 2)}\n`),
+      writeFile(path.join(options.out, "status.json"), `${JSON.stringify({ status: "complete", mode: preflight.mode, actualNewSpendUsd: picoToUsd(ledger.actualPico), fullPlanConservativeMaximumUsd: costBaseline.overall.fullPlanConservativeMaximumUsd, pairedCoreActualCostPerScenarioUsd: costBaseline.normalizedUnits.pairedCoreActualCostPerScenarioUsd, originalActualSpendUsd: ORIGINAL_ACTUAL_SPEND_USD, priorNewSpendUsd: preflight.priorNewSpendUsd, cumulativeActualSpendUsd: picoToUsd(usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + BigInt(preflight.priorNewSpendPicoUsd) + ledger.actualPico), budgetUsd: picoToUsd(budgetPico), recommendation: recommendation.selectedTreatment, selectedRejudgeCalls: selectedRejudge.length, omittedRejudgeCalls: omittedRejudge.length }, null, 2)}\n`),
     ]);
     console.log(`follow-up complete: $${picoToUsd(ledger.actualPico)} new spend; recommendation ${recommendation.selectedTreatment ?? "suppressed"}; ${rejudgeResults.length} archive rejudges`);
     return { aggregate, recommendation, rejudge: rejudgeResults, actualNewSpendUsd: picoToUsd(ledger.actualPico) };
   } catch (error) {
+    const costBaseline = buildCostBaseline({ rows: ledger.rows, preflight, budgetPico, accountingUncertain: ledger.accountingUncertain });
     const summary = renderSummary({ status: "aborted", mode: preflight.mode, ledger, budgetPico, fault: error.message, aggregate: null, recommendation: null, rejudge: rejudgeResults, omittedRejudge });
     await Promise.all([
+      writeFile(path.join(options.out, "cost-baseline.json"), `${JSON.stringify(costBaseline, null, 2)}\n`),
       writeFile(path.join(options.out, "stage-admissions.json"), `${JSON.stringify(ledger.stageAdmissions, null, 2)}\n`),
       writeFile(path.join(options.out, "summary.md"), summary),
       writeFile(path.join(options.out, "status.json"), `${JSON.stringify({ status: "aborted", mode: preflight.mode, reason: error.message, recordedKnownNewSpendUsd: picoToUsd(ledger.actualPico), unresolvedExposureUpperUsd: ledger.unresolvedExposureUpperPico === null ? null : picoToUsd(ledger.unresolvedExposureUpperPico), cumulativeKnownSpendUsd: picoToUsd(usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + BigInt(preflight.priorNewSpendPicoUsd) + ledger.actualPico), cumulativeExposureUpperUsd: ledger.unresolvedExposureUpperPico === null ? null : picoToUsd(usdToPico(ORIGINAL_ACTUAL_SPEND_USD) + BigInt(preflight.priorNewSpendPicoUsd) + ledger.unresolvedExposureUpperPico), budgetUsd: picoToUsd(budgetPico), accountingUncertain: ledger.accountingUncertain }, null, 2)}\n`),

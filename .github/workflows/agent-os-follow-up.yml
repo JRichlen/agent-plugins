@@ -17,9 +17,9 @@ on:
         required: true
         type: string
       budget_usd:
-        description: 'This run hard budget; must fit the remaining $0.043077055 allowance'
+        description: 'This-run hard budget; must fit the remaining $0.50 follow-up allowance'
         required: false
-        default: '0.043077055'
+        default: '0.50'
         type: string
       prior_new_spend_usd:
         description: 'Already-spent follow-up USD to deduct from the allowance'
@@ -42,9 +42,9 @@ on:
         required: true
         type: string
       budget_usd:
-        description: 'This run hard budget (remaining allowance is at most $0.043077055)'
+        description: 'This-run hard budget (remaining follow-up allowance is at most $0.50)'
         required: true
-        default: '0.043077055'
+        default: '0.50'
         type: string
       prior_new_spend_usd:
         description: 'Already-spent follow-up USD to deduct from the allowance'

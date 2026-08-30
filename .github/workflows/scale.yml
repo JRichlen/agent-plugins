@@ -34,7 +34,7 @@ on:
   workflow_dispatch:
     inputs:
       ac_sizes:
-        description: 'agent-compiler sizes; agent-os-smoke or agent-os-follow-up[-ablation|-rejudge] bootstraps a paid experiment'
+        description: 'agent-compiler sizes; an agent-os-* sentinel bootstraps a paid experiment'
         default: '40,120,300'
       ac_seeds:
         description: 'agent-compiler seeds; for an Agent OS bootstrap, the PR number'
@@ -47,13 +47,13 @@ concurrency:
   # Keep ordinary scale runs byte-for-byte equivalent in concurrency behavior,
   # but isolate the paid bootstrap so a newer scale run cannot cancel it after
   # inference has begun.
-  group: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge') && format('agent-os-experiment-bootstrap-{0}', github.ref) || format('scale-{0}', github.ref) }}
-  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge')) }}
+  group: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' || github.event.inputs.ac_sizes == 'agent-os-agentic-calibration') && format('agent-os-experiment-bootstrap-{0}', github.ref) || format('scale-{0}', github.ref) }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' || github.event.inputs.ac_sizes == 'agent-os-agentic-calibration')) }}
 
 jobs:
   agent-compiler-scale:
     name: agent-compiler scale (kernel stress)
-    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge' && github.event.inputs.ac_sizes != 'agent-os-agentic-calibration') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
 
   redgate-scale:
     name: redgate scale (lifecycle stress)
-    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge') }}
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge' && github.event.inputs.ac_sizes != 'agent-os-agentic-calibration') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -112,5 +112,19 @@ jobs:
       pr_number: ${{ github.event.inputs.ac_seeds }}
       budget_usd: ${{ github.event.inputs.rg_runs }}
       prior_new_spend_usd: '0'
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  agent-os-agentic-calibration:
+    name: Agent OS agentic trajectory calibration (branch bootstrap)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ac_sizes == 'agent-os-agentic-calibration' }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/agent-os-agentic-calibration.yml
+    with:
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
     secrets:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
