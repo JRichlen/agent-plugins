@@ -295,9 +295,11 @@ add these to the inventory block until they actually exist:
 
 The block below is parsed by `evals/cheap/check-testing-doc.sh` and compared
 — both directions — against the live repo: workflow files and job display
-names from `.github/workflows/*.yml` (matrix `${{ ... }}` suffixes stripped),
-repo-level eval directories from `evals/*/`, and the distinct per-plugin pack
-kinds from `plugins/*/evals/*/`. If you add, remove, rename, or re-scope any
+names from `.github/workflows/*.yml` and `*.yaml` (matrix `${{ ... }}`
+suffixes stripped), repo-level eval directories from `evals/*/`, and the
+plugin-qualified eval packs from `plugins/*/evals/*/` (so one plugin gaining
+or losing a pack is itself an inventory change, not just a new pack *kind*).
+If you add, remove, rename, or re-scope any
 of these, update this block (and the prose above) in the same PR;
 `evals/cheap/check-testing-doc.sh --print` emits the current live list.
 
@@ -329,10 +331,46 @@ job: paid multi-plugin gate
 job: redgate scale (lifecycle stress)
 job: refresh
 job: routing tier (roster trigger routing)
-plugin-pack: cheap
-plugin-pack: pier
-plugin-pack: promptfoo
-plugin-pack: scale
+pack: agent-compiler/cheap
+pack: agent-compiler/promptfoo
+pack: agent-compiler/scale
+pack: codebase-design/cheap
+pack: context-handoff/cheap
+pack: dev-diary/cheap
+pack: diagnosing-bugs/cheap
+pack: docs-hygiene/cheap
+pack: egress-gate/cheap
+pack: find-before-build/cheap
+pack: find-before-build/promptfoo
+pack: fleet-playbook-curator/cheap
+pack: fleet-playbook-curator/pier
+pack: fleet-playbook-curator/promptfoo
+pack: graveyard/cheap
+pack: graveyard/pier
+pack: graveyard/promptfoo
+pack: grill-me/cheap
+pack: orchestrate/cheap
+pack: plugin-factory/cheap
+pack: prove-the-undo/cheap
+pack: recurrence-detector/cheap
+pack: redgate/cheap
+pack: redgate/promptfoo
+pack: redgate/scale
+pack: scope-fence/cheap
+pack: scope-fence/promptfoo
+pack: semver-gate/cheap
+pack: semver-gate/promptfoo
+pack: stop-rule/cheap
+pack: stop-rule/promptfoo
+pack: tailscale-wif/cheap
+pack: tailscale-wif/promptfoo
+pack: tracer-bullets/cheap
+pack: verify-before-claim/cheap
+pack: verify-before-claim/promptfoo
+pack: voice/cheap
+pack: voice/promptfoo
+pack: wayfinder/cheap
+pack: wayfinder/promptfoo
 workflow: evals.yml
 workflow: pages.yml
 workflow: refresh-examples.yml

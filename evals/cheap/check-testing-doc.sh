@@ -8,9 +8,10 @@
 # guards — the doc is VERIFIED, never trusted:
 #
 #   FORWARD: the live inventory is derived dynamically here (workflow job
-#     names parsed from .github/workflows/*.yml, eval pack directories from
-#     evals/*/ and the distinct pack kinds under plugins/*/evals/*/) and every
-#     derived entry must appear in the doc's machine-readable inventory block.
+#     names parsed from .github/workflows/*.yml and *.yaml, eval pack
+#     directories from evals/*/ and the plugin-qualified packs under
+#     plugins/*/evals/*/) and every derived entry must appear in the doc's
+#     machine-readable inventory block.
 #   REVERSE: every entry the doc's inventory block names must still exist in
 #     the live inventory — the doc can never describe a tier that no longer
 #     exists.
@@ -27,10 +28,10 @@
 #                                               # (paste into the doc's block)
 #
 # Wired into evals/cheap/run.sh as a REPO-level gate: inert in a root without
-# evals/counterfeits/ (the counterfeit tier's synthetic root, which does copy
-# .github/workflows/evals.yml but never the corpus), fail-closed on drift —
-# including a MISSING docs/testing.md — in the real repo.
-# FAIL substring: "testing-doc drift".
+# a `.git` entry (the counterfeit tier's synthetic temp root — which does copy
+# .github/workflows/evals.yml, and whose eval dirs are tracked inventory, so
+# neither can be the marker), fail-closed on drift — including a MISSING
+# docs/testing.md — in the real repo. FAIL substring: "testing-doc drift".
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -43,7 +44,7 @@ root, mode = sys.argv[1], sys.argv[2]
 DOC = os.path.join(root, "docs", "testing.md")
 BEGIN = "<!-- BEGIN LIVE-INVENTORY"
 END = "<!-- END LIVE-INVENTORY"
-KINDS = ("workflow", "job", "eval-dir", "plugin-pack")
+KINDS = ("workflow", "job", "eval-dir", "pack")
 
 # ---- derive the live inventory (dynamic — never a hardcoded list) ----------
 live = set()
@@ -53,7 +54,11 @@ live = set()
 #    step names sit deeper and carry a `- ` prefix, workflow name sits at col 0),
 #    falling back to the job id when no name is set. `${{ ... }}` matrix
 #    expressions are stripped so per-plugin legs normalize to one stable name.
-for wf in sorted(glob.glob(os.path.join(root, ".github", "workflows", "*.yml"))):
+# Both extensions: GitHub Actions picks up *.yml AND *.yaml, so a .yaml
+# workflow must not be able to join or leave without an inventory change.
+wf_files = sorted(glob.glob(os.path.join(root, ".github", "workflows", "*.yml"))
+                  + glob.glob(os.path.join(root, ".github", "workflows", "*.yaml")))
+for wf in wf_files:
     live.add(f"workflow: {os.path.basename(wf)}")
     in_jobs = False
     job_id, job_name = None, None
@@ -88,12 +93,16 @@ for wf in sorted(glob.glob(os.path.join(root, ".github", "workflows", "*.yml")))
 for d in sorted(glob.glob(os.path.join(root, "evals", "*", ""))):
     live.add(f"eval-dir: evals/{os.path.basename(d.rstrip('/'))}")
 
-# 3. Per-plugin eval pack KINDS (the distinct tier directories plugins ship —
-#    e.g. cheap, promptfoo, pier, scale). Kinds, not per-plugin paths: adding a
-#    plugin with an existing pack kind is routine and must not trip this guard;
-#    inventing or retiring a pack KIND re-scopes the tier map and must.
+# 3. Per-plugin eval packs, PLUGIN-QUALIFIED (e.g. `pack: graveyard/pier`).
+#    Qualified, not collapsed to distinct kinds: a kinds-only set stays
+#    unchanged when one plugin gains or loses a pack of an existing kind, so
+#    the doc's per-plugin claims (which plugins carry promptfoo/pier/scale
+#    packs) could go stale invisibly. The standing order covers per-plugin
+#    packs, so the inventory must too.
 for d in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "*", ""))):
-    live.add(f"plugin-pack: {os.path.basename(d.rstrip('/'))}")
+    d = d.rstrip("/")
+    plugin = os.path.basename(os.path.dirname(os.path.dirname(d)))
+    live.add(f"pack: {plugin}/{os.path.basename(d)}")
 
 if mode == "--print":
     for line in sorted(live):
@@ -130,6 +139,6 @@ for entry in sorted(documented - live):
     fail += 1
 if fail == 0:
     print(f"  PASS docs/testing.md inventory block matches all {len(live)} live "
-          f"entries (workflows, jobs, eval dirs, pack kinds), both directions")
+          f"entries (workflows, jobs, eval dirs, per-plugin packs), both directions")
 sys.exit(1 if fail else 0)
 PY

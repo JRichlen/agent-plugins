@@ -935,19 +935,24 @@ fi
 # (root AGENTS.md) says any PR that adds/removes/renames/re-scopes an eval
 # tier, workflow job, or per-plugin pack must update it in the same PR. This
 # gate makes that order bite: evals/cheap/check-testing-doc.sh derives the
-# live inventory DYNAMICALLY (job names from .github/workflows/*.yml, eval
-# dirs from evals/*/, pack kinds from plugins/*/evals/*/) and compares it —
-# both directions — against the doc's machine-readable LIVE-INVENTORY block.
+# live inventory DYNAMICALLY (job names from .github/workflows/*.yml|*.yaml,
+# eval dirs from evals/*/, plugin-qualified packs from plugins/*/evals/*/)
+# and compares it — both directions — against the doc's machine-readable
+# LIVE-INVENTORY block.
 # REPO-level gate: active in the real repo (where a MISSING docs/testing.md is
 # itself drift and fails closed), inert in the counterfeit tier's synthetic
-# root — that root copies .github/workflows/evals.yml for §11, so the marker
-# here is evals/counterfeits/, which is never copied into a synthetic root.
+# root. The inertness marker is `.git` — present at the real repo root (a dir,
+# or a file in a git worktree), never created in the counterfeit runner's
+# synthetic temp root, and deliberately NOT part of the tracked inventory: an
+# earlier marker (evals/counterfeits/) was itself a tracked eval-dir, so a PR
+# removing that tier would have made this guard silently skip the very drift
+# it exists to catch. The marker must never be something the inventory tracks.
 # FAIL substring: "testing-doc drift".
-if [ -d ".github/workflows" ] && [ -d "evals/counterfeits" ] \
+if [ -d ".github/workflows" ] && [ -e ".git" ] \
    && [ -f "evals/cheap/check-testing-doc.sh" ]; then
   group "testing-doc drift (docs/testing.md <-> live tier inventory)"
   if out="$(bash evals/cheap/check-testing-doc.sh 2>&1)"; then
-    ok "docs/testing.md inventory matches the live workflows, eval dirs, and pack kinds"
+    ok "docs/testing.md inventory matches the live workflows, eval dirs, and per-plugin packs"
   else
     bad "testing-doc drift — docs/testing.md and the live tier inventory disagree"
     printf '%s\n' "$out" | sed 's/^/    /'
