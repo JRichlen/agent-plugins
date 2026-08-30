@@ -397,7 +397,7 @@
     },
     {
       "name": "redgate",
-      "description": "Default protocol for nontrivial work needing explicit criteria or evidence. Auto-triggers for planning, research, design, implementation, debugging, refactoring, review, deployment, multi-agent coordination, and risky external actions. Handles trivial work directly; routes larger work through ARM/TRACE/JUDGE and interactive decisions.",
+      "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates. Compose around the most-specific specialist skill or recipe; Redgate reinforces execution and verification rather than replacing the domain procedure.",
       "version": "0.1.0",
       "source": "./plugins/redgate",
       "author": {

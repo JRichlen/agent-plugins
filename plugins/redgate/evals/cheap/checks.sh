@@ -36,9 +36,15 @@ group "redgate — default routing and interactive questions"
 hasE "$DRIVER" "Default protocol for nontrivial work" \
   "driver auto-triggers as the default protocol" \
   "driver lost the default-protocol trigger"
-hasE "$DRIVER" 'planning, research, design, implementation, debugging' \
-  "common workflow trigger roster is present" \
-  "common workflow trigger roster is missing"
+hasE "$DRIVER" 'default \*\*verification envelope\*\*' \
+  "driver frames Red Gate as the default verification envelope" \
+  "default verification-envelope framing is missing"
+hasE "$DRIVER" 'most-specific applicable specialist skill' \
+  "specialist-first routing precedence is stated" \
+  "specialist-first routing precedence is missing"
+hasE "$DRIVER" 'needs no explicit evidence contract' \
+  "specialist-only work bypasses Red Gate ceremony" \
+  "the ceremony-bypass rule for specialist-only work is missing"
 hasE "$DRIVER" 'interactive ask-question tool' \
   "driver requires the interactive question tool" \
   "driver no longer requires the interactive question tool"

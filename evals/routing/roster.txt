@@ -13,7 +13,7 @@ orchestrate: Two reusable multi-agent orchestration templates for research-and-v
 plugin-factory: Scaffold a new marketplace plugin skeleton in one command:
 prove-the-undo: Rehearse the rollback before any irreversible action:
 recurrence-detector: Close the growth loop's DETECT step:
-redgate: Default protocol for nontrivial work needing explicit criteria or evidence.
+redgate: Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates.
 scope-fence: Keep every hunk of the diff traceable to the stated task:
 semver-gate: Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR.
 stop-rule: A halting discipline for iterative fix loops:
