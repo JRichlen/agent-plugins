@@ -9,6 +9,7 @@ import {
   buildCandidateMessages,
   deterministicCellOrder,
   inputTokenUpperBound,
+  judgeResponseFormat,
   loadFollowUpInputs,
   truncateUtf8,
 } from "./config.mjs";
@@ -127,9 +128,13 @@ const resolution = (role) => ({ resolvedModel: CONFIG.roles[role].model, provide
 const candidateBody = buildRequestBody(candidateCall, resolution("candidate"), buildCandidateMessages(inputs.scenarios[0], inputs.treatments[0].text));
 assert.equal(Object.hasOwn(candidateBody, "temperature"), false);
 assert.equal(Object.hasOwn(candidateBody, "tools"), false);
-const judgeBody = buildRequestBody(judgeCall, resolution("primaryJudge"), [{ role: "system", content: "judge" }, { role: "user", content: "{}" }]);
+const strictFormat = judgeResponseFormat(scenario, ["R1"]);
+const judgeBody = buildRequestBody(judgeCall, resolution("primaryJudge"), [{ role: "system", content: "judge" }, { role: "user", content: "{}" }], strictFormat);
 assert.equal(Object.hasOwn(judgeBody, "temperature"), false);
 assert.deepEqual(judgeBody.provider.only, ["openai"]);
+assert.equal(judgeBody.response_format.type, "json_schema");
+assert.deepEqual(judgeBody.response_format.json_schema.schema.properties.responses.items.properties.hardFailureChecks.required, scenario.mustCheckFailureIds);
+assert.throws(() => buildRequestBody(judgeCall, resolution("primaryJudge"), [{ role: "system", content: "judge" }, { role: "user", content: "{}" }]));
 assert.throws(() => inputTokenUpperBound([{ role: "user", content: "x", tools: [] }]));
 
 const truncated = truncateUtf8("🙂".repeat(2_000), CONFIG.candidateReviewBytes);

@@ -98,16 +98,16 @@ export const CONFIG = Object.freeze({
       providerName: "OpenAI",
       endpointTag: "openai",
       maxTokens: 1_200,
-      maxInputUpperTokens: 25_000,
-      requiredParameters: Object.freeze(["max_tokens", "reasoning", "response_format", "seed"]),
+      maxInputUpperTokens: 32_000,
+      requiredParameters: Object.freeze(["max_tokens", "reasoning", "response_format", "structured_outputs", "seed"]),
     }),
     rejudge: Object.freeze({
       model: "openai/gpt-5.6-luna",
       providerName: "OpenAI",
       endpointTag: "openai",
       maxTokens: 1_200,
-      maxInputUpperTokens: 24_000,
-      requiredParameters: Object.freeze(["max_tokens", "reasoning", "response_format", "seed"]),
+      maxInputUpperTokens: 32_000,
+      requiredParameters: Object.freeze(["max_tokens", "reasoning", "response_format", "structured_outputs", "seed"]),
     }),
   }),
 });
@@ -175,6 +175,13 @@ export function inputTokenUpperBound(messages) {
   return visibleBytes + CONFIG.chatOverheadTokenAllowance;
 }
 
+export function requestInputTokenUpperBound(messages, responseFormat = null) {
+  const messageBound = inputTokenUpperBound(messages);
+  return responseFormat === null
+    ? messageBound
+    : messageBound + Buffer.byteLength(canonicalJson(responseFormat), "utf8");
+}
+
 export function buildCandidateMessages(scenario, treatmentText) {
   return [
     { role: "system", content: `${CANDIDATE_SYSTEM}\n\nContext available for this response:\n${String(treatmentText).trim()}` },
@@ -215,6 +222,59 @@ export function buildJudgeMessages(scenario, blindedResponses) {
       }),
     },
   ];
+}
+
+export function judgeResponseFormat(scenario, blindIds) {
+  const mustCheckFailureIds = scenario.mustCheckFailureIds ?? scenario.judge?.mustCheckFailureIds;
+  const localFailureIds = (scenario.judge?.hardFailures ?? []).map((failure) => failure.id);
+  const allowedFailureIds = [...new Set([...Object.keys(HARD_FAILURES), ...localFailureIds])];
+  const scores = {
+    type: "object",
+    additionalProperties: false,
+    properties: Object.fromEntries(SCORE_DIMENSIONS.map((dimension) => [dimension, { type: "integer", minimum: 0, maximum: 4 }])),
+    required: [...SCORE_DIMENSIONS],
+  };
+  const hardFailureChecks = {
+    type: "object",
+    additionalProperties: false,
+    properties: Object.fromEntries(mustCheckFailureIds.map((id) => [id, { type: "string" }])),
+    required: [...mustCheckFailureIds],
+  };
+  const responseResult = {
+    type: "object",
+    additionalProperties: false,
+    properties: {
+      blindId: { type: "string", enum: [...blindIds] },
+      scores,
+      hardFailureChecks,
+      hardFailures: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          properties: { id: { type: "string", enum: allowedFailureIds }, evidence: { type: "string" } },
+          required: ["id", "evidence"],
+        },
+      },
+      confidence: { type: "integer", minimum: 0, maximum: 4 },
+      ambiguous: { type: "boolean" },
+      summary: { type: "string" },
+    },
+    required: ["blindId", "scores", "hardFailureChecks", "hardFailures", "confidence", "ambiguous", "summary"],
+  };
+  return {
+    type: "json_schema",
+    json_schema: {
+      name: "agent_os_blind_judgment",
+      strict: true,
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: { responses: { type: "array", minItems: blindIds.length, maxItems: blindIds.length, items: responseResult } },
+        required: ["responses"],
+      },
+    },
+  };
 }
 
 export function candidateSeed(scenarioIndex, replicateIndex) {

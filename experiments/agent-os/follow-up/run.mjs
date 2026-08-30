@@ -11,9 +11,11 @@ import {
   canonicalJson,
   effectiveNewBudgetPico,
   inputTokenUpperBound,
+  judgeResponseFormat,
   loadFollowUpInputs,
   normalizeReviewText,
   picoToUsd,
+  requestInputTokenUpperBound,
   sha256,
   truncateUtf8,
   usdToPico,
@@ -83,7 +85,7 @@ function responseProvenance(envelope) {
   return { provider, model: selected[0]?.model ?? null, error: provider ? null : "response contains neither selected router metadata nor a legacy provider field" };
 }
 
-export function buildRequestBody(planCall, resolution, messages) {
+export function buildRequestBody(planCall, resolution, messages, responseFormat = null) {
   inputTokenUpperBound(messages); // also asserts tool-free role/content objects
   const roleConfig = CONFIG.roles[planCall.role];
   const body = {
@@ -96,7 +98,10 @@ export function buildRequestBody(planCall, resolution, messages) {
     provider: resolution.providerRouting,
     seed: planCall.seed,
   };
-  if (planCall.role !== "candidate") body.response_format = { type: "json_object" };
+  if (planCall.role !== "candidate") {
+    if (!responseFormat) throw new Error(`${planCall.role} requires a strict response format`);
+    body.response_format = responseFormat;
+  }
   for (const forbidden of ["tools", "tool_choice", "plugins", "web_search"]) {
     if (Object.hasOwn(body, forbidden)) throw new Error(`experiment request must not enable ${forbidden}`);
   }
@@ -152,14 +157,14 @@ class SpendLedger {
     return selected;
   }
 
-  async execute(planCall, messages) {
+  async execute(planCall, messages, responseFormat = null) {
     const maximumPico = BigInt(planCall.maximumCostPicoUsd);
     if (this.actualPico + maximumPico > this.budgetPico) throw new Error(`per-call guard stopped ${planCall.id}: actual plus call maximum exceeds budget`);
     const resolution = this.resolutions[planCall.role];
     if (!resolution) throw new Error(`missing resolution for ${planCall.role}`);
-    const inputUpperTokens = inputTokenUpperBound(messages);
+    const inputUpperTokens = requestInputTokenUpperBound(messages, responseFormat);
     if (inputUpperTokens > planCall.inputUpperTokens) throw new Error(`${planCall.id} input upper bound ${inputUpperTokens} exceeds reserved ${planCall.inputUpperTokens}`);
-    const body = buildRequestBody(planCall, resolution, messages);
+    const body = buildRequestBody(planCall, resolution, messages, responseFormat);
     const requestText = `${JSON.stringify(body, null, 2)}\n`;
     const rawDir = path.join(this.outputDir, "raw", planCall.role);
     await mkdir(rawDir, { recursive: true });
@@ -247,6 +252,7 @@ class SpendLedger {
       actualCostPicoUsd: costPico.toString(),
       cumulativeNewCostUsd: picoToUsd(this.actualPico),
       maximumCostUsd: planCall.maximumCostUsd,
+      maximumCostPicoUsd: planCall.maximumCostPicoUsd,
       inputUpperTokens,
       finishReason: envelope.choices?.[0]?.finish_reason ?? null,
       nativeFinishReason: envelope.choices?.[0]?.native_finish_reason ?? null,
@@ -636,20 +642,21 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
         return { ...item, content: review.text, truncated: review.truncated, originalBytes: review.originalBytes, lengthLimited: candidates.get(item.candidateCallId)?.finishReason === "length" };
       });
       const messages = buildJudgeMessages(scenario, blinded);
-      const inputUpperTokens = inputTokenUpperBound(messages);
+      const responseFormat = judgeResponseFormat(scenario, blinded.map((item) => item.blindId));
+      const inputUpperTokens = requestInputTokenUpperBound(messages, responseFormat);
       if (inputUpperTokens > staticCall.inputUpperTokens || inputUpperTokens > CONFIG.roles.primaryJudge.maxInputUpperTokens) {
         throw new Error(`${staticCall.id} actual judge envelope exceeds its static preflight bound`);
       }
       const maximumPico = routedCallMaximumPico(primaryResolution.providerRouting.max_price, inputUpperTokens, staticCall.maxOutputTokens);
       if (maximumPico > BigInt(staticCall.maximumCostPicoUsd)) throw new Error(`${staticCall.id} dynamic maximum exceeds static preflight maximum`);
-      return { scenario, blinded, messages, planCall: { ...staticCall, inputUpperTokens, maximumCostPicoUsd: maximumPico.toString(), maximumCostUsd: picoToUsd(maximumPico), staticMaximumCostUsd: staticCall.maximumCostUsd } };
+      return { scenario, blinded, messages, responseFormat, planCall: { ...staticCall, inputUpperTokens, maximumCostPicoUsd: maximumPico.toString(), maximumCostUsd: picoToUsd(maximumPico), staticMaximumCostUsd: staticCall.maximumCostUsd } };
     });
     const preparedJudgePlans = new Map(preparedStage2.map((prepared) => [prepared.scenario.id, { ...prepared.planCall, blinded: prepared.blinded }]));
     const stage2Admission = preparedStage2.length ? ledger.assessConditionalFullStage(2, preparedStage2.map((item) => item.planCall)) : null;
     const admittedStage2 = stage2Admission?.admitted ? preparedStage2 : [];
     for (const prepared of admittedStage2) {
-      const { scenario, blinded, messages, planCall } = prepared;
-      const result = await ledger.execute(planCall, messages);
+      const { scenario, blinded, messages, responseFormat, planCall } = prepared;
+      const result = await ledger.execute(planCall, messages, responseFormat);
       const validation = validationFrom(result, blinded, scenario);
       const record = { ...validation, finishReason: result.ledgerRow.finishReason, systemFingerprint: result.ledgerRow.systemFingerprint, raw: result.content };
       judgePlans.set(scenario.id, { ...planCall, blinded });
@@ -668,7 +675,8 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       const imported = sourceById.get(planCall.scenarioId);
       if (!imported) throw new Error(`missing imported source scenario ${planCall.scenarioId}`);
       const exactResponses = imported.responses.map((response) => ({ blindId: response.blindId, content: response.content, lengthLimited: response.finishReason === "length", truncated: false }));
-      const result = await ledger.execute(planCall, buildJudgeMessages(imported.scenario, exactResponses));
+      const responseFormat = judgeResponseFormat(imported.scenario, exactResponses.map((item) => item.blindId));
+      const result = await ledger.execute(planCall, buildJudgeMessages(imported.scenario, exactResponses), responseFormat);
       const validation = validationFrom(result, exactResponses, imported.scenario);
       const comparison = compareArchiveJudgment(imported, validation);
       const record = {

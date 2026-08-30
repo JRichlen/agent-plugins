@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CONFIG, EFFORTS, loadScenarios, planCalls, toolsFor } from "./config.mjs";
-import { buildBaseline } from "./calibration.mjs";
+import { buildBaseline, responsesProviderRouting } from "./calibration.mjs";
 
 const scenarios = await loadScenarios();
 assert.equal(scenarios.length, 3);
@@ -28,6 +28,10 @@ const trajectories = [{ episodeId: `${scenarios[0].id}-low`, scenarioId: scenari
 const baseline = buildBaseline(rows, { budgetUsd: "1", fullMaximumUsd: "0.75" }, trajectories);
 assert.equal(baseline.overall.actualCostUsd, "0.000003");
 assert.equal(baseline.byEffort.find((item) => item.effort === "low").passed, 1);
+const routing = responsesProviderRouting({ tag: "openai", pricing: { prompt: "0.0000002", completion: "0.0000012" } });
+assert.deepEqual(routing.only, ["openai"]);
+assert.equal(routing.allow_fallbacks, false);
+assert.equal(routing.require_parameters, false);
 
 console.log("agentic calibration offline fixtures PASS");
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));

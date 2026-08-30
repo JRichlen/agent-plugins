@@ -12,9 +12,11 @@ import {
   deterministicCellOrder,
   effectiveNewBudgetPico,
   inputTokenUpperBound,
+  judgeResponseFormat,
   judgeSeed,
   loadFollowUpInputs,
   picoToUsd,
+  requestInputTokenUpperBound,
   sha256,
   usdToPico,
 } from "./config.mjs";
@@ -172,7 +174,9 @@ export function buildAblationPlan(inputs) {
       lengthLimited: false,
       truncated: false,
     }));
-    const inputUpperTokens = inputTokenUpperBound(buildJudgeMessages(scenario, blinded));
+    const judgeMessages = buildJudgeMessages(scenario, blinded);
+    const responseFormat = judgeResponseFormat(scenario, blinded.map((item) => item.blindId));
+    const inputUpperTokens = requestInputTokenUpperBound(judgeMessages, responseFormat);
     if (inputUpperTokens > CONFIG.roles.primaryJudge.maxInputUpperTokens) throw new Error(`primary judge prompt ${scenario.id} upper bound ${inputUpperTokens} exceeds cap`);
     calls.push({
       id: `primary-judge:${scenario.id}`,
@@ -191,7 +195,10 @@ export function buildAblationPlan(inputs) {
 
 export function buildRejudgePlan(source) {
   return source.scenarios.map(({ scenario, responses }, index) => {
-    const inputUpperTokens = inputTokenUpperBound(buildJudgeMessages(scenario, responses.map((response) => ({ blindId: response.blindId, content: response.content, lengthLimited: response.finishReason === "length", truncated: false }))));
+    const blinded = responses.map((response) => ({ blindId: response.blindId, content: response.content, lengthLimited: response.finishReason === "length", truncated: false }));
+    const judgeMessages = buildJudgeMessages(scenario, blinded);
+    const responseFormat = judgeResponseFormat(scenario, blinded.map((item) => item.blindId));
+    const inputUpperTokens = requestInputTokenUpperBound(judgeMessages, responseFormat);
     if (inputUpperTokens > CONFIG.roles.rejudge.maxInputUpperTokens) throw new Error(`archive rejudge prompt ${scenario.id} upper bound ${inputUpperTokens} exceeds cap`);
     return {
       id: `rejudge:${scenario.id}`,

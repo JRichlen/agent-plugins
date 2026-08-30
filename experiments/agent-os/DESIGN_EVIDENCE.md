@@ -1,6 +1,6 @@
 # Agent OS design evidence
 
-**Status:** Smoke completed; interpretation is provisional
+**Status:** Smoke and targeted all-Luna follow-up completed; treatment conclusion remains provisional
 
 **PR:** [#83](https://github.com/JRichlen/agent-plugins/pull/83) (`agent-os-lousy-agents-handoff`)
 
@@ -96,3 +96,54 @@ The evidence supports a **Recipe-aware front door with two compact safety invari
 5. Put the full interactive contract in `grill-my-automations`, where the only large full-context gain occurred.
 
 No canonical ontology change is justified. A useful follow-up is a targeted `recipe-aware + compact guardrails` ablation with the repaired output/arbitration settings. Do not make this smoke a required CI gate yet.
+
+## Targeted all-Luna follow-up
+
+The pre-registered paired follow-up ran on [workflow 33286358010](https://github.com/JRichlen/agent-plugins/actions/runs/33286358010) with `openai/gpt-5.6-luna` as both candidate and blind judge, pinned to the standard OpenAI endpoint. It compared `recipe-aware` with `recipe-aware + compact guardrails` over six scenarios, two paired seeds per scenario, then rejudged the six immutable smoke scenarios with Luna to measure judge-family sensitivity.
+
+### Controlled cost baseline
+
+| Item | Actual |
+|---|---:|
+| Candidate generation, 24 calls | `$0.011382000004` |
+| Primary judging, 6 calls | `$0.0083061` |
+| Archive rejudging, 6 calls | `$0.01084685` |
+| **New follow-up total, 36 calls** | **`$0.030534950004`** |
+| Prompt / completion / total tokens | `53,339 / 15,154 / 68,493` |
+| Paired candidate-plus-judge cost per scenario | `$0.00328135` |
+| Live full-plan conservative maximum | `$0.101554589691` |
+| Hard cap | `$0.50` |
+
+The actual run used 30.07% of its conservative full-plan maximum and 6.11% of its hard cap. A `$0.50` cap therefore gave ample room for this controlled tier. The useful baseline is not merely cost per model call: the six primary judgments cost 73% as much as all 24 candidate generations, and the diagnostic archive stage contributed 35.5% of total spend. Judge prompt/output size and optional rejudging materially affect eval cost.
+
+The artifact's `executedCallsConservativeMaximumUsd` field incorrectly reports zero because executed ledger rows omitted the pico-dollar maximum even though their dollar maximum, actual costs, and the independently recomputable full-plan maximum are intact. The harness now records both units; the historical artifact remains immutable.
+
+### Paired result and manual interpretation
+
+The valid negative-control and Adapter contrasts were ceiling-level ties:
+
+| Contrast | Valid paired replicates | Mean guarded delta | W/T/L |
+|---|---:|---:|---:|
+| Automation identity, negative control | 4/4 | `0.0` | `0/4/0` |
+| Adapter evidence, target | 4/4 | `0.0` | `0/4/0` |
+| Desired/observed reconciliation, target | 0/4 | n/a | n/a |
+
+Both reconciliation judgments were invalid, so the pre-registered selector correctly suppressed a recommendation. One Luna judgment omitted a required checklist key after emitting a duplicate JSON key; the other wrapped checklist evidence in literal quote characters while its hard-failure evidence used the exact source text. These are judge-output conformance failures, not candidate cutoffs and not evidence of either treatment winning.
+
+Manual review of the eight reconciliation candidates finds that both arms generally preserve desired and observed state, separate dependency from artifact flow, reject performance evidence as authorization, and require human approval. The guarded arm more consistently names separate design/live diffs, capability verification, and post-change verification. The base arm already contains most of those protections, so the present prompts appear saturated near the judge's ceiling. This is a qualitative learning, not a recovered paired estimate.
+
+The next controlled test should use strict scenario-specific structured output for judgments and reserve input budget for the schema. The harness now does that. Exact-quote grounding remains validator-enforced because JSON Schema cannot prove that a string is a substring of a candidate response. Any new paid replication still requires a separate authorization and a fresh preflight.
+
+### Judge-family sensitivity
+
+Only three of six archive comparisons validated. On those old candidates, Luna's mean aggregate score was lower than the original Nemotron judgment by `-0.425`, `-0.300`, and `-1.200` for reusable-process, interactive-curation, and dependency scenarios respectively. Luna also added one grounded `inventedAdapterCapability` failure. This is strong evidence that absolute scores and hard-failure detection are judge-sensitive. It does not independently validate the new ablation because Luna generated and judged the new candidates.
+
+## Agentic trajectory calibration
+
+[Workflow 33286362425](https://github.com/JRichlen/agent-plugins/actions/runs/33286362425) preflighted a three-scenario, low/medium/high reasoning trajectory design with up to four evidence-tool turns plus one judge call per episode. The exact standard OpenAI Luna route resolved and the 45-call conservative maximum was `$0.76118688432` under the approved `$1.00` cap.
+
+The first request failed before a usable trajectory with HTTP 404: OpenRouter reported that no endpoint could handle the requested parameters. No ledger row or paid `usage.cost` was returned, so known actual spend is `$0`; fail-closed unresolved exposure is bounded by that one call's `$0.016915264096` maximum. The artifact did not preserve the exact failed request, which prevents a perfect post-mortem reconstruction; source and preflight preserve its deterministic shape.
+
+OpenRouter's Responses API supports the request's reasoning-context and encrypted-reasoning fields, but `require_parameters` is documented as a Chat Completions provider-selection filter and the endpoint catalog does not enumerate several Responses gateway fields. The repaired harness keeps exact `openai` pinning, disables fallbacks, explicitly checks reasoning/tool/structured-output capability, and no longer applies that catalog filter to the Responses request. It also writes the request before dispatch and preserves HTTP error bodies and hashes. This repair is offline-tested but **not live-verified**, and no retry was attempted under the one-shot authorization.
+
+Consequently, the realistic Agent OS trajectory cost remains unknown. Redgate should receive the same trajectory tier only after Agent OS completes one clean calibration, so the shared accounting and transport design can be reused rather than duplicating an unverified path.

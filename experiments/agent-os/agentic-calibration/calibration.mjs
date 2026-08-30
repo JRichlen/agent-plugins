@@ -22,8 +22,16 @@ async function fetchJson(url, options) {
   const response = await fetch(url, { ...options, signal: AbortSignal.timeout(180_000) });
   const text = await response.text();
   let body;
-  try { body = JSON.parse(text); } catch { throw new Error(`non-JSON response from ${url} (HTTP ${response.status})`); }
-  if (!response.ok) throw new Error(`${url} failed (HTTP ${response.status}): ${body?.error?.message ?? text}`);
+  try { body = JSON.parse(text); } catch {
+    const error = new Error(`non-JSON response from ${url} (HTTP ${response.status})`);
+    Object.assign(error, { httpStatus: response.status, responseText: text });
+    throw error;
+  }
+  if (!response.ok) {
+    const error = new Error(`${url} failed (HTTP ${response.status}): ${body?.error?.message ?? text}`);
+    Object.assign(error, { httpStatus: response.status, responseText: text });
+    throw error;
+  }
   return body;
 }
 
@@ -40,6 +48,10 @@ function maxPrice(endpoint) {
     result[key] = key === "request" ? Number(picoToUsd(pico)) : Number(picoToUsd(pico * 1_000_000n + 1_000n));
   }
   return result;
+}
+
+export function responsesProviderRouting(endpoint) {
+  return { only: [endpoint.tag], order: [endpoint.tag], allow_fallbacks: false, require_parameters: false, max_price: maxPrice(endpoint) };
 }
 
 async function resolveModel(apiKey, outputDir) {
@@ -72,7 +84,12 @@ async function resolveModel(apiKey, outputDir) {
     resolvedModel: modelEnvelope.data.id,
     canonicalSlug: modelEnvelope.data.canonical_slug ?? modelEnvelope.data.id,
     endpoint: { name: endpoint.name, providerName: endpoint.provider_name, tag: endpoint.tag, pricing: endpoint.pricing, supportedParameters: endpoint.supported_parameters },
-    providerRouting: { only: [endpoint.tag], order: [endpoint.tag], allow_fallbacks: false, require_parameters: true, max_price: maxPrice(endpoint) },
+    // The Responses API accepts gateway-level fields such as `include`,
+    // `store`, and `parallel_tool_calls` that are not listed in an endpoint's
+    // Chat-Completions-oriented supported_parameters catalog. Exact provider
+    // pinning plus the explicit capability checks above remain fail-closed;
+    // require_parameters would incorrectly filter this otherwise-valid route.
+    providerRouting: responsesProviderRouting(endpoint),
   };
   return resolution;
 }
@@ -116,6 +133,9 @@ class Ledger {
     const rawDir = path.join(this.outputDir, "raw", plan.role, plan.episodeId);
     await mkdir(rawDir, { recursive: true });
     const base = path.join(rawDir, safeName(plan.id));
+    const requestText = `${JSON.stringify(request, null, 2)}\n`;
+    const requestSha256 = sha256(requestText);
+    await writeFile(`${base}.request.json`, requestText);
     const started = performance.now();
     let response;
     try {
@@ -123,7 +143,8 @@ class Ledger {
     } catch (error) {
       this.accountingUncertain = true;
       this.unresolvedExposureUpperPico = this.actualPico + maximum;
-      await appendFile(path.join(this.outputDir, "calls.jsonl"), `${JSON.stringify({ sequence: ++this.sequence, callId: plan.id, episodeId: plan.episodeId, status: "transport-fault", knownActualCostUsd: picoToUsd(this.actualPico), unresolvedExposureUpperUsd: picoToUsd(this.unresolvedExposureUpperPico), error: error.message })}\n`);
+      if (typeof error.responseText === "string") await writeFile(`${base}.response.txt`, error.responseText);
+      await appendFile(path.join(this.outputDir, "calls.jsonl"), `${JSON.stringify({ sequence: ++this.sequence, callId: plan.id, episodeId: plan.episodeId, status: "transport-fault", httpStatus: error.httpStatus ?? null, knownActualCostUsd: picoToUsd(this.actualPico), unresolvedExposureUpperUsd: picoToUsd(this.unresolvedExposureUpperPico), requestSha256, responseSha256: typeof error.responseText === "string" ? sha256(error.responseText) : null, error: error.message })}\n`);
       throw error;
     }
     const usageCost = response?.usage?.cost;
@@ -143,7 +164,7 @@ class Ledger {
     this.rows.push(row);
     await appendFile(path.join(this.outputDir, "ledger.jsonl"), `${JSON.stringify(row)}\n`);
     await appendFile(path.join(this.outputDir, "calls.jsonl"), `${JSON.stringify({ ...row, status: "success" })}\n`);
-    await Promise.all([writeFile(`${base}.request.json`, `${JSON.stringify(request, null, 2)}\n`), writeFile(`${base}.response.json`, `${JSON.stringify(response, null, 2)}\n`)]);
+    await writeFile(`${base}.response.json`, `${JSON.stringify(response, null, 2)}\n`);
     return { response, row };
   }
 }
@@ -175,6 +196,7 @@ export async function run(preflightFile, outputDir) {
   const pf = JSON.parse(await readFile(preflightFile, "utf8"));
   const { integrity, ...core } = pf;
   if (sha256(canonicalJson(core)) !== integrity || pf.status !== "pass" || Date.now() - Date.parse(pf.generatedAt) > 30 * 60_000) throw new Error("stale or invalid agentic preflight");
+  if (pf.resolution?.providerRouting?.require_parameters !== false || pf.resolution?.providerRouting?.only?.length !== 1 || pf.resolution.providerRouting.only[0] !== CONFIG.endpointTag || pf.resolution.providerRouting.allow_fallbacks !== false) throw new Error("agentic preflight routing policy drift");
   const scenarios = await loadScenarios();
   if (sha256(canonicalJson(scenarios)) !== pf.scenarioDigest || BigInt(pf.budgetPicoUsd) !== requestedBudgetPico()) throw new Error("agentic inputs changed after preflight");
   await Promise.all([writeFile(path.join(outputDir, "ledger.jsonl"), "", { flag: "wx" }), writeFile(path.join(outputDir, "calls.jsonl"), "", { flag: "wx" })]);
