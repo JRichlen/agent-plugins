@@ -32,8 +32,14 @@
 # below floor / under-repeated / starved of valid samples; 2 usage / unreadable.
 #
 # It reads the SAME result shape the behavioral job's jq already relies on
-# (.results.results[].success + .description/.vars), plus the error signals
-# promptfoo sets on a FAULT (.error, .failureReason == "error"/2, empty output).
+# (.results.results[].success + .description/.vars). FAULT classification keys
+# on .failureReason — the reliable discriminator: 1/"assert" = assertion failure
+# (a real FAIL, scored against the floor), 2/"error" = provider/transport error
+# (a FAULT, excluded). .error ALONE marks a FAULT only when the row carries no
+# failureReason at all (legacy shapes that predate the field): under promptfoo
+# >= 0.122 EVERY assertion-failed row also carries .error (the assertion
+# message), so .error must never override failureReason == 1 — doing so scored
+# real failures as transport faults and let a failing run read green (fail-open).
 # Grouping key precedence: testCase.description, else description, else the
 # request var — whatever is stable across a scenario's N repeats.
 set -uo pipefail
@@ -91,26 +97,36 @@ def output_text(r):
     return out if isinstance(out, str) else json.dumps(out)
 
 # A row is a FAULT (INVALID sample) when the model CALL did not yield a usable
-# answer — not when the grader disliked a real answer. Signals, any of:
-#   * promptfoo recorded an error string on the row (.error) — a 504, an aborted
-#     request, a provider error;
-#   * .failureReason marks an error rather than an assertion (2 or "error");
+# answer — not when the grader disliked a real answer. .failureReason is the
+# discriminator (promptfoo enum: 0 none, 1 assertion failed, 2 error):
+#   * .failureReason == 2 or "error" — a provider/transport error (504, aborted
+#     request): FAULT;
+#   * .failureReason == 1 or "assert" — the grader judged a real answer wrong:
+#     a REAL FAIL, scored against the floor. Under promptfoo >= 0.122 these rows
+#     ALSO carry .error (the assertion message), so .error must never promote
+#     them to FAULT — that scored real failures as weather and let a failing run
+#     read green (fail-open, the dangerous direction; observed on PR #93);
+#   * .error set with NO failureReason recorded — legacy fallback for result
+#     shapes that predate the field: FAULT;
 #   * the row did not pass AND its body is nothing but repeated <think>/</think>
 #     control tokens (the truncation-degeneracy we actually observed, gap #4
-#     evidence table) — a 200 that returned no real answer.
+#     evidence table) — a 200 that returned no real answer: FAULT.
 # Deliberately NOT here: a non-pass with an empty-but-untagged body and no error.
 # With no error signal we must not GUESS infra — an empty answer the grader failed
 # is a real FAIL, and excusing it would let a broken model launder failures as
-# FAULTs (fail-open, the dangerous direction). Only explicit error signals or the
-# narrow degeneracy shape count.
+# FAULTs. Only explicit error signals or the narrow degeneracy shape count.
 _DEGEN = re.compile(r'^(?:\s*</?think>\s*)+$', re.IGNORECASE)
 def is_fault(r):
-    err = r.get("error")
-    if isinstance(err, str) and err.strip():
-        return True
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
         return True
+    assertion_fail = fr == 1 or (isinstance(fr, str) and fr.strip().lower() == "assert")
+    if not assertion_fail:
+        # Legacy fallback: only a row with no failureReason recorded may be
+        # classified FAULT on .error alone.
+        err = r.get("error")
+        if isinstance(err, str) and err.strip():
+            return True
     if r.get("success") is not True:
         body = output_text(r).strip()
         if body and _DEGEN.match(body):
