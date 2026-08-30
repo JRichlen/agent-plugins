@@ -7,14 +7,14 @@ description: >-
   the sha256 of both files into the run manifest. Use at the start of every
   redgate round; never write code before this gate is red and ratified.
 license: MIT
-compatibility: >-
-  PORTABILITY: prose plus one plain-bash generator (scripts/scaffold-run.sh)
-  and the POSIX-leaning check.sh it emits. Runs under Claude Code, Codex,
-  and GitHub Copilot terminals alike; needs only bash, coreutils
-  (sha256sum, timeout, tee), and no harness primitive.
 ---
 
 # criteria-contract
+
+This skill is portable prose plus one plain-bash generator
+(`scripts/scaffold-run.sh`) and the POSIX-leaning `check.sh` it emits. It runs
+under Claude Code, Codex, and GitHub Copilot terminals alike and needs only
+bash and coreutils (`sha256sum`, `timeout`, `tee`), with no harness primitive.
 
 ## Invariant
 
@@ -26,14 +26,21 @@ go red is NEVER accepted as a criterion.
 
 ## The procedure
 
-1. **Interview** (`grill-me` posture): at most 5 questions, one at a time,
-   each with a proposed default that silence accepts. Collect: the goal, the
-   layers involved, what "done" observably looks like, what is out of scope.
-   The driver's calibration questions (tier, domain, scope, taste,
-   orchestration — see the redgate skill's `references/calibration.md`)
-   share this same budget; the resulting calibration block goes into the
-   `CRITERIA.md` header comment, so ratifying and pinning the contract
-   ratifies and pins the calibration with it.
+1. **Interview** (`grill-me` posture): at most 5 questions total, asked
+   through the harness's interactive ask-question tool when one is available,
+   one decision per call by default. Infer first. Prefer 2-3 multiple-choice
+   options with the recommendation first; use multi-select for independent
+   choices and compact confirmations for binary gates. When no structured
+   question primitive exists, present the same compact options in text and
+   accept a short answer. Never emit a long prose questionnaire or require a
+   large typed response. Free text is a last resort and must be one bounded
+   prompt. Collect only unresolved, load-bearing parts of the goal, layers
+   involved, observable "done," and out-of-scope fence. A non-gate inferred
+   default may be accepted by silence; a MAJOR decision may not. The driver's
+   calibration questions (tier, domain, scope, taste, orchestration — see the
+   redgate skill's `references/calibration.md`) share this same budget; the
+   resulting calibration block goes into the `CRITERIA.md` header comment, so
+   ratifying and pinning the contract ratifies and pins the calibration with it.
 2. **Scaffold**: run `scripts/scaffold-run.sh --slug <slug>` (add
    `--root DIR` outside the repo root). It creates `.redgate/<slug>/` with a
    `CRITERIA.md` template, the `check.sh` harness, an `evidence/` dir, and a

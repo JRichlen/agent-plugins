@@ -450,7 +450,21 @@ jobs:
         env:
           # Subject model only — routing verdicts are checked by regex, no grader.
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
+          # Retry transient 5xx (e.g. OpenRouter 504 "operation was aborted")
+          # with backoff instead of recording a row error on the first hit —
+          # promptfoo only retries 5xx responses when this is set.
+          PROMPTFOO_RETRY_5XX: "true"
+        # promptfoo exits non-zero on any red ROW, but a row-level transport
+        # error is a FAULT, not a verdict. The statistical gate below is the
+        # arbiter: it excludes FAULTs, enforces the per-scenario floor over
+        # VALID samples only, and fails closed when FAULTs starve a scenario.
+        # Letting promptfoo's exit code kill the job here would make that
+        # distinction unreachable. Only a missing/empty results.json (the eval
+        # itself never ran) fails this step.
+        run: |
+          npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json \
+            || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
+          test -s results.json
       - name: statistical gate (per-scenario k-of-N pass rate)
         if: steps.touched.outputs.routing == 'true'
         # repeat:5 in the config expands each scenario into 5 rows; this enforces

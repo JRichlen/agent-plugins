@@ -1,6 +1,6 @@
 # AGENTS.md — agent-plugins marketplace
 
-This repository is **Jordan Richlen's Claude Code plugin marketplace**. It hosts
+This repository is a **cross-harness agent plugin marketplace**. It hosts
 one or more plugins under `plugins/<name>/`, listed in the root
 `.claude-plugin/marketplace.json` so each can be installed with:
 
@@ -8,6 +8,27 @@ one or more plugins under `plugins/<name>/`, listed in the root
 /plugin marketplace add JRichlen/agent-plugins
 /plugin install <name>@jrichlen
 ```
+
+## Default operating mode
+
+Route to the **most-specific applicable specialist skill or recipe** for the
+work itself. Redgate is a working harness/protocol layer, not the universal
+router: compose `plugins/redgate/skills/redgate/SKILL.md` around nontrivial
+work when execution benefits from explicit falsifiable criteria, iterative
+verified rounds, or a classified human gate. A specialist owns the domain
+procedure; Redgate reinforces how that procedure is executed. Calibration
+sends T0 work straight through, and work fully handled by a specialist with no
+need for an evidence contract or classified gate does not acquire Redgate
+ceremony merely because it is nontrivial.
+
+For user decisions and confirmations, prefer the harness's native structured
+choice/confirmation primitive when available. Present one decision per
+interaction by default as multiple choice, multi-select, or a compact
+confirmation, with the recommended option first. If no structured primitive
+exists, present the same compact options in text and accept a short answer.
+Never dump a long prose questionnaire or force a large typed response.
+Subagents return ambiguities to the parent; only the parent interacts with the
+user.
 
 This `AGENTS.md` is the cross-harness entry point for the *repository* (its
 layout and the eval discipline below). Each plugin ships its own `AGENTS.md`

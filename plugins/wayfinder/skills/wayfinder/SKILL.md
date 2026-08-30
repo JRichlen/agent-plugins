@@ -8,18 +8,17 @@ description: >-
   "chart this effort", "break this into tickets", "what's the frontier",
   "plan across sessions", or "map out the dependencies for this work".
 license: MIT
-compatibility: >-
-  PORTABILITY: the ticket-store discipline (GitHub issue labels, or a local
-  frontmattered file store) and the DAG/frontier mechanics are pure prose and
-  data — no hooks, no Workflow tool, no harness-specific primitive of
-  wayfinder's own. The "Not this" section below names subagents and the
-  Workflow tool only to describe two OTHER plugins (orchestrate, grill-me)
-  that wayfinder can hand dispatch to — not a dependency of this skill. The
-  map itself, and the checks that keep it honest, port to any harness that
-  can write a comment and read a label or a field.
 ---
 
 # wayfinder
+
+PORTABILITY: the ticket-store discipline (GitHub issue labels, or a local
+frontmattered file store) and the DAG/frontier mechanics are pure prose and
+data — no hooks, no Workflow tool, no harness-specific primitive of
+wayfinder's own. The "Not this" section below names subagents and the
+Workflow tool only to describe two other plugins that wayfinder can dispatch
+to, not a dependency of this skill. The map and its checks port to any harness
+that can write a comment and read a label or field.
 
 ## Invariant
 
@@ -77,7 +76,7 @@ never executes.
 
 ## Modeled on homelab-board
 
-This is Jordan's own `homelab-board` discipline (GitHub issue labels as the
+This follows the `homelab-board` discipline (GitHub issue labels as the
 only state, exactly one column label per issue, unlabeled is a real signal
 not a default, `status:blocked` requires a stated blocker in a comment)
 applied to planning tickets instead of ops tickets. The rule that discipline

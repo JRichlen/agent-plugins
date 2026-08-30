@@ -10,6 +10,11 @@ request is "post this comment", a skill governing what may be transmitted
 off-machine activates, because the act of posting is exactly what it governs;
 the fact that the skill does not itself post is not a reason to skip it.
 
+A skill also activates when the request merely CONTEMPLATES the governed act —
+"should I just write one?", "can I just do this?" routes the same as doing it.
+Considering adding a new helper, wrapper, or implementation is already the
+moment a search-before-writing rule applies, before any code is written.
+
 Route to none when no skill's rule is triggered — an ordinary question, or a
 routine task none of these disciplines governs. A false activation taxes every
 session, so silence is the right answer when nothing applies.
