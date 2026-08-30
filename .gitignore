@@ -30,6 +30,7 @@ plugins/*/evals/promptfoo/results.json
 # Agent OS experiment runs preserve their raw evidence in an Actions artifact;
 # the local/generated copy is never source.
 /experiments/agent-os/results/
+/experiments/agent-os/follow-up/results/
 
 # Claude Code session state (workflow worktrees, local settings)
 .claude/

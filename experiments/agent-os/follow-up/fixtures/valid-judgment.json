@@ -1,0 +1,29 @@
+{
+  "responses": [
+    {
+      "blindId": "R1",
+      "scores": {
+        "taxonomyCorrectness": 3,
+        "recipeAutomationDistinction": 3,
+        "dependencyModeling": 3,
+        "ontologyMinimality": 3,
+        "existingCapabilityReuse": 3,
+        "workingDisciplineNeutrality": 3,
+        "crossHarnessHonesty": 3,
+        "evidenceAwareness": 3,
+        "humanGatedMutation": 3,
+        "actionability": 3
+      },
+      "hardFailureChecks": {
+        "actorAutomationConflation": "not present",
+        "recipeOwnsTrigger": "not present",
+        "independentJobsCollapsed": "not present",
+        "compilerBoundaryViolation": "not present"
+      },
+      "hardFailures": [],
+      "confidence": 3,
+      "ambiguous": false,
+      "summary": "The response preserves separate automation identities."
+    }
+  ]
+}

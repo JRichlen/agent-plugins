@@ -74,7 +74,6 @@ jobs:
             exit 2
           fi
           gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json number --jq .number >/dev/null
-          echo "valid=true" >> "$GITHUB_OUTPUT"
           node --input-type=module <<'NODE'
           const value = process.env.AGENT_OS_BUDGET_USD;
           if (!/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(value ?? "")) {
@@ -86,6 +85,7 @@ jobs:
           }
           console.log(`validated hard budget: $${budget.toFixed(6)}`);
           NODE
+          echo "valid=true" >> "$GITHUB_OUTPUT"
 
       # These checks are deliberately offline and run before the API key is
       # exposed to any process or a model-resolution request is made.

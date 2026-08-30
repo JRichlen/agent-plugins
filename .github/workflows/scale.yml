@@ -34,26 +34,26 @@ on:
   workflow_dispatch:
     inputs:
       ac_sizes:
-        description: 'agent-compiler sizes; agent-os-smoke bootstraps the Agent OS experiment'
+        description: 'agent-compiler sizes; agent-os-smoke or agent-os-follow-up[-ablation|-rejudge] bootstraps a paid experiment'
         default: '40,120,300'
       ac_seeds:
-        description: 'agent-compiler seeds; for agent-os-smoke, the PR number'
+        description: 'agent-compiler seeds; for an Agent OS bootstrap, the PR number'
         default: '3'
       rg_runs:
-        description: 'redgate runs; for agent-os-smoke, hard budget USD (<= 0.05)'
+        description: 'redgate runs; for an Agent OS bootstrap, this-run hard budget USD'
         default: '25'
 
 concurrency:
   # Keep ordinary scale runs byte-for-byte equivalent in concurrency behavior,
   # but isolate the paid bootstrap so a newer scale run cannot cancel it after
   # inference has begun.
-  group: ${{ inputs.ac_sizes == 'agent-os-smoke' && format('agent-os-experiment-bootstrap-{0}', github.ref) || format('scale-{0}', github.ref) }}
-  cancel-in-progress: ${{ inputs.ac_sizes != 'agent-os-smoke' }}
+  group: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge') && format('agent-os-experiment-bootstrap-{0}', github.ref) || format('scale-{0}', github.ref) }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge')) }}
 
 jobs:
   agent-compiler-scale:
     name: agent-compiler scale (kernel stress)
-    if: inputs.ac_sizes != 'agent-os-smoke'
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +73,7 @@ jobs:
 
   redgate-scale:
     name: redgate scale (lifecycle stress)
-    if: inputs.ac_sizes != 'agent-os-smoke'
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,13 +88,29 @@ jobs:
   # own workflow file has merged to the default branch.
   agent-os-experiment:
     name: Agent OS smoke experiment (branch bootstrap)
-    if: github.event_name == 'workflow_dispatch' && inputs.ac_sizes == 'agent-os-smoke'
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ac_sizes == 'agent-os-smoke' }}
     permissions:
       contents: read
       pull-requests: write
     uses: ./.github/workflows/agent-os-experiments.yml
     with:
-      pr_number: ${{ inputs.ac_seeds }}
-      budget_usd: ${{ inputs.rg_runs }}
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  agent-os-follow-up:
+    name: Agent OS paired follow-up (branch bootstrap)
+    if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge') }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/agent-os-follow-up.yml
+    with:
+      mode: ${{ github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' && 'ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' && 'rejudge' || 'combined' }}
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
+      prior_new_spend_usd: '0'
     secrets:
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
