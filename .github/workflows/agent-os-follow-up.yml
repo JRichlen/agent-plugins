@@ -1,0 +1,283 @@
+# Manual/reusable paid follow-up for the Agent OS design-context experiment.
+# It is research evidence, not a required merge gate. Before this file reaches
+# the default branch, dispatch scale.yml from the feature branch with one of
+# its agent-os-follow-up sentinels.
+name: agent-os-follow-up
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'combined, ablation, or rejudge'
+        required: false
+        default: 'combined'
+        type: string
+      pr_number:
+        description: 'Pull request to receive the concise result summary'
+        required: true
+        type: string
+      budget_usd:
+        description: 'This-run hard budget; must fit the remaining $0.50 follow-up allowance'
+        required: false
+        default: '0.50'
+        type: string
+      prior_new_spend_usd:
+        description: 'Already-spent follow-up USD to deduct from the allowance'
+        required: false
+        default: '0'
+        type: string
+    secrets:
+      OPENROUTER_API_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Follow-up mode'
+        required: true
+        default: 'combined'
+        type: choice
+        options: [combined, ablation, rejudge]
+      pr_number:
+        description: 'Pull request to receive the concise result summary'
+        required: true
+        type: string
+      budget_usd:
+        description: 'This-run hard budget (remaining follow-up allowance is at most $0.50)'
+        required: true
+        default: '0.50'
+        type: string
+      prior_new_spend_usd:
+        description: 'Already-spent follow-up USD to deduct from the allowance'
+        required: true
+        default: '0'
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: agent-os-follow-up-one-shot
+  cancel-in-progress: false
+
+jobs:
+  follow-up:
+    name: Agent OS paired follow-up
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    env:
+      MODE: ${{ inputs.mode }}
+      PR_NUMBER: ${{ inputs.pr_number }}
+      AGENT_OS_BUDGET_USD: ${{ inputs.budget_usd }}
+      AGENT_OS_PRIOR_NEW_SPEND_USD: ${{ inputs.prior_new_spend_usd }}
+      RESULTS_DIR: experiments/agent-os/follow-up/results
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: validate target, mode, and cumulative budget inputs
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::pr_number must contain digits only and be greater than zero"
+            exit 2
+          fi
+          if [ "$PR_NUMBER" != "83" ]; then
+            echo "::error::this one-shot follow-up is pinned to PR #83"
+            exit 2
+          fi
+          case "$MODE" in
+            combined|ablation|rejudge) ;;
+            *) echo "::error::mode must be combined, ablation, or rejudge"; exit 2 ;;
+          esac
+          gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json number --jq .number >/dev/null
+          node --input-type=module <<'NODE'
+          import { effectiveNewBudgetPico, picoToUsd } from "./experiments/agent-os/follow-up/config.mjs";
+          const budget = effectiveNewBudgetPico();
+          console.log(`validated this-run budget $${picoToUsd(budget.budgetPico)} after prior follow-up spend $${picoToUsd(budget.priorNewSpendPico)}`);
+          NODE
+          echo "valid=true" >> "$GITHUB_OUTPUT"
+
+      - name: enforce one-shot follow-up spend
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts" --paginate --jq '.artifacts[] | select(.expired == false and (.name | startswith("agent-os-follow-up-"))) | .name')"
+          if [ -n "$existing" ]; then
+            echo "::error::a non-expired Agent OS follow-up artifact already exists; no sequential paid rerun is authorized"
+            printf '%s\n' "$existing"
+            exit 1
+          fi
+          reserved="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --paginate --jq '.[] | select(.body | contains("<!-- agent-os-follow-up-spend-reserved -->")) | .html_url')"
+          if [ -n "$reserved" ]; then
+            echo "::error::the PR already contains the Agent OS follow-up spend-reservation marker"
+            printf '%s\n' "$reserved"
+            exit 1
+          fi
+
+      # Syntax, scenario, fixture, payload-shape, and budget-accounting checks
+      # run before the secret is exposed to a process.
+      - name: deterministic offline checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in \
+            experiments/agent-os/follow-up/config.mjs \
+            experiments/agent-os/follow-up/source.mjs \
+            experiments/agent-os/follow-up/judgment.mjs \
+            experiments/agent-os/follow-up/preflight.mjs \
+            experiments/agent-os/follow-up/run.mjs \
+            experiments/agent-os/follow-up/test.mjs
+          do
+            node --check "$file"
+          done
+          node experiments/agent-os/follow-up/test.mjs
+
+      - name: download immutable original evidence
+        if: env.MODE != 'ablation'
+        uses: actions/download-artifact@v5
+        with:
+          github-token: ${{ github.token }}
+          repository: JRichlen/agent-plugins
+          run-id: '33281138920'
+          artifact-ids: '9723030558'
+          merge-multiple: true
+          path: ${{ runner.temp }}/agent-os-source-33281138920
+
+      - name: validate immutable import and full offline plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$RUNNER_TEMP/agent-os-source-33281138920"
+          args=(--mode "$MODE" --validate-only)
+          if [ "$MODE" != "ablation" ]; then
+            export AGENT_OS_TEST_SOURCE_DIR="$SOURCE_DIR"
+            node experiments/agent-os/follow-up/test.mjs
+            args+=(--source "$SOURCE_DIR")
+          fi
+          node experiments/agent-os/follow-up/preflight.mjs "${args[@]}"
+
+      - name: resolve exact routes and price every call before inference
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$RUNNER_TEMP/agent-os-source-33281138920"
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error::OPENROUTER_API_KEY repository secret is not set"
+            exit 1
+          fi
+          args=(--mode "$MODE" --out "$RESULTS_DIR")
+          if [ "$MODE" != "ablation" ]; then args+=(--source "$SOURCE_DIR"); fi
+          node experiments/agent-os/follow-up/preflight.mjs "${args[@]}"
+
+      - name: reserve the one-shot spend on PR 83
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="$RUNNER_TEMP/agent-os-follow-up-reservation-comment.md"
+          {
+            echo '<!-- agent-os-follow-up-spend-reserved -->'
+            echo '## Agent OS follow-up spend reserved'
+            echo
+            echo "The one-shot paid follow-up is reserved by [workflow run $GITHUB_RUN_ID]($RUN_URL), attempt $GITHUB_RUN_ATTEMPT. Do not rerun without redesigning the cumulative-spend guard."
+          } > "$body"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$body"
+
+      - name: persist the one-shot preflight reservation
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-os-follow-up-reservation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: experiments/agent-os/follow-up/results/preflight.json
+          if-no-files-found: error
+
+      - name: run staged follow-up
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_DIR="$RUNNER_TEMP/agent-os-source-33281138920"
+          args=(--preflight "$RESULTS_DIR/preflight.json" --out "$RESULTS_DIR")
+          if [ "$MODE" != "ablation" ]; then args+=(--source "$SOURCE_DIR"); fi
+          node experiments/agent-os/follow-up/run.mjs "${args[@]}"
+
+      - name: upload raw follow-up evidence
+        id: evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-os-follow-up-${{ inputs.mode }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: experiments/agent-os/follow-up/results
+          if-no-files-found: error
+
+      - name: append concise job summary
+        if: always()
+        env:
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "# Agent OS follow-up"
+            echo
+            echo "- Outcome: $JOB_STATUS"
+            echo "- Mode: $MODE"
+            echo "- This-run hard budget: \$$AGENT_OS_BUDGET_USD"
+            echo "- Prior follow-up spend supplied: \$$AGENT_OS_PRIOR_NEW_SPEND_USD"
+            echo "- PR target: #$PR_NUMBER"
+            echo "- [Workflow run]($RUN_URL)"
+            if [ -n "${ARTIFACT_URL:-}" ]; then echo "- [Raw evidence artifact]($ARTIFACT_URL)"; fi
+            echo
+            if [ -s "$RESULTS_DIR/summary.md" ]; then
+              cat "$RESULTS_DIR/summary.md"
+            else
+              echo "The run did not produce \`summary.md\`; inspect logs and any partial artifact."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: comment the target pull request
+        if: always() && steps.target.outputs.valid == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then exit 2; fi
+          gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json number --jq .number >/dev/null
+          body="$RUNNER_TEMP/agent-os-follow-up-comment.md"
+          {
+            echo "## Agent OS follow-up"
+            echo
+            echo "- Outcome: $JOB_STATUS"
+            echo "- Mode: $MODE"
+            echo "- This-run hard budget: \$$AGENT_OS_BUDGET_USD"
+            echo "- [Workflow run]($RUN_URL)"
+            if [ -n "${ARTIFACT_URL:-}" ]; then echo "- [Raw evidence artifact]($ARTIFACT_URL)"; fi
+            echo
+            if [ -s "$RESULTS_DIR/summary.md" ]; then cat "$RESULTS_DIR/summary.md"; else echo "No summary was produced; inspect logs and partial evidence."; fi
+          } > "$body"
+          gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$body"

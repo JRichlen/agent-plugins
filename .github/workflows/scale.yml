@@ -34,22 +34,26 @@ on:
   workflow_dispatch:
     inputs:
       ac_sizes:
-        description: 'agent-compiler registry sizes (comma-separated module counts)'
+        description: 'agent-compiler sizes; an agent-os-* sentinel bootstraps a paid experiment'
         default: '40,120,300'
       ac_seeds:
-        description: 'agent-compiler seeds per size'
+        description: 'agent-compiler seeds; for an Agent OS bootstrap, the PR number'
         default: '3'
       rg_runs:
-        description: 'redgate randomized runs'
+        description: 'redgate runs; for an Agent OS bootstrap, this-run hard budget USD'
         default: '25'
 
 concurrency:
-  group: scale-${{ github.ref }}
-  cancel-in-progress: true
+  # Keep ordinary scale runs byte-for-byte equivalent in concurrency behavior,
+  # but isolate the paid bootstrap so a newer scale run cannot cancel it after
+  # inference has begun.
+  group: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' || github.event.inputs.ac_sizes == 'agent-os-agentic-calibration') && format('agent-os-experiment-bootstrap-{0}', github.ref) || format('scale-{0}', github.ref) }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-smoke' || github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' || github.event.inputs.ac_sizes == 'agent-os-agentic-calibration')) }}
 
 jobs:
   agent-compiler-scale:
     name: agent-compiler scale (kernel stress)
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge' && github.event.inputs.ac_sizes != 'agent-os-agentic-calibration') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +73,7 @@ jobs:
 
   redgate-scale:
     name: redgate scale (lifecycle stress)
+    if: ${{ github.event_name != 'workflow_dispatch' || (github.event.inputs.ac_sizes != 'agent-os-smoke' && github.event.inputs.ac_sizes != 'agent-os-follow-up' && github.event.inputs.ac_sizes != 'agent-os-follow-up-ablation' && github.event.inputs.ac_sizes != 'agent-os-follow-up-rejudge' && github.event.inputs.ac_sizes != 'agent-os-agentic-calibration') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -76,3 +81,50 @@ jobs:
         env:
           RUNS: ${{ github.event.inputs.rg_runs || '25' }}
         run: plugins/redgate/evals/scale/run.sh
+
+  # Bootstrap only: workflow_dispatch can execute scale.yml from this feature
+  # branch because scale.yml already exists on main. The local reusable workflow
+  # resolves from the same selected branch, so the experiment can run before its
+  # own workflow file has merged to the default branch.
+  agent-os-experiment:
+    name: Agent OS smoke experiment (branch bootstrap)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ac_sizes == 'agent-os-smoke' }}
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/agent-os-experiments.yml
+    with:
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  agent-os-follow-up:
+    name: Agent OS paired follow-up (branch bootstrap)
+    if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.ac_sizes == 'agent-os-follow-up' || github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge') }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/agent-os-follow-up.yml
+    with:
+      mode: ${{ github.event.inputs.ac_sizes == 'agent-os-follow-up-ablation' && 'ablation' || github.event.inputs.ac_sizes == 'agent-os-follow-up-rejudge' && 'rejudge' || 'combined' }}
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
+      prior_new_spend_usd: '0'
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  agent-os-agentic-calibration:
+    name: Agent OS agentic trajectory calibration (branch bootstrap)
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ac_sizes == 'agent-os-agentic-calibration' }}
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/agent-os-agentic-calibration.yml
+    with:
+      pr_number: ${{ github.event.inputs.ac_seeds }}
+      budget_usd: ${{ github.event.inputs.rg_runs }}
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "shared-participant-independent-jobs",
+      "pairId": "automation-identity",
+      "pairPosition": 0,
+      "pairRole": "negative-control",
+      "prompt": "The agent compiler produced one Curator AgentImage with content hash sha256:7b1c and the repository already has one reusable maintenance Recipe. A weekly repository-triage job and a daily stale-issue-review job both bind that Recipe and AgentImage. They have separate owners, schedules, enable/disable controls, and run histories, and either job can be changed without changing the other. Model only the identities, reuse, triggers, relationships, and ownership. No state change is requested.",
+      "judge": {
+        "primaryDimensions": ["taxonomyCorrectness", "recipeAutomationDistinction", "dependencyModeling", "existingCapabilityReuse"],
+        "criteria": {
+          "taxonomyCorrectness": "Models two independently managed Automations and their own Triggers.",
+          "recipeAutomationDistinction": "Keeps Trigger and lifecycle ownership off the shared Recipe and AgentImage.",
+          "dependencyModeling": "Creates no dependsOn or feeds edge merely from shared participants.",
+          "existingCapabilityReuse": "References the existing Recipe and compiler-owned AgentImage without reimplementation."
+        },
+        "expectedDecision": "Model two Automation identities. Each owns its Trigger, lifecycle, and run history. Both may reference the same Recipe and compiler-owned Actor/AgentImage. Sharing those participants creates no dependsOn or feeds relationship. No state change is needed.",
+        "mustCheckFailureIds": ["actorAutomationConflation", "recipeOwnsTrigger", "independentJobsCollapsed", "compilerBoundaryViolation"],
+        "hardFailures": [
+          { "id": "recipeOwnsTrigger", "description": "Assigns an Automation Trigger or independent execution lifecycle to the reusable Recipe or Actor." },
+          { "id": "independentJobsCollapsed", "description": "Models one Automation with two independent trigger lifecycles despite the jobs being independently manageable." },
+          { "id": "compilerBoundaryViolation", "description": "Makes Agent OS reimplement, recompile, or silently alter agent-compiler behavior composition." }
+        ]
+      }
+    },
+    {
+      "id": "single-automation-multiple-triggers",
+      "pairId": "automation-identity",
+      "pairPosition": 1,
+      "pairRole": "negative-control",
+      "prompt": "The incident-intake harness shows one UI entry with one owner, one version, one configuration, and one run-history view. That entry can start from either a weekday 09:00 cron condition or an urgent-incident webhook; both paths invoke the same bound Recipe and Actor. Disabling the UI entry disables both start paths, and neither path has a separate owner, enable control, version, or history. Model only the identities, triggers, relationships, and ownership. No state change is requested.",
+      "judge": {
+        "primaryDimensions": ["taxonomyCorrectness", "recipeAutomationDistinction", "dependencyModeling", "existingCapabilityReuse"],
+        "criteria": {
+          "taxonomyCorrectness": "Models one Automation from the single observable management lifecycle and two Triggers.",
+          "recipeAutomationDistinction": "Keeps both Trigger conditions off the Recipe and Actor.",
+          "dependencyModeling": "Treats start conditions as alternatives, not dependencies or feeds.",
+          "existingCapabilityReuse": "Uses the observed single harness entry without inventing duplicate jobs."
+        },
+        "expectedDecision": "Model one Automation with two Trigger conditions. Do not create two Automations merely because two start conditions exist, and do not give the Recipe or Actor either Trigger. The Triggers are alternatives, not a dependency or feed. Preserve one lifecycle and run history.",
+        "mustCheckFailureIds": ["actorAutomationConflation", "recipeOwnsTrigger", "singleAutomationOversplit", "scheduleAsDependency"],
+        "hardFailures": [
+          { "id": "recipeOwnsTrigger", "description": "Assigns either start condition or the independent execution lifecycle to the reusable Recipe or Actor." },
+          { "id": "singleAutomationOversplit", "description": "Splits one jointly owned and managed deployment contract into multiple Automations solely because it has multiple start conditions." }
+        ]
+      }
+    },
+    {
+      "id": "observed-improvement-candidate",
+      "pairId": "reconciliation",
+      "pairPosition": 0,
+      "pairRole": "targeted",
+      "prompt": "The desired design records that Automation B must wait for Automation A and then consume A's artifact. The live Adapter reports that B instead waits for Automation C and consumes C's artifact. Ten comparable runs on the live C-to-B path had fresher inputs and fewer failures, but the sample remains small. No one has approved changing either the desired design or live harness. Reconcile the records and propose the safest next action.",
+      "judge": {
+        "primaryDimensions": ["taxonomyCorrectness", "dependencyModeling", "evidenceAwareness", "humanGatedMutation", "actionability"],
+        "criteria": {
+          "taxonomyCorrectness": "Keeps desired A-to-B and observed C-to-B as separate records.",
+          "dependencyModeling": "Represents both blocking dependsOn and artifact-transfer feeds semantics.",
+          "evidenceAwareness": "Classifies the favorable ten-run sample as material but inconclusive.",
+          "humanGatedMutation": "Requires approval before either design or live state changes.",
+          "actionability": "Proposes separate design and live diffs plus additional verification Evidence."
+        },
+        "expectedDecision": "Preserve desired A-to-B and observed C-to-B as separate records. Represent each path with both blocking dependsOn and artifact-transfer feeds semantics. Classify the live path as an observed-improvement candidate. Propose a design diff from A-to-B to C-to-B, propose no live diff because C-to-B already exists, request explicit approval before changing design, and specify additional Evidence needed.",
+        "mustCheckFailureIds": ["observedOverwritesDesired", "desiredOverwritesObserved", "inventedAdapterCapability", "ungatedStructuralMutation", "evidenceOverclaimOrDismissal", "blockingAndHandoffCollapsed"],
+        "hardFailures": [
+          { "id": "evidenceOverclaimOrDismissal", "description": "Treats ten runs as conclusive proof or ignores the runtime evidence entirely." },
+          { "id": "blockingAndHandoffCollapsed", "description": "Represents a path that both blocks execution and transfers an artifact with only feeds or only dependsOn, losing one required semantic." }
+        ]
+      }
+    },
+    {
+      "id": "stale-live-design-drift",
+      "pairId": "reconciliation",
+      "pairPosition": 1,
+      "pairRole": "targeted",
+      "prompt": "The approved desired design records that Automation B must wait for Automation A and consume A's artifact. An unapproved live harness edit now makes B wait for Automation C and consume C's artifact. Ten comparable runs since that edit had staler inputs and four additional failures; the earlier A-to-B path had passed its most recent verification. No rollback or design change has been approved. Reconcile the records and propose the safest next action.",
+      "judge": {
+        "primaryDimensions": ["taxonomyCorrectness", "dependencyModeling", "evidenceAwareness", "humanGatedMutation", "actionability"],
+        "criteria": {
+          "taxonomyCorrectness": "Keeps approved desired A-to-B and observed C-to-B as separate records.",
+          "dependencyModeling": "Represents both blocking dependsOn and artifact-transfer feeds semantics.",
+          "evidenceAwareness": "Classifies the adverse ten-run sample as design drift evidence without overclaiming.",
+          "humanGatedMutation": "Requires approval before restoring the live path or changing design.",
+          "actionability": "Proposes no design diff, a reviewable live restoration, and post-change verification."
+        },
+        "expectedDecision": "Preserve desired A-to-B and observed C-to-B separately and represent both dependsOn and feeds semantics. Classify the live path as design drift, not an observed improvement. Propose no design diff; propose a reviewable live diff restoring A-to-B, require explicit approval before applying it, and request verification after any approved change. Treat ten runs as material but not conclusive.",
+        "mustCheckFailureIds": ["desiredOverwritesObserved", "observedOverwritesDesired", "inventedAdapterCapability", "ungatedStructuralMutation", "evidenceOverclaimOrDismissal", "blockingAndHandoffCollapsed"],
+        "hardFailures": [
+          { "id": "evidenceOverclaimOrDismissal", "description": "Treats ten runs as conclusive proof or ignores the runtime evidence entirely." },
+          { "id": "blockingAndHandoffCollapsed", "description": "Represents a path that both blocks execution and transfers an artifact with only feeds or only dependsOn, losing one required semantic." }
+        ]
+      }
+    },
+    {
+      "id": "adapter-capability-unknown",
+      "pairId": "adapter-evidence",
+      "pairPosition": 0,
+      "pairRole": "targeted",
+      "prompt": "A new harness called Nova has an Adapter repository containing a README that mentions jobs, schedules, Recipe mapping, job mutation, and run Evidence. No connection has been attempted, no API schema or permission scope has been inspected, and no discovery or mutation test Evidence exists. Report Nova's current capability status for discovering jobs, reading triggers, binding Recipes, disabling jobs, and inspecting run Evidence, then propose the safest useful next action. Do not connect to or mutate Nova.",
+      "judge": {
+        "primaryDimensions": ["crossHarnessHonesty", "evidenceAwareness", "actionability"],
+        "criteria": {
+          "crossHarnessHonesty": "Keeps all five capabilities unassessed and infers nothing from README prose.",
+          "evidenceAwareness": "Distinguishes absence of discovery Evidence from evidence of unsupported behavior and rates capabilities independently.",
+          "actionability": "Proposes scoped read-only discovery of schema, permissions, and operations without mutation."
+        },
+        "expectedDecision": "Keep every requested capability unassessed because no current discovery occurred. Do not infer native, partial, prose-only, or unsupported from the README or harness name. Propose read-only discovery of schema, permissions, and supported operations, followed by evidence-backed per-capability ratings; propose no mutation.",
+        "mustCheckFailureIds": ["inventedAdapterCapability", "harnessNativeOntology", "ungatedStructuralMutation", "unsupportedWithoutDiscovery", "adapterCapabilityFlattened"],
+        "hardFailures": [
+          { "id": "unsupportedWithoutDiscovery", "description": "Declares a capability unsupported solely because it has not yet been discovered or tested." },
+          { "id": "adapterCapabilityFlattened", "description": "Assigns one overall support level to the Adapter instead of rating the requested capabilities independently." }
+        ]
+      }
+    },
+    {
+      "id": "adapter-capability-evidenced",
+      "pairId": "adapter-evidence",
+      "pairPosition": 1,
+      "pairRole": "targeted",
+      "prompt": "A current read-only Nova Adapter probe recorded these results: listJobs returned 200 with three job identities; readTriggers returned 200 with schedule and webhook data; disableJob returned an explicit 501 not-implemented response; a dry-run Recipe projection produced a reviewable text mapping but Nova exposes no structured Recipe-binding API; inspectRunEvidence was not probed. Report the capability status for those five operations and propose the safest useful next action. No mutation is approved.",
+      "judge": {
+        "primaryDimensions": ["crossHarnessHonesty", "evidenceAwareness", "actionability"],
+        "criteria": {
+          "crossHarnessHonesty": "Reports native, unsupported, prose-only, and unassessed only where the probe supports them.",
+          "evidenceAwareness": "Keeps unprobed run-Evidence inspection unassessed and rates the five operations independently.",
+          "actionability": "Proposes targeted read-only discovery for run Evidence and no mutation."
+        },
+        "expectedDecision": "Rate discover-jobs native and read-triggers native from successful probes; rate disable-job unsupported from the explicit 501; rate Recipe projection prose-only from the demonstrated text-only dry run; keep run-Evidence inspection unassessed. Do not flatten those ratings or infer other capabilities. Propose targeted read-only discovery for run Evidence and no mutation.",
+        "mustCheckFailureIds": ["inventedAdapterCapability", "harnessNativeOntology", "ungatedStructuralMutation", "unsupportedWithoutDiscovery", "adapterCapabilityFlattened"],
+        "hardFailures": [
+          { "id": "unsupportedWithoutDiscovery", "description": "Declares the unprobed run-Evidence inspection capability unsupported solely because it was not probed." },
+          { "id": "adapterCapabilityFlattened", "description": "Assigns one overall support level to the Adapter or generalizes a tested capability's rating to untested capabilities." }
+        ]
+      }
+    }
+  ]
+}

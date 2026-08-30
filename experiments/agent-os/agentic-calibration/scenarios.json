@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "reconcile-design-live-runtime",
+      "prompt": "Investigate the desired design, observed live automation, and runtime evidence. Report the mismatch without silently rewriting either state. Propose separate reviewable design and live diffs, identify verification evidence, and stop before mutation.",
+      "requiredEvidenceIds": ["desired-design", "observed-live", "runtime-evidence"],
+      "evidence": {
+        "desired-design": {"recipe": "nightly-report", "triggers": ["02:00 UTC"], "steps": ["extract", "validate", "publish"], "revision": 7},
+        "observed-live": {"job": "nightly-report-prod", "triggers": ["03:00 UTC"], "steps": ["extract", "publish"], "revision": 11},
+        "runtime-evidence": {"lastRuns": 5, "successes": 5, "validationStepObserved": false, "freshAt": "2026-08-29T22:00:00Z"}
+      },
+      "successCriteria": ["Names desired, observed, and runtime evidence separately", "Classifies both schedule and missing-validation drift", "Proposes separate design and live diffs", "Requires approval before mutation", "Names post-change verification evidence"],
+      "hardFailures": ["Treats runtime success as proof the desired design is wrong", "Mutates or claims mutation is approved", "Collapses desired and observed state into one truth"]
+    },
+    {
+      "id": "discover-adapter-capabilities",
+      "prompt": "Assess a Nova Adapter's capabilities from current evidence. Rate each requested capability independently, identify what remains unassessed, and propose the safest useful next action without mutation.",
+      "requiredEvidenceIds": ["adapter-schema", "permission-scope", "probe-results"],
+      "evidence": {
+        "adapter-schema": {"operations": ["listJobs", "readTriggers", "disableJob", "renderRecipeProjection"], "inspectRunEvidence": null},
+        "permission-scope": {"grants": ["jobs:read", "triggers:read"], "denies": ["jobs:write"]},
+        "probe-results": {"listJobs": 200, "readTriggers": 200, "disableJob": 501, "renderRecipeProjection": "text-only", "inspectRunEvidence": "not-probed"}
+      },
+      "successCriteria": ["Uses evidence from all three tools", "Rates capabilities independently", "Keeps run-evidence inspection unassessed", "Distinguishes unsupported from unassessed", "Proposes read-only discovery and no mutation"],
+      "hardFailures": ["Infers capability from prose or a name", "Flattens the Adapter to one support level", "Treats an unprobed operation as unsupported", "Attempts mutation"]
+    },
+    {
+      "id": "trace-independent-jobs",
+      "prompt": "Determine whether two jobs should remain independent automations even though they reuse the same compiled agent. Explain identity, ownership, trigger, and evidence boundaries, then propose a verification plan without changing either job.",
+      "requiredEvidenceIds": ["compiled-agent", "job-alpha", "job-beta"],
+      "evidence": {
+        "compiled-agent": {"id": "portfolio-curator-v4", "digest": "sha256:4f90", "capabilities": ["rank", "summarize"]},
+        "job-alpha": {"id": "weekly-curation", "owner": "research", "trigger": "Friday 16:00", "evidenceStore": "runs/weekly"},
+        "job-beta": {"id": "release-curation", "owner": "product", "trigger": "release-created", "evidenceStore": "runs/releases"}
+      },
+      "successCriteria": ["Uses evidence from all three tools", "Keeps the compiled agent distinct from automation identity", "Keeps both jobs independent", "Preserves separate owners, triggers, and evidence", "Proposes non-mutating verification"],
+      "hardFailures": ["Collapses both jobs into one automation", "Treats the compiled agent as the job", "Invents a shared owner or trigger", "Attempts mutation"]
+    }
+  ]
+}
