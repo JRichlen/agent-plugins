@@ -960,6 +960,30 @@ if [ -d ".github/workflows" ] && [ -e ".git" ] \
 fi
 # ═══ END testing-doc drift guard ═════════════════════════════════════════════
 
+# ─── BEGIN RQ-001 behavior-surface trigger map ───────────────────────────────
+# The behavior-bearing path definition is frozen in ci/behavior-surfaces.json;
+# ci/check_behavior_surfaces.py asserts (offline, no model call) that the
+# workflow's behavioral/routing filters stay in verbatim lockstep with it, that
+# a counterfeit table of changed-file cases — including behavior edits OUTSIDE
+# SKILL.md — selects exactly the packs it should, and that both legs announce
+# EVALUATED vs SKIPPED. REPO-level gate: inert where the workflow or spec is
+# absent. FAIL substring: "behavior-surface drift".
+if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" ]; then
+  group "behavior-surface trigger map (behavioral/routing selection)"
+  if python3 ci/check_behavior_surfaces.py --self-test >/dev/null 2>&1; then
+    ok "check_behavior_surfaces.py self-test"
+  else
+    bad "check_behavior_surfaces.py self-test failed"
+  fi
+  if out="$(python3 ci/check_behavior_surfaces.py --repo . 2>&1)"; then
+    ok "behavior-bearing edits (incl. outside SKILL.md) select their behavioral/routing packs"
+  else
+    bad "behavior-surface drift: a behavior-bearing edit would not select its eval pack"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
+# ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
