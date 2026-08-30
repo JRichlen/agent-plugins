@@ -885,15 +885,18 @@ rm -rf "$_tmp"
 # and this goes red.
 group "example gallery — sync and provenance"
 # Repo-level surface: absent => skip (a minimal marketplace has no gallery);
-# present-but-stale or present-but-unprovenanced => fail.
-if [ ! -x docs/build-examples.sh ]; then
+# present-but-stale or present-but-unprovenanced => fail. Presence is -e, not
+# -x, so a dropped exec bit cannot silently skip the whole check.
+if [ ! -e docs/build-examples.sh ]; then
   ok "example gallery: not present in this root — nothing to check"
+elif [ ! -x docs/build-examples.sh ]; then
+  bad "examples: build-examples.sh exists but is not executable — chmod +x it"
 elif docs/build-examples.sh --check >/dev/null 2>&1; then
   ok "examples: index.html is in sync with docs/examples/data/"
 else
   bad "examples: index.html is STALE — run docs/build-examples.sh"
 fi
-if [ -x docs/build-examples.sh ]; then
+if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
 import glob, json, os, sys
 root = sys.argv[1]
