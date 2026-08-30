@@ -12,6 +12,7 @@ import {
   canonicalJson,
   inputTokenUpperBound,
   loadExperimentInputs,
+  normalizeReviewText,
   picoToUsd,
   seedFor,
   sha256,
@@ -177,13 +178,18 @@ function validateJudgment(value, expectedResponses, scenario) {
   for (const blindId of expected.keys()) if (!seen.has(blindId)) schemaErrors.push(`missing blindId ${blindId}`);
   if (schemaErrors.length === 0) {
     const ranked = value.responses
-      .map((result) => ({ blindId: result.blindId, score: mean(SCORE_DIMENSIONS.map((key) => result.scores[key])) }))
-      .sort((left, right) => right.score - left.score);
-    if (ranked.length > 1 && ranked[0].score - ranked[1].score <= CONFIG.closeScoreMargin) {
+      .map((result) => ({
+        blindId: result.blindId,
+        scoreTotal: SCORE_DIMENSIONS.reduce((sum, key) => sum + result.scores[key], 0),
+      }))
+      .sort((left, right) => right.scoreTotal - left.scoreTotal);
+    const scoreGap = ranked.length > 1 ? ranked[0].scoreTotal - ranked[1].scoreTotal : null;
+    const closeScoreTotal = CONFIG.closeScoreMargin * SCORE_DIMENSIONS.length;
+    if (scoreGap !== null && scoreGap <= closeScoreTotal) {
       reviewIssues.push({
         type: "closeScoreMargin",
         blindIds: [ranked[0].blindId, ranked[1].blindId],
-        margin: rounded(ranked[0].score - ranked[1].score),
+        margin: rounded(scoreGap / SCORE_DIMENSIONS.length),
       });
     }
   }
@@ -397,6 +403,8 @@ function aggregateEvidence({ inputs, judgePlans, finalJudgments, candidates }) {
         hardFailureIds: [...new Set(result.hardFailures.map((failure) => failure.id))].sort(),
         confidence: result.confidence,
         ambiguous: result.ambiguous,
+        finishReason: candidatePlan.finishReason ?? null,
+        contentTruncatedForReview: Boolean(blind.truncated),
         summary: result.summary,
       };
       rows.push(row);
@@ -422,6 +430,8 @@ function aggregateEvidence({ inputs, judgePlans, finalJudgments, candidates }) {
       dimensionMeans,
       hardFailureCount: hardFailures.filter((failure) => failure.variantId === variant.id).length,
       hardFailureResponses: treatmentRows.filter((row) => row.hardFailureCount > 0).length,
+      lengthLimitedResponses: treatmentRows.filter((row) => row.finishReason === "length").length,
+      reviewTruncatedResponses: treatmentRows.filter((row) => row.contentTruncatedForReview).length,
     };
   });
   const baseline = treatments.find((item) => item.variantId === "baseline");
@@ -474,7 +484,7 @@ function recommend(aggregate) {
   }
   const bestScore = Math.max(...candidates.map((item) => item.meanScore));
   const selected = candidates
-    .filter((item) => item.meanScore >= bestScore - CONFIG.nearBestMargin)
+    .filter((item) => rounded(bestScore - item.meanScore) <= CONFIG.nearBestMargin)
     .sort((left, right) => left.rank - right.rank)[0];
   return {
     selectedVariant: selected.variantId,
@@ -506,7 +516,7 @@ function renderSummary({ status, spendPico, budgetPico, aggregate, recommendatio
   const rows = aggregate.treatments
     .map(
       (item) =>
-        `| ${item.variantId} | ${item.contextBytes} | ${item.meanScore?.toFixed(3) ?? "n/a"} | ${item.liftVsBaseline === null ? "n/a" : `${item.liftVsBaseline >= 0 ? "+" : ""}${item.liftVsBaseline.toFixed(3)}`} | ${item.hardFailureCount} | ${item.scoredScenarios}/${CONFIG.expectedScenarioCount} |`,
+        `| ${item.variantId} | ${item.contextBytes} | ${item.meanScore?.toFixed(3) ?? "n/a"} | ${item.liftVsBaseline === null ? "n/a" : `${item.liftVsBaseline >= 0 ? "+" : ""}${item.liftVsBaseline.toFixed(3)}`} | ${item.hardFailureCount} | ${item.lengthLimitedResponses} | ${item.reviewTruncatedResponses} | ${item.scoredScenarios}/${CONFIG.expectedScenarioCount} |`,
     )
     .join("\n");
   const strongest = [...aggregate.scenarioDeltas]
@@ -537,9 +547,10 @@ function renderSummary({ status, spendPico, budgetPico, aggregate, recommendatio
 - Actual OpenRouter spend: **$${picoToUsd(spendPico)}** of **$${picoToUsd(budgetPico)}**
 - Arbitration: ${arbitration}
 - Recommendation: **${recommendation.selectedVariant}** (${recommendation.evidenceBand}, provisional)
+- Candidate cutoffs: **${aggregate.rows.filter((item) => item.finishReason === "length").length}/${aggregate.rows.length} API length-limited; ${aggregate.rows.filter((item) => item.contentTruncatedForReview).length}/${aggregate.rows.length} truncated for blind review**
 
-| Treatment | Context bytes | Mean score (all 10 dimensions) | Lift vs baseline | Hard failures | Scored scenarios |
-|---|---:|---:|---:|---:|---:|
+| Treatment | Context bytes | Mean score (all 10 dimensions) | Lift vs baseline | Hard failures | API length-limited | Review-truncated | Scored scenarios |
+|---|---:|---:|---:|---:|---:|---:|---:|
 ${rows}
 
 ## Strongest scenario deltas
@@ -638,7 +649,7 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       const variant = inputs.variants.find((item) => item.id === planCall.variantId);
       const messages = buildCandidateMessages(scenario, variant.text);
       const result = await ledger.execute(planCall, messages);
-      candidatePlans.set(planCall.id, planCall);
+      candidatePlans.set(planCall.id, { ...planCall, finishReason: result.ledgerRow.finishReason });
       candidateOutputs.set(planCall.id, result.content);
       const candidateDir = path.join(outputDir, "raw", "candidates", scenario.id);
       await mkdir(candidateDir, { recursive: true });
@@ -648,8 +659,15 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
     for (const planCall of preflight.calls.filter((call) => call.phase === "judge")) {
       const scenario = inputs.scenarios.find((item) => item.id === planCall.scenarioId);
       const blinded = planCall.blinded.map((item) => {
-        const truncated = truncateUtf8(candidateOutputs.get(item.candidateCallId), CONFIG.candidateBytesVisibleToJudge);
-        return { ...item, content: truncated.text, truncated: truncated.truncated, originalBytes: truncated.originalBytes };
+        const reviewText = normalizeReviewText(candidateOutputs.get(item.candidateCallId));
+        const truncated = truncateUtf8(reviewText, CONFIG.candidateBytesVisibleToJudge);
+        return {
+          ...item,
+          content: truncated.text,
+          truncated: truncated.truncated,
+          originalBytes: truncated.originalBytes,
+          lengthLimited: candidatePlans.get(item.candidateCallId)?.finishReason === "length",
+        };
       });
       const messages = buildJudgeMessages(scenario, blinded);
       const result = await ledger.execute(planCall, messages);
@@ -674,22 +692,33 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       .map((scenario, index) => {
         const judgment = primaryJudgments.get(scenario.id);
         const blockingIssues = judgment.reviewIssues.filter((issue) => issue.type !== "closeScoreMargin");
+        const hasCloseScore = judgment.reviewIssues.some((issue) => issue.type === "closeScoreMargin");
         const priority = !judgment.valid
           ? 0
           : blockingIssues.some((issue) => issue.type === "ungroundedHardFailure")
             ? 1
             : blockingIssues.length
               ? 2
-              : 99;
-        return { scenario, index, judgment, priority };
+              : hasCloseScore
+                ? 3
+                : 99;
+        return { scenario, index, judgment, priority, arbiterPriority: scenario.arbiterPriority };
       })
       .filter((item) => item.priority < 99)
-      .sort((left, right) => left.priority - right.priority || left.index - right.index);
+      .sort(
+        (left, right) =>
+          left.priority - right.priority ||
+          left.arbiterPriority - right.arbiterPriority ||
+          left.index - right.index,
+      );
 
     if (arbitrationCandidates.length && CONFIG.maxArbiterCalls > 0) {
       const target = arbitrationCandidates[0];
       const judgePlan = judgePlans.get(target.scenario.id);
-      const primaryText = truncateUtf8(target.judgment.raw, CONFIG.judgeBytesVisibleToArbiter).text;
+      const primaryText = truncateUtf8(
+        normalizeReviewText(target.judgment.raw),
+        CONFIG.judgeBytesVisibleToArbiter,
+      ).text;
       const messages = buildArbiterMessages(target.scenario, judgePlan.blinded, primaryText);
       const reserve = plannedCalls.get("arbiter:reserve");
       const arbiterCall = { ...reserve, scenarioId: target.scenario.id, seed: seedFor(target.index, "arbiter") };
@@ -801,7 +830,7 @@ export async function runExperiment(options = parseArgs(process.argv.slice(2))) 
       writeFile(path.join(outputDir, "summary.md"), summary),
       writeFile(
         path.join(outputDir, "status.json"),
-        `${JSON.stringify({ status: "complete", actualSpendUsd: picoToUsd(ledger.actualPico), budgetUsd: picoToUsd(budgetPico), arbitration }, null, 2)}\n`,
+        `${JSON.stringify({ status: "complete", actualSpendUsd: picoToUsd(ledger.actualPico), budgetUsd: picoToUsd(budgetPico), arbitration, lengthLimitedCandidates: aggregate.rows.filter((item) => item.finishReason === "length").length, reviewTruncatedCandidates: aggregate.rows.filter((item) => item.contentTruncatedForReview).length }, null, 2)}\n`,
       ),
       writeFile(
         path.join(outputDir, "blind-map.json"),

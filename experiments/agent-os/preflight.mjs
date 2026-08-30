@@ -234,7 +234,12 @@ function buildCallPlan(inputs) {
     const blinded = order.map((variantId, index) => ({
       blindId: `R${index + 1}`,
       candidateCallId: candidateByKey.get(`${scenario.id}:${variantId}`),
-      content: "x".repeat(CONFIG.candidateBytesVisibleToJudge),
+      // Backslashes exercise the maximum 2x JSON escape expansion after the
+      // runtime's review-text control normalization.
+      content: "\\".repeat(CONFIG.candidateBytesVisibleToJudge),
+      // `false` is one serialized byte longer than `true`.
+      lengthLimited: false,
+      truncated: false,
     }));
     const messages = buildJudgeMessages(scenario, blinded);
     const inputUpperTokens = inputTokenUpperBound(messages);
@@ -249,7 +254,7 @@ function buildCallPlan(inputs) {
       role: "judge",
       scenarioId: scenario.id,
       blinded: blinded.map(({ blindId, candidateCallId }) => ({ blindId, candidateCallId })),
-      inputUpperTokens,
+      inputUpperTokens: CONFIG.roles.judge.maxInputUpperTokens,
       maxOutputTokens: CONFIG.roles.judge.maxTokens,
       seed: seedFor(scenarioIndex, "judge"),
     });
@@ -259,10 +264,12 @@ function buildCallPlan(inputs) {
     ...inputs.scenarios.map((scenario, scenarioIndex) => {
       const blinded = deterministicVariantOrder(scenarioIndex).map((_variantId, index) => ({
         blindId: `R${index + 1}`,
-        content: "x".repeat(CONFIG.candidateBytesVisibleToJudge),
+        content: "\\".repeat(CONFIG.candidateBytesVisibleToJudge),
+        lengthLimited: false,
+        truncated: false,
       }));
       return inputTokenUpperBound(
-        buildArbiterMessages(scenario, blinded, "x".repeat(CONFIG.judgeBytesVisibleToArbiter)),
+        buildArbiterMessages(scenario, blinded, "\\".repeat(CONFIG.judgeBytesVisibleToArbiter)),
       );
     }),
   );
@@ -276,7 +283,7 @@ function buildCallPlan(inputs) {
     phase: "arbiter-reserve",
     role: "arbiter",
     scenarioId: null,
-    inputUpperTokens: arbiterInputUpperTokens,
+    inputUpperTokens: CONFIG.roles.arbiter.maxInputUpperTokens,
     maxOutputTokens: CONFIG.roles.arbiter.maxTokens,
     seed: CONFIG.baseSeed + 20_000,
     optional: true,

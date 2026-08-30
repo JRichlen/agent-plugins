@@ -110,11 +110,16 @@ Keep the distinctions explicit so adapters do not collapse everything into
 | **Automation** | A deployed/bound execution contract: identity + trigger + one or more recipes + adapter + relationships + expected evidence. |
 | **Workflow** | A harness-native execution graph or implementation detail that may project a Recipe/Automation, e.g. GitHub Actions YAML or a Claude/Codex workflow. |
 | **Skill** | Reusable behavioral capability/procedure a Recipe may call or recommend. Agent OS does not become the global skill router. |
-| **Actor/Agent** | Execution participant. Actor composition belongs to `agent-compiler`; an Automation may bind one or more Actors. |
+| **Actor/Agent** | Execution participant. Actor composition and compiled AgentImage identity belong to `agent-compiler`; an Automation may bind one or more Actors independently of its Recipe binding. |
 
 A Recipe can say, for example, "use `diagnosing-bugs` for diagnosis and use
 `redgate` as the execution policy once the build loop begins" without Agent OS
 reimplementing either skill.
+
+Sharing one compiled Actor or AgentImage across two jobs does not make those
+jobs one Automation. If they can be triggered, managed, or evidenced
+independently, they retain two Automation identities even when they bind the
+same Actor and follow the same Recipe.
 
 ## Layer model
 
@@ -170,6 +175,19 @@ Reconciliation should classify differences as:
 
 Mutation remains human-gated unless a narrower policy explicitly authorizes a
 class of low-risk reconciliation.
+
+Every reconciliation response should make its boundary reviewable by showing:
+
+1. the desired edge or state;
+2. the observed live edge or state;
+3. the difference classification;
+4. the proposed design diff;
+5. the proposed live diff, if any;
+6. the evidence needed to verify the result; and
+7. the approval boundary before either truth is changed.
+
+An observed difference is not permission to rewrite design truth, and stale
+design is not permission to mutate the live harness.
 
 ## Meta loop
 
@@ -252,15 +270,45 @@ The eventual `agent-os` plugin should be deliberately small at the front door.
 
 - the lane/workstream/automation taxonomy
 - the naming invariant
-- the minimal ontology and dependency relationships
-- Recipe versus Automation distinctions
-- the `Gov`/`Meta` boundary
-- desired-vs-observed reconciliation
-- the curation loop
+- the minimal ontology, including blocking `dependsOn` versus non-blocking `feeds`
+- Recipe versus Automation and Actor versus Automation distinctions
+- sibling capability boundaries
 - recipe routing
+- the compact authority boundary: Gov governs user content; Meta governs
+  automation machinery; neither silently gains the other's authority
 - the human-gated mutation rule
+- the safety invariant that desired design and observed live state stay separate;
+  reconciliation emits a proposed diff that requires approval
+- the safety invariant that Adapter capability starts `unassessed`; after
+  discovery without enough evidence it is `unverified`; assign a capability
+  rating only when current evidence supports it
 
-Deep workflows live as progressively disclosed recipes/references.
+Deep `Gov`/`Meta` ownership guidance (beyond that compact boundary), the full
+curation loop, reconciliation classification and response contract, the
+Adapter capability matrix, and interactive portfolio mechanics live as
+progressively disclosed recipes/references.
+
+### Smoke evidence and context placement
+
+The one-sample [Agent OS context smoke](../../../experiments/agent-os/DESIGN_EVIDENCE.md)
+supports this placement provisionally. The
+[workflow run](https://github.com/JRichlen/agent-plugins/actions/runs/33281138920)
+and [raw artifact](https://github.com/JRichlen/agent-plugins/actions/runs/33281138920/artifacts/9723030558)
+are the evidence authority.
+
+| Treatment | Mean lift over baseline | Context bytes | Placement signal |
+|---|---:|---:|---|
+| taxonomy | `+0.2833` | 1,696 | Useful, but collapsed two jobs in the compiled-participant scenario. |
+| recipe-aware | `+0.3333` | 2,963 | Smallest treatment within `0.10` of the best score. |
+| full Agent OS | `+0.4000` | 4,738 | Extra gain was concentrated in interactive curation, so route it there. |
+
+The score gap between recipe-aware and full was only `0.0667`, while full used
+1,775 more context bytes. Twelve of 24 outputs hit the token ceiling, and the
+live judge was not yet told which ones did. The judge showed strong score
+centrality, manual review found hard failures it did not emit, and candidate
+and judge were both Nemotron-family models. The result therefore supports
+recipe-aware context plus the compact boundaries above; it does not justify a
+canonical ontology change or wholesale default injection of the full contract.
 
 ### Recipe set
 
@@ -273,6 +321,7 @@ Proposed first recipes:
 | `grill-my-automations` | Interactive choose-your-own-adventure audit of the current automation portfolio. |
 | `dedupe-and-consolidate` | Find overlapping jobs, shared ledgers, merge/split opportunities, and better sequencing. |
 | `health-audit` | Diagnose stale/noisy/unverified automations and evidence gaps. |
+| `reconcile-desired-and-live` | Compare desired and observed state, classify differences, propose separate design/live diffs, and preserve the approval boundary. |
 | `tool-scout` | Discover available tools/connectors and propose automations grounded in repeated work or a clear system gap. |
 | `bootstrap-portfolio` | First-run inventory and taxonomy normalization without assuming existing structure is correct. |
 | `sync-agent-os-skill` | Diff durable taxonomy/design against the public skill and propose a review-gated update only when meaningfully changed. |
@@ -378,19 +427,24 @@ Dimensions:
 - project/import the Agent OS taxonomy
 - detect drift and re-read after mutation
 
-Each cell can be `native`, `partial`, `prose-only`, or `unsupported`, with a
-short adapter-specific note. Claude Code, Codex, GitHub Copilot, GitHub Actions,
-and scheduled-task systems should be evaluated capability by capability.
+Every cell starts `unassessed`. After discovery but before enough current
+evidence exists, it is `unverified`. Only then can it be rated `native`,
+`partial`, `prose-only`, or `unsupported`, with a short adapter-specific note
+and the evidence that supports the rating. Do not infer a rating from generic
+harness reputation, a prose instruction, or the presence of a file. Claude
+Code, Codex, GitHub Copilot, GitHub Actions, and scheduled-task systems should
+be evaluated capability by capability.
 
 ## Implementation order
 
 1. Land this automation-curation lens as the receiving-thread decision record.
-2. Design the `agent-os` main skill around taxonomy + Recipe design/routing.
+2. Design the `agent-os` main skill around taxonomy + Recipe design/routing + the two compact safety invariants.
 3. Implement `design-automation-recipe` and `grill-my-automations` as the first progressively disclosed workflows.
-4. Add deterministic cheap checks for the naming invariant, dependency relationship vocabulary, progressive-disclosure links, and sibling-plugin boundaries.
-5. Add an adapter capability matrix before promising cross-harness mutation support.
-6. Only then wire actual harness mutation adapters/tool schemas.
-7. Add optional execution-policy guidance (including Redgate) without making any one harness discipline mandatory.
+4. Add the targeted reconciliation recipe/reference and its explicit response contract.
+5. Add deterministic cheap checks for the naming invariant, independent Automation identity, dependency relationship vocabulary, progressive-disclosure links, and sibling-plugin boundaries.
+6. Add an evidence-backed Adapter capability matrix before promising cross-harness mutation support.
+7. Only then wire actual harness mutation adapters/tool schemas.
+8. Add optional execution-policy guidance (including Redgate) without making any one harness discipline mandatory.
 
 The first release should be useful even when it can only **discover, classify,
 design recipes, diagnose, reconcile, and propose**. Mutation and execution

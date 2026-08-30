@@ -3,6 +3,7 @@
   "scenarios": [
     {
       "id": "reusable-process-deployed-check",
+      "arbiterPriority": 3,
       "title": "Reusable process and one deployed check",
       "prompt": "Several repositories use the same incident-analysis process: collect recent incidents, cluster recurring causes, and produce a cited recommendation. Only the Atlas repository currently needs a deployed check, scheduled on weekdays at 09:00. Model the reusable process and what is deployed. Show the identities, start conditions, relationships, and expected evidence you would record.",
       "judge": {
@@ -48,6 +49,7 @@
     },
     {
       "id": "dependency-not-clock",
+      "arbiterPriority": 4,
       "title": "Blocking and non-blocking relationships survive schedule changes",
       "prompt": "Editorial selects topics, Projects turns those selections into project briefs, and Direction uses project briefs when they are available. The three current jobs start daily at 08:00, 09:00, and 10:00. Projects must not start until Editorial completes successfully for that cycle. Direction should receive Projects' latest brief but may still run when no new brief arrives. The operator may compress the times to 08:00, 08:05, and 08:10. Produce a durable model of the jobs, timing, and relationships.",
       "judge": {
@@ -85,6 +87,7 @@
     },
     {
       "id": "compiled-agent-reused-by-jobs",
+      "arbiterPriority": 1,
       "title": "One compiled agent reused by independent jobs",
       "prompt": "The agent compiler produced a Curator artifact with content hash sha256:7b1c. It is used by two jobs: a weekly repository-triage job each Monday and a daily stale-issue review. The jobs can be enabled, disabled, rescheduled, and inspected independently. Model the relevant identities, reuse, triggers, and evidence.",
       "judge": {
@@ -126,6 +129,7 @@
     },
     {
       "id": "portable-working-disciplines",
+      "arbiterPriority": 5,
       "title": "Portable workflow with optional working disciplines",
       "prompt": "A team's repair workflow uses diagnosing-bugs during diagnosis, scope-fence to contain changes, and Redgate only when implementation becomes nontrivial. The current harness exposes all three through native files and tools. The team wants the automation design to remain useful in another harness where those files, tools, or Redgate may not exist. Represent the workflow portably and identify any assumptions an adapter must report.",
       "judge": {
@@ -163,6 +167,7 @@
     },
     {
       "id": "desired-observed-runtime-reconciliation",
+      "arbiterPriority": 0,
       "title": "Live configuration may improve on desired design",
       "prompt": "The desired portfolio design says Automation B waits for Automation A and then processes A's artifact. In the live harness, B instead starts after Automation C and consumes C's artifact. The Agent OS record has not been updated. Evidence from the last ten comparable runs shows the live C-to-B path produced fresher inputs and fewer failures, although the evidence sample is still small. Reconcile the situation and propose the next action.",
       "judge": {
@@ -200,6 +205,7 @@
     },
     {
       "id": "interactive-portfolio-curation",
+      "arbiterPriority": 2,
       "title": "Interactive cleanup composes an existing interview capability",
       "prompt": "A user has dozens of automations and wants a choose-your-own-adventure cleanup rather than a long audit report. The repository already provides grill-me for interactive questioning, path consent, and termination discipline. Possible outcomes include renaming, merging, splitting, retiring, rescheduling, or changing relationships, but the user has asked to explore the cleanup rather than apply changes. Design the ownership boundaries, interaction shape, and final user-facing deliverable.",
       "judge": {
