@@ -281,6 +281,8 @@ jobs:
             paid:
               - 'plugins/${{ matrix.plugin }}/skills/**/SKILL.md'
               - 'plugins/${{ matrix.plugin }}/skills/**/references/**'
+              - 'plugins/${{ matrix.plugin }}/skills/**/PROMPT.md'
+              - 'plugins/${{ matrix.plugin }}/agents/**'
               - 'plugins/${{ matrix.plugin }}/commands/**'
               - 'plugins/${{ matrix.plugin }}/AGENTS.md'
               - 'plugins/${{ matrix.plugin }}/hooks/**'

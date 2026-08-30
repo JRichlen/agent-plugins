@@ -106,6 +106,10 @@ BEHAVIORAL_CASES = [
      "skill reference docs are progressively disclosed into context"),
     ("redgate", "plugins/redgate/hooks/session-gate.sh", True,
      "hooks change runtime behavior"),
+    ("fleet-playbook-curator", "plugins/fleet-playbook-curator/agents/fleet-playbook-curator.md", True,
+     "declared agent files (plugin.json 'agents' component) directly steer installed agents"),
+    ("fleet-playbook-curator", "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/PROMPT.md", True,
+     "companion prompt beside SKILL.md is shipped model instruction"),
     ("graveyard", "plugins/graveyard/AGENTS.md", True,
      "plugin AGENTS.md is the harness's entry map into the plugin"),
     ("graveyard", "plugins/graveyard/.claude-plugin/plugin.json", True,
@@ -124,6 +128,9 @@ BEHAVIORAL_CASES = [
      "another plugin's surface must not bill this plugin's leg"),
     ("graveyard", "plugins/graveyard/skills/graveyard/scripts/archive-repo.sh", False,
      "guard scripts are the DEEP tier's frozen surface, not the behavioral pack's"),
+    ("graveyard", "AGENTS.md", False,
+     "root AGENTS.md is repo governance, never shipped by a plugin install — "
+     "an all-legs trigger would be spurious paid spend"),
 ]
 
 ROUTING_CASES = [
@@ -275,6 +282,8 @@ def _self_test():
     new_paid = [
         "plugins/${{ matrix.plugin }}/skills/**/SKILL.md",
         "plugins/${{ matrix.plugin }}/skills/**/references/**",
+        "plugins/${{ matrix.plugin }}/skills/**/PROMPT.md",
+        "plugins/${{ matrix.plugin }}/agents/**",
         "plugins/${{ matrix.plugin }}/commands/**",
         "plugins/${{ matrix.plugin }}/AGENTS.md",
         "plugins/${{ matrix.plugin }}/hooks/**",
