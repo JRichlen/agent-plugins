@@ -36,6 +36,12 @@
       "title": "Turning proof outward",
       "window": "August 29, 2026",
       "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline."
+    },
+    {
+      "id": "era-7",
+      "title": "The gate learns its place",
+      "window": "August 29–30, 2026",
+      "lesson": "Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed."
     }
   ],
   "decisions": [
@@ -797,6 +803,39 @@
         {
           "label": "the design of record",
           "path": "docs/red-gate-protocol.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "envelope-not-router",
+      "era": "era-7",
+      "date": "2026-08-30",
+      "title": "Redgate is the envelope, not the router",
+      "forced_by": "The PR that set out to make Redgate the default interactive workflow had first made it \"the default router for planning, research, design, building, debugging, refactoring, review, deployment, multi-agent coordination, security/auth, external writes, and destructive actions\" — every domain pointed at one skill, with specialist procedures at risk of being displaced by gate ceremony.",
+      "decided": "Route to the most-specific applicable specialist skill or recipe for the work itself; compose Redgate around nontrivial work only when execution benefits from explicit falsifiable criteria, iterative verified rounds, or a classified human gate. \"A specialist owns the domain procedure; Redgate reinforces how that procedure is executed\" — and work fully handled by a specialist \"does not acquire Redgate ceremony merely because it is nontrivial.\" The measurement-narrows rule, applied to the flagship: even the protocol that verifies everything else only keeps the job it earns.",
+      "rejected": "The universal-router framing the same PR had shipped hours earlier — auto-triggering Redgate from task shape across every domain — corrected in flight rather than defended.",
+      "receipts": [
+        {
+          "label": "PR #82",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/82"
+        },
+        {
+          "label": "merge commit",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/e2a53a9"
+        },
+        {
+          "label": "the reframing (root)",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/3bded0e"
+        },
+        {
+          "label": "the reframing (plugin)",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/653cbf5"
+        },
+        {
+          "label": "AGENTS.md: default operating mode",
+          "path": "AGENTS.md"
         }
       ],
       "curated": true,

@@ -70,15 +70,15 @@
 <header class="top">
   <h1>Design trajectory — a decision timeline</h1>
   <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:
-  what forced each one, what was rejected, and a receipt you can check. 29 decisions shown
-  of 35 recorded — the rest stay in the
+  what forced each one, what was rejected, and a receipt you can check. 30 decisions shown
+  of 36 recorded — the rest stay in the
   <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
 </header>
 <div class="thesis">
   <strong>The through-line.</strong> One question, asked at escalating altitude: what does a green check actually prove? Every era of this repository is one more turn of that question — each escalation forced by a recorded failure of the previous answer.
 </div>
 <nav class="skim">
-  <h2>The story in six lines</h2>
+  <h2>The story in seven lines</h2>
   <ul>
   <li><a href="#era-1"><strong>Proof before the product</strong></a> <span class="win">(July 10–18, 2026)</span> — The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject.</li>
   <li><a href="#era-2"><strong>The wave and the reckoning</strong></a> <span class="win">(August 17–24, 2026)</span> — Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn&#x27;t recur — is where the real design happened.</li>
@@ -86,6 +86,7 @@
   <li><a href="#era-4"><strong>Naming and knowing</strong></a> <span class="win">(August 28, 2026)</span> — Research paid down the design&#x27;s debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.</li>
   <li><a href="#era-5"><strong>The protocol compiles</strong></a> <span class="win">(August 28–29, 2026)</span> — Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.</li>
   <li><a href="#era-6"><strong>Turning proof outward</strong></a> <span class="win">(August 29, 2026)</span> — The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.</li>
+  <li><a href="#era-7"><strong>The gate learns its place</strong></a> <span class="win">(August 29–30, 2026)</span> — Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</li>
   </ul>
 </nav>
 
@@ -453,6 +454,25 @@
         <div class="block"><span class="lbl dec">Decided</span><p>Curate the existing ledgers into this page: each entry is a decision with the problem that forced it, the alternative it rejected, and a receipt you can check. It is generated deterministically from a committed data file, guarded by the cheap tier like every other published surface — and, per the protocol doc&#x27;s own words about itself, &quot;this document is itself one turn of the loop.&quot;</p></div>
         <div class="block"><span class="lbl rej">Rejected</span><p>Auto-generating from git history (chronology without why); a narrative with claims a reader must take on faith.</p></div>
         <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">the data behind this page</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">the design of record</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-7">
+    <header class="era-head">
+      <h2>The gate learns its place</h2>
+      <p class="window">August 29–30, 2026</p>
+      <p class="lesson">Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="envelope-not-router">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-30</span></div>
+        <h3>Redgate is the envelope, not the router</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The PR that set out to make Redgate the default interactive workflow had first made it &quot;the default router for planning, research, design, building, debugging, refactoring, review, deployment, multi-agent coordination, security/auth, external writes, and destructive actions&quot; — every domain pointed at one skill, with specialist procedures at risk of being displaced by gate ceremony.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Route to the most-specific applicable specialist skill or recipe for the work itself; compose Redgate around nontrivial work only when execution benefits from explicit falsifiable criteria, iterative verified rounds, or a classified human gate. &quot;A specialist owns the domain procedure; Redgate reinforces how that procedure is executed&quot; — and work fully handled by a specialist &quot;does not acquire Redgate ceremony merely because it is nontrivial.&quot; The measurement-narrows rule, applied to the flagship: even the protocol that verifies everything else only keeps the job it earns.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>The universal-router framing the same PR had shipped hours earlier — auto-triggering Redgate from task shape across every domain — corrected in flight rather than defended.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/82">PR #82</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/e2a53a9">merge commit</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/3bded0e">the reframing (root)</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/653cbf5">the reframing (plugin)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/AGENTS.md">AGENTS.md: default operating mode</a></p>
       </div>
     </article></div>
   </section>

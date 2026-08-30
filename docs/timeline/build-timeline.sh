@@ -51,6 +51,12 @@ for d in data["decisions"]:
         by_era[d["era"]].append(d)
         shown += 1
 
+# Spelled out so the heading reads as prose; falls back to the digit if the
+# era count ever outgrows the list.
+WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven",
+         "eight", "nine", "ten", "eleven", "twelve"]
+era_count = WORDS[len(eras)] if len(eras) < len(WORDS) else str(len(eras))
+
 skim = "\n".join(
     f'  <li><a href="#{esc(e["id"])}"><strong>{esc(e["title"])}</strong></a>'
     f' <span class="win">({esc(e["window"])})</span> — {esc(e["lesson"])}</li>'
@@ -165,7 +171,7 @@ print(f'''<!doctype html>
   <strong>The through-line.</strong> {esc(data["thesis"])}
 </div>
 <nav class="skim">
-  <h2>The story in six lines</h2>
+  <h2>The story in {era_count} lines</h2>
   <ul>
 {skim}
   </ul>
