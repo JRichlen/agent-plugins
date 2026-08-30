@@ -1,0 +1,806 @@
+{
+  "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era of this repository is one more turn of that question — each escalation forced by a recorded failure of the previous answer.",
+  "eras": [
+    {
+      "id": "era-1",
+      "title": "Proof before the product",
+      "window": "July 10–18, 2026",
+      "lesson": "The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject."
+    },
+    {
+      "id": "era-2",
+      "title": "The wave and the reckoning",
+      "window": "August 17–24, 2026",
+      "lesson": "Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn't recur — is where the real design happened."
+    },
+    {
+      "id": "era-3",
+      "title": "Formalizing the gate",
+      "window": "August 26, 2026",
+      "lesson": "The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction."
+    },
+    {
+      "id": "era-4",
+      "title": "Naming and knowing",
+      "window": "August 28, 2026",
+      "lesson": "Research paid down the design's debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward."
+    },
+    {
+      "id": "era-5",
+      "title": "The protocol compiles",
+      "window": "August 28–29, 2026",
+      "lesson": "Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it."
+    },
+    {
+      "id": "era-6",
+      "title": "Turning proof outward",
+      "window": "August 29, 2026",
+      "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline."
+    }
+  ],
+  "decisions": [
+    {
+      "id": "eval-arch-first",
+      "era": "era-1",
+      "date": "2026-07-10",
+      "title": "The eval architecture is older than the repo",
+      "forced_by": "Paid model calls in CI cannot gate every pull request unless cost is controlled by structure, not restraint — and a required check that gets skipped would deadlock a PR forever.",
+      "decided": "A cost-isolated pipeline — detect → run (a path-filtered matrix) → aggregate — where only the static aggregate job is ever a required check. The design doc is dated July 10; the repository's first commit, eight days later, already contains the harness. \"Isolation is scoped to cost, not to tier.\"",
+      "rejected": "Making each paid leg a required check (skip = deadlock), or running paid tiers on every PR regardless of what changed.",
+      "receipts": [
+        {
+          "label": "design spec (pre-dates the repo)",
+          "path": "docs/superpowers/specs/2026-07-10-cost-isolated-eval-architecture-design.md"
+        },
+        {
+          "label": "PR #5",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/5"
+        },
+        {
+          "label": "PR #2",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/2"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "graveyard-invariant",
+      "era": "era-1",
+      "date": "2026-07-18",
+      "title": "The founding invariant: never delete before the backup is proven",
+      "forced_by": "The first plugin, graveyard, deletes GitHub repositories — the one mistake that cannot be fixed afterward.",
+      "decided": "The original is deleted only after its backup bundle is confirmed present. The model never deletes anything itself: it emits a guarded script the user reviews and runs. Every eval tier exists first to defend this clause.",
+      "rejected": "Trusting the model to delete carefully. The whole repository is downstream of refusing that trust.",
+      "receipts": [
+        {
+          "label": "eval discipline README",
+          "path": "evals/README.md"
+        },
+        {
+          "label": "graveyard plugin",
+          "path": "plugins/graveyard"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "three-tiers",
+      "era": "era-1",
+      "date": "2026-07-18",
+      "title": "Three proof tiers, cheapest first",
+      "forced_by": "Proof has a price. A discipline that costs too much to run on every change will be skipped exactly when it matters.",
+      "decided": "cheap (offline, free, sub-second, before every commit) → behavioral (an LLM rubric proving the prose steers a model, run when prose changes) → deep (a sandboxed cross-harness agent honoring the invariant end-to-end, for safety changes). Subject models are cheap; the grader is Sonnet — \"so pass/fail stays trustworthy without paying Opus prices.\"",
+      "rejected": "One expensive test suite for everything, or trusting prose changes because \"no script changed.\"",
+      "receipts": [
+        {
+          "label": "eval discipline README",
+          "path": "evals/README.md"
+        },
+        {
+          "label": "PR #1 (grader to Sonnet)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/1"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "install-smoke",
+      "era": "era-1",
+      "date": "2026-07-18",
+      "title": "Install-smoke: no plugin registers without passing its own evals",
+      "forced_by": "A marketplace entry that installs broken is worse than no entry.",
+      "decided": "A per-plugin marketplace install smoke test, fail-closed: registration requires a passing smoke.",
+      "rejected": "Structural validation only at authoring time.",
+      "receipts": [
+        {
+          "label": "PR #7",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/7"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "A real gate, but the same lesson as the three-tier entry — fail-closed proof at the boundary. Inventory-only."
+    },
+    {
+      "id": "counterfeit-corpus",
+      "era": "era-1",
+      "date": "2026-07-18",
+      "title": "The counterfeit corpus: a gate must be seen rejecting something",
+      "forced_by": "\"A gate that never rejected anything would also pass every good plugin — so 'green on the real repo' says nothing about whether the gate actually discriminates.\"",
+      "decided": "Seventeen deliberately broken fixtures plus one all-valid baseline. Calibration runs first (the baseline must pass, or \"every rejection below is meaningless\"); each fixture must fail with the expected message, because \"the substring check is what proves the right gate fired, not merely that something failed.\" One fixture is a structurally perfect plugin whose only defect is a weakened safety invariant.",
+      "rejected": "Trusting positive-path green. This is the repo's first shift from \"we pass\" to \"we discriminate, for the right reason\" — the move every later era repeats at higher altitude.",
+      "receipts": [
+        {
+          "label": "PR #29",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/29"
+        },
+        {
+          "label": "counterfeit corpus",
+          "path": "evals/counterfeits"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "truncation-flakes",
+      "era": "era-1",
+      "date": "2026-07-18",
+      "title": "The \"flakes\" were truncation",
+      "forced_by": "Behavioral legs failed intermittently and the easy story was model flakiness.",
+      "decided": "Raise the grader's token ceiling — the failures were the harness cutting the grader off mid-verdict. The first recorded instance of the pattern that drives the whole trajectory: when a check misbehaves, suspect the check.",
+      "rejected": "Retrying until green, or shrugging at \"LLM nondeterminism.\"",
+      "receipts": [
+        {
+          "label": "PR #33",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/33"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "The lesson recurs at full strength in era 2's entries; kept in the inventory as the earliest sighting."
+    },
+    {
+      "id": "rename-agent-plugins",
+      "era": "era-2",
+      "date": "2026-08-20",
+      "title": "claude-plugins → agent-plugins",
+      "forced_by": "The skills are cross-harness (SKILL.md + AGENTS.md); the old name claimed one harness.",
+      "decided": "Rename the repo and marketplace to match the actual ambition: any agent harness, not one vendor.",
+      "rejected": null,
+      "receipts": [
+        {
+          "label": "PR #35",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/35"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "Housekeeping with a nice signal, but not a design decision consumers need."
+    },
+    {
+      "id": "discipline-wave",
+      "era": "era-2",
+      "date": "2026-08-21",
+      "title": "The discipline wave: taste becomes installable invariants",
+      "forced_by": "The owner's working discipline — interview before work, classify blast radius, verify before claiming, hypothesize before fixing — lived in habit, not in artifacts.",
+      "decided": "Nine skills in five days: grill-me, semver-gate, tracer-bullets, verify-before-claim, diagnosing-bugs, docs-hygiene, context-handoff, codebase-design, wayfinder. Each encodes one invariant a model can be held to, with a red-by-default eval from birth.",
+      "rejected": "One monolithic \"best practices\" skill — each invariant gets its own gate so each can be measured, and killed, alone.",
+      "receipts": [
+        {
+          "label": "PRs #38–#50",
+          "url": "https://github.com/JRichlen/agent-plugins/pulls?q=is%3Apr+is%3Amerged+38..50"
+        },
+        {
+          "label": "PR #38 (grill-me)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/38"
+        },
+        {
+          "label": "PR #39 (semver-gate)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/39"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "fake-checks",
+      "era": "era-2",
+      "date": "2026-08-21",
+      "title": "The fake-check discovery: checks that can never fail",
+      "forced_by": "Days after the wave, review found eval checks across six plugins that grep a load-bearing phrase which also appears in a heading or the check's own prose — so \"the operative rule can be deleted or inverted and the check still passes.\" The repair pass itself introduced five new instances of the same defect, one inside the very group just rewritten to fix it: \"this is what the pattern produces by default, not a one-off.\"",
+      "decided": "Checks assert exit codes on fixtures that exercise the behavior, never message strings that merely mention it — and every guard must be shown turning red when its rule is reverted.",
+      "rejected": "Treating a grep for the rule's wording as proof the rule holds.",
+      "receipts": [
+        {
+          "label": "PR #51",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/51"
+        },
+        {
+          "label": "PR #54 (the six-plugin repair)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/54"
+        },
+        {
+          "label": "CONTRIBUTING: what 'cheap' can prove",
+          "path": "CONTRIBUTING.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "behavioral-never-ran",
+      "era": "era-2",
+      "date": "2026-08-22",
+      "title": "\"The behavioral tier has been reporting green without ever running\"",
+      "forced_by": "The tier that proves prose steers a model had a wiring defect: it reported success while never executing. Weeks of green meant nothing.",
+      "decided": "Fix the wiring — and adopt the doctrine that a leg which did not run must say so out loud: skipped tiers now emit an explicit \"green because it did not run, NOT because it passed\" warning wherever skipping is possible. Its calibration cases were replaced in the same sweep wherever they were shown unable to fail.",
+      "rejected": "Quietly fixing the wiring without changing what green is allowed to claim.",
+      "receipts": [
+        {
+          "label": "PR #59",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/59"
+        },
+        {
+          "label": "PRs #61–#63 (calibration replacements)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/61"
+        },
+        {
+          "label": "evals workflow",
+          "path": ".github/workflows/evals.yml"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "deep-tier-toggle",
+      "era": "era-2",
+      "date": "2026-08-22",
+      "title": "The deep tier's off-switch documents its own dishonesty",
+      "forced_by": "Branch protection requires the deep check to report, so turning the tier off cannot make the check disappear — it goes green because the tier did not run.",
+      "decided": "The gate switch exists, but every run emits a warning saying exactly what a skipped green means, and the repo's AGENTS.md carries the same warning verbatim. Disabled one day, re-armed unattended the next.",
+      "rejected": "A silent toggle whose green is indistinguishable from a proven green.",
+      "receipts": [
+        {
+          "label": "PR #64 (disable)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/64"
+        },
+        {
+          "label": "PR #65 (re-arm)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/65"
+        },
+        {
+          "label": "the WARNING block",
+          "path": "AGENTS.md"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "Same doctrine as the behavioral-tier entry (\"green because it did not run must say so\"); inventory-only to keep the era tight."
+    },
+    {
+      "id": "measurement-narrows",
+      "era": "era-2",
+      "date": "2026-08-23",
+      "title": "Measurement is allowed to shrink the product",
+      "forced_by": "With the proof system finally honest, two plugins' value claims exceeded what measurement supported, and one skill was found partially redundant.",
+      "decided": "Narrow docs-hygiene and fleet-playbook-curator \"to what measurement shows earns their slot,\" and surface verify-before-claim's redundancy finding instead of burying it. The evals are allowed to testify against the product they belong to.",
+      "rejected": "Treating a plugin's claimed value as fixed and the eval's job as confirming it.",
+      "receipts": [
+        {
+          "label": "PR #66",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/66"
+        },
+        {
+          "label": "PR #67",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/67"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "five-invariants",
+      "era": "era-2",
+      "date": "2026-08-24",
+      "title": "The reckoning's lessons become five more invariants",
+      "forced_by": "The failures of the previous week were general, not local: irreversible actions without rehearsed undo, scope creep, rebuilt helpers, silent egress, endless fix loops.",
+      "decided": "Five agent-discipline plugins in one commit — prove-the-undo, scope-fence, find-before-build, egress-gate, stop-rule — each a rule the reckoning had just demonstrated the need for, each with behavioral packs following.",
+      "rejected": null,
+      "receipts": [
+        {
+          "label": "PR #68",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/68"
+        },
+        {
+          "label": "PR #69 (behavioral packs)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/69"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "adversarial-birth",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Red Gate is born adversarially: 27 findings, five fatal",
+      "forced_by": "The raw idea — \"define verifiable criteria up front, then build\" — was about to become the protocol governing everything else. A flattering review would have been worthless.",
+      "decided": "A 12-agent design workflow: parallel surveys, three divergent candidate designs, two judges, and two adversarial critics whose 27 findings (five fatal, two found independently by both critics) are kept as a permanent fatal-flaw ledger — \"because a future edit that quietly undoes one of them would reopen a known hole.\"",
+      "rejected": "Designing the protocol in one pass and trusting the designer. Also rejected, in the same document: ten adopted-elsewhere patterns (mixture-of-agents \"dissolves accountability\"; letting the agent refine tests alongside code is \"the exact reward-hacking mutation control exists to block\").",
+      "receipts": [
+        {
+          "label": "the design of record",
+          "path": "docs/red-gate-protocol.md"
+        },
+        {
+          "label": "PR #75",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/75"
+        },
+        {
+          "label": "birth commit",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/69b5565"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "red-gate-core",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "The red gate itself: a verifier must fail before the work begins",
+      "forced_by": "\"Criteria written but never executed are self-report. A model writes criteria it already believes it meets.\"",
+      "decided": "No build work starts until an executable verifier runs and rejects the current state on every checkable criterion — and no criterion ever goes green except by that same pinned verifier, run independently of whoever did the work. Taste criteria that can't be command-checked get a capped, human-countersigned WITNESS verdict declared up front, never a downgrade after the fact.",
+      "rejected": "\"BEGIN defines verifiable criteria\" — the raw idea's version, which the design's own refinement table calls too weak in ten recorded ways.",
+      "receipts": [
+        {
+          "label": "the refinement table",
+          "path": "docs/red-gate-protocol.md"
+        },
+        {
+          "label": "redgate plugin",
+          "path": "plugins/redgate"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "pin-both-files",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Fatal flaw #1: pin the checker, not just the criteria",
+      "forced_by": "Both critics independently found that with only CRITERIA.md pinned, the builder could rewrite the verifier itself — \"rewriting a curl assertion to echo '#3 PASS' produces a green run.\"",
+      "decided": "Both files are sha256-pinned at ratification; the judge re-hashes both before believing anything; and .redgate/** sits on a deny-list no work lease can cover.",
+      "rejected": "Trusting the verifier's integrity because the criteria were locked.",
+      "receipts": [
+        {
+          "label": "fatal-flaw ledger",
+          "path": "docs/red-gate-protocol.md"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "One fatal-flaw exemplar on the page is enough; the ledger receipt lists all five. The greenfield deadlock is the more vivid pick."
+    },
+    {
+      "id": "greenfield-deadlock",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "127 is a FAIL: the greenfield deadlock, fixed twice",
+      "forced_by": "\"A crash is not red\" deadlocked all new work: checking an unbuilt CLI exits 127, so the gate could never be shown failing legitimately. The fix was then reintroduced by review feedback four minutes after the protocol's birth commit, and had to be re-fixed.",
+      "decided": "\"Not red\" means only harness FAULT (exit 99, dirty preflight). A check command exiting non-zero — 127 included — is a legitimate FAIL, which is exactly what red-from-birth requires.",
+      "rejected": "Requiring the check to run cleanly before its failure counts — which quietly forbids gating anything that doesn't exist yet.",
+      "receipts": [
+        {
+          "label": "fatal-flaw ledger",
+          "path": "docs/red-gate-protocol.md"
+        },
+        {
+          "label": "the re-fix, 4 minutes after birth",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/358ad25"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "mutation-control",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Red proves a check fails now — mutation control proves it's coupled",
+      "forced_by": "\"grep -q RETRY src/client.go goes green when a comment containing RETRY is added.\" A check can be red today and still measure nothing.",
+      "decided": "A positive control at arming plus mutation control at judgment: revert the behavior and the check must turn red, restore it and the check must return green. A check still passing after its behavior is reverted \"is WITNESS, not green.\" This is the fake-check lesson from era 2, promoted into the protocol itself.",
+      "rejected": "Accepting red-at-birth as sufficient proof a criterion is real.",
+      "receipts": [
+        {
+          "label": "fatal-flaw ledger",
+          "path": "docs/red-gate-protocol.md"
+        },
+        {
+          "label": "redgate deep-dive page",
+          "path": "docs/redgate/index.html"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "graduated-autonomy",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Autonomy flows downhill from an approved plan",
+      "forced_by": "An unconditional human stop at every round gate trains rubber-stamping — approval fatigue is the failure mode that decides \"whether the whole model works.\"",
+      "decided": "Round gates are classified PATCH / MINOR / MAJOR by semver-gate's blast-radius test (any single MAJOR property makes the whole gate MAJOR). PATCH auto-passes, MINOR auto-passes with a prominent flag and standing veto, MAJOR stops. Derived ratification keeps auto-ratification from becoming self-ratification: \"the human approved these exact criteria once, at plan approval, at a higher altitude.\" An auto-pass that cannot cite its qualifying conditions is a protocol violation.",
+      "rejected": "The original unconditional human gate — superseded within hours of the protocol's birth.",
+      "receipts": [
+        {
+          "label": "graduated autonomy commit",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/2130d3f"
+        },
+        {
+          "label": "protocol: graduated autonomy",
+          "path": "docs/red-gate-protocol.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "round-zero",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "The round-zero rule: gate the deciding, not just the building",
+      "forced_by": "You cannot write behavioral criteria for an idea you have not decided how to build yet — so a naive red gate blocks exactly the work that needs structure most.",
+      "decided": "\"Start at the first round whose criteria you can write without already knowing the answer. If you cannot write criteria for the work, write criteria for the artifact that will tell you what the work is.\" The first verifiable output of a vague idea is a decision brief, and the gate arms against that.",
+      "rejected": "Treating \"I don't know what to do yet\" as a blocker to the red gate — or exempting exploratory work from gates entirely.",
+      "receipts": [
+        {
+          "label": "protocol: round types",
+          "path": "docs/red-gate-protocol.md"
+        },
+        {
+          "label": "redgate SKILL",
+          "path": "plugins/redgate/skills/redgate/SKILL.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "two-plugins-not-eleven",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Two plugins, not eleven — and a cost claim corrected by measurement",
+      "forced_by": "The gap list named 11 capabilities and the corpus 6 adopt-nows; one plugin each \"would be sprawl\" of protocol internals meaningless without the driver.",
+      "decided": "Two new plugins (redgate, recurrence-detector) plus three amendments to existing ones, built as five verified slices. The plan's claim that scripts must ship in one PR to bound CI cost was later replaced with measured CI behavior and kept only as hygiene.",
+      "rejected": "One-skill-per-plugin sprawl; also a fake spend meter (\"no harness-portable way to meter tokens … it ships as prose bookkeeping, not as a fake meter\").",
+      "receipts": [
+        {
+          "label": "implementation plan",
+          "path": "docs/red-gate-implementation-plan.md"
+        },
+        {
+          "label": "measured-cost correction",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/d52937a"
+        }
+      ],
+      "curated": false,
+      "cut_reason": "Build mechanics; the self-caught-defects entry carries the dogfooding story the page needs."
+    },
+    {
+      "id": "self-caught-defects",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "The protocol, run on itself, catches its own defects",
+      "forced_by": "Slice 2 (the independent judge) was built under the protocol it implements. Its verifier came back 6/6 green — and would have been accepted.",
+      "decided": "Mutation control demoted two of the six green criteria: \"both stayed green when the drift gate was reverted — satisfied by the ordinary FAIL path, not by drift detection.\" The pinned contract was not edited; a fresh corrective round opened instead — where the gate then refused to arm (\"all 4 criteria green before any work … criteria that are already true are not a build contract\"), and a third defect was caught en route: asserting on a drift message passes whether or not the gate acts, so assert the exit code on a passing fixture instead.",
+      "rejected": "Accepting the 6/6 green run — which every process without mutation control would have done.",
+      "receipts": [
+        {
+          "label": "round-1 ledger (the demotion)",
+          "path": ".redgate/slice2-reconcile/gates.log"
+        },
+        {
+          "label": "round-2 ledger (the refusal)",
+          "path": ".redgate/slice2-reconcile-r2/gates.log"
+        },
+        {
+          "label": "run index",
+          "path": ".redgate/INDEX.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "tier-boundary",
+      "era": "era-3",
+      "date": "2026-08-26",
+      "title": "Already-true criteria are regression tests, and belong in the eval tier",
+      "forced_by": "The corrective round's gate refused to open because its four criteria were green before any work — the code was right; only round 1's checks had been weakly coupled.",
+      "decided": "\"Regression tests for already-correct behavior belong in the eval tier (green-expected), not in a Red Gate contract (red-first).\" The round closed unbuilt and the proven-coupled checks moved into the plugin's cheap tier — drawing the permanent boundary between the two proof systems.",
+      "rejected": "Forcing the gate open anyway, or leaving green-at-birth criteria in a red-first contract.",
+      "receipts": [
+        {
+          "label": "the finding, verbatim",
+          "path": ".redgate/slice2-reconcile-r2/gates.log"
+        },
+        {
+          "label": "where the checks landed",
+          "path": "plugins/redgate/evals/cheap/checks.sh"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "lexicon-v2",
+      "era": "era-4",
+      "date": "2026-08-28",
+      "title": "Lexicon v2: names that make violations sound wrong",
+      "forced_by": "\"BEGIN/MIDDLE/END say when, not what you must do — MIDDLE is the emptiest word in the protocol, naming the actual work as filler between two other things.\" Plus negative names (UNVERIFIABLE points away from the required behavior) and one collision (two unrelated \"envelopes\").",
+      "decided": "ARM / TRACE / JUDGE, SCOUT / WIDEN, WITNESS, MANDATE, FAULT — under four rules: verbs over positions; names that make violations audible (\"judging your own work,\" \"unarmed dispatch\"); say the required behavior, never its absence; one word, one meaning. Migration is staged and gated: prose now, docs sweep cheap-tier-gated, mechanical renames MAJOR and human-gated. Committed run records are never rewritten — \"they are provenance.\"",
+      "rejected": "Living with the founding vocabulary, or renaming everything in one drive-by commit.",
+      "receipts": [
+        {
+          "label": "glossary (v1→v2 tables)",
+          "path": "docs/red-gate-glossary.md"
+        },
+        {
+          "label": "proposal",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/d6521bf"
+        },
+        {
+          "label": "adoption",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/e81b862"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "no-reflect-phase",
+      "era": "era-4",
+      "date": "2026-08-28",
+      "title": "No Reflect phase: reflection lives between iterations",
+      "forced_by": "The obvious next feature was a fourth per-round stage (Reflect). Fourteen primary sources were checked before adding it.",
+      "decided": "\"In mature loop designs, reflection lives between iterations, not inside every one.\" The three-stage skeleton stays; reflection gets teeth as gate obligations instead — a mandatory one-line lesson in every gates.log entry, the next round's arming reads the prior ledger first, and consolidation is a gated obligation rather than an honor-system phase (Beck marks refactor \"optionally\"; Fowler calls skipping it TDD's most common failure).",
+      "rejected": "A per-round Reflect phase (duplicates stage 3 and the scout/plan round types); Kolb's cycle as precedent (\"produces learning rather than verified work … no verification stage at all\"); self-refinement configurations later shown unreliable.",
+      "receipts": [
+        {
+          "label": "prior-art note",
+          "path": "docs/research/phase-structure-prior-art.md"
+        },
+        {
+          "label": "write-back into the protocol",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/4848832"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "gap-analysis",
+      "era": "era-4",
+      "date": "2026-08-28",
+      "title": "The gap analysis turns the skepticism inward",
+      "forced_by": "\"The owner builds superb defenses against the agent's dishonesty and almost none against the world's\" — and \"the marketplace preaches measurement and closes zero loops on itself.\"",
+      "decided": "A 14-agent analysis with three skeptics who tried to refute every claimed gap: 39 candidates, 34 survived, ranked by leverage. The verification pass found a live command injection in the flagship irreversible-action safety path — and admitted its own flaw (worktrees branched from a stale base voided its top-level verdicts) rather than hiding it. All ten must-fix gaps shipped within two days, each new guard mutation-proven.",
+      "rejected": "Three gaps explicitly rejected with reasons and revisit conditions — an MCP distribution surface would be \"the repo's first unguarded surface\"; OTel telemetry is the wrong weight class; estimation calibration is noise at this sample size.",
+      "receipts": [
+        {
+          "label": "gap analysis",
+          "path": "docs/research/gap-analysis.md"
+        },
+        {
+          "label": "PR #75",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/75"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "protocol-should-compile",
+      "era": "era-4",
+      "date": "2026-08-28",
+      "title": "The corpus verdict: the missing organ is enforcement",
+      "forced_by": "An 88-pattern survey of the field found the same invariants Red Gate states as prose already moving into code elsewhere: hook handlers, declared tool classes, pinned constraint blocks.",
+      "decided": "\"Today Red Gate is prose a model is asked to honor; it should become a small set of declarations … that a compiler turns into harness hooks.\" Six patterns adopted now (each with cited evidence — pinned criteria drop violations from up to 59% to 0%), ten deferred with named blockers, ten rejected despite industry adoption because \"adoption alone is not fit.\" The verdict became a shipped plugin within 48 hours.",
+      "rejected": "Adopting patterns because the field did: mixture-of-agents, durable-execution runtimes, dynamic speaker selection and seven others are rejected by name, with reasons.",
+      "receipts": [
+        {
+          "label": "patterns corpus",
+          "path": "docs/research/agentic-patterns-corpus.md"
+        },
+        {
+          "label": "gap it points at",
+          "path": "docs/research/gap-analysis.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "compiled-not-stored",
+      "era": "era-5",
+      "date": "2026-08-28",
+      "title": "Agents are compiled, not stored",
+      "forced_by": "\"Agent personas are normally hand-written prose blobs: unversioned, unattributable, silently over-privileged, non-reproducible, impossible to diff. When one 'works,' nobody can say which sentence did the work, and when it grows a new power, nobody approved it.\"",
+      "decided": "agent-compiler: agents become build outputs of small, versioned registry modules. Same registry, query and compiler version ⇒ byte-identical image and hash; every emitted unit carries provenance; conflicts, missing dependencies and over-ceiling effects are compile errors, not warnings. The boundary rule: \"Natural language may select behavior; it may not silently define it.\" No effect ceiling anywhere is itself a compile error — an unconstrained agent must be asked for explicitly.",
+      "rejected": "Hand-authored persona prose; also execution inside the plugin — cut, not deferred, because the harness is already the scheduler: \"rebuilding retries/locks/approvals inside a plugin would duplicate the harness badly.\"",
+      "receipts": [
+        {
+          "label": "design doc",
+          "path": "docs/designs/agent-compiler-plugin.md"
+        },
+        {
+          "label": "PR #77",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/77"
+        },
+        {
+          "label": "deep-dive page",
+          "path": "docs/agent-compiler/index.html"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "built-changed-design",
+      "era": "era-5",
+      "date": "2026-08-28",
+      "title": "Three decisions changed by running the thing",
+      "forced_by": "\"Three decisions changed between this design and the build, each forced by actually running the thing.\" The flagship: the first image hash covered the whole-registry revision, and the metamorphic check immediately caught an unrelated module changing an existing image's hash — \"a defect no amount of re-reading the design had surfaced.\"",
+      "decided": "The hash covers content-bearing fields only; the kernel moved out of the CI safety glob rather than widening it; one authoring format instead of a YAML dependency. A typo'd frontmatter key that compiled cleanly in the first demonstration became a fail-closed diagnostic (BAD_MODULE_KEY) with a pinned fixture — a demonstration miss converted into a compile error.",
+      "rejected": "Whole-image hashing; tolerant parsing (\"anything outside the grammar is a compile error, never a guess\"); deciding the CI-cost question silently instead of in the implementation PR.",
+      "receipts": [
+        {
+          "label": "design doc status preamble",
+          "path": "docs/designs/agent-compiler-plugin.md"
+        },
+        {
+          "label": "the lesson, as a registry module",
+          "path": "plugins/agent-compiler/registry/behaviors/discipline/build-run-verify.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "adr-0001",
+      "era": "era-5",
+      "date": "2026-08-29",
+      "title": "ADR 0001: identities are views, preferences are domains",
+      "forced_by": "New content (identities, imported taste) tempted new module kinds — and \"every language addition is effectively permanent once modules are published against it.\"",
+      "decided": "Populate existing coordinates instead of adding new ones: an identity is a view module (selectors, traits, an effect ceiling — \"never a prose persona blob\"); a preference is a behavior scoped by domains. Accepted via a grill-me interview, with the reopening condition recorded in the ADR itself: if should-strength rules read forced as the preference corpus grows, revisit a dedicated block kind.",
+      "rejected": "A first-class identity kind and a preference block — the handoff's own \"premature ontology explosion\" warning.",
+      "receipts": [
+        {
+          "label": "ADR 0001",
+          "path": "plugins/agent-compiler/docs/adr/0001-identities-are-views-preferences-are-domains.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "evidence-against-self",
+      "era": "era-5",
+      "date": "2026-08-29",
+      "title": "The repo publishes evidence against its own plugin",
+      "forced_by": "The with/without gallery seed for agent-compiler was judged by an independent reader — who found that \"on pure task-completion grounds this is a case where the ungated answer is arguably better, not just different.\"",
+      "decided": "Publish the verdict verbatim on the card, alongside the counterweight (the ungated answer has no capability boundary — \"a real gap\"). The gallery's rule is absolute: it shows truth, including where a skill's effect is modest or adverse, because \"a demonstration with no misses is a sales pitch.\"",
+      "rejected": "Cherry-picking a friendlier scenario — scenario selection is deterministic precisely so it can't be.",
+      "receipts": [
+        {
+          "label": "the seed, verdict included",
+          "path": "docs/examples/data/agent-compiler.json"
+        },
+        {
+          "label": "examples program rules",
+          "path": "docs/examples/PLAN.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "gallery-truth",
+      "era": "era-6",
+      "date": "2026-08-29",
+      "title": "The gallery: proof made consumable, weak results out loud",
+      "forced_by": "Green checks convince maintainers; consumers need to see what a skill actually changes — and a curated gallery is one cherry-pick away from advertising.",
+      "decided": "Every published pair is a real, provenanced model run captured from the eval tier, never hand-written; scenario selection is deterministic; refresh lands as a review-gated PR on a schedule, never a direct push; a plugin with no real pair \"simply has no card — the gallery never fabricates one.\" The judged spread — 1 stark, 9 moderate, 2 subtle — is published verbatim, and the subtle ones are named as the places to ask whether a skill earns its context.",
+      "rejected": "Hand-written examples, cherry-picked scenarios, auto-merged refreshes.",
+      "receipts": [
+        {
+          "label": "examples program",
+          "path": "docs/examples/PLAN.md"
+        },
+        {
+          "label": "the gallery",
+          "path": "docs/examples/index.html"
+        },
+        {
+          "label": "PR #75 (tracer)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/75"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "scale-tiers",
+      "era": "era-6",
+      "date": "2026-08-29",
+      "title": "Scale gauntlets: no hiding behind a single lucky fixture",
+      "forced_by": "\"The cheap tier proves each gate once, on one fixture … a defect that only shows up on a particular criteria count, a partially-green contract, or a particular mutation order cannot hide behind a single lucky fixture.\"",
+      "decided": "Randomized, seeded stress suites for both flagship plugins — hundreds of isolated runs exercising every gate, drift path and fault injection — plus behavioral packs with negative controls. The packs promptly earned their keep in reverse: a red leg exposed a defect in the rubric itself (it contradicted the protocol's own round-zero rule), which was fixed without softening the genuine failure the same leg had caught.",
+      "rejected": "Calling one green fixture proof; and softening a rubric to make a red leg pass.",
+      "receipts": [
+        {
+          "label": "PR #80",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/80"
+        },
+        {
+          "label": "redgate gauntlet",
+          "path": "plugins/redgate/evals/scale/run.sh"
+        },
+        {
+          "label": "agent-compiler gauntlet",
+          "path": "plugins/agent-compiler/evals/scale/stress.py"
+        },
+        {
+          "label": "the rubric fix",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/ef8410e"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "approval-fatigue-ledger",
+      "era": "era-6",
+      "date": "2026-08-29",
+      "title": "The gate-outcome ledger: watching for rubber-stamping",
+      "forced_by": "Graduated autonomy works only if approvals stay meaningful — approval fatigue is \"the one signal that decides whether the whole model works or trains rubber-stamping.\"",
+      "decided": "Every gate entry now records its disposition (approved / flagged / vetoed) and lesson; a generated corpus index makes prior verifiers reusable — with the rule that a shape demoted under mutation control \"must NOT be reused as proof.\"",
+      "rejected": "Treating human sign-off as self-evidently meaningful forever.",
+      "receipts": [
+        {
+          "label": "PR #81",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/81"
+        },
+        {
+          "label": "corpus index",
+          "path": ".redgate/INDEX.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "timeline-itself",
+      "era": "era-6",
+      "date": "2026-08-30",
+      "title": "This timeline: the internal ledgers, turned outward",
+      "forced_by": "The repo records its decisions obsessively — refinement tables, fatal-flaw ledgers, gate lessons, reasoned rejections — but all of it inward, where a consumer can't follow what happened or why.",
+      "decided": "Curate the existing ledgers into this page: each entry is a decision with the problem that forced it, the alternative it rejected, and a receipt you can check. It is generated deterministically from a committed data file, guarded by the cheap tier like every other published surface — and, per the protocol doc's own words about itself, \"this document is itself one turn of the loop.\"",
+      "rejected": "Auto-generating from git history (chronology without why); a narrative with claims a reader must take on faith.",
+      "receipts": [
+        {
+          "label": "the data behind this page",
+          "path": "docs/timeline/data/decisions.json"
+        },
+        {
+          "label": "the design of record",
+          "path": "docs/red-gate-protocol.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    }
+  ]
+}

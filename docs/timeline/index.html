@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design trajectory — a decision timeline</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5a5a5a; --card:#ffffff; --line:#e3e1dc;
+    --accent:#6d3f9e; --accent-soft:#f0e9f7; --link:#0b5cad;
+    --forced:#8a5a00; --dec:#0a7d3f; --rej:#a03030;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#141414; --fg:#ececec; --muted:#a2a2a2; --card:#1d1d1d; --line:#2f2f2f;
+      --accent:#b493dd; --accent-soft:#241b30; --link:#6db3f2;
+      --forced:#e0aa4a; --dec:#4bd07f; --rej:#e07a7a;
+    }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:880px; margin:0 auto; padding:2.4rem 1.2rem 5rem; }
+  a { color:var(--link); }
+  .crumb { font-size:.85rem; margin:0 0 1.4rem; }
+  .crumb a { text-decoration:none; }
+  header.top h1 { font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }
+  header.top .sub { color:var(--muted); margin:0 0 1.2rem; max-width:72ch; }
+  .thesis { background:var(--accent-soft); border:1px solid var(--accent);
+    border-radius:12px; padding:1rem 1.2rem; margin:1.2rem 0 1.6rem; }
+  .thesis strong { color:var(--accent); }
+  .skim { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.2rem .6rem; margin:0 0 2.2rem; }
+  .skim h2 { font-size:1rem; margin:0 0 .5rem; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--muted); }
+  .skim ul { margin:0; padding:0 0 .4rem 1.1rem; }
+  .skim li { margin:0 0 .55rem; }
+  .skim .win { color:var(--muted); font-size:.88rem; }
+  .skim a { text-decoration:none; }
+  .era { margin:0 0 2.6rem; }
+  .era-head h2 { font-size:1.45rem; margin:0; color:var(--accent); }
+  .era-head .window { color:var(--muted); font-size:.88rem; margin:.1rem 0 .4rem; }
+  .era-head .lesson { margin:0 0 1.1rem; max-width:74ch; }
+  .rail { border-left:2px solid var(--line); margin-left:.4rem; padding-left:1.4rem; }
+  .entry { position:relative; margin:0 0 1.4rem; }
+  .dot { position:absolute; left:calc(-1.4rem - 7px); top:1.35rem; width:12px; height:12px;
+    border-radius:50%; background:var(--accent); border:2px solid var(--bg); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.2rem .9rem; }
+  .meta { font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--muted); }
+  .card h3 { margin:.35rem 0 .7rem; font-size:1.12rem; }
+  .block { margin:0 0 .7rem; }
+  .block p { margin:.15rem 0 0; }
+  .lbl { display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:.08em; padding:.05rem .45rem; border-radius:999px; }
+  .lbl.forced { color:var(--forced); border:1px solid var(--forced); }
+  .lbl.dec { color:var(--dec); border:1px solid var(--dec); }
+  .lbl.rej { color:var(--rej); border:1px solid var(--rej); }
+  .lbl.rcpt { color:var(--muted); border:1px solid var(--line); }
+  .receipts { font-size:.85rem; color:var(--muted); border-top:1px dashed var(--line);
+    padding-top:.6rem; margin:.8rem 0 .1rem; }
+  .receipts a { text-decoration:none; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:2.5rem;
+    border-top:1px solid var(--line); padding-top:1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="crumb"><a href="../">← agent-plugins docs</a></p>
+<header class="top">
+  <h1>Design trajectory — a decision timeline</h1>
+  <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:
+  what forced each one, what was rejected, and a receipt you can check. 29 decisions shown
+  of 35 recorded — the rest stay in the
+  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
+</header>
+<div class="thesis">
+  <strong>The through-line.</strong> One question, asked at escalating altitude: what does a green check actually prove? Every era of this repository is one more turn of that question — each escalation forced by a recorded failure of the previous answer.
+</div>
+<nav class="skim">
+  <h2>The story in six lines</h2>
+  <ul>
+  <li><a href="#era-1"><strong>Proof before the product</strong></a> <span class="win">(July 10–18, 2026)</span> — The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject.</li>
+  <li><a href="#era-2"><strong>The wave and the reckoning</strong></a> <span class="win">(August 17–24, 2026)</span> — Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn&#x27;t recur — is where the real design happened.</li>
+  <li><a href="#era-3"><strong>Formalizing the gate</strong></a> <span class="win">(August 26, 2026)</span> — The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction.</li>
+  <li><a href="#era-4"><strong>Naming and knowing</strong></a> <span class="win">(August 28, 2026)</span> — Research paid down the design&#x27;s debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.</li>
+  <li><a href="#era-5"><strong>The protocol compiles</strong></a> <span class="win">(August 28–29, 2026)</span> — Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.</li>
+  <li><a href="#era-6"><strong>Turning proof outward</strong></a> <span class="win">(August 29, 2026)</span> — The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.</li>
+  </ul>
+</nav>
+
+  <section class="era" id="era-1">
+    <header class="era-head">
+      <h2>Proof before the product</h2>
+      <p class="window">July 10–18, 2026</p>
+      <p class="lesson">The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="eval-arch-first">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-07-10</span></div>
+        <h3>The eval architecture is older than the repo</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Paid model calls in CI cannot gate every pull request unless cost is controlled by structure, not restraint — and a required check that gets skipped would deadlock a PR forever.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A cost-isolated pipeline — detect → run (a path-filtered matrix) → aggregate — where only the static aggregate job is ever a required check. The design doc is dated July 10; the repository&#x27;s first commit, eight days later, already contains the harness. &quot;Isolation is scoped to cost, not to tier.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Making each paid leg a required check (skip = deadlock), or running paid tiers on every PR regardless of what changed.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/superpowers/specs/2026-07-10-cost-isolated-eval-architecture-design.md">design spec (pre-dates the repo)</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/5">PR #5</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/2">PR #2</a></p>
+      </div>
+    </article>
+    <article class="entry" id="graveyard-invariant">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-07-18</span></div>
+        <h3>The founding invariant: never delete before the backup is proven</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The first plugin, graveyard, deletes GitHub repositories — the one mistake that cannot be fixed afterward.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>The original is deleted only after its backup bundle is confirmed present. The model never deletes anything itself: it emits a guarded script the user reviews and runs. Every eval tier exists first to defend this clause.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Trusting the model to delete carefully. The whole repository is downstream of refusing that trust.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/evals/README.md">eval discipline README</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/graveyard">graveyard plugin</a></p>
+      </div>
+    </article>
+    <article class="entry" id="three-tiers">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-07-18</span></div>
+        <h3>Three proof tiers, cheapest first</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Proof has a price. A discipline that costs too much to run on every change will be skipped exactly when it matters.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>cheap (offline, free, sub-second, before every commit) → behavioral (an LLM rubric proving the prose steers a model, run when prose changes) → deep (a sandboxed cross-harness agent honoring the invariant end-to-end, for safety changes). Subject models are cheap; the grader is Sonnet — &quot;so pass/fail stays trustworthy without paying Opus prices.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>One expensive test suite for everything, or trusting prose changes because &quot;no script changed.&quot;</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/evals/README.md">eval discipline README</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/1">PR #1 (grader to Sonnet)</a></p>
+      </div>
+    </article>
+    <article class="entry" id="counterfeit-corpus">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-07-18</span></div>
+        <h3>The counterfeit corpus: a gate must be seen rejecting something</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;A gate that never rejected anything would also pass every good plugin — so &#x27;green on the real repo&#x27; says nothing about whether the gate actually discriminates.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Seventeen deliberately broken fixtures plus one all-valid baseline. Calibration runs first (the baseline must pass, or &quot;every rejection below is meaningless&quot;); each fixture must fail with the expected message, because &quot;the substring check is what proves the right gate fired, not merely that something failed.&quot; One fixture is a structurally perfect plugin whose only defect is a weakened safety invariant.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Trusting positive-path green. This is the repo&#x27;s first shift from &quot;we pass&quot; to &quot;we discriminate, for the right reason&quot; — the move every later era repeats at higher altitude.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/29">PR #29</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/evals/counterfeits">counterfeit corpus</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-2">
+    <header class="era-head">
+      <h2>The wave and the reckoning</h2>
+      <p class="window">August 17–24, 2026</p>
+      <p class="lesson">Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn&#x27;t recur — is where the real design happened.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="discipline-wave">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-21</span></div>
+        <h3>The discipline wave: taste becomes installable invariants</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The owner&#x27;s working discipline — interview before work, classify blast radius, verify before claiming, hypothesize before fixing — lived in habit, not in artifacts.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Nine skills in five days: grill-me, semver-gate, tracer-bullets, verify-before-claim, diagnosing-bugs, docs-hygiene, context-handoff, codebase-design, wayfinder. Each encodes one invariant a model can be held to, with a red-by-default eval from birth.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>One monolithic &quot;best practices&quot; skill — each invariant gets its own gate so each can be measured, and killed, alone.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pulls?q=is%3Apr+is%3Amerged+38..50">PRs #38–#50</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/38">PR #38 (grill-me)</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/39">PR #39 (semver-gate)</a></p>
+      </div>
+    </article>
+    <article class="entry" id="fake-checks">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-21</span></div>
+        <h3>The fake-check discovery: checks that can never fail</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Days after the wave, review found eval checks across six plugins that grep a load-bearing phrase which also appears in a heading or the check&#x27;s own prose — so &quot;the operative rule can be deleted or inverted and the check still passes.&quot; The repair pass itself introduced five new instances of the same defect, one inside the very group just rewritten to fix it: &quot;this is what the pattern produces by default, not a one-off.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Checks assert exit codes on fixtures that exercise the behavior, never message strings that merely mention it — and every guard must be shown turning red when its rule is reverted.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Treating a grep for the rule&#x27;s wording as proof the rule holds.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/51">PR #51</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/54">PR #54 (the six-plugin repair)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/CONTRIBUTING.md">CONTRIBUTING: what &#x27;cheap&#x27; can prove</a></p>
+      </div>
+    </article>
+    <article class="entry" id="behavioral-never-ran">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-22</span></div>
+        <h3>&quot;The behavioral tier has been reporting green without ever running&quot;</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The tier that proves prose steers a model had a wiring defect: it reported success while never executing. Weeks of green meant nothing.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Fix the wiring — and adopt the doctrine that a leg which did not run must say so out loud: skipped tiers now emit an explicit &quot;green because it did not run, NOT because it passed&quot; warning wherever skipping is possible. Its calibration cases were replaced in the same sweep wherever they were shown unable to fail.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Quietly fixing the wiring without changing what green is allowed to claim.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/59">PR #59</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/61">PRs #61–#63 (calibration replacements)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/.github/workflows/evals.yml">evals workflow</a></p>
+      </div>
+    </article>
+    <article class="entry" id="measurement-narrows">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-23</span></div>
+        <h3>Measurement is allowed to shrink the product</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>With the proof system finally honest, two plugins&#x27; value claims exceeded what measurement supported, and one skill was found partially redundant.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Narrow docs-hygiene and fleet-playbook-curator &quot;to what measurement shows earns their slot,&quot; and surface verify-before-claim&#x27;s redundancy finding instead of burying it. The evals are allowed to testify against the product they belong to.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Treating a plugin&#x27;s claimed value as fixed and the eval&#x27;s job as confirming it.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/66">PR #66</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/67">PR #67</a></p>
+      </div>
+    </article>
+    <article class="entry" id="five-invariants">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-24</span></div>
+        <h3>The reckoning&#x27;s lessons become five more invariants</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The failures of the previous week were general, not local: irreversible actions without rehearsed undo, scope creep, rebuilt helpers, silent egress, endless fix loops.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Five agent-discipline plugins in one commit — prove-the-undo, scope-fence, find-before-build, egress-gate, stop-rule — each a rule the reckoning had just demonstrated the need for, each with behavioral packs following.</p></div>
+        
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/68">PR #68</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/69">PR #69 (behavioral packs)</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-3">
+    <header class="era-head">
+      <h2>Formalizing the gate</h2>
+      <p class="window">August 26, 2026</p>
+      <p class="lesson">The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="adversarial-birth">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>Red Gate is born adversarially: 27 findings, five fatal</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The raw idea — &quot;define verifiable criteria up front, then build&quot; — was about to become the protocol governing everything else. A flattering review would have been worthless.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A 12-agent design workflow: parallel surveys, three divergent candidate designs, two judges, and two adversarial critics whose 27 findings (five fatal, two found independently by both critics) are kept as a permanent fatal-flaw ledger — &quot;because a future edit that quietly undoes one of them would reopen a known hole.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Designing the protocol in one pass and trusting the designer. Also rejected, in the same document: ten adopted-elsewhere patterns (mixture-of-agents &quot;dissolves accountability&quot;; letting the agent refine tests alongside code is &quot;the exact reward-hacking mutation control exists to block&quot;).</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">the design of record</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/75">PR #75</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/69b5565">birth commit</a></p>
+      </div>
+    </article>
+    <article class="entry" id="red-gate-core">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>The red gate itself: a verifier must fail before the work begins</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;Criteria written but never executed are self-report. A model writes criteria it already believes it meets.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>No build work starts until an executable verifier runs and rejects the current state on every checkable criterion — and no criterion ever goes green except by that same pinned verifier, run independently of whoever did the work. Taste criteria that can&#x27;t be command-checked get a capped, human-countersigned WITNESS verdict declared up front, never a downgrade after the fact.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>&quot;BEGIN defines verifiable criteria&quot; — the raw idea&#x27;s version, which the design&#x27;s own refinement table calls too weak in ten recorded ways.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">the refinement table</a> · <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/redgate">redgate plugin</a></p>
+      </div>
+    </article>
+    <article class="entry" id="greenfield-deadlock">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>127 is a FAIL: the greenfield deadlock, fixed twice</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;A crash is not red&quot; deadlocked all new work: checking an unbuilt CLI exits 127, so the gate could never be shown failing legitimately. The fix was then reintroduced by review feedback four minutes after the protocol&#x27;s birth commit, and had to be re-fixed.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>&quot;Not red&quot; means only harness FAULT (exit 99, dirty preflight). A check command exiting non-zero — 127 included — is a legitimate FAIL, which is exactly what red-from-birth requires.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Requiring the check to run cleanly before its failure counts — which quietly forbids gating anything that doesn&#x27;t exist yet.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">fatal-flaw ledger</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/358ad25">the re-fix, 4 minutes after birth</a></p>
+      </div>
+    </article>
+    <article class="entry" id="mutation-control">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>Red proves a check fails now — mutation control proves it&#x27;s coupled</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;grep -q RETRY src/client.go goes green when a comment containing RETRY is added.&quot; A check can be red today and still measure nothing.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A positive control at arming plus mutation control at judgment: revert the behavior and the check must turn red, restore it and the check must return green. A check still passing after its behavior is reverted &quot;is WITNESS, not green.&quot; This is the fake-check lesson from era 2, promoted into the protocol itself.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Accepting red-at-birth as sufficient proof a criterion is real.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">fatal-flaw ledger</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/redgate/index.html">redgate deep-dive page</a></p>
+      </div>
+    </article>
+    <article class="entry" id="graduated-autonomy">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>Autonomy flows downhill from an approved plan</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>An unconditional human stop at every round gate trains rubber-stamping — approval fatigue is the failure mode that decides &quot;whether the whole model works.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Round gates are classified PATCH / MINOR / MAJOR by semver-gate&#x27;s blast-radius test (any single MAJOR property makes the whole gate MAJOR). PATCH auto-passes, MINOR auto-passes with a prominent flag and standing veto, MAJOR stops. Derived ratification keeps auto-ratification from becoming self-ratification: &quot;the human approved these exact criteria once, at plan approval, at a higher altitude.&quot; An auto-pass that cannot cite its qualifying conditions is a protocol violation.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>The original unconditional human gate — superseded within hours of the protocol&#x27;s birth.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/commit/2130d3f">graduated autonomy commit</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">protocol: graduated autonomy</a></p>
+      </div>
+    </article>
+    <article class="entry" id="round-zero">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>The round-zero rule: gate the deciding, not just the building</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>You cannot write behavioral criteria for an idea you have not decided how to build yet — so a naive red gate blocks exactly the work that needs structure most.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>&quot;Start at the first round whose criteria you can write without already knowing the answer. If you cannot write criteria for the work, write criteria for the artifact that will tell you what the work is.&quot; The first verifiable output of a vague idea is a decision brief, and the gate arms against that.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Treating &quot;I don&#x27;t know what to do yet&quot; as a blocker to the red gate — or exempting exploratory work from gates entirely.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">protocol: round types</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/redgate/skills/redgate/SKILL.md">redgate SKILL</a></p>
+      </div>
+    </article>
+    <article class="entry" id="self-caught-defects">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>The protocol, run on itself, catches its own defects</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Slice 2 (the independent judge) was built under the protocol it implements. Its verifier came back 6/6 green — and would have been accepted.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Mutation control demoted two of the six green criteria: &quot;both stayed green when the drift gate was reverted — satisfied by the ordinary FAIL path, not by drift detection.&quot; The pinned contract was not edited; a fresh corrective round opened instead — where the gate then refused to arm (&quot;all 4 criteria green before any work … criteria that are already true are not a build contract&quot;), and a third defect was caught en route: asserting on a drift message passes whether or not the gate acts, so assert the exit code on a passing fixture instead.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Accepting the 6/6 green run — which every process without mutation control would have done.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/.redgate/slice2-reconcile/gates.log">round-1 ledger (the demotion)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/.redgate/slice2-reconcile-r2/gates.log">round-2 ledger (the refusal)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/.redgate/INDEX.md">run index</a></p>
+      </div>
+    </article>
+    <article class="entry" id="tier-boundary">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-26</span></div>
+        <h3>Already-true criteria are regression tests, and belong in the eval tier</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The corrective round&#x27;s gate refused to open because its four criteria were green before any work — the code was right; only round 1&#x27;s checks had been weakly coupled.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>&quot;Regression tests for already-correct behavior belong in the eval tier (green-expected), not in a Red Gate contract (red-first).&quot; The round closed unbuilt and the proven-coupled checks moved into the plugin&#x27;s cheap tier — drawing the permanent boundary between the two proof systems.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Forcing the gate open anyway, or leaving green-at-birth criteria in a red-first contract.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/.redgate/slice2-reconcile-r2/gates.log">the finding, verbatim</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/redgate/evals/cheap/checks.sh">where the checks landed</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-4">
+    <header class="era-head">
+      <h2>Naming and knowing</h2>
+      <p class="window">August 28, 2026</p>
+      <p class="lesson">Research paid down the design&#x27;s debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="lexicon-v2">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>Lexicon v2: names that make violations sound wrong</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;BEGIN/MIDDLE/END say when, not what you must do — MIDDLE is the emptiest word in the protocol, naming the actual work as filler between two other things.&quot; Plus negative names (UNVERIFIABLE points away from the required behavior) and one collision (two unrelated &quot;envelopes&quot;).</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>ARM / TRACE / JUDGE, SCOUT / WIDEN, WITNESS, MANDATE, FAULT — under four rules: verbs over positions; names that make violations audible (&quot;judging your own work,&quot; &quot;unarmed dispatch&quot;); say the required behavior, never its absence; one word, one meaning. Migration is staged and gated: prose now, docs sweep cheap-tier-gated, mechanical renames MAJOR and human-gated. Committed run records are never rewritten — &quot;they are provenance.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Living with the founding vocabulary, or renaming everything in one drive-by commit.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">glossary (v1→v2 tables)</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/d6521bf">proposal</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/e81b862">adoption</a></p>
+      </div>
+    </article>
+    <article class="entry" id="no-reflect-phase">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>No Reflect phase: reflection lives between iterations</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The obvious next feature was a fourth per-round stage (Reflect). Fourteen primary sources were checked before adding it.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>&quot;In mature loop designs, reflection lives between iterations, not inside every one.&quot; The three-stage skeleton stays; reflection gets teeth as gate obligations instead — a mandatory one-line lesson in every gates.log entry, the next round&#x27;s arming reads the prior ledger first, and consolidation is a gated obligation rather than an honor-system phase (Beck marks refactor &quot;optionally&quot;; Fowler calls skipping it TDD&#x27;s most common failure).</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>A per-round Reflect phase (duplicates stage 3 and the scout/plan round types); Kolb&#x27;s cycle as precedent (&quot;produces learning rather than verified work … no verification stage at all&quot;); self-refinement configurations later shown unreliable.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/phase-structure-prior-art.md">prior-art note</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/4848832">write-back into the protocol</a></p>
+      </div>
+    </article>
+    <article class="entry" id="gap-analysis">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>The gap analysis turns the skepticism inward</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;The owner builds superb defenses against the agent&#x27;s dishonesty and almost none against the world&#x27;s&quot; — and &quot;the marketplace preaches measurement and closes zero loops on itself.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A 14-agent analysis with three skeptics who tried to refute every claimed gap: 39 candidates, 34 survived, ranked by leverage. The verification pass found a live command injection in the flagship irreversible-action safety path — and admitted its own flaw (worktrees branched from a stale base voided its top-level verdicts) rather than hiding it. All ten must-fix gaps shipped within two days, each new guard mutation-proven.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Three gaps explicitly rejected with reasons and revisit conditions — an MCP distribution surface would be &quot;the repo&#x27;s first unguarded surface&quot;; OTel telemetry is the wrong weight class; estimation calibration is noise at this sample size.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/gap-analysis.md">gap analysis</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/75">PR #75</a></p>
+      </div>
+    </article>
+    <article class="entry" id="protocol-should-compile">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>The corpus verdict: the missing organ is enforcement</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>An 88-pattern survey of the field found the same invariants Red Gate states as prose already moving into code elsewhere: hook handlers, declared tool classes, pinned constraint blocks.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>&quot;Today Red Gate is prose a model is asked to honor; it should become a small set of declarations … that a compiler turns into harness hooks.&quot; Six patterns adopted now (each with cited evidence — pinned criteria drop violations from up to 59% to 0%), ten deferred with named blockers, ten rejected despite industry adoption because &quot;adoption alone is not fit.&quot; The verdict became a shipped plugin within 48 hours.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Adopting patterns because the field did: mixture-of-agents, durable-execution runtimes, dynamic speaker selection and seven others are rejected by name, with reasons.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/agentic-patterns-corpus.md">patterns corpus</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/gap-analysis.md">gap it points at</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-5">
+    <header class="era-head">
+      <h2>The protocol compiles</h2>
+      <p class="window">August 28–29, 2026</p>
+      <p class="lesson">Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="compiled-not-stored">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>Agents are compiled, not stored</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;Agent personas are normally hand-written prose blobs: unversioned, unattributable, silently over-privileged, non-reproducible, impossible to diff. When one &#x27;works,&#x27; nobody can say which sentence did the work, and when it grows a new power, nobody approved it.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>agent-compiler: agents become build outputs of small, versioned registry modules. Same registry, query and compiler version ⇒ byte-identical image and hash; every emitted unit carries provenance; conflicts, missing dependencies and over-ceiling effects are compile errors, not warnings. The boundary rule: &quot;Natural language may select behavior; it may not silently define it.&quot; No effect ceiling anywhere is itself a compile error — an unconstrained agent must be asked for explicitly.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Hand-authored persona prose; also execution inside the plugin — cut, not deferred, because the harness is already the scheduler: &quot;rebuilding retries/locks/approvals inside a plugin would duplicate the harness badly.&quot;</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/designs/agent-compiler-plugin.md">design doc</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/77">PR #77</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/agent-compiler/index.html">deep-dive page</a></p>
+      </div>
+    </article>
+    <article class="entry" id="built-changed-design">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-28</span></div>
+        <h3>Three decisions changed by running the thing</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;Three decisions changed between this design and the build, each forced by actually running the thing.&quot; The flagship: the first image hash covered the whole-registry revision, and the metamorphic check immediately caught an unrelated module changing an existing image&#x27;s hash — &quot;a defect no amount of re-reading the design had surfaced.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>The hash covers content-bearing fields only; the kernel moved out of the CI safety glob rather than widening it; one authoring format instead of a YAML dependency. A typo&#x27;d frontmatter key that compiled cleanly in the first demonstration became a fail-closed diagnostic (BAD_MODULE_KEY) with a pinned fixture — a demonstration miss converted into a compile error.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Whole-image hashing; tolerant parsing (&quot;anything outside the grammar is a compile error, never a guess&quot;); deciding the CI-cost question silently instead of in the implementation PR.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/designs/agent-compiler-plugin.md">design doc status preamble</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/registry/behaviors/discipline/build-run-verify.md">the lesson, as a registry module</a></p>
+      </div>
+    </article>
+    <article class="entry" id="adr-0001">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-29</span></div>
+        <h3>ADR 0001: identities are views, preferences are domains</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>New content (identities, imported taste) tempted new module kinds — and &quot;every language addition is effectively permanent once modules are published against it.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Populate existing coordinates instead of adding new ones: an identity is a view module (selectors, traits, an effect ceiling — &quot;never a prose persona blob&quot;); a preference is a behavior scoped by domains. Accepted via a grill-me interview, with the reopening condition recorded in the ADR itself: if should-strength rules read forced as the preference corpus grows, revisit a dedicated block kind.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>A first-class identity kind and a preference block — the handoff&#x27;s own &quot;premature ontology explosion&quot; warning.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/docs/adr/0001-identities-are-views-preferences-are-domains.md">ADR 0001</a></p>
+      </div>
+    </article>
+    <article class="entry" id="evidence-against-self">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-29</span></div>
+        <h3>The repo publishes evidence against its own plugin</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The with/without gallery seed for agent-compiler was judged by an independent reader — who found that &quot;on pure task-completion grounds this is a case where the ungated answer is arguably better, not just different.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Publish the verdict verbatim on the card, alongside the counterweight (the ungated answer has no capability boundary — &quot;a real gap&quot;). The gallery&#x27;s rule is absolute: it shows truth, including where a skill&#x27;s effect is modest or adverse, because &quot;a demonstration with no misses is a sales pitch.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Cherry-picking a friendlier scenario — scenario selection is deterministic precisely so it can&#x27;t be.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/data/agent-compiler.json">the seed, verdict included</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/PLAN.md">examples program rules</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-6">
+    <header class="era-head">
+      <h2>Turning proof outward</h2>
+      <p class="window">August 29, 2026</p>
+      <p class="lesson">The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="gallery-truth">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-29</span></div>
+        <h3>The gallery: proof made consumable, weak results out loud</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Green checks convince maintainers; consumers need to see what a skill actually changes — and a curated gallery is one cherry-pick away from advertising.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Every published pair is a real, provenanced model run captured from the eval tier, never hand-written; scenario selection is deterministic; refresh lands as a review-gated PR on a schedule, never a direct push; a plugin with no real pair &quot;simply has no card — the gallery never fabricates one.&quot; The judged spread — 1 stark, 9 moderate, 2 subtle — is published verbatim, and the subtle ones are named as the places to ask whether a skill earns its context.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Hand-written examples, cherry-picked scenarios, auto-merged refreshes.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/PLAN.md">examples program</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/index.html">the gallery</a> · <a href="https://github.com/JRichlen/agent-plugins/pull/75">PR #75 (tracer)</a></p>
+      </div>
+    </article>
+    <article class="entry" id="scale-tiers">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-29</span></div>
+        <h3>Scale gauntlets: no hiding behind a single lucky fixture</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>&quot;The cheap tier proves each gate once, on one fixture … a defect that only shows up on a particular criteria count, a partially-green contract, or a particular mutation order cannot hide behind a single lucky fixture.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Randomized, seeded stress suites for both flagship plugins — hundreds of isolated runs exercising every gate, drift path and fault injection — plus behavioral packs with negative controls. The packs promptly earned their keep in reverse: a red leg exposed a defect in the rubric itself (it contradicted the protocol&#x27;s own round-zero rule), which was fixed without softening the genuine failure the same leg had caught.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Calling one green fixture proof; and softening a rubric to make a red leg pass.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/80">PR #80</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/redgate/evals/scale/run.sh">redgate gauntlet</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/agent-compiler/evals/scale/stress.py">agent-compiler gauntlet</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/ef8410e">the rubric fix</a></p>
+      </div>
+    </article>
+    <article class="entry" id="approval-fatigue-ledger">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-29</span></div>
+        <h3>The gate-outcome ledger: watching for rubber-stamping</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Graduated autonomy works only if approvals stay meaningful — approval fatigue is &quot;the one signal that decides whether the whole model works or trains rubber-stamping.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Every gate entry now records its disposition (approved / flagged / vetoed) and lesson; a generated corpus index makes prior verifiers reusable — with the rule that a shape demoted under mutation control &quot;must NOT be reused as proof.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Treating human sign-off as self-evidently meaningful forever.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/81">PR #81</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/.redgate/INDEX.md">corpus index</a></p>
+      </div>
+    </article>
+    <article class="entry" id="timeline-itself">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-30</span></div>
+        <h3>This timeline: the internal ledgers, turned outward</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>The repo records its decisions obsessively — refinement tables, fatal-flaw ledgers, gate lessons, reasoned rejections — but all of it inward, where a consumer can&#x27;t follow what happened or why.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Curate the existing ledgers into this page: each entry is a decision with the problem that forced it, the alternative it rejected, and a receipt you can check. It is generated deterministically from a committed data file, guarded by the cheap tier like every other published surface — and, per the protocol doc&#x27;s own words about itself, &quot;this document is itself one turn of the loop.&quot;</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Auto-generating from git history (chronology without why); a narrative with claims a reader must take on faith.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">the data behind this page</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">the design of record</a></p>
+      </div>
+    </article></div>
+  </section>
+<footer>
+  Generated by <code>docs/timeline/build-timeline.sh</code> from
+  <code>docs/timeline/data/decisions.json</code> — curated by hand, never from git logs.
+  Every claim above links to its primary source; if a receipt doesn't support its entry,
+  that's a bug — <a href="https://github.com/JRichlen/agent-plugins/issues">file it</a>.
+</footer>
+</div>
+</body>
+</html>

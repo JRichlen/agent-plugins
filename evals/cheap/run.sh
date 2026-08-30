@@ -929,6 +929,86 @@ PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
 
+# --- 20. Design-trajectory timeline (docs/timeline) is in sync and receipted --
+# The decision timeline is generated from a hand-curated inventory
+# (docs/timeline/data/decisions.json) by docs/timeline/build-timeline.sh. Guard
+# offline that the committed HTML is in sync with the data, and that no entry
+# ships without the schema that makes it checkable: a forcing problem, a
+# decision, and at least one receipt that resolves (a repo path that exists, or
+# a link into this repository). Cut entries must record why they were cut.
+# Coupled: edit the data without regenerating, break a receipt path, or drop a
+# cut entry's reason, and this goes red.
+group "design-trajectory timeline — sync and receipts"
+# Repo-level surface: absent => skip; present-but-stale or unreceipted => fail.
+if [ ! -x docs/timeline/build-timeline.sh ]; then
+  ok "timeline: not present in this root — nothing to check"
+elif docs/timeline/build-timeline.sh --check >/dev/null 2>&1; then
+  ok "timeline: index.html is in sync with docs/timeline/data/decisions.json"
+else
+  bad "timeline: index.html is STALE — run docs/timeline/build-timeline.sh"
+fi
+if [ -x docs/timeline/build-timeline.sh ]; then
+python3 - "$REPO_ROOT" <<'PYT'
+import json, os, re, sys
+root = sys.argv[1]
+fail = 0
+def flunk(msg):
+    global fail
+    print(f"  FAIL timeline: {msg}"); fail += 1
+try:
+    data = json.load(open(os.path.join(root, "docs", "timeline", "data", "decisions.json")))
+except Exception as e:
+    flunk(f"invalid JSON ({e})"); sys.exit(1)
+if not (data.get("thesis") or "").strip():
+    flunk("missing thesis")
+era_ids = []
+for e in data.get("eras", []):
+    for k in ("id", "title", "window", "lesson"):
+        if not (e.get(k) or "").strip(): flunk(f"era {e.get('id','?')}: missing {k}")
+    era_ids.append(e.get("id"))
+if len(era_ids) != len(set(era_ids)):
+    flunk("duplicate era ids")
+seen = set()
+shown = 0
+for d in data.get("decisions", []):
+    did = d.get("id", "?")
+    if did in seen: flunk(f"{did}: duplicate decision id")
+    seen.add(did)
+    for k in ("id", "era", "date", "title", "forced_by", "decided"):
+        if not (d.get(k) or "").strip(): flunk(f"{did}: missing {k}")
+    if d.get("era") not in era_ids:
+        flunk(f"{did}: unknown era '{d.get('era')}'")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.get("date") or ""):
+        flunk(f"{did}: date not ISO (YYYY-MM-DD)")
+    if not isinstance(d.get("curated"), bool):
+        flunk(f"{did}: curated must be true or false")
+    elif d["curated"]:
+        shown += 1
+    elif not (d.get("cut_reason") or "").strip():
+        flunk(f"{did}: cut from the page without a recorded cut_reason")
+    receipts = d.get("receipts") or []
+    if not receipts:
+        flunk(f"{did}: no receipts — every decision must be checkable")
+    for r in receipts:
+        if not (r.get("label") or "").strip():
+            flunk(f"{did}: receipt missing label")
+        has_url, has_path = "url" in r, "path" in r
+        if has_url == has_path:
+            flunk(f"{did}: receipt '{r.get('label','?')}' needs exactly one of url/path")
+        elif has_path and not os.path.exists(os.path.join(root, r["path"])):
+            flunk(f"{did}: receipt path does not exist: {r['path']}")
+        elif has_url and not r["url"].startswith("https://github.com/JRichlen/agent-plugins"):
+            flunk(f"{did}: receipt url points outside this repository: {r['url']}")
+if shown == 0:
+    flunk("no curated decisions — the page would be empty")
+if fail == 0:
+    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, every receipt resolves")
+sys.exit(1 if fail else 0)
+PYT
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
+
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
