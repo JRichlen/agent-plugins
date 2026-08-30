@@ -34,8 +34,12 @@ def esc(s):
     return html.escape(s or "")
 
 def receipt_link(r):
-    if "url" in r:
-        href = r["url"]
+    # Select url only when it is a non-empty string — the same semantics the
+    # cheap-tier validator applies — so a null/empty url beside a valid path
+    # renders the path link instead of href="".
+    url = r.get("url") if isinstance(r.get("url"), str) else ""
+    if url.strip():
+        href = url.strip()
     else:
         p = r["path"]
         kind = "tree" if os.path.isdir(os.path.join(root, p)) else "blob"
