@@ -839,17 +839,29 @@ _tmp="$(mktemp -d)"
 python3 - "$_tmp" <<'PYF'
 import json, sys
 d = sys.argv[1]
-def rows(desc, n, passes): return [{"testCase":{"description":desc},"success":(i<passes)} for i in range(n)]
-def erow(desc): return {"testCase":{"description":desc},"success":False,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
+# Fixtures use the REAL promptfoo >= 0.122 row shape: a passing row carries
+# failureReason 0 and error null; an ASSERTION-failed row carries failureReason 1
+# AND an .error string (the assertion message); a transport-error row carries
+# failureReason 2 and the provider error. .error alone no longer discriminates.
+def prow(desc): return {"testCase":{"description":desc},"success":True,"failureReason":0,"error":None,"response":{"output":"hello"}}
+def frow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
+def rows(desc, n, passes): return [prow(desc) if i < passes else frow(desc) for i in range(n)]
+def erow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":2,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
 json.dump({"results":{"results": rows("A",5,5)+rows("B",5,4)}}, open(d+"/good.json","w"))   # 1.0, 0.8
 json.dump({"results":{"results": rows("A",5,5)+rows("C",5,2)}}, open(d+"/bad.json","w"))    # 0.4 -> below 0.8
 json.dump({"results":{"results": rows("A",1,1)}}, open(d+"/under.json","w"))                # n=1 -> fail-closed
 # FAULT semantics (gap #4, the observed 504): a transport error is an INVALID
 # sample, excluded from the floor — a scenario that really passed its 2 valid
 # attempts must not go red because a 3rd attempt 504'd.
-json.dump({"results":{"results": rows("A",3,3)+[rows("B",3,2)[0],rows("B",3,2)[1],erow("B")]}}, open(d+"/fault-ok.json","w"))
+json.dump({"results":{"results": rows("A",3,3)+[prow("B"),prow("B"),erow("B")]}}, open(d+"/fault-ok.json","w"))
 # ...but an all-FAULT scenario is "never tested", not "green": fail closed.
 json.dump({"results":{"results": rows("A",3,3)+[erow("C"),erow("C"),erow("C")]}}, open(d+"/fault-starved.json","w"))
+# ...and a real assertion failure (failureReason 1) carrying .error — which under
+# promptfoo >= 0.122 is EVERY assertion failure — must be scored as a FAIL
+# against the floor, never excluded as a FAULT: 4 pass + 1 real fail = 0.80,
+# below a 0.9 floor. Excluding it would read 4/4 = 1.00 and pass (the PR #93
+# counterfeit-green).
+json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -879,6 +891,15 @@ if bash "$_pr" "$_tmp/fault-starved.json" --floor 0.8 --min-runs 2 --min-valid 2
   bad "pass-rate: an all-504 scenario passed — a FAULT storm read as green (fail-open)"
 else
   ok "pass-rate: an all-FAULT scenario fails closed (never tested != green)"
+fi
+# A real assertion failure (failureReason 1) carries .error under promptfoo
+# >= 0.122; it must be scored as a FAIL against the floor, never excluded as a
+# FAULT. 4/5 = 0.80 < 0.9 must fail — if the fail is laundered as a FAULT the
+# run reads 4/4 = 1.00 and passes (the exact counterfeit green from PR #93).
+if bash "$_pr" "$_tmp/real-fail.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a real assertion failure carrying .error was excluded as a FAULT — failures launder as weather (fail-open)"
+else
+  ok "pass-rate: a real assertion failure carrying .error is scored as FAIL, not excluded as FAULT"
 fi
 rm -rf "$_tmp"
 

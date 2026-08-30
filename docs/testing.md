@@ -283,7 +283,12 @@ uninterpretable n=1 and no required check goes red on the weather:
   the floor (behavioral 0.6 = majority of 3; routing 0.8).
 - **FAULT vs verdict separation** — a transport error (504, aborted call,
   empty body) is a FAULT, an invalid sample excluded from the floor — never
-  counted as a rubric failure.
+  counted as a rubric failure. Classification keys on promptfoo's
+  `failureReason`: `2`/`"error"` = FAULT (excluded); `1` = a real assertion
+  FAIL scored against the floor — even though under promptfoo ≥ 0.122 every
+  assertion-failed row *also* carries `.error` (the assertion message).
+  `.error` alone marks a FAULT only on legacy rows with no `failureReason`
+  recorded.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.
