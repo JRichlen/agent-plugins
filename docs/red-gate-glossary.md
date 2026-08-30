@@ -120,7 +120,7 @@ from the required behavior), and **one collision** (two unrelated
 |---|---|---|
 | BEGIN | **ARM** | You arm the gate: write criteria, prove each can fire (red), ratify, pin. A tripwire that cannot fire is not armed — "proven able to fail" lives inside the word. "Unarmed dispatch" names the core violation in two words. |
 | MIDDLE | **TRACE** | Fire one tracer: single writer, one slice, through every layer named, no stub at the proving seam. Aligns with the existing tracer-bullet vocabulary instead of sitting beside it. |
-| END | **JUDGE** | The verdict, rendered independently. Nobody judges their own case — END independence, the protocol's hardest-to-enforce invariant, becomes the word's ordinary meaning. "Self-judging" is the violation. |
+| END | **JUDGE** | The verdict, rendered independently. Nobody judges their own case — the independence v1 called "END independence," the protocol's hardest-to-enforce invariant, becomes the word's ordinary meaning. "Self-judging" is the violation. |
 
 A round is one **ARM → TRACE → JUDGE** cycle. "The gate is armed" compresses
 "criteria written, proven red, ratified, and pinned" — four clauses into
@@ -140,7 +140,7 @@ carry the rules, so prose stops restating them.
 
 | v1 | v2 (adopted) | Why |
 |---|---|---|
-| UNVERIFIABLE | **WITNESS** | Positive and imperative: this criterion requires a named human witness, countersigned individually. Also removes the standing trap where `check_cmd: UNVERIFIABLE …` runs as a command — `WITNESS:` was never a plausible command. |
+| UNVERIFIABLE | **WITNESS** | Positive and imperative: this criterion requires a named human witness, countersigned individually. A verdict word written into `check_cmd` still runs as a command and red-locks the criterion (see WITNESS above) — but `check_cmd: UNVERIFIABLE …` was a standing invitation to that trap, and `WITNESS` is not. |
 | autonomy envelope | **MANDATE** | Fixes the collision with the handoff envelope outright. "Inside the mandate" / "exceeds the mandate" is how delegated authority is described in ordinary English, which is exactly what an approved plan is. Handoff envelope keeps "envelope" unchallenged. |
 | harness failure (exit 99) | **FAULT** | One word; keeps "failure" reserved for criteria (FAIL). A FAULT is never a verdict. |
 

@@ -939,15 +939,19 @@ fi
 # Coupled: edit the data without regenerating, break a receipt path, or drop a
 # cut entry's reason, and this goes red.
 group "design-trajectory timeline — sync and receipts"
-# Repo-level surface: absent => skip; present-but-stale or unreceipted => fail.
-if [ ! -x docs/timeline/build-timeline.sh ]; then
+# Repo-level surface: absent => skip; present-but-stale, present-but-broken,
+# or unreceipted => fail. Presence is -e, not -x, so a dropped exec bit cannot
+# silently skip the whole check.
+if [ ! -e docs/timeline/build-timeline.sh ]; then
   ok "timeline: not present in this root — nothing to check"
+elif [ ! -x docs/timeline/build-timeline.sh ]; then
+  bad "timeline: build-timeline.sh exists but is not executable — chmod +x it"
 elif docs/timeline/build-timeline.sh --check >/dev/null 2>&1; then
   ok "timeline: index.html is in sync with docs/timeline/data/decisions.json"
 else
   bad "timeline: index.html is STALE — run docs/timeline/build-timeline.sh"
 fi
-if [ -x docs/timeline/build-timeline.sh ]; then
+if [ -e docs/timeline/build-timeline.sh ]; then
 python3 - "$REPO_ROOT" <<'PYT'
 import json, os, re, sys
 root = sys.argv[1]
@@ -992,13 +996,28 @@ for d in data.get("decisions", []):
     for r in receipts:
         if not (r.get("label") or "").strip():
             flunk(f"{did}: receipt missing label")
-        has_url, has_path = "url" in r, "path" in r
-        if has_url == has_path:
-            flunk(f"{did}: receipt '{r.get('label','?')}' needs exactly one of url/path")
-        elif has_path and not os.path.exists(os.path.join(root, r["path"])):
-            flunk(f"{did}: receipt path does not exist: {r['path']}")
-        elif has_url and not r["url"].startswith("https://github.com/JRichlen/agent-plugins"):
-            flunk(f"{did}: receipt url points outside this repository: {r['url']}")
+        # Null/empty values count as absent, so {"url": null} cannot slip
+        # through the exactly-one test or crash the validator.
+        url = r.get("url") if isinstance(r.get("url"), str) else ""
+        rpath = r.get("path") if isinstance(r.get("path"), str) else ""
+        url, rpath = url.strip(), rpath.strip()
+        if bool(url) == bool(rpath):
+            flunk(f"{did}: receipt '{r.get('label','?')}' needs exactly one non-empty url/path")
+        elif rpath:
+            # Resolve and confine to the repo root: an absolute path or a
+            # ../ escape is a counterfeit receipt, not a resolvable one.
+            root_real = os.path.realpath(root)
+            full = os.path.realpath(os.path.join(root, rpath))
+            if full != root_real and not full.startswith(root_real + os.sep):
+                flunk(f"{did}: receipt path escapes the repository: {rpath}")
+            elif not os.path.exists(full):
+                flunk(f"{did}: receipt path does not exist: {rpath}")
+        else:
+            # Prefix must end at the repo boundary so lookalike repos
+            # (…/agent-plugins-fork) don't pass.
+            repo = "https://github.com/JRichlen/agent-plugins"
+            if url != repo and not url.startswith(repo + "/"):
+                flunk(f"{did}: receipt url points outside this repository: {url}")
 if shown == 0:
     flunk("no curated decisions — the page would be empty")
 if fail == 0:
