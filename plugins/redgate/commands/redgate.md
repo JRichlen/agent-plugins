@@ -36,4 +36,4 @@ to gates.log; MINOR auto-passes with a prominent flag and standing veto; MAJOR
 — scout decisions, plan approval, first ratification, WITNESS
 countersignatures, fence/budget changes, anything irreversible — stops for an
 explicit structured human confirmation. Funding rounds beyond the manifest
-budget is always MAJOR.
+budget are always MAJOR.
