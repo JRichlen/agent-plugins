@@ -183,14 +183,24 @@ print(f'''<!doctype html>
 PY
 }
 
+# Render to a temp file first so a failed render (bad JSON, schema drift) can
+# never truncate the committed page, and its failure propagates as exit 1
+# instead of being masked by the redirect.
+TMP="$(mktemp "${OUT}.XXXXXX")"
+trap 'rm -f "$TMP"' EXIT
+if ! render > "$TMP"; then
+  echo "timeline: render FAILED — $OUT left untouched" >&2
+  exit 1
+fi
 if [ "${1:-}" = "--check" ]; then
   if [ ! -f "$OUT" ]; then echo "timeline: index.html missing — run docs/timeline/build-timeline.sh" >&2; exit 1; fi
-  if ! diff -q <(render) "$OUT" >/dev/null; then
+  if ! diff -q "$TMP" "$OUT" >/dev/null; then
     echo "timeline: index.html is STALE — regenerate: docs/timeline/build-timeline.sh" >&2
     exit 1
   fi
   echo "timeline: index.html in sync"
   exit 0
 fi
-render > "$OUT"
+mv "$TMP" "$OUT"
+trap - EXIT
 echo "wrote $OUT"
