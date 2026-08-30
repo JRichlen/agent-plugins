@@ -271,9 +271,20 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: touched
         with:
-          # Only this plugin's promptfoo surface (or the shared paid harness) makes its leg worth the spend.
+          # This plugin's BEHAVIOR-BEARING surface (kept verbatim in sync with
+          # ci/behavior-surfaces.json plugin_behavior_paths, which the cheap
+          # tier's behavior-surface guard freezes — RQ-001). Prose steers the
+          # model, so a command, reference doc, AGENTS.md, hook, or manifest
+          # edit must select this pack, not just SKILL.md or the pack itself.
+          # Guard scripts stay the deep tier's surface, deliberately absent here.
           filters: |
             paid:
+              - 'plugins/${{ matrix.plugin }}/skills/**/SKILL.md'
+              - 'plugins/${{ matrix.plugin }}/skills/**/references/**'
+              - 'plugins/${{ matrix.plugin }}/commands/**'
+              - 'plugins/${{ matrix.plugin }}/AGENTS.md'
+              - 'plugins/${{ matrix.plugin }}/hooks/**'
+              - 'plugins/${{ matrix.plugin }}/.claude-plugin/plugin.json'
               - 'plugins/${{ matrix.plugin }}/evals/promptfoo/**'
               - 'evals/paid/**'
       - uses: actions/setup-node@v4
@@ -293,7 +304,13 @@ jobs:
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.paid != 'true'
         run: |
-          echo "::notice::behavioral tier SKIPPED for ${{ matrix.plugin }} — this plugin was not touched by this PR. This leg is green because it did not run, NOT because its behavioral eval passed."
+          echo "::notice::behavioral tier SKIPPED for ${{ matrix.plugin }} — this plugin's behavior surface was not touched by this PR. This leg is green because it did not run, NOT because its behavioral eval passed."
+          echo "- behavioral pack \`${{ matrix.plugin }}\`: **SKIPPED** — behavior surface untouched (green ≠ evaluated)" >> "$GITHUB_STEP_SUMMARY"
+      - name: announce that this leg DID run
+        if: steps.touched.outputs.paid == 'true'
+        run: |
+          echo "::notice::behavioral tier EVALUATED for ${{ matrix.plugin }} — a behavior-bearing path for this plugin changed, so this leg's verdict is a real evaluation."
+          echo "- behavioral pack \`${{ matrix.plugin }}\`: **EVALUATED** — behavior surface touched" >> "$GITHUB_STEP_SUMMARY"
       - name: promptfoo eval
         if: steps.touched.outputs.paid == 'true'
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
@@ -428,10 +445,16 @@ jobs:
       - uses: dorny/paths-filter@v3
         id: touched
         with:
+          # Roster-feeding surfaces (kept verbatim in sync with
+          # ci/behavior-surfaces.json routing_paths — RQ-001): the pack itself,
+          # every skill description, and the manifest/marketplace metadata the
+          # roster is rendered from (plugin.json descriptions are parity-locked
+          # to marketplace.json by the cheap tier).
           filters: |
             routing:
               - 'evals/routing/**'
-              - 'plugins/*/skills/*/SKILL.md'
+              - 'plugins/*/skills/**/SKILL.md'
+              - 'plugins/*/.claude-plugin/plugin.json'
               - '.claude-plugin/marketplace.json'
       - name: roster is in sync before spending on a model call
         if: steps.touched.outputs.routing == 'true'
@@ -443,7 +466,13 @@ jobs:
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.routing != 'true'
         run: |
-          echo "::notice::routing tier SKIPPED — no routing pack or skill-description change in this PR. Green because it did not run, NOT because routing passed."
+          echo "::notice::routing tier SKIPPED — no routing pack, skill-description, or roster-metadata change in this PR. Green because it did not run, NOT because routing passed."
+          echo "- routing pack: **SKIPPED** — roster surface untouched (green ≠ evaluated)" >> "$GITHUB_STEP_SUMMARY"
+      - name: announce that this leg DID run
+        if: steps.touched.outputs.routing == 'true'
+        run: |
+          echo "::notice::routing tier EVALUATED — a roster-feeding path changed, so this leg's verdict is a real evaluation."
+          echo "- routing pack: **EVALUATED** — roster surface touched" >> "$GITHUB_STEP_SUMMARY"
       - name: promptfoo eval (routing)
         if: steps.touched.outputs.routing == 'true'
         working-directory: evals/routing

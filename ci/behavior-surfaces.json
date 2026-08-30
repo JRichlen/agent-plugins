@@ -1,0 +1,19 @@
+{
+  "_comment": "RQ-001 — behavior-surfaces-as-code. The single source of truth for which changed paths are BEHAVIOR-BEARING, i.e. must select a paid behavioral/routing evaluation before they merge. plugin_behavior_paths drive the per-plugin behavioral (promptfoo) leg: ${plugin} is substituted with the matrix plugin name, and the same strings must appear verbatim (with ${plugin} -> '${{ matrix.plugin }}') in the behavioral-run paths-filter in .github/workflows/evals.yml. routing_paths drive the roster routing leg the same way. ci/check_behavior_surfaces.py asserts, offline, that (a) this spec and the workflow filters are in verbatim lockstep both directions, and (b) a deterministic counterfeit table of changed-file cases — including behavior edits OUTSIDE SKILL.md — selects exactly the packs it should. Widening or narrowing a trigger is therefore a deliberate two-file edit the cheap tier notices, never silent drift. Guard scripts (skills/**/scripts/**) are deliberately ABSENT here: they are the deep tier's frozen surface (ci/required-checks.json deep_safety_paths), not the behavioral tier's.",
+  "plugin_behavior_paths": [
+    "plugins/${plugin}/skills/**/SKILL.md",
+    "plugins/${plugin}/skills/**/references/**",
+    "plugins/${plugin}/commands/**",
+    "plugins/${plugin}/AGENTS.md",
+    "plugins/${plugin}/hooks/**",
+    "plugins/${plugin}/.claude-plugin/plugin.json",
+    "plugins/${plugin}/evals/promptfoo/**",
+    "evals/paid/**"
+  ],
+  "routing_paths": [
+    "evals/routing/**",
+    "plugins/*/skills/**/SKILL.md",
+    "plugins/*/.claude-plugin/plugin.json",
+    ".claude-plugin/marketplace.json"
+  ]
+}
