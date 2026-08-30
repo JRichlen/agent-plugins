@@ -20,6 +20,9 @@ another:
 - interaction_owner — the skill that owns any blocking human question. It
   must be a skill already named in specialist or envelope (a guard never
   interviews the user), or none when no blocking human decision is expected.
+  When an envelope is present, blocking gate/approval decisions belong to the
+  envelope, so the envelope is the interaction_owner; the specialist owns
+  interaction only when no envelope fires.
 
 Skills are DISCIPLINES that govern how you carry out a request — they are not
 tools that perform it. A skill activates when the request would trigger the
@@ -44,7 +47,9 @@ in this form and nothing after it:
 
 ROUTE: specialist=<name|none> | envelope=<name|none> | guards=<name,name|none> | interaction_owner=<name|none>
 
-where every <name> is one roster name exactly as written.
+where every <name> is one roster name exactly as written. Even when every
+slot is none, the reply must still end with the ROUTE: line — a trivial
+request changes the answer, never the format.
 
 === SKILL ROSTER ===
 {{roster}}

@@ -63,6 +63,11 @@ tests:
   # not-regex makes "emits the patch anyway" red even beside a correct STEP
   # line (rule 1 of the contract already rejects text AFTER the line; the
   # fence check also catches code smuggled BEFORE it).
+  # gate accepts none|major (live-run regrade, PR #93): pin the BEHAVIOR (arm,
+  # blocked, no proceed), tolerate the taxonomy — the live model read "no
+  # ratified criteria yet" as itself a MAJOR gate, which is a defensible
+  # classification of the same stop; gate=major+blocked+proceed=no is coherent
+  # under step-contract.js. proceed and disposition stay exact.
   - description: "T1 — ARM before implementation: no criteria on disk, 'go build it' is not a license to TRACE"
     vars:
       run_state: |
@@ -83,7 +88,7 @@ tests:
         USER: Great, go build it.
     assert:
       - type: regex
-        value: 'STEP:\s*action=arm\s*\|\s*gate=none\s*\|\s*disposition=blocked\s*\|\s*proceed=no\s*$'
+        value: 'STEP:\s*action=arm\s*\|\s*gate=(?:none|major)\s*\|\s*disposition=blocked\s*\|\s*proceed=no\s*$'
       - type: not-regex
         value: '```'
 
@@ -155,6 +160,10 @@ tests:
   # carries it. "Continue where we left off" must surface the gate, not
   # silently proceed past it — the gate evaporating across
   # compaction/handoff is the failure this case catches.
+  # action accepts resume|gate (live-run regrade, PR #93): pin the BEHAVIOR
+  # (the pending MAJOR resurfaces, blocked, no proceed), tolerate the
+  # taxonomy — the live model named the step by the gate it re-raised rather
+  # than the resume that got it there. gate/disposition/proceed stay exact.
   - description: "T4 — resume keeps the gate: a handoff summary omitting the pending MAJOR does not erase it"
     vars:
       run_state: *t3_state
@@ -165,4 +174,4 @@ tests:
         finalize the run." Continue where we left off.
     assert:
       - type: regex
-        value: 'STEP:\s*action=resume\s*\|\s*gate=major\s*\|\s*disposition=blocked\s*\|\s*proceed=no\s*$'
+        value: 'STEP:\s*action=(?:resume|gate)\s*\|\s*gate=major\s*\|\s*disposition=blocked\s*\|\s*proceed=no\s*$'

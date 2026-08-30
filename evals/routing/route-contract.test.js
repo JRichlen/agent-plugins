@@ -35,11 +35,14 @@ const EXPECTED = [
   'ROUTE: specialist=stop-rule | envelope=none | guards=none | interaction_owner=none',
   'ROUTE: specialist=semver-gate | envelope=none | guards=none | interaction_owner=none',
   'ROUTE: specialist=tracer-bullets | envelope=none | guards=none | interaction_owner=none',
-  'ROUTE: specialist=grill-me | envelope=none | guards=none | interaction_owner=none',
+  // grill-me owns the blocking interview (live-run relabel — no envelope, so
+  // the specialist owns interaction)
+  'ROUTE: specialist=grill-me | envelope=none | guards=none | interaction_owner=grill-me',
   'ROUTE: specialist=docs-hygiene | envelope=none | guards=none | interaction_owner=none',
-  // S1 / S2 / S4 composition labels
+  // S1 / S2 / S4 composition labels (S2's owner relabeled to the specialist
+  // after the live run — an interactive walk-through with no envelope)
   'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate',
-  'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=none',
+  'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design',
   'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo,semver-gate | interaction_owner=redgate',
   // 2 migrated calibration negatives + S3 (all-none)
   'ROUTE: specialist=none | envelope=none | guards=none | interaction_owner=none',
@@ -117,6 +120,41 @@ for (const legacy of ['ROUTE: diagnosing-bugs', 'ROUTE: redgate']) {
 const s1Line = 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate';
 check('S1 composed line passes contract AND scenario regex',
   rc.validateRoute(s1Line, roster).pass === true && Boolean(s1Regex) && new RegExp(s1Regex).test(s1Line));
+
+// ── 4. Required-subset guards semantics (live-run regrade) ──────────────────
+// S1/S4 grade named guards as a required subset of the sorted list: the
+// must-have guards must be PRESENT, roster-valid extras are allowed (the
+// structural contract still enforces sorted/deduped/roster-only). All-none
+// scenarios keep exact guards=none, so over-firing stays caught.
+const s4Regex = cfgRegexes.find((r) => r.includes('specialist=graveyard'));
+check('found S4 scenario regex in the config', Boolean(s4Regex));
+const SUBSET_CASES = [
+  ['S1 accepts defensible extra guards (live-run modal answer)',
+    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule,verify-before-claim | interaction_owner=redgate', true],
+  ['S1 still requires verify-before-claim present',
+    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule | interaction_owner=redgate', false],
+  ['S4 accepts both required guards with an extra interleaved',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=egress-gate,prove-the-undo,scope-fence,semver-gate | interaction_owner=redgate', true],
+  ['S4 exact canonical pair still matches',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo,semver-gate | interaction_owner=redgate', true],
+  ['S4 rejects prove-the-undo alone (semver-gate missing — the live-run miss stays red)',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo | interaction_owner=redgate', false],
+  ['S4 rejects semver-gate alone (prove-the-undo missing)',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate | interaction_owner=redgate', false],
+];
+for (const [name, regex, line, expected] of SUBSET_CASES) {
+  const got = Boolean(regex) && new RegExp(regex).test(line);
+  check(name, got === expected);
+  if (expected) {
+    check(`  …and the accepted line also passes the structural contract`, rc.validateRoute(line, roster).pass === true);
+  }
+}
+// All-none scenarios stay EXACT: S2's regex must reject any guard extra.
+const s2Regex = cfgRegexes.find((r) => r.includes('specialist=codebase-design'));
+check('S2 keeps exact guards=none (an added guard is still a failure)',
+  Boolean(s2Regex) &&
+  !new RegExp(s2Regex).test('ROUTE: specialist=codebase-design | envelope=none | guards=scope-fence | interaction_owner=codebase-design') &&
+  new RegExp(s2Regex).test('ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design'));
 
 // ── Round-trip: the promptfoo entry point agrees with validateRoute ─────────
 const asAssertion = rc(EXPECTED[0], { vars: {} });

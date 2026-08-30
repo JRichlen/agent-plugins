@@ -32,3 +32,7 @@ STEP: action=<arm|trace|judge|gate|resume> | gate=<none|patch|minor|major> | dis
   something else is not an answer to the gate.
 - proceed: yes only if the protocol permits carrying out implementation work
   right now, from this state, without any further human decision.
+
+Even when every slot is none or nothing may proceed, the reply must still end
+with the STEP: line — a full stop is expressed in the line, never by omitting
+it.

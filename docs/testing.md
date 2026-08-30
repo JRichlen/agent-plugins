@@ -148,17 +148,23 @@ that it is green because it did not run, never silently.
 - **What it proves.** With the *full* roster of installed skill descriptions
   in context, a model routes labeled requests to the right **composition** —
   the typed `ROUTE: specialist=… | envelope=… | guards=… | interaction_owner=…`
-  line (issue #88), graded by per-scenario exact-tuple regex plus the
-  fail-closed `route-contract.js` validator on every row — catching the
-  cross-plugin mis-routing that per-plugin packs are blind to, including
+  line (issue #88), graded by a per-scenario regex — exact for
+  specialist/envelope/interaction_owner and for every `guards=none` scenario,
+  **required-subset** for named guards (the must-have guards must be present
+  in the sorted list, roster-valid extras allowed; live-run regrade, PR #93) —
+  plus the fail-closed `route-contract.js` validator on every row — catching
+  the cross-plugin mis-routing that per-plugin packs are blind to, including
   collapse-into-redgate and ceremony on work that warrants none. A second leg,
   `evals/routing/trajectory/`, grades redgate's stateful gate behavior at
   frozen decision points (`STEP:` line + `step-contract.js` cross-field
   invariants: ARM before TRACE, explicit MAJOR stop, silence is not consent,
-  the gate survives resume). Both legs: deterministic verdicts (no grader
-  key), must-not-fire calibration negatives, `repeat: 5`, its own
-  `pass-rate.sh` gate, and `PROMPTFOO_RETRY_5XX` for transient transport
-  errors.
+  the gate survives resume). Trajectory slots are **behavior-pinned,
+  taxonomy-tolerant**: `proceed`/`disposition` are exact everywhere, while T1
+  accepts `gate=none|major` and T4 accepts `action=resume|gate` (defensible
+  alternate readings of the same stop, per the same regrade). Both legs:
+  deterministic verdicts (no grader key), must-not-fire calibration
+  negatives, `repeat: 5`, its own `pass-rate.sh` gate, and
+  `PROMPTFOO_RETRY_5XX` for transient transport errors.
 - **What it cannot prove.** That the routed-to skill then *does* anything
   right in a live run; it grades routing decisions and frozen-prefix gate
   decisions, not full trajectories (that is #89's L3).

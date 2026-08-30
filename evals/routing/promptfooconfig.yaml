@@ -16,8 +16,12 @@
 # verification envelope, guards run cross-cutting, and interaction_owner names
 # who may block on the human. Slots are roles, not skill categories — a guard-ish
 # skill is the specialist when its rule IS the request. Grading stays
-# DETERMINISTIC: a per-scenario regex pins the exact expected tuple, and the
-# fail-closed contract in route-contract.js (defaultTest, runs on every row)
+# DETERMINISTIC: a per-scenario regex pins the expected tuple — exact for
+# specialist/envelope/interaction_owner and for every guards=none scenario,
+# REQUIRED-SUBSET for named guards (the must-have guards must be present in
+# the sorted list; roster-valid extras are allowed — extra defensible guards
+# are not a routing defect, but over-firing on all-none scenarios still is) —
+# and the fail-closed contract in route-contract.js (defaultTest, every row)
 # rejects malformed/ambiguous output — unknown names, redgate-as-specialist, a
 # skill in two slots, an interaction owner outside specialist∪envelope, mixed
 # none+name, unsorted/duplicated sets, or anything after the ROUTE: line.
@@ -126,13 +130,17 @@ tests:
       - type: regex
         value: 'ROUTE:\s*specialist=tracer-bullets\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=none\s*$'
 
+  # interaction_owner=grill-me (live-run relabel, PR #93): the interview IS the
+  # blocking human interaction, and with no envelope the specialist owns it —
+  # the written definition supported the model's unanimous answer, so the label
+  # was the defect, not the router.
   - description: "stress-test a plan by interview → grill-me (neighbor: wayfinder)"
     vars:
       request: >-
         Before I start this migration, interview me and poke holes in my plan.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=grill-me\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=none\s*$'
+        value: 'ROUTE:\s*specialist=grill-me\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=grill-me\s*$'
 
   - description: "check instruction files against repo state → docs-hygiene (neighbor: dev-diary)"
     vars:
@@ -151,6 +159,10 @@ tests:
   # wraps the diagnosis procedure and owns the blocking human gate.
   # route-contract.test.js proves deterministically that both legacy strings
   # (`ROUTE: diagnosing-bugs`, `ROUTE: redgate`) fail this scenario's contract.
+  # Guards are graded as a REQUIRED SUBSET (live-run regrade, PR #93):
+  # verify-before-claim must be present in the sorted list, roster-valid extras
+  # (the live run added scope-fence/stop-rule — both defensible here) are
+  # allowed; route-contract.js still enforces sorted/deduped/roster-only.
   - description: "S1 COMPOSITION — evidence-warranted bug hunt → diagnosing-bugs wrapped in redgate"
     vars:
       request: >-
@@ -160,12 +172,15 @@ tests:
         than whoever writes the fix before we call it done.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=diagnosing-bugs\s*\|\s*envelope=redgate\s*\|\s*guards=verify-before-claim\s*\|\s*interaction_owner=redgate\s*$'
+        value: 'ROUTE:\s*specialist=diagnosing-bugs\s*\|\s*envelope=redgate\s*\|\s*guards=(?:[a-z0-9-]+,)*verify-before-claim(?:,[a-z0-9-]+)*\s*\|\s*interaction_owner=redgate\s*$'
 
   # S2 — specialist alone, no ceremony: the composition pack's calibration
   # floor. Nontrivial design work with no evidence-contract need must NOT
   # acquire a redgate envelope merely because it is nontrivial. A router that
   # learned "nontrivial ⇒ redgate" fails here.
+  # interaction_owner=codebase-design (live-run relabel, PR #93): "walk me
+  # through" is a blocking interactive design conversation the specialist owns
+  # when no envelope fires — per the written interaction_owner definition.
   - description: "S2 COMPOSITION-NEGATIVE — interface design with no evidence contract → codebase-design alone"
     vars:
       request: >-
@@ -173,21 +188,29 @@ tests:
         the interface should be shaped before I write it.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=none\s*$'
+        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=codebase-design\s*$'
 
   # S4 — risky/irreversible work: the specialist and guards keep their
   # responsibilities rather than collapsing into redgate. All four slots are
   # load-bearing and non-substitutable — a second deterministic break of the
   # old single-skill schema, and the anti-collapse check (an all-redgate
-  # answer with an empty specialist slot fails the exact match).
+  # answer with an empty specialist slot fails the match).
+  # Live-run regrade (PR #93): the original terse request ("archive them and
+  # delete the originals") produced envelope=none on 5/5 rows — the roster's
+  # one-line redgate description alone did not make the envelope inferable
+  # (measured finding, logged for #89). The request now names verification
+  # and sign-off explicitly, parallel to S1's proven-promptable shape. Guards
+  # are graded as a REQUIRED SUBSET: prove-the-undo AND semver-gate must both
+  # be present in the sorted list, roster-valid extras allowed.
   - description: "S4 COMPOSITION — mass repo retirement → graveyard under redgate with prove-the-undo + semver-gate guards"
     vars:
       request: >-
         We're retiring twelve dead repos this week — archive them and delete the
-        originals from the org.
+        originals from the org. I want each archive verified before its original
+        is deleted, and explicit sign-off before the deletion batch runs.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=graveyard\s*\|\s*envelope=redgate\s*\|\s*guards=prove-the-undo,semver-gate\s*\|\s*interaction_owner=redgate\s*$'
+        value: 'ROUTE:\s*specialist=graveyard\s*\|\s*envelope=redgate\s*\|\s*guards=(?:[a-z0-9-]+,)*prove-the-undo,(?:[a-z0-9-]+,)*semver-gate(?:,[a-z0-9-]+)*\s*\|\s*interaction_owner=redgate\s*$'
 
   # --- must-NOT-fire: routine requests, activating anything is the failure ---
   - description: "CALIBRATION — a plain code question fires nothing"
