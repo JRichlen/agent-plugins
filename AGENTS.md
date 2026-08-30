@@ -124,6 +124,20 @@ is currently `enabled=true`.
 If a change would weaken any clause above, it must not merge until the relevant
 tier is green. When in doubt, run the next tier down.
 
+### Full tier inventory + standing order — `docs/testing.md`
+
+The three tiers above are the graveyard-centric core. The complete, current
+inventory of every eval tier, CI workflow job, and per-plugin eval pack —
+what each proves, what it structurally cannot, when it fires, cost, and the
+local run command — lives in [docs/testing.md](docs/testing.md).
+
+**Standing order:** any PR that adds, removes, renames, or re-scopes an eval
+tier, workflow job, or per-plugin eval pack MUST update `docs/testing.md` in
+the same PR — same-PR, not follow-up, so the doc can never describe a tier
+that no longer exists. The cheap tier machine-enforces the inventory half via
+`evals/cheap/check-testing-doc.sh`, which compares the doc's machine-readable
+inventory block against the live workflows and eval packs in both directions.
+
 ## Demonstration discipline — REQUIRED on every skill change
 
 Any PR that creates or edits a skill — a `SKILL.md`, anything under a skill's
