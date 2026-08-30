@@ -15,6 +15,7 @@
   "routing_paths": [
     "evals/routing/**",
     "plugins/*/skills/**/SKILL.md",
+    "plugins/redgate/skills/redgate/SKILL.md",
     "plugins/*/.claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json"
   ]

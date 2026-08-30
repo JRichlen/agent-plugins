@@ -451,11 +451,17 @@ jobs:
           # ci/behavior-surfaces.json routing_paths — RQ-001): the pack itself,
           # every skill description, and the manifest/marketplace metadata the
           # roster is rendered from (plugin.json descriptions are parity-locked
-          # to marketplace.json by the cheap tier).
+          # to marketplace.json by the cheap tier). The explicit redgate
+          # SKILL.md entry (RQ-002) pins the trajectory pack's dependency —
+          # evals/routing/trajectory/ injects that file verbatim into its
+          # prompts — so it survives any future narrowing of the wildcard that
+          # currently also matches it. No comments INSIDE the list: the RQ-001
+          # lockstep extractor reads it line by line.
           filters: |
             routing:
               - 'evals/routing/**'
               - 'plugins/*/skills/**/SKILL.md'
+              - 'plugins/redgate/skills/redgate/SKILL.md'
               - 'plugins/*/.claude-plugin/plugin.json'
               - '.claude-plugin/marketplace.json'
       - name: roster is in sync before spending on a model call
@@ -496,29 +502,101 @@ jobs:
           npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s results.json
+      - name: promptfoo eval (redgate trajectory)
+        if: steps.touched.outputs.routing == 'true'
+        # Second behavioral run of this job (RQ-002): the bounded redgate
+        # trajectory pack — frozen transcript prefixes graded by a typed STEP:
+        # line, same deterministic-contract discipline as the routing pack.
+        # Same exit-code delegation as above: the statistical gate is the arbiter.
+        working-directory: evals/routing/trajectory
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PROMPTFOO_RETRY_5XX: "true"
+        run: |
+          npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output trajectory-results.json \
+            || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
+          test -s trajectory-results.json
       - name: statistical gate (per-scenario k-of-N pass rate)
         if: steps.touched.outputs.routing == 'true'
         # repeat:5 in the config expands each scenario into 5 rows; this enforces
         # a >=0.8 per-scenario floor so a lucky single pass can't read as green
         # (gap #4). Fail-closed if the run did not actually repeat.
         run: evals/paid/pass-rate.sh evals/routing/results.json --floor 0.8 --min-runs 3
-      - name: show failing routes
+      - name: statistical gate (trajectory per-case k-of-N pass rate)
+        # always() so a red routing gate cannot mask the trajectory verdict —
+        # both gates report on every evaluated run; either alone fails the job.
+        if: always() && steps.touched.outputs.routing == 'true'
+        run: evals/paid/pass-rate.sh evals/routing/trajectory/trajectory-results.json --floor 0.8 --min-runs 3
+      - name: show failing routes (per-slot expected vs got)
         if: always() && steps.touched.outputs.routing == 'true'
         working-directory: evals/routing
+        # The typed line makes failures diffable slot by slot: pull the expected
+        # slot values out of the scenario's own regex assertion and the got
+        # values out of the model's final ROUTE: line, and print a [DIFF] per
+        # slot — the pressure to relax floors comes from unreadable failures.
         run: |
           test -f results.json || { echo "no results.json produced"; exit 0; }
           jq -r '
+            def gotline(s): ((s // "") | if type=="string" then . else tojson end)
+              | split("\n") | map(select(test("^\\s*ROUTE:"))) | (last // "");
+            def slotval(l; k): ((l | capture(k + "=(?<v>[a-z0-9,-]+)") .v) // "<missing>");
             (.results.results // .results // [])[]
             | select(.success == false)
-            | "=== REQUEST ===\n" + ((.vars.request // .testCase.vars.request) | tostring)
-              + "\n=== MODEL ROUTE ===\n" + ((.response.output // .output // "") | if type=="string" then . else tojson end) + "\n"
+            | ([ (.testCase.assert // [])[], (.gradingResult.componentResults[]?.assertion // empty) ]
+               | map(select(. != null and .type == "regex" and ((.value // "") | tostring | test("specialist="))))
+               | ((.[0].value // "") | tostring)) as $exp
+            | gotline(.response.output // .output) as $got
+            | "=== SCENARIO ===\n" + ((.testCase.description // .description // "?") | tostring)
+              + "\n--- request ---\n" + ((.vars.request // .testCase.vars.request) | tostring)
+              + "\n--- model line ---\n" + (if $got == "" then "<no ROUTE: line in output>" else $got end)
+              + "\n--- per-slot expected vs got ---\n"
+              + (["specialist", "envelope", "guards", "interaction_owner"]
+                 | map(. as $k
+                   | slotval($exp; $k) as $e | slotval($got; $k) as $g
+                   | "  " + $k + ": expected=" + $e + "  got=" + $g
+                     + (if $e == $g then "  [match]" else "  [DIFF]" end))
+                 | join("\n"))
+              + "\n"
           ' results.json || echo "jq parse fell through — see artifact"
+      - name: show failing trajectory steps (per-slot expected vs got)
+        if: always() && steps.touched.outputs.routing == 'true'
+        working-directory: evals/routing/trajectory
+        run: |
+          test -f trajectory-results.json || { echo "no trajectory-results.json produced"; exit 0; }
+          jq -r '
+            def gotline(s): ((s // "") | if type=="string" then . else tojson end)
+              | split("\n") | map(select(test("^\\s*STEP:"))) | (last // "");
+            def slotval(l; k): ((l | capture(k + "=(?:\\(\\?:)?(?<v>[a-z-]+(?:\\|[a-z-]+)*)") .v) // "<missing>");
+            (.results.results // .results // [])[]
+            | select(.success == false)
+            | ([ (.testCase.assert // [])[], (.gradingResult.componentResults[]?.assertion // empty) ]
+               | map(select(. != null and .type == "regex" and ((.value // "") | tostring | test("action="))))
+               | ((.[0].value // "") | tostring)) as $exp
+            | gotline(.response.output // .output) as $got
+            | "=== CASE ===\n" + ((.testCase.description // .description // "?") | tostring)
+              + "\n--- model line ---\n" + (if $got == "" then "<no STEP: line in output>" else $got end)
+              + "\n--- per-slot expected vs got ---\n"
+              + (["action", "gate", "disposition", "proceed"]
+                 | map(. as $k
+                   | slotval($exp; $k) as $e | slotval($got; $k) as $g
+                   | "  " + $k + ": expected=" + $e + "  got=" + $g
+                     + (if ($e == $g) or ($e | split("|") | index($g)) != null then "  [match]" else "  [DIFF]" end))
+                 | join("\n"))
+              + "\n"
+          ' trajectory-results.json || echo "jq parse fell through — see artifact"
       - name: upload routing results
         if: always() && steps.touched.outputs.routing == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: routing-results
           path: evals/routing/results.json
+          if-no-files-found: ignore
+      - name: upload trajectory results
+        if: always() && steps.touched.outputs.routing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: trajectory-results
+          path: evals/routing/trajectory/trajectory-results.json
           if-no-files-found: ignore
 
   # ── paid multi-plugin gate (ADVISORY — never required) ────────────────────

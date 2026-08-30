@@ -759,7 +759,11 @@ except Exception:
     tests = re.findall(r'^\s*- description:', open(cfgp).read(), re.M)
     parsed = "regex-fallback"
 raw = open(cfgp).read()
-routes = re.findall(r'ROUTE:\\s\*([A-Za-z][\w-]*)', raw)
+# The typed composition line (RQ-002): each scenario's expected answer pins a
+# `specialist=` slot — a named skill is a must-fire, `none` is a calibration
+# negative. Envelope/guard/interaction names are covered by the closed-vocabulary
+# check below (and, fully, by route-contract.test.js in the RQ-002 section).
+routes = re.findall(r'specialist=([a-z0-9-]+)', raw)
 positives = [r for r in routes if r != "none"]
 negatives = [r for r in routes if r == "none"]
 roster = {l.split(":", 1)[0].strip() for l in open(rosp) if l.strip()}
@@ -771,11 +775,15 @@ if len(negatives) >= 2:
     print(f"  PASS routing: {len(negatives)} must-not-fire calibration negatives (>=2)")
 else:
     print(f"  FAIL routing: {len(negatives)} calibration negatives (<2) — a fire-on-everything router would pass"); fail += 1
-missing = [r for r in positives if r not in roster]
+# Every name in ANY slot of an expected line must be an installed skill.
+slot_names = set()
+for grp in re.findall(r'(?:specialist|envelope|guards|interaction_owner)=([a-z0-9,-]+)', raw):
+    slot_names.update(n for n in grp.split(",") if n and n != "none")
+missing = sorted(n for n in slot_names if n not in roster)
 if missing:
     print(f"  FAIL routing: scenarios route to non-installed skills: {missing}"); fail += 1
 else:
-    print(f"  PASS routing: every must-fire scenario targets an installed plugin")
+    print(f"  PASS routing: every skill named in an expected route targets an installed plugin")
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
@@ -952,6 +960,43 @@ if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" 
   fi
 fi
 # ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
+
+# ─── BEGIN RQ-002 typed route/step contracts (offline) ───────────────────────
+# The composition routing pack (evals/routing/) and its redgate trajectory pack
+# (evals/routing/trajectory/) grade a typed ROUTE:/STEP: line through fail-closed
+# javascript contracts. These node tests prove, offline and with no model call:
+# every scenario's expected line validates, a malformed/ambiguous fixture set
+# rejects (each fail-closed rule exercised individually), the trajectory
+# cross-field invariants bite (MAJOR ⇒ no proceed unless approved; auto ⇒ patch),
+# and the S1 legacy single-skill strings (`ROUTE: diagnosing-bugs`,
+# `ROUTE: redgate`) cannot satisfy the composition contract — the deterministic
+# half of issue #88's acceptance criteria, before any key is spent. REPO-level
+# gate: inert where the routing pack is absent (the counterfeit synthetic root);
+# present-but-broken => fail. FAIL substring: "route/step contract".
+if [ -f evals/routing/route-contract.test.js ]; then
+  group "typed route/step contracts (offline, deterministic)"
+  if ! command -v node >/dev/null 2>&1; then
+    ok "route/step contracts: node unavailable locally — SKIPPED here; CI's ubuntu runner executes them"
+  else
+    if out="$(node evals/routing/route-contract.test.js 2>&1)"; then
+      ok "route contract: expected lines validate; malformed + S1 legacy fixtures reject"
+    else
+      bad "route/step contract: route-contract.test.js failed"
+      printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+    if [ -f evals/routing/trajectory/step-contract.test.js ]; then
+      if out="$(node evals/routing/trajectory/step-contract.test.js 2>&1)"; then
+        ok "step contract: trajectory gate invariants hold; malformed fixtures reject"
+      else
+        bad "route/step contract: step-contract.test.js failed"
+        printf '%s\n' "$out" | sed 's/^/    /'
+      fi
+    else
+      bad "route/step contract: routing pack present without trajectory/step-contract.test.js (fail-closed)"
+    fi
+  fi
+fi
+# ─── END RQ-002 typed route/step contracts ───────────────────────────────────
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
