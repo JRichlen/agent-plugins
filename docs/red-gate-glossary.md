@@ -99,10 +99,10 @@ closed. Do not infer "in progress" from `phase=TRACE` alone.
 ## Lexicon v2 — ADOPTED (2026-08-28)
 
 The founding vocabulary has three defects the glossary above can pin but
-not fix: **positional names** (ARM/TRACE/JUDGE say *when*, not *what you
-must do* — TRACE is the emptiest word in the protocol, naming the actual
+not fix: **positional names** (BEGIN/MIDDLE/END say *when*, not *what you
+must do* — MIDDLE is the emptiest word in the protocol, naming the actual
 work as filler between two other things), **negative names**
-(WITNESS says what a criterion isn't, spending tokens to point away
+(UNVERIFIABLE says what a criterion isn't, spending tokens to point away
 from the required behavior), and **one collision** (two unrelated
 "envelopes"). Lexicon v2, now canonical throughout the living docs and scripts, replaced them under four rules (v1 terms remain as-written inside committed `.redgate/` run records, which are provenance; scripts read both vocabularies):
 
@@ -116,11 +116,11 @@ from the required behavior), and **one collision** (two unrelated
 
 ### The stages
 
-| Current | Proposed | Why it reinforces behavior |
+| v1 | v2 (adopted) | Why it reinforces behavior |
 |---|---|---|
-| ARM | **ARM** | You arm the gate: write criteria, prove each can fire (red), ratify, pin. A tripwire that cannot fire is not armed — "proven able to fail" lives inside the word. "Unarmed dispatch" names the core violation in two words. |
-| TRACE | **TRACE** | Fire one tracer: single writer, one slice, through every layer named, no stub at the proving seam. Aligns with the existing tracer-bullet vocabulary instead of sitting beside it. |
-| JUDGE | **JUDGE** | The verdict, rendered independently. Nobody judges their own case — JUDGE independence, the protocol's hardest-to-enforce invariant, becomes the word's ordinary meaning. "Self-judging" is the violation. |
+| BEGIN | **ARM** | You arm the gate: write criteria, prove each can fire (red), ratify, pin. A tripwire that cannot fire is not armed — "proven able to fail" lives inside the word. "Unarmed dispatch" names the core violation in two words. |
+| MIDDLE | **TRACE** | Fire one tracer: single writer, one slice, through every layer named, no stub at the proving seam. Aligns with the existing tracer-bullet vocabulary instead of sitting beside it. |
+| END | **JUDGE** | The verdict, rendered independently. Nobody judges their own case — END independence, the protocol's hardest-to-enforce invariant, becomes the word's ordinary meaning. "Self-judging" is the violation. |
 
 A round is one **ARM → TRACE → JUDGE** cycle. "The gate is armed" compresses
 "criteria written, proven red, ratified, and pinned" — four clauses into
@@ -129,7 +129,7 @@ carry the rules, so prose stops restating them.
 
 ### Round types (all verbs, matching)
 
-| Current | Proposed | Why |
+| v1 | v2 (adopted) | Why |
 |---|---|---|
 | orientation | **SCOUT** | Go look before deciding; the artifact is what you saw (a decision brief). |
 | plan | **PLAN** | Already a verb; keep. |
@@ -138,11 +138,11 @@ carry the rules, so prose stops restating them.
 
 ### The renames that fix defects
 
-| Current | Proposed | Why |
+| v1 | v2 (adopted) | Why |
 |---|---|---|
-| WITNESS | **WITNESS** | Positive and imperative: this criterion requires a named human witness, countersigned individually. Also removes the standing trap where `check_cmd: WITNESS …` runs as a command — `WITNESS:` was never a plausible command. |
-| mandate | **MANDATE** | Fixes the collision with the handoff envelope outright. "Inside the mandate" / "exceeds the mandate" is how delegated authority is described in ordinary English, which is exactly what an approved plan is. Handoff envelope keeps "envelope" unchallenged. |
-| FAULT (exit 99) | **FAULT** | One word; keeps "failure" reserved for criteria (FAIL). A FAULT is never a verdict. |
+| UNVERIFIABLE | **WITNESS** | Positive and imperative: this criterion requires a named human witness, countersigned individually. Also removes the standing trap where `check_cmd: UNVERIFIABLE …` runs as a command — `WITNESS:` was never a plausible command. |
+| autonomy envelope | **MANDATE** | Fixes the collision with the handoff envelope outright. "Inside the mandate" / "exceeds the mandate" is how delegated authority is described in ordinary English, which is exactly what an approved plan is. Handoff envelope keeps "envelope" unchallenged. |
+| harness failure (exit 99) | **FAULT** | One word; keeps "failure" reserved for criteria (FAIL). A FAULT is never a verdict. |
 
 Unchanged on purpose: run, round, slice, gate, PATCH/MINOR/MAJOR, pin,
 drift, evidence, fence, contract, Calibration, mutation control, negative
