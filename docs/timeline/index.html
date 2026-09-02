@@ -70,8 +70,8 @@
 <header class="top">
   <h1>Design trajectory — a decision timeline</h1>
   <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:
-  what forced each one, what was rejected, and a receipt you can check. 30 decisions shown
-  of 36 recorded — the rest stay in the
+  what forced each one, what was rejected, and a receipt you can check. 31 decisions shown
+  of 37 recorded — the rest stay in the
   <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
 </header>
 <div class="thesis">
@@ -473,6 +473,17 @@
         <div class="block"><span class="lbl dec">Decided</span><p>Route to the most-specific applicable specialist skill or recipe for the work itself; compose Redgate around nontrivial work only when execution benefits from explicit falsifiable criteria, iterative verified rounds, or a classified human gate. &quot;A specialist owns the domain procedure; Redgate reinforces how that procedure is executed&quot; — and work fully handled by a specialist &quot;does not acquire Redgate ceremony merely because it is nontrivial.&quot; The measurement-narrows rule, applied to the flagship: even the protocol that verifies everything else only keeps the job it earns.</p></div>
         <div class="block"><span class="lbl rej">Rejected</span><p>The universal-router framing the same PR had shipped hours earlier — auto-triggering Redgate from task shape across every domain — corrected in flight rather than defended.</p></div>
         <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/82">PR #82</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/e2a53a9">merge commit</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/3bded0e">the reframing (root)</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/653cbf5">the reframing (plugin)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/AGENTS.md">AGENTS.md: default operating mode</a></p>
+      </div>
+    </article>
+    <article class="entry" id="agent-os-control-plane">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-08-30</span></div>
+        <h3>Agent OS is the layer above the envelope</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Research into a prior-art project (zpratt/lousy-agents) posed the architectural question directly: should automations be governed one semantic layer above harness configuration — with AGENTS.md, hooks, MCP servers and scheduled tasks as projections of a canonical model rather than the model itself? And with Redgate just demoted from universal router, something had to own the coordinating role it gave up.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>Agent OS is &quot;a design and control plane for agent automations&quot; — taxonomy, recipes, triggers, adapters, portfolio curation — and &quot;not another agent runtime.&quot; Redgate &quot;is deliberately a different layer&quot;: an optional execution policy an Automation may recommend, never a dependency. The canonical ontology starts at seven concepts (Lane, Workstream, Automation, Trigger, Recipe, Adapter, Evidence); native files are &quot;projections or referenced capabilities, never canonical taxonomy nodes merely because they are files.&quot; Cross-harness support is rated per capability from evidence — every cell starts unassessed, and a rating may not be inferred &quot;from generic harness reputation, a prose instruction, or the presence of a file.&quot; The first release must be useful when it can only discover, classify, design, diagnose, reconcile and propose; mutation deepens adapter by adapter.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Forking the prior art (&quot;prior art, not a fork target&quot;) or copying its physical construct taxonomy; importing every harness construct into the canonical model; first-class Actor, Policy, Memory or Runtime nodes in v1 (&quot;unless evidence forces promotion&quot;); and one misleading overall support level per harness.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/92">PR #92</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/agent-os/automation-curation-lens.md">the decision record</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/agent-os/lousy-agents-handoff.md">the handoff that posed the question</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/6075ecf">docs commit</a></p>
       </div>
     </article></div>
   </section>

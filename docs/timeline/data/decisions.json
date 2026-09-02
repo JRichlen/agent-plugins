@@ -840,6 +840,35 @@
       ],
       "curated": true,
       "cut_reason": null
+    },
+    {
+      "id": "agent-os-control-plane",
+      "era": "era-7",
+      "date": "2026-08-30",
+      "title": "Agent OS is the layer above the envelope",
+      "forced_by": "Research into a prior-art project (zpratt/lousy-agents) posed the architectural question directly: should automations be governed one semantic layer above harness configuration — with AGENTS.md, hooks, MCP servers and scheduled tasks as projections of a canonical model rather than the model itself? And with Redgate just demoted from universal router, something had to own the coordinating role it gave up.",
+      "decided": "Agent OS is \"a design and control plane for agent automations\" — taxonomy, recipes, triggers, adapters, portfolio curation — and \"not another agent runtime.\" Redgate \"is deliberately a different layer\": an optional execution policy an Automation may recommend, never a dependency. The canonical ontology starts at seven concepts (Lane, Workstream, Automation, Trigger, Recipe, Adapter, Evidence); native files are \"projections or referenced capabilities, never canonical taxonomy nodes merely because they are files.\" Cross-harness support is rated per capability from evidence — every cell starts unassessed, and a rating may not be inferred \"from generic harness reputation, a prose instruction, or the presence of a file.\" The first release must be useful when it can only discover, classify, design, diagnose, reconcile and propose; mutation deepens adapter by adapter.",
+      "rejected": "Forking the prior art (\"prior art, not a fork target\") or copying its physical construct taxonomy; importing every harness construct into the canonical model; first-class Actor, Policy, Memory or Runtime nodes in v1 (\"unless evidence forces promotion\"); and one misleading overall support level per harness.",
+      "receipts": [
+        {
+          "label": "PR #92",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/92"
+        },
+        {
+          "label": "the decision record",
+          "path": "docs/research/agent-os/automation-curation-lens.md"
+        },
+        {
+          "label": "the handoff that posed the question",
+          "path": "docs/research/agent-os/lousy-agents-handoff.md"
+        },
+        {
+          "label": "docs commit",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/6075ecf"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
     }
   ]
 }
