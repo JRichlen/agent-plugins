@@ -61,8 +61,11 @@ the recompile instruction.
    must be asked for by listing its effects, never implied by omission.
    Ceiling first, in plain words: before you inspect the registry or call
    `compile`, either ask the user to fix the agent's allowed effects (e.g.
-   read-only `scm:read` vs. commenting `scm:write`) or state the ceiling you
-   will compile under — a passing mention that "the compiler enforces a
+   read-only `["network", "scm:read"]` vs. commenting
+   `["network", "scm:read", "scm:write"]` — every bundled SCM capability also
+   declares `network`, so a ceiling of `["scm:read"]` alone is rejected with
+   `EFFECT_CEILING`) or state the ceiling you will compile under — a passing
+   mention that "the compiler enforces a
    ceiling" is not a ceiling. Then show the draft query (`role`, `task`,
    `domains`, `views`, `stance`, `effectCeiling`) as JSON, with placeholders
    marked wherever you still need an answer. Registry `inspect` calls refine
