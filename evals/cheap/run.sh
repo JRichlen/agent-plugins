@@ -1021,6 +1021,60 @@ if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" 
 fi
 # ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
 
+# ─── BEGIN behavioral-pack no-tools clause ───────────────────────────────────
+# --- 21. Every behavioral pack's subject prompt forbids tool-call syntax -------
+# The behavioral tier is a SINGLE-reply harness: the subject model never gets a
+# tool result back. A cheap subject model can still stochastically emit fake
+# tool-call syntax (e.g. `<tool name="read" args={"path": "src/list.js"} />`)
+# and stop, with no final answer for the grader to judge — PR #95 run
+# 33592173756 lost two of three scope-fence rows exactly that way, and the same
+# pack was green minutes later on PR #96. Under the honest statistical gate
+# (pass-rate.sh scores real assertion failures against the floor) such rows are
+# real FAILs, so any pack could flip red on any run. Each pack's subject prompt
+# therefore carries an explicit no-tools clause; this gate asserts the
+# load-bearing phrase is still present in EVERY pack so it cannot drift out of
+# one prompt silently. The prompt surface is DISCOVERED from each pack's
+# promptfooconfig.yaml (`- file://<prompt>` under `prompts:`), never assumed to
+# be prompt.txt: tailscale-wif renders its subject prompt from prompt.js, and a
+# gate that only scanned prompt.txt reported green while that pack was still
+# exposed (Codex review, PR #97). A pack whose config names a prompt file that
+# does not exist, or names none, fails too. REPO-level gate, same inertness
+# marker as §20 (`.git`): the counterfeit tier's synthetic root ships no
+# promptfoo packs. Fail-closed: zero packs found in the real repo is itself a
+# failure. FAIL substring: "no-tools clause".
+if [ -e ".git" ]; then
+  group "behavioral packs: subject prompt forbids tool-call syntax"
+  NO_TOOLS_PHRASE='never emit tool-call'
+  pack_prompts=0
+  for cfg in plugins/*/evals/promptfoo/promptfooconfig.yaml; do
+    [ -f "$cfg" ] || continue
+    cfg_dir=$(dirname "$cfg")
+    # every `file://…` under the prompts: block (comments stripped); the block
+    # ends at the next top-level key.
+    prompt_refs=$(awk '/^prompts:/{p=1;next} p&&/^[^ #-]/{p=0} p' "$cfg" \
+      | sed 's/#.*$//' | grep -o 'file://[^[:space:]"'"'"']*' | sed 's#^file://##' || true)
+    if [ -z "$prompt_refs" ]; then
+      bad "no-tools clause: $cfg names no file:// prompt under prompts: — the gate cannot see this pack's subject prompt"
+      continue
+    fi
+    for ref in $prompt_refs; do
+      pp="$cfg_dir/$ref"
+      if [ ! -f "$pp" ]; then
+        bad "no-tools clause: $cfg names $ref but $pp does not exist"
+        continue
+      fi
+      pack_prompts=$((pack_prompts+1))
+      has "$pp" "$NO_TOOLS_PHRASE" \
+        "$pp carries the no-tools clause" \
+        "$pp is missing the no-tools clause ('$NO_TOOLS_PHRASE') — a subject that emits fake tool-call syntax and stops scores as a real FAIL"
+    done
+  done
+  if [ "$pack_prompts" -eq 0 ]; then
+    bad "no-tools clause: no behavioral pack prompt found via plugins/*/evals/promptfoo/promptfooconfig.yaml — the gate has nothing to protect"
+  fi
+fi
+# ─── END behavioral-pack no-tools clause ─────────────────────────────────────
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
