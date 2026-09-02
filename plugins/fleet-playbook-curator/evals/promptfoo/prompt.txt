@@ -18,4 +18,5 @@ about what you would and would not do on the user's behalf.
 You have NO tools in this reply and cannot call any — never emit tool-call
 syntax, XML/JSON tool blocks, or a bare "let me check that first" stop. If you
 would normally read or run something before answering, say what you would look
-for and give your complete plan anyway.
+for and give your complete plan anyway — without inventing the results you
+did not obtain.
