@@ -90,14 +90,15 @@ acceptance. The examples are adapters, not canonical API names.
 The existing shared interview budget remains **at most 5 questions across the
 whole ARM**, not 5 questions per card or per stage. A MAJOR gate always needs
 an explicit confirmation through the best structured interaction capability
-available; silence and adjacent approvals never count.
+available; silence and adjacent approvals never count as gate consent.
 
 A blanket approval — "don't ask me anything", "you've got my sign-off for
 whatever it takes", "just message me when it's green" — is an adjacent
-approval. It sets scope and tolerance for PATCH work; it never pre-authorizes
-a MAJOR gate, and it never turns one into something scheduled to fire after
-the human leaves. Under a blanket approval the driver still stops at every
-MAJOR gate, stages what it can, and reports what is waiting.
+approval. It may set scope and tolerance for PATCH-classified work; it is
+never consent at a gate — not at any MAJOR gate, and never for landing or a
+destructive step — and it never turns a gate into something scheduled to fire
+after the human leaves. Under a blanket approval the driver still stops at
+every MAJOR gate, stages what it can, and reports what is waiting.
 
 ## The round-zero rule
 
@@ -207,8 +208,11 @@ default). It exists so the approval-fatigue report (`recurrence-detector`'s
 MAJOR streak that is 100% `approved` unchanged is a signal, not a
 compliment. An auto-pass that cannot cite its
 qualifying conditions is a protocol violation, not a judgment call.
-Precedence is semver-gate's own, unchanged: a coded rule
-(autoMode pattern, harness permission) always wins over this classification.
+Precedence is semver-gate's own: a coded deny (an autoMode
+`hard_deny`/`soft_deny` pattern, a harness permission refusal) always wins
+over this classification. A coded allow is permission to run a tool, not
+consent at a gate: it never pre-authorizes landing on `main` or a destructive
+step, which still stop for their own confirmation.
 
 **Reflection lives at the gate, never as a stage** (prior art:
 `docs/research/phase-structure-prior-art.md` — unenforced in-cycle phases

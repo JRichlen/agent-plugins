@@ -854,6 +854,14 @@ json.dump({"results":{"results": rows("A",3,3)+[erow("C"),erow("C"),erow("C")]}}
 # below a 0.9 floor. Excluding it would read 4/4 = 1.00 and pass (the PR #93
 # counterfeit-green).
 json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
+# ...and .error ALONE may only mean FAULT when failureReason is ABSENT (the
+# legacy-shape fallback). A row that carries failureReason 0 (present, not an
+# error, not an assertion) + a non-empty .error + success false is an
+# unexplained non-pass: it must be SCORED as a FAIL, never excluded. Before the
+# fix the code applied the .error fallback to every non-assertion row, so this
+# read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
+def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
+json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -892,6 +900,14 @@ if bash "$_pr" "$_tmp/real-fail.json" --floor 0.9 --min-runs 2 --min-valid 2 >/d
   bad "pass-rate: a real assertion failure carrying .error was excluded as a FAULT — failures launder as weather (fail-open)"
 else
   ok "pass-rate: a real assertion failure carrying .error is scored as FAIL, not excluded as FAULT"
+fi
+# failureReason PRESENT (0) + .error + not passed: the .error fallback must NOT
+# fire — only a row with NO failureReason may be FAULTed on .error alone. 4/5 =
+# 0.80 < 0.9 must fail; laundering the row reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
+else
+  ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
 fi
 rm -rf "$_tmp"
 
