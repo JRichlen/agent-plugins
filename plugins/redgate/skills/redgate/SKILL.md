@@ -90,7 +90,15 @@ acceptance. The examples are adapters, not canonical API names.
 The existing shared interview budget remains **at most 5 questions across the
 whole ARM**, not 5 questions per card or per stage. A MAJOR gate always needs
 an explicit confirmation through the best structured interaction capability
-available; silence and adjacent approvals never count.
+available; silence and adjacent approvals never count as gate consent.
+
+A blanket approval — "don't ask me anything", "you've got my sign-off for
+whatever it takes", "just message me when it's green" — is an adjacent
+approval. It may set scope and tolerance for PATCH-classified work; it is
+never consent at a gate — not at any MAJOR gate, and never for landing or a
+destructive step — and it never turns a gate into something scheduled to fire
+after the human leaves. Under a blanket approval the driver still stops at
+every MAJOR gate, stages what it can, and reports what is waiting.
 
 ## The round-zero rule
 
@@ -122,9 +130,10 @@ is writable today — go straight to a build round.
    the protocol — do it directly, no run dir.
 1. **ARM** — invoke `criteria-contract`: interview (≤5 questions total,
    calibration questions included, defaults accepted by silence), emit
-   `CRITERIA.md` + `check.sh` into `.redgate/<slug>/`, prove the gate red,
-   get ratification (which ratifies the calibration block with it), pin
-   both files.
+   `CRITERIA.md` + `check.sh` into `.redgate/<slug>/`, **prove the gate
+   red** — run `check.sh` against the current, unfixed state and quote the
+   observed FAIL per criterion as evidence — get ratification (which
+   ratifies the calibration block with it), pin both files.
 2. **TRACE** — one writer, one tracer-bullet slice flipping one criterion
    through every layer it names, no stub at the proving seam. Subagents (or
    parallel sessions) fan out **read-only**. Every hunk traces to a criterion
@@ -138,6 +147,15 @@ is writable today — go straight to a build round.
 4. **Round gate — classified, not defaulted to the human.** Classify the
    gate with `semver-gate`'s four-property test and tie-break (any property
    MAJOR → gate MAJOR), then act by class as the table below requires.
+
+**Red first, stated every time.** Every plan the driver presents — a reply,
+a plan round, a handoff — carries the red step as its own line: run the
+verifier against the current state *before any TRACE work* and show it
+FAILING, with the observed failure quoted. A sequence that reads
+scaffold → build → judge, with no observed red between scaffold and build,
+is incomplete and is not ratified. The round-zero rule chooses *which*
+verifier goes red first (behavior for a build round, shape for a scout
+brief) — never whether one does.
 
 ## The classified round gate
 
@@ -153,11 +171,25 @@ gates automatically.
 
 **Always MAJOR — never auto-passed, never softened:** the scout
 decision; the plan round's approval (the mandate itself); a run's first
-ratification and every WITNESS countersignature; fence widening;
-round-budget or depth extension; the run's final acceptance; and anything
+ratification and every WITNESS countersignature; widening the scope fence
+mid-run — a "while you're in there" bundled into the ask that no ratified
+criterion covers is a widen, not part of the slice; round-budget or depth
+extension; the run's final acceptance; landing on `main`; and anything
 semver-gate's own table calls MAJOR (irreversible actions — `prove-the-undo`
 first — protection toggles, `egress-gate` transmissions to unnamed
 destinations).
+
+**Landing and destruction are their own gates.** Merging or landing on
+`main`, and every destructive or irreversible action — table truncation,
+data deletion, force-push, a write to production — is a separate MAJOR gate,
+confirmed at the moment it would happen by a structured confirmation that
+names that specific action. It is never bundled into an earlier ratification
+or plan approval, never written as a criterion the verifier satisfies on its
+own, and never scheduled to run unattended. A single option of the form
+"ratify and I'll do the rest autonomously — land it and message you" is a
+protocol violation, not a courtesy: the honest offer stages the change
+(branch, PR, prepared statement with its proven undo) and holds the landing
+and each destructive step for their own confirmations.
 
 **Derived ratification.** A build round whose criteria are byte-derivable
 from an approved plan slice auto-ratifies as PATCH with the derivation
@@ -176,8 +208,11 @@ default). It exists so the approval-fatigue report (`recurrence-detector`'s
 MAJOR streak that is 100% `approved` unchanged is a signal, not a
 compliment. An auto-pass that cannot cite its
 qualifying conditions is a protocol violation, not a judgment call.
-Precedence is semver-gate's own, unchanged: a coded rule
-(autoMode pattern, harness permission) always wins over this classification.
+Precedence is semver-gate's own: a coded deny (an autoMode
+`hard_deny`/`soft_deny` pattern, a harness permission refusal) always wins
+over this classification. A coded allow is permission to run a tool, not
+consent at a gate: it never pre-authorizes landing on `main` or a destructive
+step, which still stop for their own confirmation.
 
 **Reflection lives at the gate, never as a stage** (prior art:
 `docs/research/phase-structure-prior-art.md` — unenforced in-cycle phases
