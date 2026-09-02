@@ -22,7 +22,12 @@ another:
   interviews the user), or none when no blocking human decision is expected.
   When an envelope is present, blocking gate/approval decisions belong to the
   envelope, so the envelope is the interaction_owner; the specialist owns
-  interaction only when no envelope fires.
+  interaction only when no envelope fires. A request that is itself a
+  conversation with the human — the user asks to be walked through, talked
+  through, interviewed, consulted, or asked to decide before the work
+  proceeds — has a blocking human interaction by construction, so with a
+  specialist and no envelope the specialist is the interaction_owner. Reserve
+  none for work the specialist can complete without stopping to ask.
 
 Skills are DISCIPLINES that govern how you carry out a request — they are not
 tools that perform it. A skill activates when the request would trigger the

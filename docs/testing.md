@@ -151,8 +151,14 @@ that it is green because it did not run, never silently.
   line (issue #88), graded by a per-scenario regex: **legacy (migrated
   single-skill) scenarios pin only the `specialist` slot** — the other slots
   accept any validator-legal value, because those rows test routing
-  precedence — while **composition scenarios (S1–S4) pin every slot**: exact
-  for specialist/envelope/interaction_owner and for `guards=none`,
+  precedence — except that the **discipline-skill legacy rows (egress-gate,
+  find-before-build, stop-rule) grade active-in-either-role**: the named
+  skill must be the `specialist` *or* appear in the `guards` list
+  (required-subset), the specialist otherwise free to be `none` or a
+  procedure skill, because the schema itself files cross-cutting disciplines
+  under guards and the live model routes them there — while **composition
+  scenarios (S1–S4) pin every slot**: exact for
+  specialist/envelope/interaction_owner and for `guards=none`,
   **required-subset** for named guards (must-have guards present in the
   sorted list, roster-valid extras allowed; regrades from PR #93's live
   runs) — plus the fail-closed `route-contract.js` validator on every row
@@ -165,7 +171,11 @@ that it is green because it did not run, never silently.
   the gate survives resume). Trajectory slots are **behavior-pinned,
   taxonomy-tolerant**: `proceed`/`disposition` are exact everywhere, while T1
   accepts `gate=none|major` and T4 accepts `action=resume|gate` (defensible
-  alternate readings of the same stop, per the same regrade). Both legs:
+  alternate readings of the same stop, per the same regrade). Both legs grade
+  the model's **reply, not its reasoning trace** (`showThinking: false` on
+  the provider — otherwise promptfoo prepends the reasoning to the graded
+  output and a `ROUTE:`/`STEP:` line drafted while thinking fails the
+  one-line rule of a correct final answer). Both legs:
   deterministic verdicts (no grader key), must-not-fire calibration
   negatives, `repeat: 5`, its own `pass-rate.sh` gate, and
   `PROMPTFOO_RETRY_5XX` for transient transport errors.

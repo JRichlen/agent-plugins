@@ -20,7 +20,13 @@
 # specialist/envelope/interaction_owner and for every guards=none scenario,
 # REQUIRED-SUBSET for named guards (the must-have guards must be present in
 # the sorted list; roster-valid extras are allowed — extra defensible guards
-# are not a routing defect, but over-firing on all-none scenarios still is) —
+# are not a routing defect, but over-firing on all-none scenarios still is),
+# and ACTIVE-IN-EITHER-ROLE for the legacy DISCIPLINE-skill scenarios
+# (egress-gate, find-before-build, stop-rule: the named skill must be the
+# specialist OR appear in the guards list — the schema's own taxonomy files
+# cross-cutting disciplines under guards, so a router that honors the rule as
+# a guard beside a procedure specialist, or with no specialist at all, is not
+# mis-routing; absent from both slots is) —
 # and the fail-closed contract in route-contract.js (defaultTest, every row)
 # rejects malformed/ambiguous output — unknown names, redgate-as-specialist, a
 # skill in two slots, an interaction owner outside specialist∪envelope, mixed
@@ -50,6 +56,12 @@ providers:
   - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
     config:
       max_tokens: 4096
+      # Grade the REPLY, not the reasoning trace. promptfoo's OpenRouter
+      # provider otherwise prepends `Thinking: <reasoning>\n\n` to the graded
+      # output when the model returns reasoning tokens, so a ROUTE: line the
+      # model DRAFTS while thinking becomes a second ROUTE: line and rule 1 of
+      # route-contract.js (exactly one line) fails a correct final answer.
+      showThinking: false
 
 evaluateOptions:
   maxConcurrency: 3
@@ -74,8 +86,8 @@ defaultTest:
 
 tests:
   # --- must-fire: each routes to one specialist, past a plausible neighbor ---
-  # Slots are roles (issue #88 §1.2): these guard-ish skills keep their name in
-  # `specialist` because their rule IS the whole request — no forced composition.
+  # Slots are roles (issue #88 §1.2): a guard-ish skill may be the specialist
+  # when its rule IS the whole request — no forced composition.
   # GRADING (residual pass, PR #93 run 33342419465): these MIGRATED scenarios
   # pin ONLY the specialist slot; envelope/guards/interaction_owner accept any
   # validator-legal value (route-contract.js still enforces all 8 coherence
@@ -85,6 +97,18 @@ tests:
   # consistently added a redgate envelope + owner on the S3-bucket delete and
   # an owner on the semver-gate question — defensible compositions the exact
   # all-none labels were wrongly failing.
+  # DISCIPLINE-skill rows (egress-gate, find-before-build, stop-rule) grade
+  # ACTIVE-IN-EITHER-ROLE (live-run regrade, PR #93 runs 33592255060 and
+  # 33592810851): the model filed egress-gate under `guards` on 10/10 rows
+  # (`specialist=none | guards=egress-gate`), find-before-build under guards
+  # on 5/10, and stop-rule as specialist on 9/10 with one `specialist=
+  # diagnosing-bugs | guards=stop-rule,verify-before-claim`. Every one of
+  # those is the schema's own taxonomy at work — a cross-cutting rule honored
+  # during execution IS a guard — so the regex requires the named skill in
+  # `specialist` OR in the guards list (required-subset), with the specialist
+  # otherwise free to be none or a procedure skill. The skill absent from both
+  # is still the routing miss these rows exist to catch; the contract's rule 5
+  # still rejects naming it in both.
   - description: "irreversible GitHub delete → prove-the-undo (neighbor: egress-gate, semver-gate)"
     vars:
       request: >-
@@ -101,7 +125,7 @@ tests:
         one?
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=find-before-build\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
+        value: 'ROUTE:\s*(?:specialist=find-before-build\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)|specialist=(?:[a-z0-9-]+|none)\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+,)*find-before-build(?:,[a-z0-9-]+)*)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
 
   - description: "posting content off-machine → egress-gate (neighbor: prove-the-undo)"
     vars:
@@ -110,7 +134,7 @@ tests:
         the upstream repo for me.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=egress-gate\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
+        value: 'ROUTE:\s*(?:specialist=egress-gate\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)|specialist=(?:[a-z0-9-]+|none)\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+,)*egress-gate(?:,[a-z0-9-]+)*)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
 
   - description: "stuck retry loop → stop-rule (neighbor: diagnosing-bugs)"
     vars:
@@ -119,7 +143,7 @@ tests:
         failing in a new way each time. What should I do?
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=stop-rule\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
+        value: 'ROUTE:\s*(?:specialist=stop-rule\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)|specialist=(?:[a-z0-9-]+|none)\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+,)*stop-rule(?:,[a-z0-9-]+)*)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
 
   - description: "classify blast radius before acting → semver-gate (neighbor: scope-fence)"
     vars:

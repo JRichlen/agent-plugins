@@ -37,7 +37,23 @@ providers:
   # Same subject model as the routing pack — one provider convention per tier.
   - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
     config:
-      max_tokens: 4096
+      # 8192, not the routing pack's 4096: this prompt injects the whole
+      # redgate SKILL.md and the model reasons at length over it — PR #93 run
+      # 33592810851 had a T2 row whose reply was empty because the reasoning
+      # alone consumed the 4096-token budget (`<no STEP: line in output>`).
+      max_tokens: 8192
+      # Grade the REPLY, not the reasoning trace (live-run finding, PR #93
+      # runs 33592255060 / 33592810851): promptfoo's OpenRouter provider
+      # prepends `Thinking: <reasoning>\n\n` to the graded output by default,
+      # so T1/T2 rows whose FINAL line matched the expected step on all four
+      # slots still failed. The per-row assertion reason was not recoverable
+      # (artifact download blocked; the job log prints only the last STEP:
+      # line), so the inferred cause is a STEP: line drafted inside the
+      # reasoning — a second STEP: line, which step-contract.js fails closed
+      # as "2 STEP: lines found — ambiguous". Either way the contract's
+      # one-line rule is about the answer the human sees, not the chain of
+      # thought.
+      showThinking: false
 
 evaluateOptions:
   maxConcurrency: 3

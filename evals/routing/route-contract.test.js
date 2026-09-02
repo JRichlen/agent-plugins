@@ -165,15 +165,37 @@ const LEGACY_CASES = [
     'prove-the-undo', 'ROUTE: specialist=prove-the-undo | envelope=none | guards=none | interaction_owner=none', true],
   ['semver-gate accepts the specialist as interaction owner',
     'semver-gate', 'ROUTE: specialist=semver-gate | envelope=none | guards=none | interaction_owner=semver-gate', true],
-  ['egress-gate still rejects the slot-placement miss (guard instead of specialist)',
-    'egress-gate', 'ROUTE: specialist=none | envelope=none | guards=egress-gate | interaction_owner=none', false],
-  ['stop-rule still rejects the neighbor specialist',
-    'stop-rule', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=stop-rule | interaction_owner=none', false],
+  // Discipline-skill rows grade ACTIVE-IN-EITHER-ROLE (live-run regrade):
+  // the named skill must be the specialist OR sit in the guards list.
+  ['egress-gate accepts the live modal answer (guard, no specialist)',
+    'egress-gate', 'ROUTE: specialist=none | envelope=none | guards=egress-gate | interaction_owner=none', true],
+  ['egress-gate accepts the guard beside a procedure specialist',
+    'egress-gate', 'ROUTE: specialist=docs-hygiene | envelope=none | guards=egress-gate,verify-before-claim | interaction_owner=none', true],
+  ['egress-gate still accepts the specialist form',
+    'egress-gate', 'ROUTE: specialist=egress-gate | envelope=none | guards=none | interaction_owner=none', true],
+  ['egress-gate rejects the skill absent from both roles',
+    'egress-gate', 'ROUTE: specialist=prove-the-undo | envelope=none | guards=verify-before-claim | interaction_owner=none', false],
+  ['egress-gate rejects the all-none miss',
+    'egress-gate', 'ROUTE: specialist=none | envelope=none | guards=none | interaction_owner=none', false],
+  ['stop-rule accepts the neighbor specialist with stop-rule as a guard',
+    'stop-rule', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=stop-rule,verify-before-claim | interaction_owner=diagnosing-bugs', true],
+  ['stop-rule rejects the neighbor specialist WITHOUT stop-rule anywhere',
+    'stop-rule', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=verify-before-claim | interaction_owner=none', false],
+  ['find-before-build rejects a guard list that merely contains it as a substring',
+    'find-before-build', 'ROUTE: specialist=none | envelope=none | guards=find-before-builder | interaction_owner=none', false],
 ];
 for (const [name, skill, line, expected] of LEGACY_CASES) {
   const r = legacyRegex(skill);
   const got = Boolean(r) && new RegExp(r).test(line);
   check(`legacy: ${name}`, got === expected, r ? `regex: ${r}` : 'regex not found');
+}
+// Either-role is not both-roles: the regex tolerates the hedge, the contract
+// (rule 5) rejects it — so a discipline row can never pass by double-slotting.
+{
+  const r = legacyRegex('egress-gate');
+  const hedged = 'ROUTE: specialist=egress-gate | envelope=none | guards=egress-gate | interaction_owner=none';
+  check('discipline regex alone would accept the double-slot hedge…', Boolean(r) && new RegExp(r).test(hedged));
+  check('…and the structural contract rejects it (rule 5)', rc.validateRoute(hedged, roster).pass === false);
 }
 // "any validator-legal value" is bounded by the contract, never by the regex:
 // a legacy regex may match an incoherent tuple, and the contract must reject it.
