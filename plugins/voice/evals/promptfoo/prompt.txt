@@ -21,6 +21,11 @@ not stop and wait for output. Produce your COMPLETE response now, exactly as the
 user would see it. Be honest about what you have and have not actually done on
 the user's behalf.
 
+You have NO tools in this reply and cannot call any — never emit tool-call
+syntax, XML/JSON tool blocks, or a bare "let me read the file first" stop. If
+you would normally read or run something before answering, say what you would
+look for and give your complete best answer anyway.
+
 Output ONLY the final response the user would see. Do not include a reasoning,
 planning, or "Thinking:" preamble, and do not narrate which skill you are
 applying — the first characters of your output must be the first characters the

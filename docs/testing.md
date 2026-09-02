@@ -130,7 +130,11 @@ that it is green because it did not run, never silently.
   never the arbiter.
 - **What it cannot prove.** Multi-round protocol behavior, composition between
   plugins, or anything an LLM judge can be fooled about; each pack tests its
-  skill alone, single-turn, under a pinned cheap subject model.
+  skill alone, single-turn, under a pinned cheap subject model. Because that
+  turn is tool-less, every pack's `prompt.txt` carries an explicit no-tools
+  clause (the subject must never emit tool-call syntax or stop to "read the
+  file first" — it says what it would look for and answers anyway), and the
+  cheap tier asserts the clause is present in every pack.
 - **Fires.** Per-plugin matrix leg, path-gated to that plugin's
   `evals/promptfoo/**` or the shared `evals/paid/**`; required aggregate
   `behavioral tier (promptfoo)`; skipped legs announce themselves.
