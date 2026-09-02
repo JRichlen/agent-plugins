@@ -539,7 +539,19 @@ jobs:
           jq -r '
             def gotline(s): ((s // "") | if type=="string" then . else tojson end)
               | split("\n") | map(select(test("^\\s*ROUTE:"))) | (last // "");
-            def slotval(l; k): ((l | capture(k + "=(?<v>[a-z0-9,-]+)") .v) // "<missing>");
+            def slotval(l; k):
+              try (
+                (l | capture(k + "=(?<v>[a-z0-9,-]+)") .v)
+                // (l | capture(k + "=\\(\\?:(?<v>[a-z0-9,|-]+)\\)") .v)
+                // (l | capture(k + "=\\(\\?:\\[a-z0-9-\\]\\+,\\)\\*(?<v>[a-z0-9-]+)") | "⊇" + .v)
+                // (if (l | test(k + "=\\(")) then "<any>" else "<missing>" end)
+              ) catch "<missing>";
+            def slotmatch(e; g):
+              if g == "<missing>" then false
+              elif e == g then true
+              elif e == "<any>" then true
+              elif (e | startswith("⊇")) then ((g | split(",")) | index(e[1:])) != null
+              else ((e | split("|")) | index(g)) != null end;
             (.results.results // .results // [])[]
             | select(.success == false)
             | ([ (.testCase.assert // [])[], (.gradingResult.componentResults[]?.assertion // empty) ]
@@ -554,7 +566,7 @@ jobs:
                  | map(. as $k
                    | slotval($exp; $k) as $e | slotval($got; $k) as $g
                    | "  " + $k + ": expected=" + $e + "  got=" + $g
-                     + (if $e == $g then "  [match]" else "  [DIFF]" end))
+                     + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
           ' results.json || echo "jq parse fell through — see artifact"
@@ -566,7 +578,17 @@ jobs:
           jq -r '
             def gotline(s): ((s // "") | if type=="string" then . else tojson end)
               | split("\n") | map(select(test("^\\s*STEP:"))) | (last // "");
-            def slotval(l; k): ((l | capture(k + "=(?:\\(\\?:)?(?<v>[a-z-]+(?:\\|[a-z-]+)*)") .v) // "<missing>");
+            def slotval(l; k):
+              try (
+                (l | capture(k + "=(?<v>[a-z-]+)") .v)
+                // (l | capture(k + "=\\(\\?:(?<v>[a-z|-]+)\\)") .v)
+                // (if (l | test(k + "=\\(")) then "<any>" else "<missing>" end)
+              ) catch "<missing>";
+            def slotmatch(e; g):
+              if g == "<missing>" then false
+              elif e == g then true
+              elif e == "<any>" then true
+              else ((e | split("|")) | index(g)) != null end;
             (.results.results // .results // [])[]
             | select(.success == false)
             | ([ (.testCase.assert // [])[], (.gradingResult.componentResults[]?.assertion // empty) ]
@@ -580,7 +602,7 @@ jobs:
                  | map(. as $k
                    | slotval($exp; $k) as $e | slotval($got; $k) as $g
                    | "  " + $k + ": expected=" + $e + "  got=" + $g
-                     + (if ($e == $g) or ($e | split("|") | index($g)) != null then "  [match]" else "  [DIFF]" end))
+                     + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
           ' trajectory-results.json || echo "jq parse fell through — see artifact"
