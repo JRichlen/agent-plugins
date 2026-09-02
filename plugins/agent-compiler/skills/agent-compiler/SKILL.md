@@ -30,6 +30,10 @@ Natural language may **select** behavior; it may not silently **define** it.
   is **author a module, then recompile** — never paste prose into the
   rendered agent, and never edit a rendered artifact by hand (each one says
   so in its header).
+- "Just write me the persona file" is an agent-building request, not a
+  writing task. Decline the freehand shortcut and normalize it in the same
+  reply: the deliverable is a compiled, rendered artifact — never
+  hand-authored persona prose, with or without a disclaimer.
 
 ## Two ways in: MCP tools or the CLI
 
@@ -55,6 +59,15 @@ the recompile instruction.
    the user the query JSON before compiling. A compile with no ceiling from
    either source is refused (`NO_EFFECT_CEILING`) — an unconstrained agent
    must be asked for by listing its effects, never implied by omission.
+   Ceiling first, in plain words: before you inspect the registry or call
+   `compile`, either ask the user to fix the agent's allowed effects (e.g.
+   read-only `scm:read` vs. commenting `scm:write`) or state the ceiling you
+   will compile under — a passing mention that "the compiler enforces a
+   ceiling" is not a ceiling. Then show the draft query (`role`, `task`,
+   `domains`, `views`, `stance`, `effectCeiling`) as JSON, with placeholders
+   marked wherever you still need an answer. Registry `inspect` calls refine
+   the draft; they never replace showing it — a reply that ends at inspection
+   has not normalized anything.
 2. **Discover module IDs** with
    `python3 scripts/compile.py inspect --registry <dir> [--kind|--tag|--id]`.
    Fuzzy discovery may suggest IDs; the compile step consumes exact IDs only.
