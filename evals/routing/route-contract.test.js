@@ -43,6 +43,7 @@ const EXPECTED = [
   // after the live run — an interactive walk-through with no envelope)
   'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate',
   'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design',
+  'ROUTE: specialist=codebase-design | envelope=none | guards=find-before-build | interaction_owner=codebase-design',
   'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo,semver-gate | interaction_owner=redgate',
   // 2 migrated calibration negatives + S3 (all-none)
   'ROUTE: specialist=none | envelope=none | guards=none | interaction_owner=none',
@@ -206,12 +207,22 @@ for (const [name, skill, line, expected] of LEGACY_CASES) {
   check('…and the structural contract still rejects it', rc.validateRoute(incoherent, roster).pass === false);
 }
 
-// All-none scenarios stay EXACT: S2's regex must reject any guard extra.
+// S2 is the composition NEGATIVE: envelope=none is the slot under test and
+// stays exact, as do specialist and interaction_owner. Its guards slot
+// tolerates exactly one extra — find-before-build, the search-before-writing
+// discipline a "new RateLimiter … before I write it" request legitimately
+// triggers (live run 33669538778: 2/5 rows) — and nothing else.
 const s2Regex = cfgRegexes.find((r) => r.includes('specialist=codebase-design'));
-check('S2 keeps exact guards=none (an added guard is still a failure)',
-  Boolean(s2Regex) &&
-  !new RegExp(s2Regex).test('ROUTE: specialist=codebase-design | envelope=none | guards=scope-fence | interaction_owner=codebase-design') &&
-  new RegExp(s2Regex).test('ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design'));
+const s2 = (guards, env = 'none', owner = 'codebase-design') =>
+  new RegExp(s2Regex).test(`ROUTE: specialist=codebase-design | envelope=${env} | guards=${guards} | interaction_owner=${owner}`);
+check('S2 accepts guards=none', Boolean(s2Regex) && s2('none'));
+check('S2 accepts the find-before-build guard alone', Boolean(s2Regex) && s2('find-before-build'));
+check('S2 rejects any other guard (scope-fence)', Boolean(s2Regex) && !s2('scope-fence'));
+check('S2 rejects find-before-build beside another guard', Boolean(s2Regex) && !s2('find-before-build,scope-fence'));
+check('S2 rejects an envelope (the negative under test)', Boolean(s2Regex) && !s2('none', 'redgate', 'redgate'));
+check('S2 rejects interaction_owner=none', Boolean(s2Regex) && !s2('none', 'none', 'none'));
+check('S2 rejects specialist=grill-me (the interview pull)', Boolean(s2Regex) &&
+  !new RegExp(s2Regex).test('ROUTE: specialist=grill-me | envelope=none | guards=codebase-design | interaction_owner=grill-me'));
 
 // ── Round-trip: the promptfoo entry point agrees with validateRoute ─────────
 const asAssertion = rc(EXPECTED[0], { vars: {} });

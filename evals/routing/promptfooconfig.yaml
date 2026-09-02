@@ -221,7 +221,7 @@ tests:
         the interface should be shaped before I write it.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=none\s*\|\s*interaction_owner=codebase-design\s*$'
+        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=(?:none|find-before-build)\s*\|\s*interaction_owner=codebase-design\s*$'
 
   # S4 — risky/irreversible work: the specialist and guards keep their
   # responsibilities rather than collapsing into redgate. All four slots are

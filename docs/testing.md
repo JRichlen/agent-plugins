@@ -158,10 +158,12 @@ that it is green because it did not run, never silently.
   procedure skill, because the schema itself files cross-cutting disciplines
   under guards and the live model routes them there — while **composition
   scenarios (S1–S4) pin every slot**: exact for
-  specialist/envelope/interaction_owner and for `guards=none`,
-  **required-subset** for named guards (must-have guards present in the
-  sorted list, roster-valid extras allowed; regrades from PR #93's live
-  runs) — plus the fail-closed `route-contract.js` validator on every row
+  specialist/envelope/interaction_owner and for `guards=none` (S2, the
+  composition negative, additionally tolerates a lone `find-before-build`
+  guard — the search-before-writing discipline its "new RateLimiter … before
+  I write it" request legitimately triggers), **required-subset** for named
+  guards (must-have guards present in the sorted list, roster-valid extras
+  allowed; regrades from PR #93's live runs) — plus the fail-closed `route-contract.js` validator on every row
   (all 8 coherence rules, so "any value" never means "any junk") — catching
   the cross-plugin mis-routing that per-plugin packs are blind to, including
   collapse-into-redgate and ceremony on work that warrants none. A second leg,
