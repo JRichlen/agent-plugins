@@ -120,10 +120,14 @@ def is_fault(r):
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
         return True
-    assertion_fail = fr == 1 or (isinstance(fr, str) and fr.strip().lower() == "assert")
-    if not assertion_fail:
-        # Legacy fallback: only a row with no failureReason recorded may be
-        # classified FAULT on .error alone.
+    # Legacy fallback: ONLY a row with no failureReason recorded at all
+    # (missing/None/blank) may be classified FAULT on .error alone. A present
+    # failureReason that is neither 2/"error" nor 1/"assert" (e.g. 0 with a
+    # non-pass row and a stray .error) is NOT a transport fault — it stays a
+    # scored sample. Fail-closed: an unexplained non-pass is a FAIL, never
+    # weather.
+    no_reason = fr is None or (isinstance(fr, str) and not fr.strip())
+    if no_reason:
         err = r.get("error")
         if isinstance(err, str) and err.strip():
             return True

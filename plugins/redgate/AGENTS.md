@@ -57,9 +57,15 @@ load-bearing is prose plus plain bash — no Claude-Code primitive is required:
   derived from an approved plan slice, verifier green, no escalator)
   auto-passes and appends to `gates.log`; MINOR auto-passes with a prominent
   flag and standing veto; MAJOR — scout decisions, plan approval, first
-  ratification, WITNESS countersignatures, fence/budget changes,
-  anything irreversible — always stops for a structured human confirmation
-  using the best interaction primitive the harness provides.
+  ratification, WITNESS countersignatures, fence/budget changes (a
+  mid-run widen included), landing on `main`, anything irreversible — always
+  stops for a structured human confirmation using the best interaction
+  primitive the harness provides, at the moment the action would happen; a
+  blanket approval never pre-authorizes one, a coded allow rule (autoMode
+  `allow`, harness permission) never lowers landing or a destructive action
+  below MAJOR or stands in for its confirmation (coded denies still win and
+  block), and landing or a destructive step is never bundled into an earlier
+  ratification or scheduled to run unattended.
 - Full protocol: `docs/red-gate-protocol.md` at the marketplace root.
 
 ## Status: all five slices shipped
