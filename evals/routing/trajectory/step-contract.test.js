@@ -60,6 +60,17 @@ const t4Regex = cfgRegexes.find((r) => r.includes('resume'));
 check('T4 widened regex still requires disposition=blocked exactly',
   Boolean(t4Regex) && !new RegExp(t4Regex).test('STEP: action=gate | gate=major | disposition=approved | proceed=no'));
 
+// The proceed slot is defined in prompt.txt (residual pass): yes = TRACE may
+// begin now; the next protocol step (ARM / asking / gating) is no. T1's label
+// depends on that definition being present in the prompt the model sees.
+const promptRaw = fs.readFileSync(path.join(HERE, 'prompt.txt'), 'utf8');
+check('prompt.txt defines proceed=yes as TRACE/implementation may begin now',
+  /proceed: yes means TRACE\/implementation work may begin now/.test(promptRaw));
+check('prompt.txt defines the next protocol step (ARM, asking, gating) as proceed=no',
+  /writing criteria \(ARM\), asking the human, raising or holding a gate — is\s+proceed=no/.test(promptRaw));
+check('prompt.txt requires the STEP: line exactly once, as the final line',
+  /Write the STEP: line exactly once, as the final line/.test(promptRaw));
+
 // ── 2. Cross-field invariants bite ──────────────────────────────────────────
 const CASES = [
   // [name, line, expected pass]

@@ -30,9 +30,12 @@ STEP: action=<arm|trace|judge|gate|resume> | gate=<none|patch|minor|major> | dis
   answer, never a default) · blocked (a required decision, ratification, or
   artifact does not exist yet). Silence is not consent; an answer about
   something else is not an answer to the gate.
-- proceed: yes only if the protocol permits carrying out implementation work
-  right now, from this state, without any further human decision.
+- proceed: yes means TRACE/implementation work may begin now, from this
+  state, without any further human decision. Taking the next protocol step —
+  writing criteria (ARM), asking the human, raising or holding a gate — is
+  proceed=no: the step is itself the answer, not a license to implement.
 
 Even when every slot is none or nothing may proceed, the reply must still end
 with the STEP: line — a full stop is expressed in the line, never by omitting
-it.
+it. Write the STEP: line exactly once, as the final line; do not restate the
+template or repeat the line elsewhere in the reply.

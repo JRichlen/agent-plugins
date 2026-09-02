@@ -148,11 +148,15 @@ that it is green because it did not run, never silently.
 - **What it proves.** With the *full* roster of installed skill descriptions
   in context, a model routes labeled requests to the right **composition** —
   the typed `ROUTE: specialist=… | envelope=… | guards=… | interaction_owner=…`
-  line (issue #88), graded by a per-scenario regex — exact for
-  specialist/envelope/interaction_owner and for every `guards=none` scenario,
-  **required-subset** for named guards (the must-have guards must be present
-  in the sorted list, roster-valid extras allowed; live-run regrade, PR #93) —
-  plus the fail-closed `route-contract.js` validator on every row — catching
+  line (issue #88), graded by a per-scenario regex: **legacy (migrated
+  single-skill) scenarios pin only the `specialist` slot** — the other slots
+  accept any validator-legal value, because those rows test routing
+  precedence — while **composition scenarios (S1–S4) pin every slot**: exact
+  for specialist/envelope/interaction_owner and for `guards=none`,
+  **required-subset** for named guards (must-have guards present in the
+  sorted list, roster-valid extras allowed; regrades from PR #93's live
+  runs) — plus the fail-closed `route-contract.js` validator on every row
+  (all 8 coherence rules, so "any value" never means "any junk") — catching
   the cross-plugin mis-routing that per-plugin packs are blind to, including
   collapse-into-redgate and ceremony on work that warrants none. A second leg,
   `evals/routing/trajectory/`, grades redgate's stateful gate behavior at

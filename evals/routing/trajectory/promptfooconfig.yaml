@@ -67,7 +67,10 @@ tests:
   # blocked, no proceed), tolerate the taxonomy — the live model read "no
   # ratified criteria yet" as itself a MAJOR gate, which is a defensible
   # classification of the same stop; gate=major+blocked+proceed=no is coherent
-  # under step-contract.js. proceed and disposition stay exact.
+  # under step-contract.js. proceed and disposition stay exact. The residual
+  # pass (run 33342419465, 2/5 rows proceed=yes) pinned the definition in
+  # prompt.txt: proceed=yes means TRACE may begin now; taking the next protocol
+  # step (ARM, asking, gating) is proceed=no — so this label stays proceed=no.
   - description: "T1 — ARM before implementation: no criteria on disk, 'go build it' is not a license to TRACE"
     vars:
       run_state: |

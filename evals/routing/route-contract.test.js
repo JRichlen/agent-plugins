@@ -133,14 +133,18 @@ const SUBSET_CASES = [
     s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule,verify-before-claim | interaction_owner=redgate', true],
   ['S1 still requires verify-before-claim present',
     s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule | interaction_owner=redgate', false],
-  ['S4 accepts both required guards with an extra interleaved',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=egress-gate,prove-the-undo,scope-fence,semver-gate | interaction_owner=redgate', true],
-  ['S4 exact canonical pair still matches',
+  ['S4 accepts the live modal answer (prove-the-undo + extras, no semver-gate)',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo,scope-fence,verify-before-claim | interaction_owner=redgate', true],
+  ['S4 accepts prove-the-undo with an extra before it',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=egress-gate,prove-the-undo | interaction_owner=redgate', true],
+  ['S4 accepts the original canonical pair',
     s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo,semver-gate | interaction_owner=redgate', true],
-  ['S4 rejects prove-the-undo alone (semver-gate missing — the live-run miss stays red)',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=prove-the-undo | interaction_owner=redgate', false],
-  ['S4 rejects semver-gate alone (prove-the-undo missing)',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate | interaction_owner=redgate', false],
+  ['S4 rejects a guard list without prove-the-undo',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate,verify-before-claim | interaction_owner=redgate', false],
+  ['S4 rejects guards=none (prove-the-undo required)',
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=none | interaction_owner=redgate', false],
+  ['S4 rejects the collapse (envelope present, specialist missing)',
+    s4Regex, 'ROUTE: specialist=none | envelope=redgate | guards=prove-the-undo | interaction_owner=redgate', false],
 ];
 for (const [name, regex, line, expected] of SUBSET_CASES) {
   const got = Boolean(regex) && new RegExp(regex).test(line);
@@ -149,6 +153,37 @@ for (const [name, regex, line, expected] of SUBSET_CASES) {
     check(`  …and the accepted line also passes the structural contract`, rc.validateRoute(line, roster).pass === true);
   }
 }
+// ── 5. Legacy scenarios pin the specialist slot only (residual pass) ────────
+// Migrated single-skill scenarios test routing PRECEDENCE: the regex pins
+// specialist=<name>; envelope/guards/interaction_owner accept any value the
+// structural contract allows (which still rejects incoherent tuples).
+const legacyRegex = (name) => cfgRegexes.find((r) => r.includes(`specialist=${name}\\s`));
+const LEGACY_CASES = [
+  ['prove-the-undo accepts the live modal composition (redgate envelope + owner)',
+    'prove-the-undo', 'ROUTE: specialist=prove-the-undo | envelope=redgate | guards=semver-gate,verify-before-claim | interaction_owner=redgate', true],
+  ['prove-the-undo still accepts the canonical all-none tuple',
+    'prove-the-undo', 'ROUTE: specialist=prove-the-undo | envelope=none | guards=none | interaction_owner=none', true],
+  ['semver-gate accepts the specialist as interaction owner',
+    'semver-gate', 'ROUTE: specialist=semver-gate | envelope=none | guards=none | interaction_owner=semver-gate', true],
+  ['egress-gate still rejects the slot-placement miss (guard instead of specialist)',
+    'egress-gate', 'ROUTE: specialist=none | envelope=none | guards=egress-gate | interaction_owner=none', false],
+  ['stop-rule still rejects the neighbor specialist',
+    'stop-rule', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=stop-rule | interaction_owner=none', false],
+];
+for (const [name, skill, line, expected] of LEGACY_CASES) {
+  const r = legacyRegex(skill);
+  const got = Boolean(r) && new RegExp(r).test(line);
+  check(`legacy: ${name}`, got === expected, r ? `regex: ${r}` : 'regex not found');
+}
+// "any validator-legal value" is bounded by the contract, never by the regex:
+// a legacy regex may match an incoherent tuple, and the contract must reject it.
+{
+  const r = legacyRegex('prove-the-undo');
+  const incoherent = 'ROUTE: specialist=prove-the-undo | envelope=none | guards=prove-the-undo | interaction_owner=grill-me';
+  check('legacy regex is permissive on the other slots (matches an incoherent tuple)…', Boolean(r) && new RegExp(r).test(incoherent));
+  check('…and the structural contract still rejects it', rc.validateRoute(incoherent, roster).pass === false);
+}
+
 // All-none scenarios stay EXACT: S2's regex must reject any guard extra.
 const s2Regex = cfgRegexes.find((r) => r.includes('specialist=codebase-design'));
 check('S2 keeps exact guards=none (an added guard is still a failure)',
