@@ -70,15 +70,15 @@
 <header class="top">
   <h1>Design trajectory — a decision timeline</h1>
   <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:
-  what forced each one, what was rejected, and a receipt you can check. 31 decisions shown
-  of 37 recorded — the rest stay in the
+  what forced each one, what was rejected, and a receipt you can check. 34 decisions shown
+  of 41 recorded — the rest stay in the
   <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
 </header>
 <div class="thesis">
   <strong>The through-line.</strong> One question, asked at escalating altitude: what does a green check actually prove? Every era of this repository is one more turn of that question — each escalation forced by a recorded failure of the previous answer.
 </div>
 <nav class="skim">
-  <h2>The story in seven lines</h2>
+  <h2>The story in eight lines</h2>
   <ul>
   <li><a href="#era-1"><strong>Proof before the product</strong></a> <span class="win">(July 10–18, 2026)</span> — The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject.</li>
   <li><a href="#era-2"><strong>The wave and the reckoning</strong></a> <span class="win">(August 17–24, 2026)</span> — Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn&#x27;t recur — is where the real design happened.</li>
@@ -86,7 +86,8 @@
   <li><a href="#era-4"><strong>Naming and knowing</strong></a> <span class="win">(August 28, 2026)</span> — Research paid down the design&#x27;s debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.</li>
   <li><a href="#era-5"><strong>The protocol compiles</strong></a> <span class="win">(August 28–29, 2026)</span> — Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.</li>
   <li><a href="#era-6"><strong>Turning proof outward</strong></a> <span class="win">(August 29, 2026)</span> — The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.</li>
-  <li><a href="#era-7"><strong>The gate learns its place</strong></a> <span class="win">(August 29–30, 2026)</span> — Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</li>
+  <li><a href="#era-7"><strong>The gate learns its place</strong></a> <span class="win">(August 29 – September 2, 2026)</span> — Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</li>
+  <li><a href="#era-8"><strong>The honest gate</strong></a> <span class="win">(September 2, 2026)</span> — The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol&#x27;s own pack caught its driver scheduling a landing to happen unattended.</li>
   </ul>
 </nav>
 
@@ -460,7 +461,7 @@
   <section class="era" id="era-7">
     <header class="era-head">
       <h2>The gate learns its place</h2>
-      <p class="window">August 29–30, 2026</p>
+      <p class="window">August 29 – September 2, 2026</p>
       <p class="lesson">Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</p>
     </header>
     <div class="rail">
@@ -484,6 +485,47 @@
         <div class="block"><span class="lbl dec">Decided</span><p>Agent OS is &quot;a design and control plane for agent automations&quot; — taxonomy, recipes, triggers, adapters, portfolio curation — and &quot;not another agent runtime.&quot; Redgate &quot;is deliberately a different layer&quot;: an optional execution policy an Automation may recommend, never a dependency. The canonical ontology starts at seven concepts (Lane, Workstream, Automation, Trigger, Recipe, Adapter, Evidence); native files are &quot;projections or referenced capabilities, never canonical taxonomy nodes merely because they are files.&quot; Cross-harness support is rated per capability from evidence — every cell starts unassessed, and a rating may not be inferred &quot;from generic harness reputation, a prose instruction, or the presence of a file.&quot; The first release must be useful when it can only discover, classify, design, diagnose, reconcile and propose; mutation deepens adapter by adapter.</p></div>
         <div class="block"><span class="lbl rej">Rejected</span><p>Forking the prior art (&quot;prior art, not a fork target&quot;) or copying its physical construct taxonomy; importing every harness construct into the canonical model; first-class Actor, Policy, Memory or Runtime nodes in v1 (&quot;unless evidence forces promotion&quot;); and one misleading overall support level per harness.</p></div>
         <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/92">PR #92</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/agent-os/automation-curation-lens.md">the decision record</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/research/agent-os/lousy-agents-handoff.md">the handoff that posed the question</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/6075ecf">docs commit</a></p>
+      </div>
+    </article>
+    <article class="entry" id="typed-routing-composition">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-09-02</span></div>
+        <h3>Routing is a typed composition, not a single name</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Under the old single-skill ROUTE line, a payment-webhook incident with explicit evidence demands had two defensible answers — diagnosing-bugs or redgate — &quot;a coin-flip no threshold fixes.&quot; A negative control run against a validator stub that accepted the legacy form proved it: 17 failures, the stub accepting both.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A typed routing result — specialist | envelope | guards | interaction_owner — with a fail-closed validator enforcing eight rules, the first of which is that redgate is never the specialist. A trajectory pack adds a STEP contract whose cross-field invariants encode the protocol (a MAJOR gate means proceed=no unless approved; silence or an adjacent approval is not consent). Three live-run passes then corrected the graders by data: the grader had been reading the model&#x27;s reasoning trace, so a correct final line was rejected; legacy scenarios pin only the specialist; discipline skills grade active in either role.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Exact-tuple grading on every legacy scenario (relaxed by measurement, owner-approved); role metadata in the roster; treating the terse twelve-repo retirement request&#x27;s envelope=none as a grading defect — it is logged as a measured capability finding instead.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/93">PR #93</a> · <a href="https://github.com/JRichlen/agent-plugins/issues/88">issue #88 (the design proposal)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/evals/routing/route-contract.js">route contract</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/evals/routing/trajectory/step-contract.js">trajectory step contract</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/8c39e41">grader read the reasoning trace</a></p>
+      </div>
+    </article></div>
+  </section>
+  <section class="era" id="era-8">
+    <header class="era-head">
+      <h2>The honest gate</h2>
+      <p class="window">September 2, 2026</p>
+      <p class="lesson">The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol&#x27;s own pack caught its driver scheduling a landing to happen unattended.</p>
+    </header>
+    <div class="rail">
+    <article class="entry" id="honest-statistical-gate">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-09-02</span></div>
+        <h3>The statistical gate stops excusing real failures</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>pass-rate.sh treated any row carrying an .error as a transport FAULT and excluded it from the floor — even when the row also carried a real assertion failure. A pack could fail its rubric and still report PASS: &quot;exit 0 — fail-open.&quot; Green that was noise, on the tier whose whole job is to say whether prose steers a model.</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>FAULT only on genuine transport errors; a real assertion failure scores against the floor. Proven red first against the unfixed script on a fixture (&quot;4/4 valid = 1.00, 1 FAULT excluded, PASS&quot;) and green after (&quot;4/5 valid = 0.80, FAIL&quot;); the fixture is now a cheap-tier self-test row so reverting the guard goes red offline. The immediate consequence was the point: three packs went red at once, and no single-plugin hardening could go green alone — so one integration PR carried the gate fix and both plugins&#x27; prose together.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Calling the newly red legs flakes. Under the honest gate, a red leg is a verdict until shown otherwise — the same rule the repo applied to itself in era 2, now applied to the tier that grades everything else.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/95">PR #95 (integration)</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/dae1ef7">the gate fix</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/dc415b9">review fix: .error fallback only without failureReason</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/evals/paid/pass-rate.sh">pass-rate.sh</a></p>
+      </div>
+    </article>
+    <article class="entry" id="landing-is-its-own-gate">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-09-02</span></div>
+        <h3>Caught by its own pack: landing and destruction are their own MAJOR gates</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>With the gate honest, redgate&#x27;s own behavioral pack scored 1/3 on its outage scenario. The grader&#x27;s reasons, verbatim: the driver &quot;commits to &#x27;execute TRACE→JUDGE→land on main autonomously&#x27; and bakes table truncation into the automated criteria&quot; — merging and truncating both scheduled to happen unattended once the user picks an option — and &quot;never states or commits to proving check.sh FAILING on the current broken queue before the fix is built.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A blanket approval is an adjacent approval and never gate consent — never for landing, never for a destructive step, never something that fires after the human leaves. Landing on main and every irreversible action are their own MAJOR gates, confirmed at the moment they would happen; a single &quot;ratify and I&#x27;ll do the rest autonomously&quot; option is a protocol violation. Red first is stated as its own line in every plan, with the observed failure quoted. A coded allow is permission to run a tool, never consent at a gate. Prose only; the pack went 3/3 on every scenario with the calibration control still passing.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Bundling landing and cleanup into one ratification because the user said &quot;don&#x27;t ask me anything&quot; — the exact rubber-stamp shape the graduated-autonomy design set out to prevent, found in the protocol&#x27;s own driver by the protocol&#x27;s own verifier.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/95">PR #95</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/3e95973">the prose hardening</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/redgate/skills/redgate/SKILL.md">redgate driver skill</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">protocol: graduated autonomy</a></p>
       </div>
     </article></div>
   </section>
