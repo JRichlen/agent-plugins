@@ -759,7 +759,11 @@ except Exception:
     tests = re.findall(r'^\s*- description:', open(cfgp).read(), re.M)
     parsed = "regex-fallback"
 raw = open(cfgp).read()
-routes = re.findall(r'ROUTE:\\s\*([A-Za-z][\w-]*)', raw)
+# The typed composition line (RQ-002): each scenario's expected answer pins a
+# `specialist=` slot — a named skill is a must-fire, `none` is a calibration
+# negative. Envelope/guard/interaction names are covered by the closed-vocabulary
+# check below (and, fully, by route-contract.test.js in the RQ-002 section).
+routes = re.findall(r'specialist=([a-z0-9-]+)', raw)
 positives = [r for r in routes if r != "none"]
 negatives = [r for r in routes if r == "none"]
 roster = {l.split(":", 1)[0].strip() for l in open(rosp) if l.strip()}
@@ -771,11 +775,15 @@ if len(negatives) >= 2:
     print(f"  PASS routing: {len(negatives)} must-not-fire calibration negatives (>=2)")
 else:
     print(f"  FAIL routing: {len(negatives)} calibration negatives (<2) — a fire-on-everything router would pass"); fail += 1
-missing = [r for r in positives if r not in roster]
+# Every name in ANY slot of an expected line must be an installed skill.
+slot_names = set()
+for grp in re.findall(r'(?:specialist|envelope|guards|interaction_owner)=([a-z0-9,-]+)', raw):
+    slot_names.update(n for n in grp.split(",") if n and n != "none")
+missing = sorted(n for n in slot_names if n not in roster)
 if missing:
     print(f"  FAIL routing: scenarios route to non-installed skills: {missing}"); fail += 1
 else:
-    print(f"  PASS routing: every must-fire scenario targets an installed plugin")
+    print(f"  PASS routing: every skill named in an expected route targets an installed plugin")
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
@@ -831,17 +839,37 @@ _tmp="$(mktemp -d)"
 python3 - "$_tmp" <<'PYF'
 import json, sys
 d = sys.argv[1]
-def rows(desc, n, passes): return [{"testCase":{"description":desc},"success":(i<passes)} for i in range(n)]
-def erow(desc): return {"testCase":{"description":desc},"success":False,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
+# Fixtures use the REAL promptfoo >= 0.122 row shape: a passing row carries
+# failureReason 0 and error null; an ASSERTION-failed row carries failureReason 1
+# AND an .error string (the assertion message); a transport-error row carries
+# failureReason 2 and the provider error. .error alone no longer discriminates.
+def prow(desc): return {"testCase":{"description":desc},"success":True,"failureReason":0,"error":None,"response":{"output":"hello"}}
+def frow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
+def rows(desc, n, passes): return [prow(desc) if i < passes else frow(desc) for i in range(n)]
+def erow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":2,"error":"API error: The operation was aborted, Code: 504","response":{"output":""}}
 json.dump({"results":{"results": rows("A",5,5)+rows("B",5,4)}}, open(d+"/good.json","w"))   # 1.0, 0.8
 json.dump({"results":{"results": rows("A",5,5)+rows("C",5,2)}}, open(d+"/bad.json","w"))    # 0.4 -> below 0.8
 json.dump({"results":{"results": rows("A",1,1)}}, open(d+"/under.json","w"))                # n=1 -> fail-closed
 # FAULT semantics (gap #4, the observed 504): a transport error is an INVALID
 # sample, excluded from the floor — a scenario that really passed its 2 valid
 # attempts must not go red because a 3rd attempt 504'd.
-json.dump({"results":{"results": rows("A",3,3)+[rows("B",3,2)[0],rows("B",3,2)[1],erow("B")]}}, open(d+"/fault-ok.json","w"))
+json.dump({"results":{"results": rows("A",3,3)+[prow("B"),prow("B"),erow("B")]}}, open(d+"/fault-ok.json","w"))
 # ...but an all-FAULT scenario is "never tested", not "green": fail closed.
 json.dump({"results":{"results": rows("A",3,3)+[erow("C"),erow("C"),erow("C")]}}, open(d+"/fault-starved.json","w"))
+# ...and a real assertion failure (failureReason 1) carrying .error — which under
+# promptfoo >= 0.122 is EVERY assertion failure — must be scored as a FAIL
+# against the floor, never excluded as a FAULT: 4 pass + 1 real fail = 0.80,
+# below a 0.9 floor. Excluding it would read 4/4 = 1.00 and pass (the PR #93
+# counterfeit-green).
+json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
+# ...and .error ALONE may only mean FAULT when failureReason is ABSENT (the
+# legacy-shape fallback). A row that carries failureReason 0 (present, not an
+# error, not an assertion) + a non-empty .error + success false is an
+# unexplained non-pass: it must be SCORED as a FAIL, never excluded. Before the
+# fix the code applied the .error fallback to every non-assertion row, so this
+# read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
+def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
+json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -871,6 +899,23 @@ if bash "$_pr" "$_tmp/fault-starved.json" --floor 0.8 --min-runs 2 --min-valid 2
   bad "pass-rate: an all-504 scenario passed — a FAULT storm read as green (fail-open)"
 else
   ok "pass-rate: an all-FAULT scenario fails closed (never tested != green)"
+fi
+# A real assertion failure (failureReason 1) carries .error under promptfoo
+# >= 0.122; it must be scored as a FAIL against the floor, never excluded as a
+# FAULT. 4/5 = 0.80 < 0.9 must fail — if the fail is laundered as a FAULT the
+# run reads 4/4 = 1.00 and passes (the exact counterfeit green from PR #93).
+if bash "$_pr" "$_tmp/real-fail.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a real assertion failure carrying .error was excluded as a FAULT — failures launder as weather (fail-open)"
+else
+  ok "pass-rate: a real assertion failure carrying .error is scored as FAIL, not excluded as FAULT"
+fi
+# failureReason PRESENT (0) + .error + not passed: the .error fallback must NOT
+# fire — only a row with NO failureReason may be FAULTed on .error alone. 4/5 =
+# 0.80 < 0.9 must fail; laundering the row reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
+else
+  ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
 fi
 rm -rf "$_tmp"
 
@@ -1084,6 +1129,97 @@ if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" 
   fi
 fi
 # ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
+
+# ─── BEGIN RQ-002 typed route/step contracts (offline) ───────────────────────
+# The composition routing pack (evals/routing/) and its redgate trajectory pack
+# (evals/routing/trajectory/) grade a typed ROUTE:/STEP: line through fail-closed
+# javascript contracts. These node tests prove, offline and with no model call:
+# every scenario's expected line validates, a malformed/ambiguous fixture set
+# rejects (each fail-closed rule exercised individually), the trajectory
+# cross-field invariants bite (MAJOR ⇒ no proceed unless approved; auto ⇒ patch),
+# and the S1 legacy single-skill strings (`ROUTE: diagnosing-bugs`,
+# `ROUTE: redgate`) cannot satisfy the composition contract — the deterministic
+# half of issue #88's acceptance criteria, before any key is spent. REPO-level
+# gate: inert where the routing pack is absent (the counterfeit synthetic root);
+# present-but-broken => fail. FAIL substring: "route/step contract".
+if [ -f evals/routing/route-contract.test.js ]; then
+  group "typed route/step contracts (offline, deterministic)"
+  if ! command -v node >/dev/null 2>&1; then
+    ok "route/step contracts: node unavailable locally — SKIPPED here; CI's ubuntu runner executes them"
+  else
+    if out="$(node evals/routing/route-contract.test.js 2>&1)"; then
+      ok "route contract: expected lines validate; malformed + S1 legacy fixtures reject"
+    else
+      bad "route/step contract: route-contract.test.js failed"
+      printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+    if [ -f evals/routing/trajectory/step-contract.test.js ]; then
+      if out="$(node evals/routing/trajectory/step-contract.test.js 2>&1)"; then
+        ok "step contract: trajectory gate invariants hold; malformed fixtures reject"
+      else
+        bad "route/step contract: step-contract.test.js failed"
+        printf '%s\n' "$out" | sed 's/^/    /'
+      fi
+    else
+      bad "route/step contract: routing pack present without trajectory/step-contract.test.js (fail-closed)"
+    fi
+  fi
+fi
+# ─── END RQ-002 typed route/step contracts ───────────────────────────────────
+
+# ─── BEGIN behavioral-pack no-tools clause ───────────────────────────────────
+# --- 21. Every behavioral pack's subject prompt forbids tool-call syntax -------
+# The behavioral tier is a SINGLE-reply harness: the subject model never gets a
+# tool result back. A cheap subject model can still stochastically emit fake
+# tool-call syntax (e.g. `<tool name="read" args={"path": "src/list.js"} />`)
+# and stop, with no final answer for the grader to judge — PR #95 run
+# 33592173756 lost two of three scope-fence rows exactly that way, and the same
+# pack was green minutes later on PR #96. Under the honest statistical gate
+# (pass-rate.sh scores real assertion failures against the floor) such rows are
+# real FAILs, so any pack could flip red on any run. Each pack's subject prompt
+# therefore carries an explicit no-tools clause; this gate asserts the
+# load-bearing phrase is still present in EVERY pack so it cannot drift out of
+# one prompt silently. The prompt surface is DISCOVERED from each pack's
+# promptfooconfig.yaml (`- file://<prompt>` under `prompts:`), never assumed to
+# be prompt.txt: tailscale-wif renders its subject prompt from prompt.js, and a
+# gate that only scanned prompt.txt reported green while that pack was still
+# exposed (Codex review, PR #97). A pack whose config names a prompt file that
+# does not exist, or names none, fails too. REPO-level gate, same inertness
+# marker as §20 (`.git`): the counterfeit tier's synthetic root ships no
+# promptfoo packs. Fail-closed: zero packs found in the real repo is itself a
+# failure. FAIL substring: "no-tools clause".
+if [ -e ".git" ]; then
+  group "behavioral packs: subject prompt forbids tool-call syntax"
+  NO_TOOLS_PHRASE='never emit tool-call'
+  pack_prompts=0
+  for cfg in plugins/*/evals/promptfoo/promptfooconfig.yaml; do
+    [ -f "$cfg" ] || continue
+    cfg_dir=$(dirname "$cfg")
+    # every `file://…` under the prompts: block (comments stripped); the block
+    # ends at the next top-level key.
+    prompt_refs=$(awk '/^prompts:/{p=1;next} p&&/^[^ #-]/{p=0} p' "$cfg" \
+      | sed 's/#.*$//' | grep -o 'file://[^[:space:]"'"'"']*' | sed 's#^file://##' || true)
+    if [ -z "$prompt_refs" ]; then
+      bad "no-tools clause: $cfg names no file:// prompt under prompts: — the gate cannot see this pack's subject prompt"
+      continue
+    fi
+    for ref in $prompt_refs; do
+      pp="$cfg_dir/$ref"
+      if [ ! -f "$pp" ]; then
+        bad "no-tools clause: $cfg names $ref but $pp does not exist"
+        continue
+      fi
+      pack_prompts=$((pack_prompts+1))
+      has "$pp" "$NO_TOOLS_PHRASE" \
+        "$pp carries the no-tools clause" \
+        "$pp is missing the no-tools clause ('$NO_TOOLS_PHRASE') — a subject that emits fake tool-call syntax and stops scores as a real FAIL"
+    done
+  done
+  if [ "$pack_prompts" -eq 0 ]; then
+    bad "no-tools clause: no behavioral pack prompt found via plugins/*/evals/promptfoo/promptfooconfig.yaml — the gate has nothing to protect"
+  fi
+fi
+# ─── END behavioral-pack no-tools clause ─────────────────────────────────────
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"

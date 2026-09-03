@@ -130,7 +130,14 @@ that it is green because it did not run, never silently.
   never the arbiter.
 - **What it cannot prove.** Multi-round protocol behavior, composition between
   plugins, or anything an LLM judge can be fooled about; each pack tests its
-  skill alone, single-turn, under a pinned cheap subject model.
+  skill alone, single-turn, under a pinned cheap subject model. Because that
+  turn is tool-less, every pack's subject prompt (`prompt.txt`, or the
+  `prompt.js` function tailscale-wif renders from) carries an explicit no-tools
+  clause (the subject must never emit tool-call syntax or stop to "read the
+  file first" — it says what it would look for and answers anyway, without
+  inventing results it did not obtain), and the cheap tier discovers each
+  pack's configured prompt file from its `promptfooconfig.yaml` and asserts
+  the clause is present in every one.
 - **Fires.** Per-plugin matrix leg, path-gated to that plugin's
   `evals/promptfoo/**` or the shared `evals/paid/**`; required aggregate
   `behavioral tier (promptfoo)`; skipped legs announce themselves.
@@ -146,23 +153,58 @@ that it is green because it did not run, never silently.
 ## routing tier
 
 - **What it proves.** With the *full* roster of installed skill descriptions
-  in context, a model routes labeled requests to the right plugin — the
-  cross-plugin mis-routing that per-plugin packs are blind to. Verdicts are
-  deterministic regex on the model's `ROUTE:` line (no grader key), with
-  must-not-fire calibration negatives, `repeat: 5`, and `PROMPTFOO_RETRY_5XX`
-  for transient transport errors.
+  in context, a model routes labeled requests to the right **composition** —
+  the typed `ROUTE: specialist=… | envelope=… | guards=… | interaction_owner=…`
+  line (issue #88), graded by a per-scenario regex: **legacy (migrated
+  single-skill) scenarios pin only the `specialist` slot** — the other slots
+  accept any validator-legal value, because those rows test routing
+  precedence — except that the **discipline-skill legacy rows (egress-gate,
+  find-before-build, stop-rule) grade active-in-either-role**: the named
+  skill must be the `specialist` *or* appear in the `guards` list
+  (required-subset), the specialist otherwise free to be `none` or a
+  procedure skill, because the schema itself files cross-cutting disciplines
+  under guards and the live model routes them there — while **composition
+  scenarios (S1–S4) pin every slot**: exact for
+  specialist/envelope/interaction_owner and for `guards=none` (S2, the
+  composition negative, additionally tolerates a lone `find-before-build`
+  guard — the search-before-writing discipline its "new RateLimiter … before
+  I write it" request legitimately triggers), **required-subset** for named
+  guards (must-have guards present in the sorted list, roster-valid extras
+  allowed; regrades from PR #93's live runs) — plus the fail-closed `route-contract.js` validator on every row
+  (all 8 coherence rules, so "any value" never means "any junk") — catching
+  the cross-plugin mis-routing that per-plugin packs are blind to, including
+  collapse-into-redgate and ceremony on work that warrants none. A second leg,
+  `evals/routing/trajectory/`, grades redgate's stateful gate behavior at
+  frozen decision points (`STEP:` line + `step-contract.js` cross-field
+  invariants: ARM before TRACE, explicit MAJOR stop, silence is not consent,
+  the gate survives resume). Trajectory slots are **behavior-pinned,
+  taxonomy-tolerant**: `proceed`/`disposition` are exact everywhere, while T1
+  accepts `gate=none|major` and T4 accepts `action=resume|gate` (defensible
+  alternate readings of the same stop, per the same regrade). Both legs grade
+  the model's **reply, not its reasoning trace** (`showThinking: false` on
+  the provider — otherwise promptfoo prepends the reasoning to the graded
+  output and a `ROUTE:`/`STEP:` line drafted while thinking fails the
+  one-line rule of a correct final answer). Both legs:
+  deterministic verdicts (no grader key), must-not-fire calibration
+  negatives, `repeat: 5`, its own `pass-rate.sh` gate, and
+  `PROMPTFOO_RETRY_5XX` for transient transport errors.
 - **What it cannot prove.** That the routed-to skill then *does* anything
-  right; it grades the first routing decision only.
-- **Fires.** Path-gated (`evals/routing/**`, any `plugins/*/skills/*/SKILL.md`,
-  `.claude-plugin/marketplace.json`); job `routing tier (roster trigger
-  routing)` is **not** in the required set.
-- **Cost.** Cents (subject model only).
+  right in a live run; it grades routing decisions and frozen-prefix gate
+  decisions, not full trajectories (that is #89's L3).
+- **Fires.** Path-gated (`evals/routing/**`, any `plugins/*/skills/**/SKILL.md`,
+  `.claude-plugin/marketplace.json`, plugin manifests); job `routing tier
+  (roster trigger routing)` is **not** in the required set.
+- **Cost.** Cents (subject model only; 70 routing + 25 trajectory calls).
 - **Local run.**
   ```sh
   evals/routing/gen-roster.sh --check     # roster in sync before spending
+  node evals/routing/route-contract.test.js          # offline contract tests
+  node evals/routing/trajectory/step-contract.test.js
   cd evals/routing
   OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
+  OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true npx --yes promptfoo@0.122.0 eval -c trajectory/promptfooconfig.yaml --output trajectory-results.json
   cd - && evals/paid/pass-rate.sh evals/routing/results.json --floor 0.8 --min-runs 3
+  evals/paid/pass-rate.sh evals/routing/trajectory-results.json --floor 0.8 --min-runs 3
   ```
 
 ## paid multi-plugin gate
@@ -264,7 +306,12 @@ uninterpretable n=1 and no required check goes red on the weather:
   the floor (behavioral 0.6 = majority of 3; routing 0.8).
 - **FAULT vs verdict separation** — a transport error (504, aborted call,
   empty body) is a FAULT, an invalid sample excluded from the floor — never
-  counted as a rubric failure.
+  counted as a rubric failure. Classification keys on promptfoo's
+  `failureReason`: `2`/`"error"` = FAULT (excluded); `1` = a real assertion
+  FAIL scored against the floor — even though under promptfoo ≥ 0.122 every
+  assertion-failed row *also* carries `.error` (the assertion message).
+  `.error` alone marks a FAULT only on legacy rows with no `failureReason`
+  recorded.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.

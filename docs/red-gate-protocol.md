@@ -529,10 +529,12 @@ its qualifying conditions is a protocol violation, not a judgment call.
 **What survives from the old model.** The ≤5 interview questions keep their
 silence-acceptable defaults. Ratification timeout still parks the run
 (releases leases and reservations, persists state, exits resumable). `stop`
-still halts at any turn. And precedence is inherited from semver-gate
-unchanged: a coded rule (`autoMode` pattern, harness permission) always wins
-over this classification, and the system prompt's care principle is the
-ground truth the table serves.
+still halts at any turn. And precedence is inherited from semver-gate:
+a coded deny (`autoMode` `hard_deny`/`soft_deny`, a harness permission
+refusal) always wins over this classification, a coded allow is permission to
+run a tool and never consent at a gate (landing on `main` and destructive
+steps still stop for their own confirmation), and the system prompt's care
+principle is the ground truth the table serves.
 
 ---
 
