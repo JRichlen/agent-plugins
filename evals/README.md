@@ -5,7 +5,10 @@
 > trigger / cost / local run for each, plus the shared statistical spine —
 > lives in [../docs/testing.md](../docs/testing.md), which the cheap tier
 > verifies against the live workflows and eval packs
-> (`evals/cheap/check-testing-doc.sh`).
+> (`evals/cheap/check-testing-doc.sh`). The tiers that do **not** exist yet —
+> decision-point probes, plan audit, trajectory artifact audit, cross-plugin
+> composition runs — are planned in
+> [../docs/testing-plan.md](../docs/testing-plan.md).
 
 Three tiers, cheapest first. Each catches a different class of regression in the
 graveyard skill. The governing rule of the skill — **never delete a repository

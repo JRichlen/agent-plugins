@@ -325,8 +325,12 @@ Any **new** LLM tier inherits this spine wholesale.
 
 ## Planned tiers (not yet live)
 
-Planned, not specified here — the linked issues own the design. Do **not**
-add these to the inventory block until they actually exist:
+Planned, not specified here — the linked issues own the design and
+[testing-plan.md](testing-plan.md) carries the phase-2 plan (what each layer
+proves, its harness, cost, sequencing, and the rules learned from landing
+RQ-002). Do **not** add these to the inventory block until they actually
+exist; when one goes live it moves into this document and out of the plan's
+"planned" list in the same PR:
 
 - **L1 decision-point probes** — trajectory-prefix promptfoo scenarios that
   freeze a fabricated mid-run transcript and assert on the single next move,
