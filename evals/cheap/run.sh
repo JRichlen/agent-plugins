@@ -1032,9 +1032,12 @@ else
 fi
 if [ -e docs/timeline/build-timeline.sh ]; then
 python3 - "$REPO_ROOT" <<'PYT'
-import json, os, re, sys
+import json, os, re, subprocess, sys
 root = sys.argv[1]
 fail = 0
+has_git = os.path.isdir(os.path.join(root, ".git"))
+verified_shas = 0
+unverified_shas = 0
 def flunk(msg):
     global fail
     print(f"  FAIL timeline: {msg}"); fail += 1
@@ -1097,10 +1100,25 @@ for d in data.get("decisions", []):
             repo = "https://github.com/JRichlen/agent-plugins"
             if url != repo and not url.startswith(repo + "/"):
                 flunk(f"{did}: receipt url points outside this repository: {url}")
+            else:
+                # A /commit/<sha> receipt is offline-verifiable: the object must
+                # exist in this clone. Skipped (and said so) when there is no
+                # .git — the counterfeit tier's synthetic roots have none.
+                m = re.search(r"/commit/([0-9a-f]{7,40})$", url)
+                if m:
+                    if has_git:
+                        ok_sha = subprocess.run(["git", "-C", root, "cat-file", "-e", m.group(1) + "^{commit}"],
+                                                capture_output=True).returncode == 0
+                        if ok_sha: verified_shas += 1
+                        else: flunk(f"{did}: commit receipt does not resolve in this clone: {m.group(1)}")
+                    else:
+                        unverified_shas += 1
 if shown == 0:
     flunk("no curated decisions — the page would be empty")
 if fail == 0:
-    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, every receipt resolves")
+    sha_note = (f"{verified_shas} commit receipts verified in the object store" if has_git
+                else f"{unverified_shas} commit receipts NOT verified (no .git in this root)")
+    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions — every path receipt exists, every URL points into this repo, {sha_note}")
 sys.exit(1 if fail else 0)
 PYT
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi

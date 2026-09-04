@@ -34,7 +34,7 @@
     {
       "id": "era-6",
       "title": "Turning proof outward",
-      "window": "August 29, 2026",
+      "window": "August 29–30, 2026",
       "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline."
     },
     {
@@ -201,7 +201,7 @@
       "receipts": [
         {
           "label": "PRs #38–#50",
-          "url": "https://github.com/JRichlen/agent-plugins/pulls?q=is%3Apr+is%3Amerged+38..50"
+          "url": "https://github.com/JRichlen/agent-plugins/pulls?q=is%3Apr+is%3Amerged+merged%3A2026-08-21..2026-08-22"
         },
         {
           "label": "PR #38 (grill-me)",
