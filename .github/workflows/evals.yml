@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the timeline guard verifies /commit/<sha> receipts
+          # against the object store, which a depth-1 checkout cannot see.
+          fetch-depth: 0
       - name: run cheap eval gate
         run: evals/cheap/run.sh
 

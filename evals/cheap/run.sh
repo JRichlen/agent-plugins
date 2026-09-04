@@ -1036,6 +1036,12 @@ import json, os, re, subprocess, sys
 root = sys.argv[1]
 fail = 0
 has_git = os.path.isdir(os.path.join(root, ".git"))
+# A shallow clone (CI default fetch-depth: 1) cannot see historical commits;
+# verifying there would fail every real receipt. Verify only in a full clone
+# and report the skip out loud otherwise.
+shallow = has_git and subprocess.run(["git", "-C", root, "rev-parse", "--is-shallow-repository"],
+                                     capture_output=True, text=True).stdout.strip() == "true"
+can_verify = has_git and not shallow
 verified_shas = 0
 unverified_shas = 0
 def flunk(msg):
@@ -1106,7 +1112,7 @@ for d in data.get("decisions", []):
                 # .git — the counterfeit tier's synthetic roots have none.
                 m = re.search(r"/commit/([0-9a-f]{7,40})$", url)
                 if m:
-                    if has_git:
+                    if can_verify:
                         ok_sha = subprocess.run(["git", "-C", root, "cat-file", "-e", m.group(1) + "^{commit}"],
                                                 capture_output=True).returncode == 0
                         if ok_sha: verified_shas += 1
@@ -1116,8 +1122,8 @@ for d in data.get("decisions", []):
 if shown == 0:
     flunk("no curated decisions — the page would be empty")
 if fail == 0:
-    sha_note = (f"{verified_shas} commit receipts verified in the object store" if has_git
-                else f"{unverified_shas} commit receipts NOT verified (no .git in this root)")
+    sha_note = (f"{verified_shas} commit receipts verified in the object store" if can_verify
+                else f"{unverified_shas} commit receipts NOT verified ({'shallow clone' if shallow else 'no .git in this root'})")
     print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions — every path receipt exists, every URL points into this repo, {sha_note}")
 sys.exit(1 if fail else 0)
 PYT
