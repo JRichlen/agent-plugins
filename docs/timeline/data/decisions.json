@@ -46,7 +46,7 @@
     {
       "id": "era-8",
       "title": "The honest gate",
-      "window": "September 2, 2026",
+      "window": "September 2–4, 2026",
       "lesson": "The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol's own pack caught its driver scheduling a landing to happen unattended."
     }
   ],
@@ -995,6 +995,35 @@
       ],
       "curated": false,
       "cut_reason": "Awaiting the owner's curation pass: a harness-hygiene fix whose lesson (once the gate is honest, harness artifacts must be separated from skill failures) is carried by the honest-gate entry. Promote if the voice-pack fabrication nudge deserves its own card."
+    },
+    {
+      "id": "rules-before-layers",
+      "era": "era-8",
+      "date": "2026-09-04",
+      "title": "The next layers of proof get their rules before they get built",
+      "forced_by": "Landing the typed routing tier took three live-run passes, and each pass taught a rule the hard way: a grader reading the model's reasoning trace rejected correct answers; a prompt rule stated as an example list (\"walked through, interviewed, consulted\") pulled rows to the wrong skill; a negative scenario that pinned every slot graded the label instead of the routing. \"They are cheaper to obey than to rediscover.\"",
+      "decided": "A phase-2 testing plan written against where the baseline actually is, not the original sketch — four layers (decision-point probes, plan audit, trajectory runs with artifact audit, cross-plugin composition), each with what it proves, what it structurally cannot, and PR-sized increments. Seven rules bind every layer, each citing the run that taught it: grade the reply, not the reasoning trace; define by property, never by example list; a negative scenario negates one slot; roster prose alone does not carry the envelope; selection is not injection; prove every new gate red first. Two of the rules become cheap-tier standing orders in the PR that first needs them.",
+      "rejected": "Stated as prohibitions on every layer: no grading a model's chain of thought; no \"flake\" category — \"FAULT is a transport error; everything else is a verdict\"; no must-fire scenario without its must-not-fire twin, because over-activation is the signature failure of an envelope skill and \"the only way to see it is to give it room to happen\"; and no layer promoted to a required check on the PR that creates it.",
+      "receipts": [
+        {
+          "label": "PR #98",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/98"
+        },
+        {
+          "label": "the plan",
+          "path": "docs/testing-plan.md"
+        },
+        {
+          "label": "issue #89 (the strategy ask)",
+          "url": "https://github.com/JRichlen/agent-plugins/issues/89"
+        },
+        {
+          "label": "live tier inventory",
+          "path": "docs/testing.md"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
     }
   ]
 }

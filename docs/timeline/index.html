@@ -70,8 +70,8 @@
 <header class="top">
   <h1>Design trajectory — a decision timeline</h1>
   <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:
-  what forced each one, what was rejected, and a receipt you can check. 34 decisions shown
-  of 41 recorded — the rest stay in the
+  what forced each one, what was rejected, and a receipt you can check. 35 decisions shown
+  of 42 recorded — the rest stay in the
   <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
 </header>
 <div class="thesis">
@@ -87,7 +87,7 @@
   <li><a href="#era-5"><strong>The protocol compiles</strong></a> <span class="win">(August 28–29, 2026)</span> — Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.</li>
   <li><a href="#era-6"><strong>Turning proof outward</strong></a> <span class="win">(August 29, 2026)</span> — The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.</li>
   <li><a href="#era-7"><strong>The gate learns its place</strong></a> <span class="win">(August 29 – September 2, 2026)</span> — Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.</li>
-  <li><a href="#era-8"><strong>The honest gate</strong></a> <span class="win">(September 2, 2026)</span> — The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol&#x27;s own pack caught its driver scheduling a landing to happen unattended.</li>
+  <li><a href="#era-8"><strong>The honest gate</strong></a> <span class="win">(September 2–4, 2026)</span> — The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol&#x27;s own pack caught its driver scheduling a landing to happen unattended.</li>
   </ul>
 </nav>
 
@@ -502,7 +502,7 @@
   <section class="era" id="era-8">
     <header class="era-head">
       <h2>The honest gate</h2>
-      <p class="window">September 2, 2026</p>
+      <p class="window">September 2–4, 2026</p>
       <p class="lesson">The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol&#x27;s own pack caught its driver scheduling a landing to happen unattended.</p>
     </header>
     <div class="rail">
@@ -526,6 +526,17 @@
         <div class="block"><span class="lbl dec">Decided</span><p>A blanket approval is an adjacent approval and never gate consent — never for landing, never for a destructive step, never something that fires after the human leaves. Landing on main and every irreversible action are their own MAJOR gates, confirmed at the moment they would happen; a single &quot;ratify and I&#x27;ll do the rest autonomously&quot; option is a protocol violation. Red first is stated as its own line in every plan, with the observed failure quoted. A coded allow is permission to run a tool, never consent at a gate. Prose only; the pack went 3/3 on every scenario with the calibration control still passing.</p></div>
         <div class="block"><span class="lbl rej">Rejected</span><p>Bundling landing and cleanup into one ratification because the user said &quot;don&#x27;t ask me anything&quot; — the exact rubber-stamp shape the graduated-autonomy design set out to prevent, found in the protocol&#x27;s own driver by the protocol&#x27;s own verifier.</p></div>
         <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/95">PR #95</a> · <a href="https://github.com/JRichlen/agent-plugins/commit/3e95973">the prose hardening</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/plugins/redgate/skills/redgate/SKILL.md">redgate driver skill</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-protocol.md">protocol: graduated autonomy</a></p>
+      </div>
+    </article>
+    <article class="entry" id="rules-before-layers">
+      <div class="dot" aria-hidden="true"></div>
+      <div class="card">
+        <div class="meta"><span class="date">2026-09-04</span></div>
+        <h3>The next layers of proof get their rules before they get built</h3>
+        <div class="block"><span class="lbl forced">Forced by</span><p>Landing the typed routing tier took three live-run passes, and each pass taught a rule the hard way: a grader reading the model&#x27;s reasoning trace rejected correct answers; a prompt rule stated as an example list (&quot;walked through, interviewed, consulted&quot;) pulled rows to the wrong skill; a negative scenario that pinned every slot graded the label instead of the routing. &quot;They are cheaper to obey than to rediscover.&quot;</p></div>
+        <div class="block"><span class="lbl dec">Decided</span><p>A phase-2 testing plan written against where the baseline actually is, not the original sketch — four layers (decision-point probes, plan audit, trajectory runs with artifact audit, cross-plugin composition), each with what it proves, what it structurally cannot, and PR-sized increments. Seven rules bind every layer, each citing the run that taught it: grade the reply, not the reasoning trace; define by property, never by example list; a negative scenario negates one slot; roster prose alone does not carry the envelope; selection is not injection; prove every new gate red first. Two of the rules become cheap-tier standing orders in the PR that first needs them.</p></div>
+        <div class="block"><span class="lbl rej">Rejected</span><p>Stated as prohibitions on every layer: no grading a model&#x27;s chain of thought; no &quot;flake&quot; category — &quot;FAULT is a transport error; everything else is a verdict&quot;; no must-fire scenario without its must-not-fire twin, because over-activation is the signature failure of an envelope skill and &quot;the only way to see it is to give it room to happen&quot;; and no layer promoted to a required check on the PR that creates it.</p></div>
+        <p class="receipts"><span class="lbl rcpt">Receipts</span> <a href="https://github.com/JRichlen/agent-plugins/pull/98">PR #98</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/testing-plan.md">the plan</a> · <a href="https://github.com/JRichlen/agent-plugins/issues/89">issue #89 (the strategy ask)</a> · <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/testing.md">live tier inventory</a></p>
       </div>
     </article></div>
   </section>
