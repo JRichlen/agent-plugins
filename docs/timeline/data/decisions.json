@@ -765,8 +765,8 @@
           "path": "plugins/agent-compiler/evals/scale/stress.py"
         },
         {
-          "label": "the rubric fix",
-          "url": "https://github.com/JRichlen/agent-plugins/commit/ef8410e"
+          "label": "the rubric fix (squashed into PR #80's merge)",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/04e0568"
         }
       ],
       "curated": true,
