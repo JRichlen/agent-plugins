@@ -28,10 +28,23 @@ ground, not from the original sketch.
 | L3 trajectory + artifact audit | **no** | — | — | that a real run writes `.redgate/<slug>/` the way the protocol says, and honors its own state across compaction |
 | L4 cross-plugin composition runs | **no** | — | — | that redgate + a specialist + Agent OS installed together behave at the boundary each claims |
 
-Everything below inherits the [statistical spine](testing.md#the-statistical-spine)
-unchanged: `repeat:`, k-of-N floor over valid samples, `failureReason`-keyed
-FAULT exclusion, fail-closed starvation, `PROMPTFOO_RETRY_5XX`. No layer gets
-its own verdict logic; `evals/paid/pass-rate.sh` is the arbiter everywhere.
+Everything below inherits the [statistical spine](testing.md#the-statistical-spine):
+repeated trials, a k-of-N floor over *valid* samples, FAULT-versus-verdict
+separation, fail-closed starvation. The spine's *mechanics* are promptfoo's
+today — `repeat:`, `failureReason`, `PROMPTFOO_RETRY_5XX` — and
+`evals/paid/pass-rate.sh` parses promptfoo's `results.json` rows, so the
+promptfoo layers (L1, L2) inherit it wholesale. The pier layers (L3, L4) do
+**not** get it for free: the live pier runner (`plugins/graveyard/evals/pier/run.sh`)
+runs one trial per agent and reads a single binary reward out of pier's
+`result.json`, which is n=1 by construction. L3 and L4 therefore specify
+their own repeats and a pier-compatible rate gate (§3.3): N trials per
+scenario per stochastic agent, each trial's reward written as one row in the
+`results.json` shape `pass-rate.sh` already parses (`testCase.description`,
+`success`, `failureReason` — `2` for a harness fault before the task body
+ran, `1` for a failed audit), so the *same* arbiter, floor, `--min-runs` and
+starvation rule apply. The deterministic `oracle`/`nop` calibration agents
+stay at one trial each — repeating a deterministic run measures nothing.
+No layer gets its own verdict logic.
 
 ## 2. Rules learned from landing #93 — binding on every layer
 
@@ -181,8 +194,30 @@ on #89. They are cheaper to obey than to rediscover.
   another), the audit as the task's reward function. The audit script is
   plain bash plus the existing `scaffold-run.sh --pin` verification, lives in
   `plugins/redgate/evals/pier/audit.sh`, and is proven red first against a
-  hand-built `.redgate/` fixture with each violation (unpinned criteria,
-  a green written by hand, a gates.log row with no matching action).
+  hand-built fixture with each violation (unpinned criteria, a green written
+  by hand, a gates.log row with no matching action).
+- **Provenance is harness-owned, or the invariant is not claimed.** The
+  agent can write anything under `.redgate/<slug>/`, so a post-hoc audit of
+  that directory alone proves only that the *files* are self-consistent — a
+  noncompliant agent can produce the same final layout. Every process
+  invariant above (pinning preceded TRACE evidence, gates.log rows match
+  actions, JUDGE ran independently) is therefore audited against a trusted
+  event log the agent cannot write: (a) the gate-responder's own log of
+  every gate it was shown and how it answered, kept outside the workspace;
+  (b) a harness-installed, root-owned shim on `check.sh`/`scaffold-run.sh`
+  that appends executor identity, cwd, argv, exit code and a monotonic
+  timestamp to an append-only file outside the agent-writable tree (the
+  same PATH-shim pattern the graveyard task already uses for its mock
+  `gh`); (c) pier's own per-trial transcript of the agent's tool calls. The
+  audit cross-checks `.redgate/` against those three; any invariant whose
+  trusted evidence is missing is reported as *unaudited*, never as passed.
+  The fixture set includes the forgery case — a byte-perfect `.redgate/`
+  with no matching shim log — and the audit must go red on it.
+- **Trials and the gate.** N ≥ 3 trials per scenario for each stochastic
+  agent (one for `oracle`/`nop`), each trial's reward emitted as a
+  `pass-rate.sh` row (§1), floor 0.8, `--min-runs 3`; a harness fault before
+  the task body ran is `failureReason: 2` and excluded, a failed audit is a
+  scored FAIL.
 - **Scenarios (three, one per invariant class).** ARM-then-TRACE with a
   scripted red-first verifier; a MAJOR gate the responder approves versus
   one it ignores (the run must end with the second gate still pending);
@@ -203,9 +238,18 @@ on #89. They are cheaper to obey than to rediscover.
   the control plane consumes rather than restates the interaction contract.
 - **Cannot prove.** Anything at PR cadence; this is a release gate.
 - **Harness.** The L3 harness with the marketplace installed as a user would
-  install it (`ci/install-smoke.sh` already proves the install), one pier
-  task per claim, artifact audit plus the L2 plan header captured at the
-  start of the run.
+  install it — a real installation *inside the sandbox* (`/plugin marketplace
+  add` + `/plugin install` for claude-code; the equivalent for each roster
+  harness, or a faithful staging of the layout that installation produces,
+  captured once from a real install and diffed against it in the task's
+  setup). `ci/install-smoke.sh` is deliberately an offline structural parse
+  of the marketplace and manifests; it proves a plugin is *installable*, not
+  that it is installed, discoverable, and composed in a live harness, so it
+  is a precondition here, never the proof. The task's first assertion is
+  discoverability: the harness lists all three plugins' skills before the
+  scenario starts, or the trial is a harness fault, not a verdict. Then one
+  pier task per claim, the L3 artifact audit with harness-owned provenance,
+  and the L2 plan header captured at the start of the run.
 - **Prerequisites.** #85's recorded boundary for Agent OS; L3's audit
   script; #84's trigger taxonomy so the "who owns what" claims are stated
   in one vocabulary.
