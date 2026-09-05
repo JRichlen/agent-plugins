@@ -218,6 +218,7 @@ print(f'''<!doctype html>
   .skim li.act > ul {{ margin-top:.4rem; }}
   .skim .win {{ color:var(--muted); font-size:.88rem; }}
   .skim a {{ text-decoration:none; }}
+  .skim .gloss {{ color:var(--muted); font-size:.88rem; margin:.4rem 0 0; }}
   .act-head {{ margin:2.8rem 0 1.4rem; padding-top:1.4rem; border-top:2px solid var(--accent); }}
   .act-head h2 {{ font-size:1.7rem; margin:0 0 .3rem; letter-spacing:-.01em; }}
   .act-head p {{ margin:0; color:var(--muted); max-width:74ch; }}
@@ -286,6 +287,8 @@ print(f'''<!doctype html>
   <h2>The story in {word(len(acts))} acts, {word(len(eras))} eras</h2>
   <ul>
 {skim}
+  <p class="gloss">Vocabulary — ARM / TRACE / JUDGE, WITNESS, MANDATE, MAJOR, envelope — is defined in the
+  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">Red Gate glossary</a>.</p>
     <li class="act"><a href="#methodology"><strong>Where proof stands today</strong></a> — the ladder the story built, rung by rung, with what each cannot prove.</li>
     <li class="act"><a href="#horizon"><strong>The horizon</strong></a> — {word(len((data.get("horizon") or {{}}).get("items", [])))} planned turns of the question, receipted to their issues and the phase-2 plan.</li>
   </ul>
