@@ -6,6 +6,10 @@ have dispatched workers, and answer from the supplied context only.
 {{skill}}
 </skill>
 
+<routing-reference>
+{{routing_reference}}
+</routing-reference>
+
 <environment>
 {{environment}}
 </environment>

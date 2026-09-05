@@ -4,6 +4,8 @@
 
 Use Luna for fast, bounded extraction, summaries, triage, and small edits. Use Terra for balanced bounded coding. Use Sol for reliable everyday analysis, implementation, and review. Use Astra for demanding ambiguity, synthesis, or high-consequence work only when authorized. These are provisional role baselines, not a ranking or guarantee; verify runtime availability and reasoning settings before dispatch.
 
+For cross-vendor candidates, read [model-equivalence.md](model-equivalence.md). It supplies sourced task-fit hypotheses, not provider substitutions or permission to change a configured model, account, or provider.
+
 Bounded known questions usually need one appropriately sized worker and a clear acceptance check. Exploratory unknowns benefit from a finite decomposition pass, followed by narrower work that gathers decision-changing information. Fan out only independent work. Shared dependencies, duplicated prompts, or common sources can make agreement correlated rather than confidence. Lightweight coordination can aggregate clear high-I/O checks; uncertain decomposition and semantic reconciliation need a capable lead.
 
 ## Whole-cycle guardrails

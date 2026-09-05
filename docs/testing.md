@@ -150,11 +150,14 @@ that it is green because it did not run, never silently.
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
-Jori's pack covers bounded delegated work and authority expansion. Its two
-calibration rows use an invariant-free helper, so a baseline that independently
-produces all of Jori's controls fails as nondiscriminating. It is single-turn
-and tool-less: it does not prove real worker dispatch, persistent monitoring,
-cost savings, or a multi-round project outcome.
+Jori's pack covers bounded delegated work, authority expansion, rough task-fit
+guidance that does not authorize provider/account changes, and GitHub Copilot
+HyDRA/HydraFusion control boundaries. Its four calibration rows replace both
+the skill and routing reference with invariant-free stubs, so a baseline that
+independently produces all Jori-specific controls fails as nondiscriminating.
+It is single-turn and tool-less: it does not prove real worker dispatch,
+persistent monitoring, provider availability, cross-provider equivalence,
+HydraFusion performance, cost savings, or a multi-round project outcome.
 
 ## routing tier
 

@@ -18,7 +18,7 @@ else
   bad "Claude manifest schema or wiring is invalid"
 fi
 grep -q "allow_implicit_invocation: true" "$PLUGIN_DIR/skills/jori/agents/openai.yaml" && ok "implicit invocation enabled" || bad "implicit invocation metadata missing"
-for path in "$PLUGIN_DIR/skills/jori/references/orchestration.md" "$PLUGIN_DIR/skills/jori/assets/dashboard-template.md" "$PLUGIN_DIR/context/AGENTS.fragment.md" "$PLUGIN_DIR/commands/jori.md"; do
+for path in "$PLUGIN_DIR/skills/jori/references/orchestration.md" "$PLUGIN_DIR/skills/jori/references/model-equivalence.md" "$PLUGIN_DIR/skills/jori/assets/dashboard-template.md" "$PLUGIN_DIR/context/AGENTS.fragment.md" "$PLUGIN_DIR/commands/jori.md"; do
   [ -f "$path" ] && ok "resource exists: ${path##*/}" || bad "resource missing: $path"
 done
 if grep -R -n -E "TODO|/mnt/c/Users|SCAFFOLD-UNIMPLEMENTED" "$PLUGIN_DIR/skills" "$PLUGIN_DIR/context" "$PLUGIN_DIR/AGENTS.md" "$PLUGIN_DIR/README.md" "$PLUGIN_DIR/commands" >/dev/null; then
