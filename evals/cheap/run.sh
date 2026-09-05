@@ -1161,6 +1161,16 @@ for t in tiers:
     if t.get("born_in") and t["born_in"] not in seen:
         flunk(f"{tid}: born_in '{t['born_in']}' is not a recorded decision — a rung must name the decision that created it")
     check_receipts(tid, t.get("receipts") or [])
+# corrections to the page are published claims too: each names a recorded
+# decision, says what changed, and carries the receipt that decided it
+corrs = (data.get("corrections") or {}).get("items") or []
+for c in corrs:
+    cid = f"correction:{c.get('entry','?')}"
+    for k in ("entry", "was", "now"):
+        if not (c.get(k) or "").strip(): flunk(f"{cid}: missing {k}")
+    if c.get("entry") and c["entry"] not in seen:
+        flunk(f"{cid}: entry is not a recorded decision")
+    check_receipts(cid, c.get("receipts") or [])
 items = (data.get("horizon") or {}).get("items") or []
 for h in items:
     hid = f"horizon:{h.get('id','?')}"
@@ -1171,7 +1181,7 @@ if fail == 0:
     sha_note = f"{verified_shas} commit receipts verified in the object store"
     if unverified_shas:
         sha_note += f", {unverified_shas} NOT verified ({'shallow clone' if shallow else 'no .git in this root'})"
-    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, {len(tiers)} methodology rungs, {len(items)} horizon items — every path receipt exists, every URL points into this repo, {sha_note}")
+    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, {len(tiers)} methodology rungs, {len(items)} horizon items, {len(corrs)} published corrections — every path receipt exists, every URL points into this repo, {sha_note}")
 sys.exit(1 if fail else 0)
 PYT
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
