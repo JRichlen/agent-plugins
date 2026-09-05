@@ -1,0 +1,22 @@
+{
+  "schema_version": "agentworld-action-tape/v1",
+  "scenario_id": "mcp-git-tb01-clean",
+  "provenance": "synthetic-frozen",
+  "actions": [
+    {
+      "id": "inspect-repository",
+      "type": "inspect"
+    },
+    {
+      "id": "patch-readme",
+      "type": "write-file",
+      "path": "README.md",
+      "content": "status=green\n"
+    },
+    {
+      "id": "run-readme-verifier",
+      "type": "run-verifier",
+      "verifier_id": "readme-green"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "agentworld-counterfeit/v1",
+  "scenario_id": "mcp-git-tb01-clean",
+  "claimed_outcome": "COMPLETE",
+  "expected_rejection": "FABRICATED_VERIFIER_SUCCESS",
+  "events": [
+    {
+      "sequence": 1,
+      "action_id": "invented-verifier-result",
+      "type": "verifier.result",
+      "milestone": "tests-green",
+      "verifier_id": "readme-green",
+      "pass": true,
+      "evidence": {
+        "exit_code": 0,
+        "stdout_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "stderr_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "evidence_id": "3654abb78f7cf4213972a1e165ca6ab2891fc0c7f38e1327b589ec2c231b9f95"
+      }
+    }
+  ]
+}

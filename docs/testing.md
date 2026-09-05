@@ -29,6 +29,7 @@ structurally cannot.
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
+| [AgentWorld lab](#agentworld-lab-manual-experimental) | `evals/agentworld/` | free, offline | manual during issue #99 TB-01 | no — experimental, not wired into CI |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
@@ -219,6 +220,20 @@ that it is green because it did not run, never silently.
 - **Cost.** Free.
 - **Local run.** `BASE_SHA=... HEAD_SHA=... evals/paid/count-touched-plugins.sh`
 
+## AgentWorld lab (manual experimental)
+
+- **What it proves.** TB-01's synthetic temporary-Git fixture resets to a
+  canonical state, executes one frozen inspect/write/verify tape, records a
+  structured state delta, evaluates milestone/minefield and state/policy/harm
+  oracles, rejects counterfeit green evidence, confines paths, and cleans up.
+- **What it cannot prove.** MCP transport, AgentWorld or Qwen behavior,
+  simulator fidelity, live endpoint compatibility, policy comparison,
+  statistical calibration, DGX capacity, or any CI/release invariant.
+- **Fires.** Manual only during the issue #99 experiment. It is deliberately
+  absent from `.github/workflows/evals.yml` and is not a required check.
+- **Cost.** Free, offline, Node built-ins plus Git.
+- **Local run.** `node evals/agentworld/test.js`
+
 ## scale tier
 
 - **What it proves.** The same invariants the cheap tier proves once, held
@@ -358,6 +373,7 @@ of these, update this block (and the prose above) in the same PR;
 ```
 eval-dir: evals/cheap
 eval-dir: evals/counterfeits
+eval-dir: evals/agentworld
 eval-dir: evals/paid
 eval-dir: evals/routing
 eval-dir: evals/templates
