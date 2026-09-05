@@ -150,6 +150,12 @@ that it is green because it did not run, never silently.
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
+Jori's pack covers bounded delegated work and authority expansion. Its two
+calibration rows use an invariant-free helper, so a baseline that independently
+produces all of Jori's controls fails as nondiscriminating. It is single-turn
+and tool-less: it does not prove real worker dispatch, persistent monitoring,
+cost savings, or a multi-round project outcome.
+
 ## routing tier
 
 - **What it proves.** With the *full* roster of installed skill descriptions
@@ -400,6 +406,8 @@ pack: graveyard/cheap
 pack: graveyard/pier
 pack: graveyard/promptfoo
 pack: grill-me/cheap
+pack: jori/cheap
+pack: jori/promptfoo
 pack: orchestrate/cheap
 pack: plugin-factory/cheap
 pack: prove-the-undo/cheap
