@@ -117,6 +117,22 @@ for a in acts:
             f'<p>{esc(a.get("summary",""))}</p></header>') if a.get("title") else ""
     sections.append(head + "".join(era_section(era_by_id[eid]) for eid in a["eras"]))
 
+# ── origin back-link: a rung names the decision that created it ─────────────
+all_decisions = {d["id"]: d for d in data.get("decisions", [])}
+era_by_id = {e["id"]: e for e in data.get("eras", [])}
+def origin_line(t):
+    did = t.get("born_in")
+    if not did or did not in all_decisions:
+        return ""
+    dec = all_decisions[did]
+    note = esc(t.get("born_note") or "born in")
+    if dec.get("curated"):
+        return (f'<p class="origin"><span class="lbl brg">On this page</span> {note} '
+                f'<a href="#{esc(did)}">{esc(dec["title"])}</a></p>')
+    era = era_by_id.get(dec.get("era"), {})
+    return (f'<p class="origin"><span class="lbl brg">On this page</span> {note} '
+            f'<a href="#{esc(era.get("id",""))}">{esc(era.get("title",""))}</a> (an inventory-only decision)</p>')
+
 # ── methodology ladder ───────────────────────────────────────────────────────
 meth = data.get("methodology") or {}
 ladder = ""
@@ -128,6 +144,7 @@ if meth.get("tiers"):
       <div class="tier-head"><h3>{esc(t["title"])}</h3><span class="gate">{esc(t.get("gate",""))}</span></div>
       <div class="block"><span class="lbl dec">Proves</span><p>{esc(t["proves"])}</p></div>
       <div class="block"><span class="lbl rej">Cannot prove</span><p>{esc(t["cannot"])}</p></div>
+      {origin_line(t)}
       <p class="receipts"><span class="lbl rcpt">Receipts</span> {receipts_line(t["receipts"])}</p>
     </li>''')
     ladder = f'''
@@ -240,6 +257,7 @@ print(f'''<!doctype html>
   .tier-head h3 {{ margin:.2rem 0 .5rem; }}
   .gate {{ font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);
     border:1px solid var(--line); border-radius:999px; padding:.1rem .5rem; white-space:nowrap; }}
+  .origin {{ font-size:.88rem; margin:.4rem 0 0; color:var(--muted); }}
   .spine {{ background:var(--accent-soft); border:1px solid var(--accent); border-radius:12px;
     padding:.9rem 1.1rem; margin:.4rem 0 0; }}
   .spine strong {{ color:var(--accent); }}

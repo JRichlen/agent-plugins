@@ -1138,8 +1138,10 @@ if shown == 0:
 tiers = (data.get("methodology") or {}).get("tiers") or []
 for t in tiers:
     tid = f"tier:{t.get('id','?')}"
-    for k in ("id", "title", "proves", "cannot"):
+    for k in ("id", "title", "proves", "cannot", "born_in"):
         if not (t.get(k) or "").strip(): flunk(f"{tid}: missing {k}")
+    if t.get("born_in") and t["born_in"] not in seen:
+        flunk(f"{tid}: born_in '{t['born_in']}' is not a recorded decision — a rung must name the decision that created it")
     check_receipts(tid, t.get("receipts") or [])
 items = (data.get("horizon") or {}).get("items") or []
 for h in items:

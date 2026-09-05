@@ -1086,13 +1086,13 @@
     }
   ],
   "methodology": {
-    "intro": "Where the story has arrived: the proof ladder as it runs today, cheapest first, each rung catching a class of regression the rung below structurally cannot. Every rung is documented, drift-guarded, and says out loud when it did not run.",
+    "intro": "Where the story has arrived: the proof ladder as it runs today, cheapest first, each rung catching what the cheaper rungs structurally cannot. Every machine rung is documented, drift-guarded, and says out loud when it did not run; the last two are human gates and say so. Each rung names the decision on this page that created it.",
     "spine": "Every model-driven rung shares one statistical spine: repeated trials, a k-of-N pass-rate floor over valid samples only, transport faults separated from verdicts and never scored, and fail-closed starvation — a scenario with too few valid samples is \"never tested\", not green.",
     "tiers": [
       {
         "id": "cheap",
         "title": "cheap — deterministic, offline, before every commit",
-        "proves": "Scripts parse, manifests are valid, wiring holds both ways, load-bearing sentences survive, executed script gates still bite, published surfaces are in sync with their data, and this document's own inventory has not drifted.",
+        "proves": "Scripts parse, manifests are valid, wiring holds both ways, load-bearing sentences survive, executed script gates still bite, published surfaces are in sync with their data, and the testing doc's own inventory has not drifted.",
         "cannot": "Whether any sentence still means anything to a model. It greps and parses; it never runs one.",
         "gate": "required",
         "receipts": [
@@ -1101,7 +1101,8 @@
             "path": "docs/testing.md",
             "anchor": "cheap-tier"
           }
-        ]
+        ],
+        "born_in": "three-tiers"
       },
       {
         "id": "counterfeit",
@@ -1115,7 +1116,8 @@
             "path": "docs/testing.md",
             "anchor": "counterfeit-tier"
           }
-        ]
+        ],
+        "born_in": "counterfeit-corpus"
       },
       {
         "id": "install",
@@ -1128,6 +1130,23 @@
             "label": "docs/testing.md",
             "path": "docs/testing.md",
             "anchor": "install-tier"
+          }
+        ],
+        "born_in": "install-smoke"
+      },
+      {
+        "id": "grader-model",
+        "title": "grader model — the judge must exist before a verdict counts",
+        "proves": "The grader slug in every behavioral pack resolves to a real, reachable model before any paid leg is judged, so a run can never be scored by a nonexistent judge.",
+        "cannot": "Anything about the subject model or the rubric — only that the judge answers the phone.",
+        "gate": "required",
+        "born_in": "behavioral-never-ran",
+        "born_note": "same doctrine as",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "grader-model-check"
           }
         ]
       },
@@ -1143,7 +1162,9 @@
             "path": "docs/testing.md",
             "anchor": "behavioral-tier-promptfoo"
           }
-        ]
+        ],
+        "born_in": "behavioral-never-ran",
+        "born_note": "made honest in"
       },
       {
         "id": "routing",
@@ -1156,6 +1177,23 @@
             "label": "docs/testing.md",
             "path": "docs/testing.md",
             "anchor": "routing-tier"
+          }
+        ],
+        "born_in": "typed-routing-composition"
+      },
+      {
+        "id": "paid-gate",
+        "title": "paid multi-plugin gate — a nudge, not a gate",
+        "proves": "Nothing, by design: it warns when a PR touches more than one plugin's paid surface, because a red paid leg on such a PR is ambiguous and a rerun re-bills every touched plugin.",
+        "cannot": "Block anything. It always exits 0 and is deliberately kept out of the required set, so a legitimate multi-plugin change is never hard-blocked by a nudge.",
+        "gate": "advisory",
+        "born_in": "honest-statistical-gate",
+        "born_note": "the cost side of",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "paid-multi-plugin-gate"
           }
         ]
       },
@@ -1171,7 +1209,8 @@
             "path": "docs/testing.md",
             "anchor": "scale-tier"
           }
-        ]
+        ],
+        "born_in": "scale-tiers"
       },
       {
         "id": "deep",
@@ -1185,7 +1224,9 @@
             "path": "docs/testing.md",
             "anchor": "deep-tier-pier"
           }
-        ]
+        ],
+        "born_in": "graveyard-invariant",
+        "born_note": "exists to defend"
       },
       {
         "id": "published",
@@ -1199,7 +1240,8 @@
             "path": "docs/testing.md",
             "anchor": "example-gallery-refresh--pages"
           }
-        ]
+        ],
+        "born_in": "gallery-truth"
       },
       {
         "id": "demonstration",
@@ -1213,7 +1255,9 @@
             "path": "docs/testing.md",
             "anchor": "demonstration-discipline"
           }
-        ]
+        ],
+        "born_in": "evidence-against-self",
+        "born_note": "the rule behind"
       }
     ]
   },
