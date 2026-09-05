@@ -1,0 +1,102 @@
+# Subject-model matrix — issue #102, measurement 1.
+#
+# The required behavioral leg runs every pack against ONE subject model. This
+# workflow runs chosen packs against extra subjects on demand and reports per
+# provider, so "the prose steers a model" can be read per model instead of for
+# one. It is manual-dispatch only, never a required check, and its exit code
+# reflects the BASELINE provider alone: every other subject is scored and
+# printed as ADVISORY. Promotion of a subject to a strict leg is a human
+# decision applied to the report — the rule is that the pack's negative-control
+# scenario must still FAIL under the new subject (a stub that passes under a
+# new model is a rubric finding, not a green).
+#
+# Cost: roughly (1 + number of subjects) times the pack's usual spend. Secrets
+# are the same two the behavioral tier uses.
+name: subject matrix
+on:
+  workflow_dispatch:
+    inputs:
+      subjects:
+        description: 'Extra subject provider ids, comma-separated, in promptfoo syntax (e.g. anthropic:messages:claude-haiku-4-5-20251001,openrouter:<vendor>/<model>). The pack baseline is always included first.'
+        required: true
+        type: string
+      packs:
+        description: 'Plugin names, comma-separated. Empty = every plugin with a valid promptfoo pack.'
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: subject-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    name: subject matrix — detect packs
+    runs-on: ubuntu-latest
+    outputs:
+      packs: ${{ steps.pick.outputs.packs }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: pick
+        env:
+          REQUESTED: ${{ github.event.inputs.packs }}
+        run: |
+          all="$(evals/paid/discover-paid-packs.sh promptfoo)"
+          picked="$(python3 -c '
+          import json, os, sys
+          allp = json.loads(sys.argv[1]); req = [p.strip() for p in os.environ.get("REQUESTED","").split(",") if p.strip()]
+          bad = [p for p in req if p not in allp]
+          if bad: print("::error::not a plugin with a valid promptfoo pack: " + ", ".join(bad), file=sys.stderr); sys.exit(1)
+          print(json.dumps(req or allp))' "$all")"
+          echo "packs=$picked" >> "$GITHUB_OUTPUT"
+          echo "packs: $picked"
+
+  matrix:
+    name: subject matrix — ${{ matrix.plugin }} (advisory)
+    needs: detect
+    if: needs.detect.outputs.packs != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin: ${{ fromJSON(needs.detect.outputs.packs) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: overlay the pack with the extra subjects
+        id: overlay
+        env:
+          SUBJECTS: ${{ github.event.inputs.subjects }}
+        run: |
+          pack="plugins/${{ matrix.plugin }}/evals/promptfoo"
+          cfg="$(evals/paid/subject-matrix.sh "$pack" --subjects "$SUBJECTS")"
+          base="$(evals/paid/subject-matrix.sh "$pack" --baseline-id)"
+          echo "config=$cfg" >> "$GITHUB_OUTPUT"
+          echo "baseline=$base" >> "$GITHUB_OUTPUT"
+          echo "baseline: $base"; grep -n '^  - id:' "$cfg"
+      - name: promptfoo eval (baseline + subjects)
+        working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        # Same pin and the same `|| echo` as the behavioral tier: promptfoo's exit
+        # code conflates a rubric failure with a transport fault; the per-provider
+        # statistical gate below is the verdict.
+        run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.matrix.yaml --output results.matrix.json || echo "::warning::promptfoo exited non-zero — the per-provider statistical gate scores results.matrix.json and decides this leg"
+      - name: per-provider statistical gate (baseline decides; subjects advisory)
+        run: |
+          evals/paid/pass-rate.sh "plugins/${{ matrix.plugin }}/evals/promptfoo/results.matrix.json" \
+            --by-provider --baseline "${{ steps.overlay.outputs.baseline }}" --floor 0.6 --min-runs 2 --min-valid 2 | tee pass-rate.txt
+          { echo "### subject matrix — ${{ matrix.plugin }}"; echo; echo '```'; cat pass-rate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: keep the results for #102
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: subject-matrix-${{ matrix.plugin }}
+          path: |
+            plugins/${{ matrix.plugin }}/evals/promptfoo/results.matrix.json
+            plugins/${{ matrix.plugin }}/evals/promptfoo/promptfooconfig.matrix.yaml
+          if-no-files-found: warn

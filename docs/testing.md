@@ -30,6 +30,7 @@ structurally cannot.
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
+| [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
@@ -220,6 +221,42 @@ that it is green because it did not run, never silently.
 - **Cost.** Free.
 - **Local run.** `BASE_SHA=... HEAD_SHA=... evals/paid/count-touched-plugins.sh`
 
+## subject-model matrix (manual, advisory)
+
+- **What it proves.** Whether a pack's prose steers models *other than* the
+  one cheap subject the behavioral tier pins. On dispatch, chosen packs run
+  against the baseline subject plus every extra subject named in the input;
+  `evals/paid/pass-rate.sh --by-provider --baseline <id>` scores each provider
+  separately and reports per scenario. Pooling would hide exactly the split
+  this exists to show (3/3 on the baseline and 0/3 on a new subject pool to a
+  single 0.50 scenario), so the scorer never pools in this mode.
+- **What it cannot prove.** Anything about a subject nobody has dispatched it
+  for. It also does not promote a subject: that is a human decision applied to
+  the report, under one stated rule — the pack's negative-control scenario must
+  still **fail** under the new subject. A stub that passes under a new model is
+  a finding about the rubric, not a green.
+- **Fires.** `workflow_dispatch` only (`subjects=` required, `packs=` optional,
+  empty = every plugin with a valid promptfoo pack). Never scheduled, never
+  path-gated, never in `ci/required-checks.json`. The job's exit code reflects
+  the **baseline** provider alone; every other provider is printed as
+  `ADVISORY`. A baseline that produced no rows fails closed.
+- **How the pack is left alone.** `evals/paid/subject-matrix.sh PACK --subjects
+  "a,b"` writes `promptfooconfig.matrix.yaml` beside the pack: the baseline
+  provider first, then each subject with the baseline's own provider config
+  copied verbatim (`max_tokens`, `showThinking`, …) so every subject is graded
+  under identical settings. The overlay and `results.matrix.json` are
+  git-ignored; the required behavioral leg never reads them.
+- **Cost.** Roughly (1 + number of subjects) × the pack's usual spend, still
+  cents per pack. Results are uploaded as a per-pack artifact so the numbers
+  can be recorded on [#102](https://github.com/JRichlen/agent-plugins/issues/102).
+- **Local run.** `evals/paid/subject-matrix.sh plugins/<p>/evals/promptfoo
+  --subjects "<id>,<id>"`, then `npx promptfoo@0.122.0 eval -c
+  promptfooconfig.matrix.yaml --output results.matrix.json` in the pack
+  directory, then `evals/paid/pass-rate.sh results.matrix.json --by-provider
+  --baseline "$(evals/paid/subject-matrix.sh <pack> --baseline-id)"`.
+  Offline: `evals/paid/subject-matrix.sh --self-test`; the cheap tier §18b
+  fixture-tests the scorer's per-provider mode and the overlay.
+
 ## scale tier
 
 - **What it proves.** The same invariants the cheap tier proves once, held
@@ -324,6 +361,23 @@ uninterpretable n=1 and no required check goes red on the weather:
 - The spine itself is mutation-tested offline in `evals/cheap/run.sh` §18
   against synthetic fixtures — gut the floor logic and the cheap tier goes red
   without a single model call.
+- **Per-provider scoring** — `pass-rate.sh --by-provider [--baseline <id>]`
+  keeps the same floor, FAULT and starvation rules but scores each subject
+  provider on its own (the subject-model matrix above). With `--baseline`,
+  only that provider decides the exit code and the rest are `ADVISORY`;
+  without it every provider is strict. Fixture-tested in §18b.
+- **What the spine does not yet know about itself.** Every verdict is one
+  grader model's opinion, and three repeats at a 0.6 floor is a majority, not
+  a measurement. `evals/paid/calibration/` holds the offline half of fixing
+  that ([#102](https://github.com/JRichlen/agent-plugins/issues/102)):
+  `sample-for-labelling.py` draws a blind sheet from a `results.json`
+  (scenario, request, output, empty label; the grader's verdicts are written
+  to a separate file keyed by output hash), and `agreement.py` reports percent
+  agreement and Cohen's kappa between any two label sets — human vs grader,
+  grader vs a second grader, or the same grader graded twice (the label-noise
+  floor). Both are fixture-tested in §18b. No measurement has been taken yet;
+  the promotion threshold for grader-dependent tiers is chosen after the first
+  one, not before.
 
 Any **new** LLM tier inherits this spine wholesale.
 
@@ -345,6 +399,10 @@ exist; when one goes live it moves into this document and out of the plan's
   artifact audits of `.redgate/`; owned by
   [#88](https://github.com/JRichlen/agent-plugins/issues/88) (see the scope
   split recorded on #89).
+- **Grader calibration measurements** — the human-labelled set, the
+  cross-grader and self-consistency runs, and the subject-promotion rule for
+  the matrix above; the scripts exist (see the statistical spine), the
+  measurements do not: [#102](https://github.com/JRichlen/agent-plugins/issues/102).
 
 ## Machine-verified inventory
 
@@ -386,6 +444,8 @@ job: paid multi-plugin gate
 job: redgate scale (lifecycle stress)
 job: refresh
 job: routing tier (roster trigger routing)
+job: subject matrix —  (advisory)
+job: subject matrix — detect packs
 pack: agent-compiler/cheap
 pack: agent-compiler/promptfoo
 pack: agent-compiler/scale
@@ -430,5 +490,6 @@ workflow: evals.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
 workflow: scale.yml
+workflow: subject-matrix.yml
 ```
 <!-- END LIVE-INVENTORY -->

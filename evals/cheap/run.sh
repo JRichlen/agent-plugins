@@ -919,6 +919,101 @@ else
 fi
 rm -rf "$_tmp"
 
+# --- 18b. Subject-model matrix and grader calibration (issue #102) ----------
+# The behavioral tier scores one subject model with one grader. #102 adds the
+# offline halves of working past that: pass-rate.sh --by-provider (score each
+# provider separately; --baseline decides the exit code, other subjects are
+# ADVISORY), the calibration scripts (a blind labelling sheet and a
+# kappa/agreement report), and the overlay generator the manual workflow uses.
+# Each is fixture-tested here, red-first, with no model calls. FAIL substring:
+# "matrix:" / "calibration:".
+group "subject-model matrix + grader calibration — offline halves bite"
+_mx="$(mktemp -d "${TMPDIR:-/tmp}/matrix.XXXXXX")"
+python3 - "$_mx" <<'PYM'
+import json, sys
+d = sys.argv[1]
+def row(desc, prov, ok, i):
+    return {"testCase": {"description": desc}, "vars": {"request": "do the thing"}, "provider": {"id": prov},
+            "success": ok, "failureReason": 0 if ok else 1, "error": None if ok else "rubric",
+            "response": {"output": f"answer {desc} {prov} {i}"}}
+# baseline passes S1 3/3; a second subject fails S1 0/3; both pass S2.
+rows = ([row("S1", "openrouter:base/model", True, i) for i in range(3)] + [row("S1", "anthropic:messages:x", False, i) for i in range(3)]
+        + [row("S2", "openrouter:base/model", True, i) for i in range(3)] + [row("S2", "anthropic:messages:x", True, i) for i in range(3)])
+json.dump({"results": {"results": rows}}, open(d + "/matrix.json", "w"))
+# agreement fixture with a hand-computed kappa: 10 items, agree on 8;
+# A: 6 pass / 4 fail, B: 6 pass / 4 fail; po=0.8, pe=0.36+0.16=0.52, kappa=0.5833
+A = {}; B = {}
+for i in range(10):
+    h = f"h{i:02d}"
+    a = "pass" if i < 6 else "fail"
+    b = a
+    if i == 5: b = "fail"      # A pass, B fail
+    if i == 9: b = "pass"      # A fail, B pass
+    A[h] = a; B[h] = b
+json.dump(A, open(d + "/A.json", "w")); json.dump(B, open(d + "/B.json", "w"))
+json.dump({"zz1": "pass"}, open(d + "/disjoint.json", "w"))
+PYM
+_pr="evals/paid/pass-rate.sh"
+if bash "$_pr" "$_mx/matrix.json" --by-provider --baseline openrouter:base/model --floor 0.6 --min-runs 2 --min-valid 2 > "$_mx/adv.txt" 2>&1 \
+   && grep -q 'ADVISORY BELOW-FLOOR' "$_mx/adv.txt"; then
+  ok "matrix: --baseline scores the baseline strictly and reports the failing subject as ADVISORY"
+else
+  bad "matrix: --by-provider --baseline did not pass on the baseline while flagging the subject as advisory"
+fi
+if bash "$_pr" "$_mx/matrix.json" --by-provider --floor 0.6 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "matrix: --by-provider without --baseline passed although one provider is below floor (every provider must be strict)"
+else
+  ok "matrix: --by-provider without --baseline is strict for every provider"
+fi
+if bash "$_pr" "$_mx/matrix.json" --baseline nope --floor 0.6 >/dev/null 2>&1; then
+  bad "matrix: a baseline that produced no rows passed — the required leg never ran (fail-open)"
+else
+  ok "matrix: a baseline with no rows fails closed"
+fi
+if bash "$_pr" "$_mx/matrix.json" --floor 0.6 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "matrix: pooling two providers read 3/6 as green — the split --by-provider exists to show is being hidden"
+else
+  ok "matrix: pooled scoring fails on the same file (3/6 = 0.50), which is why --by-provider exists"
+fi
+_ag="evals/paid/calibration/agreement.py"
+if python3 "$_ag" "$_mx/A.json" "$_mx/B.json" > "$_mx/ag.txt" 2>&1 && grep -q 'percent=80.0%  kappa=0.583' "$_mx/ag.txt"; then
+  ok "calibration: agreement.py reports the hand-computed kappa (0.583) on the fixture"
+else
+  bad "calibration: agreement.py did not report percent=80.0% kappa=0.583 on the fixture"
+fi
+if python3 "$_ag" "$_mx/A.json" "$_mx/disjoint.json" >/dev/null 2>&1; then
+  bad "calibration: agreement.py produced a report with no hashes in common (nothing to compare must exit non-zero)"
+else
+  ok "calibration: agreement.py refuses to compare label sets with no hashes in common"
+fi
+if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/matrix.json" --n 4 --sheet "$_mx/sheet.json" --verdicts "$_mx/verdicts.json" >/dev/null 2>&1 \
+   && python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); assert len(s)==4 and all(r["label"] is None and "provider" not in r and "success" not in r for r in s)' "$_mx/sheet.json"; then
+  ok "calibration: the labelling sheet is blind — no verdict, no provider, empty labels"
+else
+  bad "calibration: sample-for-labelling.py leaked a verdict or provider into the sheet, or wrote the wrong count"
+fi
+_smt="$(evals/paid/subject-matrix.sh --self-test 2>&1)"; _smrc=$?
+if [ $_smrc -eq 0 ]; then
+  ok "matrix: subject-matrix.sh overlay keeps the baseline first and copies its config to each subject"
+elif [ $_smrc -eq 3 ]; then
+  ok "matrix: subject-matrix.sh self-test NOT run — PyYAML unavailable here (it is on the CI runner); said out loud, not skipped silently"
+else
+  bad "matrix: subject-matrix.sh self-test failed: $_smt"
+fi
+# Repo-level wiring: a synthetic counterfeit root has no workflows directory,
+# so absence of the directory is "nothing to check" (said out loud); a real
+# repo that has workflows but has lost this one, or wired it wrong, fails.
+if [ ! -d .github/workflows ]; then
+  ok "matrix: no workflows directory in this root — nothing to check"
+elif [ -f .github/workflows/subject-matrix.yml ] && grep -q -- '--by-provider --baseline' .github/workflows/subject-matrix.yml \
+   && grep -q 'workflow_dispatch' .github/workflows/subject-matrix.yml \
+   && { [ ! -f ci/required-checks.json ] || ! grep -q 'subject matrix' ci/required-checks.json; }; then
+  ok "matrix: the workflow scores per provider with a baseline, is manual-dispatch only, and is not a required check"
+else
+  bad "matrix: subject-matrix.yml must invoke pass-rate.sh --by-provider --baseline, be workflow_dispatch, and stay out of ci/required-checks.json"
+fi
+rm -rf "$_mx"
+
 # --- 19. Example gallery (docs/examples) is in sync and non-fabricated -------
 # The published before/after gallery is a VERIFICATION surface: every card is a
 # real, provenanced with-skill/without-skill model run captured from the eval
