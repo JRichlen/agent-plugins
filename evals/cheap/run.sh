@@ -1053,6 +1053,45 @@ except Exception as e:
     flunk(f"invalid JSON ({e})"); sys.exit(1)
 if not (data.get("thesis") or "").strip():
     flunk("missing thesis")
+
+repo = "https://github.com/JRichlen/agent-plugins"
+root_real = os.path.realpath(root)
+def check_receipts(owner, receipts):
+    """Every published claim — a decision, a methodology rung, a horizon item —
+    carries at least one receipt that resolves: a repo path that exists (confined
+    to the repo root), or a URL into this repository (commit shas verified)."""
+    global verified_shas, unverified_shas
+    if not receipts:
+        flunk(f"{owner}: no receipts — every claim must be checkable"); return
+    for r in receipts:
+        if not (r.get("label") or "").strip():
+            flunk(f"{owner}: receipt missing label")
+        url = r.get("url") if isinstance(r.get("url"), str) else ""
+        rpath = r.get("path") if isinstance(r.get("path"), str) else ""
+        url, rpath = url.strip(), rpath.strip()
+        if bool(url) == bool(rpath):
+            flunk(f"{owner}: receipt '{r.get('label','?')}' needs exactly one non-empty url/path")
+        elif rpath:
+            full = os.path.realpath(os.path.join(root, rpath))
+            if full != root_real and not full.startswith(root_real + os.sep):
+                flunk(f"{owner}: receipt path escapes the repository: {rpath}")
+            elif not os.path.exists(full):
+                flunk(f"{owner}: receipt path does not exist: {rpath}")
+        else:
+            if url != repo and not url.startswith(repo + "/"):
+                flunk(f"{owner}: receipt url points outside this repository: {url}")
+            else:
+                m = re.search(r"/commit/([0-9a-f]{7,40})$", url)
+                if m:
+                    if has_git:
+                        ok_sha = subprocess.run(["git", "-C", root, "cat-file", "-e", m.group(1) + "^{commit}"],
+                                                capture_output=True).returncode == 0
+                        if ok_sha: verified_shas += 1
+                        elif shallow: unverified_shas += 1
+                        else: flunk(f"{owner}: commit receipt does not resolve in this clone: {m.group(1)}")
+                    else:
+                        unverified_shas += 1
+
 era_ids = []
 for e in data.get("eras", []):
     for k in ("id", "title", "window", "lesson"):
@@ -1060,6 +1099,20 @@ for e in data.get("eras", []):
     era_ids.append(e.get("id"))
 if len(era_ids) != len(set(era_ids)):
     flunk("duplicate era ids")
+# acts partition the eras: every era in exactly one act, every act non-empty
+acts = data.get("acts") or []
+if acts:
+    seen_eras = []
+    for a in acts:
+        for k in ("id", "title", "summary"):
+            if not (a.get(k) or "").strip(): flunk(f"act {a.get('id','?')}: missing {k}")
+        if not a.get("eras"): flunk(f"act {a.get('id','?')}: names no eras")
+        for eid in a.get("eras", []):
+            if eid not in era_ids: flunk(f"act {a.get('id','?')}: unknown era '{eid}'")
+            seen_eras.append(eid)
+    for eid in era_ids:
+        n = seen_eras.count(eid)
+        if n != 1: flunk(f"era {eid} appears in {n} acts (must be exactly one)")
 seen = set()
 shown = 0
 for d in data.get("decisions", []):
@@ -1078,55 +1131,27 @@ for d in data.get("decisions", []):
         shown += 1
     elif not (d.get("cut_reason") or "").strip():
         flunk(f"{did}: cut from the page without a recorded cut_reason")
-    receipts = d.get("receipts") or []
-    if not receipts:
-        flunk(f"{did}: no receipts — every decision must be checkable")
-    for r in receipts:
-        if not (r.get("label") or "").strip():
-            flunk(f"{did}: receipt missing label")
-        # Null/empty values count as absent, so {"url": null} cannot slip
-        # through the exactly-one test or crash the validator.
-        url = r.get("url") if isinstance(r.get("url"), str) else ""
-        rpath = r.get("path") if isinstance(r.get("path"), str) else ""
-        url, rpath = url.strip(), rpath.strip()
-        if bool(url) == bool(rpath):
-            flunk(f"{did}: receipt '{r.get('label','?')}' needs exactly one non-empty url/path")
-        elif rpath:
-            # Resolve and confine to the repo root: an absolute path or a
-            # ../ escape is a counterfeit receipt, not a resolvable one.
-            root_real = os.path.realpath(root)
-            full = os.path.realpath(os.path.join(root, rpath))
-            if full != root_real and not full.startswith(root_real + os.sep):
-                flunk(f"{did}: receipt path escapes the repository: {rpath}")
-            elif not os.path.exists(full):
-                flunk(f"{did}: receipt path does not exist: {rpath}")
-        else:
-            # Prefix must end at the repo boundary so lookalike repos
-            # (…/agent-plugins-fork) don't pass.
-            repo = "https://github.com/JRichlen/agent-plugins"
-            if url != repo and not url.startswith(repo + "/"):
-                flunk(f"{did}: receipt url points outside this repository: {url}")
-            else:
-                # A /commit/<sha> receipt is offline-verifiable: the object must
-                # exist in this clone. Skipped (and said so) when there is no
-                # .git — the counterfeit tier's synthetic roots have none.
-                m = re.search(r"/commit/([0-9a-f]{7,40})$", url)
-                if m:
-                    if has_git:
-                        ok_sha = subprocess.run(["git", "-C", root, "cat-file", "-e", m.group(1) + "^{commit}"],
-                                                capture_output=True).returncode == 0
-                        if ok_sha: verified_shas += 1
-                        elif shallow: unverified_shas += 1
-                        else: flunk(f"{did}: commit receipt does not resolve in this clone: {m.group(1)}")
-                    else:
-                        unverified_shas += 1
+    check_receipts(did, d.get("receipts") or [])
 if shown == 0:
     flunk("no curated decisions — the page would be empty")
+# the methodology ladder and the horizon are published claims too
+tiers = (data.get("methodology") or {}).get("tiers") or []
+for t in tiers:
+    tid = f"tier:{t.get('id','?')}"
+    for k in ("id", "title", "proves", "cannot"):
+        if not (t.get(k) or "").strip(): flunk(f"{tid}: missing {k}")
+    check_receipts(tid, t.get("receipts") or [])
+items = (data.get("horizon") or {}).get("items") or []
+for h in items:
+    hid = f"horizon:{h.get('id','?')}"
+    for k in ("id", "title", "status", "question"):
+        if not (h.get(k) or "").strip(): flunk(f"{hid}: missing {k}")
+    check_receipts(hid, h.get("receipts") or [])
 if fail == 0:
     sha_note = f"{verified_shas} commit receipts verified in the object store"
     if unverified_shas:
         sha_note += f", {unverified_shas} NOT verified ({'shallow clone' if shallow else 'no .git in this root'})"
-    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions — every path receipt exists, every URL points into this repo, {sha_note}")
+    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, {len(tiers)} methodology rungs, {len(items)} horizon items — every path receipt exists, every URL points into this repo, {sha_note}")
 sys.exit(1 if fail else 0)
 PYT
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi

@@ -1,53 +1,61 @@
 {
-  "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era of this repository is one more turn of that question — each escalation forced by a recorded failure of the previous answer.",
+  "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era is one more turn of that question, each escalation forced by a recorded failure of the previous answer. The story runs in three acts — earning green, building the gate, the gate meeting the world — and it ends, for now, on the layers of proof that are planned but not yet built.",
   "eras": [
     {
       "id": "era-1",
       "title": "Proof before the product",
       "window": "July 10–18, 2026",
-      "lesson": "The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject."
+      "lesson": "The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, within a week, proven able to reject.",
+      "bridge": "The harness could now reject a broken plugin. Nobody had yet asked whether it could reject a broken check — and a wave of new skills was about to ship with checks no one had proven could fail."
     },
     {
       "id": "era-2",
       "title": "The wave and the reckoning",
       "window": "August 17–24, 2026",
-      "lesson": "Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn't recur — is where the real design happened."
+      "lesson": "Shipping fourteen skills took days. Discovering that many of their proofs were fake — and rebuilding the proof system so that couldn't recur — is where the real design happened.",
+      "bridge": "With the proof system honest, the discipline it enforced still lived in the owner's head and in fourteen separate skills. Nothing composed them, and nothing could prove a multi-step piece of work was actually finished."
     },
     {
       "id": "era-3",
       "title": "Formalizing the gate",
       "window": "August 26, 2026",
-      "lesson": "The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction."
+      "lesson": "The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction.",
+      "bridge": "The protocol worked — on itself. But its vocabulary had outgrown it, its stage structure rested on instinct, and no one had yet asked the field what it already knew."
     },
     {
       "id": "era-4",
       "title": "Naming and knowing",
       "window": "August 28, 2026",
-      "lesson": "Research paid down the design's debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward."
+      "lesson": "Research paid down the design's debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.",
+      "bridge": "The research verdict was blunt: the invariants were prose a model was asked to honor. The missing organ was enforcement — a protocol that compiles."
     },
     {
       "id": "era-5",
       "title": "The protocol compiles",
       "window": "August 28–29, 2026",
-      "lesson": "Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it."
+      "lesson": "Prose invariants became compiled artifacts — deterministic, content-hashed, fail-closed — and the design was corrected three times by actually running it.",
+      "bridge": "Compiled or not, every proof so far convinced maintainers. None of it was legible to someone deciding whether to install the thing."
     },
     {
       "id": "era-6",
       "title": "Turning proof outward",
       "window": "August 29–30, 2026",
-      "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline."
+      "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.",
+      "bridge": "Consumable surfaces exposed a different weakness. The protocol had been crowned the default router for everything, and within a single PR it overreached."
     },
     {
       "id": "era-7",
       "title": "The gate learns its place",
       "window": "August 29 – September 2, 2026",
-      "lesson": "Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed."
+      "lesson": "Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.",
+      "bridge": "The boundary was drawn and typed. The gate that grades everything else had not yet been checked for honesty itself."
     },
     {
       "id": "era-8",
       "title": "The honest gate",
       "window": "September 2–4, 2026",
-      "lesson": "The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol's own pack caught its driver scheduling a landing to happen unattended."
+      "lesson": "The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned three packs red at once — and the protocol's own pack caught its driver scheduling a landing to happen unattended.",
+      "bridge": "Which leaves the question where it started, one altitude higher: the layers that would prove a plan, a trajectory, and a composition are planned, not built. That is the horizon below."
     }
   ],
   "decisions": [
@@ -1025,5 +1033,314 @@
       "curated": true,
       "cut_reason": null
     }
-  ]
+  ],
+  "acts": [
+    {
+      "id": "act-1",
+      "title": "Act I — Earning green",
+      "eras": [
+        "era-1",
+        "era-2"
+      ],
+      "summary": "A green check is worth nothing until it has been seen rejecting something: first a broken plugin, then a broken check, then a claim the product made about itself."
+    },
+    {
+      "id": "act-2",
+      "title": "Act II — Building the gate",
+      "eras": [
+        "era-3",
+        "era-4",
+        "era-5"
+      ],
+      "summary": "The working discipline becomes a protocol that catches its own defects, gets names that carry its rules and research that settles its shape, and finally compiles."
+    },
+    {
+      "id": "act-3",
+      "title": "Act III — The gate meets the world",
+      "eras": [
+        "era-6",
+        "era-7",
+        "era-8"
+      ],
+      "summary": "Proof is turned outward into surfaces anyone can read; the protocol overreaches and learns its place; and the grader that grades everything else is finally graded itself."
+    }
+  ],
+  "methodology": {
+    "intro": "Where the story has arrived: the proof ladder as it runs today, cheapest first, each rung catching a class of regression the rung below structurally cannot. Every rung is documented, drift-guarded, and says out loud when it did not run.",
+    "spine": "Every model-driven rung shares one statistical spine: repeated trials, a k-of-N pass-rate floor over valid samples only, transport faults separated from verdicts and never scored, and fail-closed starvation — a scenario with too few valid samples is \"never tested\", not green.",
+    "tiers": [
+      {
+        "id": "cheap",
+        "title": "cheap — deterministic, offline, before every commit",
+        "proves": "Scripts parse, manifests are valid, wiring holds both ways, load-bearing sentences survive, executed script gates still bite, published surfaces are in sync with their data, and this document's own inventory has not drifted.",
+        "cannot": "Whether any sentence still means anything to a model. It greps and parses; it never runs one.",
+        "gate": "required",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "cheap-tier"
+          }
+        ]
+      },
+      {
+        "id": "counterfeit",
+        "title": "counterfeit — the cheap gate must be seen rejecting",
+        "proves": "A corpus of deliberately broken plugins is rejected for the right reason, after the untouched baseline is proven green — including one that is structurally perfect and only weakens the safety invariant.",
+        "cannot": "Anything about a gate the corpus has no fixture for.",
+        "gate": "required",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "counterfeit-tier"
+          }
+        ]
+      },
+      {
+        "id": "install",
+        "title": "install — every registered plugin installs",
+        "proves": "Source to manifest to every declared component resolves, headless and cross-harness, and each plugin's own cheap pack passes in isolation.",
+        "cannot": "Runtime behavior in a live harness session.",
+        "gate": "required",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "install-tier"
+          }
+        ]
+      },
+      {
+        "id": "behavioral",
+        "title": "behavioral — the prose steers a model",
+        "proves": "A model given the skill behaves as the skill demands, judged by a rubric with a stub-skill negative control, under the statistical spine — with a no-tools clause so a harness artifact is never mistaken for a skill failure.",
+        "cannot": "Multi-round protocol behavior, composition between plugins, or anything a judge can be fooled about. One skill, one turn.",
+        "gate": "required (aggregate)",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "behavioral-tier-promptfoo"
+          }
+        ]
+      },
+      {
+        "id": "routing",
+        "title": "routing — the roster picks a composition, not a name",
+        "proves": "With every skill description in context, requests route to a typed specialist | envelope | guards | interaction_owner line validated by eight fail-closed rules; a trajectory leg grades redgate's next move at frozen decision points.",
+        "cannot": "That the routed-to skill then does anything right in a live run.",
+        "gate": "advisory",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "routing-tier"
+          }
+        ]
+      },
+      {
+        "id": "scale",
+        "title": "scale — the same gates, hundreds of randomized times",
+        "proves": "The deterministic machinery holds across seeded random registries and randomized round lifecycles, so a defect cannot hide behind one lucky fixture.",
+        "cannot": "Model behavior — offline, stdlib-only stress.",
+        "gate": "evidence, not a merge gate",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "scale-tier"
+          }
+        ]
+      },
+      {
+        "id": "deep",
+        "title": "deep — a real agent, in a sandbox, across harnesses",
+        "proves": "The safety invariant survives an end-to-end run by a real coding agent, with an oracle/nop calibration floor so a broken verifier cannot read green.",
+        "cannot": "Anything about non-safety skills — and nothing at all when its switch is off, which the required check announces rather than hides.",
+        "gate": "required (aggregate)",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "deep-tier-pier"
+          }
+        ]
+      },
+      {
+        "id": "published",
+        "title": "published surfaces — the gallery and this timeline",
+        "proves": "Every card is a real, provenanced model run and every timeline entry carries receipts; both pages are generated from committed data and re-verified at publish time.",
+        "cannot": "That a captured pair is representative, or that a receipt supports its claim — a human reviews both.",
+        "gate": "review-gated",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "example-gallery-refresh--pages"
+          }
+        ]
+      },
+      {
+        "id": "demonstration",
+        "title": "demonstration — what the skill does to real material",
+        "proves": "The one thing no green check shows: the skill applied to real input, with the output, the rule that produced each change, and the misses.",
+        "cannot": "Be machine-enforced. It is a human review gate: never approve a skill change without it, never post one you did not run.",
+        "gate": "human",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "demonstration-discipline"
+          }
+        ]
+      }
+    ]
+  },
+  "horizon": {
+    "intro": "The next turns of the question, planned and receipted but not yet built. Each is stated as what it would prove — and, per the plan's own rules, none becomes a required check on the PR that creates it.",
+    "items": [
+      {
+        "id": "l1-decision-probes",
+        "title": "L1 — decision-point probes",
+        "status": "planned · first increment",
+        "question": "At a frozen mid-run state, does the model's next move obey the protocol — and does it stay quiet when it should?",
+        "detail": "Six probe families the trajectory pack lacks — gate classification under mandate, coded allow is not consent, T0 pass-through, re-pin refusal, JUDGE independence, surface-specific probes — every must-fire with a must-not-fire twin, because over-activation is the signature failure of an envelope skill. Graveyard becomes the second stateful skill under the same step contract.",
+        "depends_on": "nothing — runs on the live pack's harness",
+        "receipts": [
+          {
+            "label": "testing plan §3.1",
+            "path": "docs/testing-plan.md",
+            "anchor": "31-l1--decision-point-probes-extend-the-trajectory-pack"
+          },
+          {
+            "label": "issue #89",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/89"
+          }
+        ]
+      },
+      {
+        "id": "l2-plan-audit",
+        "title": "L2 — plan audit",
+        "status": "planned",
+        "question": "Does the model's plan apply its dependencies before any work — and how much of the envelope does the roster prose carry on its own?",
+        "detail": "A typed PLAN header validated by a contract in the route-contract mould, then an anchored rubric with a stub-skill control. The corpus is the routing tier's composition scenarios plus their terse twins: the same problem stated without the evidence words that made the composition promptable. The twins' pass rate is the measurement the strategy asked for. The Agent OS row waits, as a marked placeholder, on #85.",
+        "depends_on": "#85 for the Agent OS row",
+        "receipts": [
+          {
+            "label": "testing plan §3.2",
+            "path": "docs/testing-plan.md",
+            "anchor": "32-l2--plan-audit-sibling-of-evalsrouting-new-directory-evalsplan-audit"
+          },
+          {
+            "label": "issue #89",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/89"
+          }
+        ]
+      },
+      {
+        "id": "l3-artifact-audit",
+        "title": "L3 — trajectory runs with an artifact audit",
+        "status": "planned",
+        "question": "Does a real agent leave the run directory in the state the protocol requires — provably, against evidence it cannot forge?",
+        "detail": "The reward is a deterministic post-hoc audit, no judge in the loop — cross-checked against provenance the agent cannot write: the gate-responder's own log, a root-owned shim recording every verifier execution, and the sandbox's transcript. The fixture set includes the forgery case, a byte-perfect run directory with no matching shim log, and the audit must go red on it. N ≥ 3 trials per scenario on the same pass-rate arbiter.",
+        "depends_on": "its audit script and fixtures, landed red-first in the cheap tier",
+        "receipts": [
+          {
+            "label": "testing plan §3.3",
+            "path": "docs/testing-plan.md",
+            "anchor": "33-l3--trajectory-runs-with-artifact-audit-extend-the-deep-tier"
+          },
+          {
+            "label": "issue #89",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/89"
+          }
+        ]
+      },
+      {
+        "id": "l4-composition-runs",
+        "title": "L4 — cross-plugin composition at release cadence",
+        "status": "planned · release gate",
+        "question": "Installed together, as a user would install them, do redgate, a specialist, and Agent OS behave at the boundary each one claims?",
+        "detail": "A real installation inside the sandbox — install-smoke proves a plugin is installable, never that it is installed and discoverable — with discoverability as the first assertion, then one task per boundary claim under the L3 audit. Dollars per run; manual dispatch and release tags only.",
+        "depends_on": "L3's audit, #85's recorded boundary, #84's taxonomy",
+        "receipts": [
+          {
+            "label": "testing plan §3.4",
+            "path": "docs/testing-plan.md",
+            "anchor": "34-l4--cross-plugin-composition-runs-release-cadence"
+          },
+          {
+            "label": "issue #89",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/89"
+          }
+        ]
+      },
+      {
+        "id": "trigger-taxonomy",
+        "title": "#84 — triggers as control-flow mechanics",
+        "status": "open design question",
+        "question": "Which trigger classes are first-class — implied, user, dependency, state gate, always-on, offer-only — and can a skill's description become a compact routing index compiled from one canonical declaration?",
+        "detail": "Descriptions currently carry six different control-flow meanings in prose; manual compression does not scale across the fleet. The design targets routing quality per token, generated harness-specific descriptions from one source, and CI checks against description bloat and drift. When it lands, the routing tier's discipline rows return to exact-slot grading in the same PR.",
+        "depends_on": "nothing; several planned layers depend on it",
+        "receipts": [
+          {
+            "label": "issue #84",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/84"
+          }
+        ]
+      },
+      {
+        "id": "agent-os-minimal-context",
+        "title": "#85 — the smallest Agent OS context that helps",
+        "status": "experiment in progress",
+        "question": "What is the smallest Agent OS context that causes a repeatable improvement in automation design without adding semantic failures or unnecessary context?",
+        "detail": "Baseline, taxonomy, recipe-aware and full-Agent-OS contexts compared on the same six scenarios with blind judgments and a per-call cost ledger, under a hard $0.05 cap and deterministic cost preflight. The design PR stays unmerged until the implementation boundary is recorded from evidence.",
+        "depends_on": "nothing",
+        "receipts": [
+          {
+            "label": "issue #85",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/85"
+          },
+          {
+            "label": "the Agent OS handoff",
+            "path": "docs/research/agent-os/lousy-agents-handoff.md"
+          }
+        ]
+      },
+      {
+        "id": "agentworld-lab",
+        "title": "#99 — a calibrated world model as a test double",
+        "status": "proposed (RQ-004)",
+        "question": "Can a language world model be calibrated into a test double — never an oracle — that exposes an agent to hundreds of stateful, adversarial environment variants cheaply enough to matter?",
+        "detail": "Shadow and advisory only: simulator output can never block or approve a merge. Paired action-tape calibration against a deterministic fixture, six perturbation families each with a clean twin, specialist-only versus specialist-plus-envelope on the same seeds, and a graduation bar stated up front — at least 95% schema-valid observations, 90% outcome-class agreement, zero false-green MAJOR transitions — ending in a measured go, narrow, or stop. \"A negative result is valid.\" A reproducible local endpoint is a separate prerequisite, so hardware setup cannot swallow the first tracer bullet.",
+        "depends_on": "#100 for the calibration phase; Phase A is buildable offline",
+        "receipts": [
+          {
+            "label": "issue #99",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/99"
+          },
+          {
+            "label": "issue #100 (endpoint prerequisite)",
+            "url": "https://github.com/JRichlen/agent-plugins/issues/100"
+          }
+        ]
+      },
+      {
+        "id": "standing-orders-planned",
+        "title": "Standing orders the plan adds",
+        "status": "planned · enforced in the PR that first needs them",
+        "question": "Can the rules learned from landing the routing tier be made to bite mechanically, so they are obeyed rather than rediscovered?",
+        "detail": "A reasoning-trace guard (every pack grading a typed line declares that it grades the reply, not the thinking), a planned-tier consistency check (a layer is never both planned and live), a regrade discipline (every relabel records whether it fixed a label defect, a grading defect, or measured a capability gap), and findings recorded on the tracking issue rather than in a PR that will be squashed.",
+        "depends_on": "nothing",
+        "receipts": [
+          {
+            "label": "testing plan §6",
+            "path": "docs/testing-plan.md",
+            "anchor": "6-standing-orders-this-plan-adds"
+          }
+        ]
+      }
+    ]
+  }
 }
