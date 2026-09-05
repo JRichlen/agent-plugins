@@ -55,8 +55,9 @@ that it is green because it did not run, never silently.
   failure, not a skip), branch-protection lock, paid-pack discovery self-test,
   install-smoke coverage, cross-plugin references, context-tax budget, version
   drift, secret gate on agent exhaust, routing-pack structure, statistical-gate
-  self-test, example-gallery sync/provenance, and the testing-doc drift guard
-  defending this document.
+  self-test, example-gallery sync/provenance, design-timeline sync/receipts
+  (`docs/timeline/`: page in sync with its decision data, every receipt
+  resolving), and the testing-doc drift guard defending this document.
 - **What it cannot prove.** Whether any load-bearing sentence still *means*
   anything to a model, or whether a skill's behavior changed. It greps and
   parses; it never runs a model.
@@ -267,8 +268,11 @@ that it is green because it did not run, never silently.
   captured from a graded behavioral run — never hand-written.
   `refresh-examples.yml` re-runs the packs on a biweekly schedule and opens a
   **review-gated PR** (never pushes to main); `pages.yml` publishes `docs/`
-  only after merge, re-verifying `docs/build-examples.sh --check` first. The
-  cheap tier's gallery gate enforces sync + provenance offline.
+  only after merge, re-verifying `docs/build-examples.sh --check` and
+  `docs/timeline/build-timeline.sh --check` first — the gallery and the
+  design-trajectory timeline are both generated surfaces. The cheap tier's
+  gallery gate enforces sync + provenance offline; its timeline gate enforces
+  sync + receipts.
 - **What it cannot prove.** That the captured pair is *representative* — a
   human reviews the transcript diffs before merge.
 - **Fires.** Refresh: scheduled (1st and 15th, 06:00 UTC) + manual dispatch.

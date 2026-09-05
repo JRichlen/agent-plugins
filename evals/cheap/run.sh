@@ -930,15 +930,18 @@ rm -rf "$_tmp"
 # and this goes red.
 group "example gallery — sync and provenance"
 # Repo-level surface: absent => skip (a minimal marketplace has no gallery);
-# present-but-stale or present-but-unprovenanced => fail.
-if [ ! -x docs/build-examples.sh ]; then
+# present-but-stale or present-but-unprovenanced => fail. Presence is -e, not
+# -x, so a dropped exec bit cannot silently skip the whole check.
+if [ ! -e docs/build-examples.sh ]; then
   ok "example gallery: not present in this root — nothing to check"
+elif [ ! -x docs/build-examples.sh ]; then
+  bad "examples: build-examples.sh exists but is not executable — chmod +x it"
 elif docs/build-examples.sh --check >/dev/null 2>&1; then
   ok "examples: index.html is in sync with docs/examples/data/"
 else
   bad "examples: index.html is STALE — run docs/build-examples.sh"
 fi
-if [ -x docs/build-examples.sh ]; then
+if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
 import glob, json, os, sys
 root = sys.argv[1]
@@ -969,6 +972,21 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
         print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
 if found == 0:
     print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
+# PLAN.md's "committed snapshots | **N of M**" row is a hand-written count that
+# drifted twice (14 of 23 over a 15-file directory and a 24-plugin marketplace).
+# Pin it to the data: N is the snapshot count, M the marketplace plugin count.
+import re
+plan = os.path.join(root, "docs", "examples", "PLAN.md")
+mp = os.path.join(root, ".claude-plugin", "marketplace.json")
+if os.path.exists(plan) and os.path.exists(mp):
+    m = re.search(r"\| committed snapshots \| \*\*(\d+) of (\d+)\*\*", open(plan).read())
+    plugins = len((json.load(open(mp)).get("plugins") or []))
+    if not m:
+        print("  FAIL examples: PLAN.md has no 'committed snapshots | **N of M**' row"); fail += 1
+    elif (int(m.group(1)), int(m.group(2))) != (found, plugins):
+        print(f"  FAIL examples: PLAN.md says {m.group(1)} of {m.group(2)} snapshots, but docs/examples/data/ holds {found} and the marketplace lists {plugins} plugins"); fail += 1
+    else:
+        print(f"  PASS examples: PLAN.md snapshot count ({found} of {plugins}) matches the data directory and the marketplace")
 sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
@@ -1004,6 +1022,160 @@ if [ -d ".github/workflows" ] && [ -e ".git" ] \
   fi
 fi
 # ═══ END testing-doc drift guard ═════════════════════════════════════════════
+
+# --- 21. Design-trajectory timeline (docs/timeline) is in sync and receipted --
+# The decision timeline is generated from a hand-curated inventory
+# (docs/timeline/data/decisions.json) by docs/timeline/build-timeline.sh. Guard
+# offline that the committed HTML is in sync with the data, and that no entry
+# ships without the schema that makes it checkable: a forcing problem, a
+# decision, and at least one receipt that resolves (a repo path that exists, or
+# a link into this repository). Cut entries must record why they were cut.
+# Coupled: edit the data without regenerating, break a receipt path, or drop a
+# cut entry's reason, and this goes red.
+group "design-trajectory timeline — sync and receipts"
+# Repo-level surface: absent => skip; present-but-stale, present-but-broken,
+# or unreceipted => fail. Presence is -e, not -x, so a dropped exec bit cannot
+# silently skip the whole check.
+if [ ! -e docs/timeline/build-timeline.sh ]; then
+  ok "timeline: not present in this root — nothing to check"
+elif [ ! -x docs/timeline/build-timeline.sh ]; then
+  bad "timeline: build-timeline.sh exists but is not executable — chmod +x it"
+elif docs/timeline/build-timeline.sh --check >/dev/null 2>&1; then
+  ok "timeline: index.html is in sync with docs/timeline/data/decisions.json"
+else
+  bad "timeline: index.html is STALE — run docs/timeline/build-timeline.sh"
+fi
+if [ -e docs/timeline/build-timeline.sh ]; then
+python3 - "$REPO_ROOT" <<'PYT'
+import json, os, re, subprocess, sys
+root = sys.argv[1]
+fail = 0
+has_git = os.path.isdir(os.path.join(root, ".git"))
+# Per receipt: a sha that resolves is verified in any clone. A sha that does
+# not resolve is a FAIL in a full clone, but only "unverifiable" in a shallow
+# one (CI's default fetch-depth: 1 cannot see history) — reported out loud,
+# never silently green.
+shallow = has_git and subprocess.run(["git", "-C", root, "rev-parse", "--is-shallow-repository"],
+                                     capture_output=True, text=True).stdout.strip() == "true"
+verified_shas = 0
+unverified_shas = 0
+def flunk(msg):
+    global fail
+    print(f"  FAIL timeline: {msg}"); fail += 1
+try:
+    data = json.load(open(os.path.join(root, "docs", "timeline", "data", "decisions.json")))
+except Exception as e:
+    flunk(f"invalid JSON ({e})"); sys.exit(1)
+if not (data.get("thesis") or "").strip():
+    flunk("missing thesis")
+
+repo = "https://github.com/JRichlen/agent-plugins"
+root_real = os.path.realpath(root)
+def check_receipts(owner, receipts):
+    """Every published claim — a decision, a methodology rung, a horizon item —
+    carries at least one receipt that resolves: a repo path that exists (confined
+    to the repo root), or a URL into this repository (commit shas verified)."""
+    global verified_shas, unverified_shas
+    if not receipts:
+        flunk(f"{owner}: no receipts — every claim must be checkable"); return
+    for r in receipts:
+        if not (r.get("label") or "").strip():
+            flunk(f"{owner}: receipt missing label")
+        url = r.get("url") if isinstance(r.get("url"), str) else ""
+        rpath = r.get("path") if isinstance(r.get("path"), str) else ""
+        url, rpath = url.strip(), rpath.strip()
+        if bool(url) == bool(rpath):
+            flunk(f"{owner}: receipt '{r.get('label','?')}' needs exactly one non-empty url/path")
+        elif rpath:
+            full = os.path.realpath(os.path.join(root, rpath))
+            if full != root_real and not full.startswith(root_real + os.sep):
+                flunk(f"{owner}: receipt path escapes the repository: {rpath}")
+            elif not os.path.exists(full):
+                flunk(f"{owner}: receipt path does not exist: {rpath}")
+        else:
+            if url != repo and not url.startswith(repo + "/"):
+                flunk(f"{owner}: receipt url points outside this repository: {url}")
+            else:
+                m = re.search(r"/commit/([0-9a-f]{7,40})$", url)
+                if m:
+                    if has_git:
+                        ok_sha = subprocess.run(["git", "-C", root, "cat-file", "-e", m.group(1) + "^{commit}"],
+                                                capture_output=True).returncode == 0
+                        if ok_sha: verified_shas += 1
+                        elif shallow: unverified_shas += 1
+                        else: flunk(f"{owner}: commit receipt does not resolve in this clone: {m.group(1)}")
+                    else:
+                        unverified_shas += 1
+
+era_ids = []
+for e in data.get("eras", []):
+    for k in ("id", "title", "window", "lesson"):
+        if not (e.get(k) or "").strip(): flunk(f"era {e.get('id','?')}: missing {k}")
+    era_ids.append(e.get("id"))
+if len(era_ids) != len(set(era_ids)):
+    flunk("duplicate era ids")
+# acts partition the eras: every era in exactly one act, every act non-empty
+acts = data.get("acts") or []
+if acts:
+    seen_eras = []
+    for a in acts:
+        for k in ("id", "title", "summary"):
+            if not (a.get(k) or "").strip(): flunk(f"act {a.get('id','?')}: missing {k}")
+        if not a.get("eras"): flunk(f"act {a.get('id','?')}: names no eras")
+        for eid in a.get("eras", []):
+            if eid not in era_ids: flunk(f"act {a.get('id','?')}: unknown era '{eid}'")
+            seen_eras.append(eid)
+    for eid in era_ids:
+        n = seen_eras.count(eid)
+        if n != 1: flunk(f"era {eid} appears in {n} acts (must be exactly one)")
+seen = set()
+shown = 0
+for d in data.get("decisions", []):
+    did = d.get("id", "?")
+    if did in seen: flunk(f"{did}: duplicate decision id")
+    seen.add(did)
+    for k in ("id", "era", "date", "title", "forced_by", "decided"):
+        if not (d.get(k) or "").strip(): flunk(f"{did}: missing {k}")
+    if d.get("era") not in era_ids:
+        flunk(f"{did}: unknown era '{d.get('era')}'")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.get("date") or ""):
+        flunk(f"{did}: date not ISO (YYYY-MM-DD)")
+    if not isinstance(d.get("curated"), bool):
+        flunk(f"{did}: curated must be true or false")
+    elif d["curated"]:
+        shown += 1
+    elif not (d.get("cut_reason") or "").strip():
+        flunk(f"{did}: cut from the page without a recorded cut_reason")
+    check_receipts(did, d.get("receipts") or [])
+if shown == 0:
+    flunk("no curated decisions — the page would be empty")
+# the methodology ladder and the horizon are published claims too
+# the page must say, in its own data, that it is a learning journey in progress
+if len((data.get("disclosure") or "").strip()) < 80:
+    flunk("disclosure: the page must carry an in-progress disclosure (data.disclosure, at least 80 chars)")
+tiers = (data.get("methodology") or {}).get("tiers") or []
+for t in tiers:
+    tid = f"tier:{t.get('id','?')}"
+    for k in ("id", "title", "proves", "cannot", "born_in"):
+        if not (t.get(k) or "").strip(): flunk(f"{tid}: missing {k}")
+    if t.get("born_in") and t["born_in"] not in seen:
+        flunk(f"{tid}: born_in '{t['born_in']}' is not a recorded decision — a rung must name the decision that created it")
+    check_receipts(tid, t.get("receipts") or [])
+items = (data.get("horizon") or {}).get("items") or []
+for h in items:
+    hid = f"horizon:{h.get('id','?')}"
+    for k in ("id", "title", "status", "question"):
+        if not (h.get(k) or "").strip(): flunk(f"{hid}: missing {k}")
+    check_receipts(hid, h.get("receipts") or [])
+if fail == 0:
+    sha_note = f"{verified_shas} commit receipts verified in the object store"
+    if unverified_shas:
+        sha_note += f", {unverified_shas} NOT verified ({'shallow clone' if shallow else 'no .git in this root'})"
+    print(f"  PASS timeline: {shown} curated of {len(seen)} recorded decisions, {len(tiers)} methodology rungs, {len(items)} horizon items — every path receipt exists, every URL points into this repo, {sha_note}")
+sys.exit(1 if fail else 0)
+PYT
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 
 # ─── BEGIN RQ-001 behavior-surface trigger map ───────────────────────────────
 # The behavior-bearing path definition is frozen in ci/behavior-surfaces.json;
