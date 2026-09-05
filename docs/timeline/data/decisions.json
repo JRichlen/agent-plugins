@@ -1,11 +1,11 @@
 {
-  "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era is one more turn of that question, each escalation forced by a recorded failure of the previous answer. The story runs in three acts — earning green, building the gate, the gate meeting the world — and it ends, for now, on the layers of proof that are planned but not yet built.",
+  "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era is one more turn of that question — some forced by a failure the previous answer recorded, some by a gap it left open. Underneath runs a second question the same discipline keeps answering: who is allowed to do what, and what proves it. That is where the protocol, the compiler and the routing boundary come from. The story runs in three acts — earning green, building the gate, the gate meeting the world. Eras are threads of work, not calendar slots; several overlap by a day, and the dates say so. It ends, for now, on the layers of proof that are planned but not yet built.",
   "eras": [
     {
       "id": "era-1",
       "title": "Proof before the product",
       "window": "July 9–18, 2026",
-      "lesson": "The eval harness predates the plugins it guards. From birth, a green check has to be earned — and, from its first full day, proven able to reject.",
+      "lesson": "The eval harness is as old as the plugins it guards — five more shipped under it in July. From birth, a green check has to be earned — and, from its first full day, proven able to reject.",
       "bridge": "The harness could now reject a broken plugin. Nobody had yet asked whether it could reject a broken check — and a wave of new skills was about to ship with checks no one had proven could fail."
     },
     {
@@ -20,14 +20,14 @@
       "title": "Formalizing the gate",
       "window": "August 26, 2026",
       "lesson": "The working discipline became a protocol: designed adversarially, then built by running it on itself — during which it caught defects in its own construction.",
-      "bridge": "The protocol worked — on itself. But its vocabulary had outgrown it, its stage structure rested on instinct, and no one had yet asked the field what it already knew."
+      "bridge": "The protocol worked — on itself — and the field survey written the same night had already delivered its verdict: prose a model is asked to honor is not enforcement. But before anything could compile, the vocabulary had to stop pointing the wrong way and the stage structure had to rest on more than instinct."
     },
     {
       "id": "era-4",
       "title": "Naming and knowing",
       "window": "August 28, 2026",
       "lesson": "Research paid down the design's debts: names that carry the rules, a settled answer on loop structure, and a gap analysis that turned the skepticism inward.",
-      "bridge": "The research verdict was blunt: the invariants were prose a model was asked to honor. The missing organ was enforcement — a protocol that compiles."
+      "bridge": "With the names settled and the loop shape defended, the corpus verdict from two nights earlier was the only debt left: the invariants were still prose a model was asked to honor. The missing organ was enforcement — a protocol that compiles."
     },
     {
       "id": "era-5",
@@ -41,20 +41,20 @@
       "title": "Turning proof outward",
       "window": "August 29–30, 2026",
       "lesson": "The proof discipline became consumable surfaces: a gallery that publishes weak results out loud, randomized scale gauntlets, and this timeline.",
-      "bridge": "Consumable surfaces exposed a different weakness. The protocol had been crowned the default router for everything, and within a single PR it overreached."
+      "bridge": "Turning outward also meant deciding what the protocol was for. The PR that made it the default interactive workflow crowned it the router for everything — and the maintainer's own review caught the overreach within the hour."
     },
     {
       "id": "era-7",
       "title": "The gate learns its place",
       "window": "August 29 – September 2, 2026",
       "lesson": "Crowned the default router, the protocol overreached within a single PR — and the correction drew the boundary that now governs routing: a specialist owns the domain procedure; Redgate is the verification envelope around how it is executed.",
-      "bridge": "The boundary was drawn and typed. The gate that grades everything else had not yet been checked for honesty itself."
+      "bridge": "Drawing the boundary meant running the routing tier live, again and again — and those runs are where the statistical gate that scores every pack was caught excusing real failures."
     },
     {
       "id": "era-8",
       "title": "The honest gate",
       "window": "September 2–4, 2026",
-      "lesson": "The statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned two packs red across three PRs at once — and the protocol's own pack caught its driver scheduling a landing to happen unattended.",
+      "lesson": "Caught while landing the routing tier: the statistical gate had been quietly excluding real failures as transport faults. Scoring them honestly turned two packs red across three PRs at once — and the protocol's own pack caught its driver scheduling a landing to happen unattended.",
       "bridge": "Which leaves the question where it started, one altitude higher: the layers that would prove a plan, a trajectory, and a composition are planned, not built. That is the horizon below."
     }
   ],
@@ -942,7 +942,7 @@
       "era": "era-8",
       "date": "2026-09-02",
       "title": "The statistical gate stops excusing real failures",
-      "forced_by": "pass-rate.sh treated any row carrying an .error as a transport FAULT and excluded it from the floor — even when the row also carried a real assertion failure. A pack could fail its rubric and still report PASS: \"exit 0 — fail-open.\" Green that was noise, on the tier whose whole job is to say whether prose steers a model.",
+      "forced_by": "pass-rate.sh treated any row carrying an .error as a transport FAULT and excluded it from the floor — even when the row also carried a real assertion failure. Observed while the routing tier's live runs were being scored: a pack could fail its rubric and still report PASS: \"exit 0 — fail-open.\" Green that was noise, on the tier whose whole job is to say whether prose steers a model.",
       "decided": "FAULT only on genuine transport errors; a real assertion failure scores against the floor. Proven red first against the unfixed script on a fixture (\"4/4 valid = 1.00, 1 FAULT excluded, PASS\") and green after (\"4/5 valid = 0.80, FAIL\"); the fixture is now a cheap-tier self-test row so reverting the guard goes red offline. The immediate consequence was the point: two packs went red across three open PRs at once, and no single-plugin hardening could go green alone — so one integration PR carried the gate fix and both plugins' prose together.",
       "rejected": "Calling the newly red legs flakes. Under the honest gate, a red leg is a verdict until shown otherwise — the same rule the repo applied to itself in era 2, now applied to the tier that grades everything else.",
       "receipts": [
@@ -1082,7 +1082,7 @@
         "era-7",
         "era-8"
       ],
-      "summary": "Proof is turned outward into surfaces anyone can read; the protocol overreaches and learns its place; and the grader that grades everything else is finally graded itself."
+      "summary": "Proof is turned outward into surfaces anyone can read; the protocol overreaches and learns its place; and the statistical gate that scores every pack is caught excusing real failures — by the tier it was scoring."
     }
   ],
   "methodology": {
