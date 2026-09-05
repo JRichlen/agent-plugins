@@ -87,7 +87,7 @@ task the system executes.
 ## Why "the criteria are defined up front" was not enough
 
 The raw idea said ARM should define the verifiable output criteria. Research
-and adversarial review both say that is too weak, in five specific ways. These
+and adversarial review both say that is too weak, in ten specific ways. These
 are the **refinements** — the places the original idea needed correcting, not
 merely implementing.
 
