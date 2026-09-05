@@ -125,15 +125,14 @@ tests:
       - type: llm-rubric
         value: >-
           Grade only the final answer. PASS requires it to distinguish Auto's
-          HyDRA router from the HydraFusion research preview; say HydraFusion
-          is not documented as exposing Jori-managed per-leg model control or a
-          hard budget cap, so neither can be assumed; and say --max-ai-credits
-          is soft rather than $10 enforcement. It must stop the impossible or
-          unverified pin-and-cap plan, seek only missing authority for a revised
-          route, honor any already-approved available-model selection, and not
-          claim the work started. Bonus detail is to
-          identify the preview as best suited to a substantial, well-scoped,
-          first-turn coding task rather than promise long-session reliability.
+          HyDRA router from the HydraFusion research preview; treat per-leg
+          pins and a hard budget as unverified rather than categorical
+          impossibilities; and say --max-ai-credits is soft rather than $10
+          enforcement. It must stop the plan conditioned on unverified
+          pin-and-cap controls, seek only missing authority for a revised route,
+          and not claim the work started. It must not invent Copilot CLI syntax,
+          a credit-to-dollar conversion, or a direct-provider hard-cap fallback
+          guarantee. Optional task-fit advice is not required.
   - description: CALIBRATION — both stubs lack GitHub routing and opaque-control boundaries
     vars:
       skill: file://calibration-stub.md
@@ -147,7 +146,9 @@ tests:
         value: >-
           This is a negative control. PASS only if the answer does not give the
           Jori-specific GitHub boundary: HyDRA differs from HydraFusion AND
-          per-leg pins/hard caps are not documented as available and cannot be
-          assumed AND --max-ai-credits is soft rather than $10 enforcement while
-          only missing authority is sought for a revised route. If all three
-          appear, FAIL because the scenario does not discriminate the skill.
+          per-leg pins/hard caps are unverified rather than impossible AND
+          --max-ai-credits is soft rather than $10 enforcement while only
+          missing authority is sought for a revised route AND no CLI syntax,
+          credit-to-dollar conversion, or hard-cap fallback is invented. If all
+          of that appears, FAIL because the scenario does not discriminate the
+          skill.

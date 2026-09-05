@@ -65,6 +65,10 @@ Copilot CLI documents `--max-ai-credits` and `/limits` as a soft per-response li
 
 GitHub Models is separate from Copilot routing and is retired; it is not a route in this guide.
 
+### Operational response rule for Hydra-named requests
+
+When a user proposes a Hydra-named Copilot plan, explicitly distinguish **Auto with HyDRA** (platform model selection) from **HydraFusion** (a Copilot CLI research-preview compound workflow). Treat a requested per-leg pin or hard budget as **unverified** when the documentation does not establish that control; do not turn undocumented into impossible. Stop a plan that depends on such a pin or cap until the control is verified, or the user authorizes a revised route without it. Use only verified client syntax and billing conversions: do not invent Copilot commands, translate AI credits to a dollar guarantee, or present a direct-provider API as a proven hard-cap replacement without current evidence.
+
 ### Choosing a GitHub route
 
 Choose an explicit Copilot model when reproducibility, a known model ID, a known effort/context setting, and direct cost inspection matter more than platform adaptation. Choose Auto with HyDRA when a configured Copilot surface is authorized to adapt among policy-allowed models for the task and current service health; record the model GitHub reports after the response. Choose HydraFusion only when multi-model execution is explicitly authorized, the Copilot CLI research preview is available, and the work is a substantial, well-scoped first-turn coding task; expect GitHub to choose its own workflow legs and assess the resulting token-to-credit usage after the run. Do not select any GitHub route when the plan, policy, model availability, or budget authority is unknown.

@@ -154,9 +154,12 @@ that it is green because it did not run, never silently.
 
 Jori's pack covers bounded delegated work, authority expansion, rough task-fit
 guidance that does not authorize provider/account changes, and GitHub Copilot
-HyDRA/HydraFusion control boundaries. Its four calibration rows replace both
-the skill and routing reference with invariant-free stubs, so a baseline that
-independently produces all Jori-specific controls fails as nondiscriminating.
+HyDRA/HydraFusion control boundaries. The GitHub case requires an explicit
+distinction between those systems, treats undocumented per-leg/cap controls as
+unverified, and rejects invented CLI syntax or credit-to-dollar guarantees. Its
+four calibration rows replace both the skill and routing reference with
+invariant-free stubs, so a baseline that independently produces all
+Jori-specific controls fails as nondiscriminating.
 It is single-turn and tool-less: it does not prove real worker dispatch,
 persistent monitoring, provider availability, cross-provider equivalence,
 HydraFusion performance, cost savings, or a multi-round project outcome.
