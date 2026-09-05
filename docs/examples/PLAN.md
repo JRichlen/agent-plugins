@@ -15,15 +15,17 @@ coverage. Each phase names its verifier (what proves it done).
 | `pages.yml` (deploy from Actions, `enablement:true`) | shipped, runs on merge to main |
 | behavioral CI captures each pack's snapshot | shipped (artifact) |
 | biweekly review-gated refresh PR | shipped (`refresh-examples.yml`) |
-| committed snapshots | **14 of 23** — every unpacked plugin (13) plus scope-fence; subagent seeds, ungraded, each with an independently judged divergence |
+| committed snapshots | **15 of 24** — every plugin without a pack (12) plus scope-fence, redgate and agent-compiler; subagent seeds, ungraded, each with an independently judged divergence. The live spread is computed on the gallery page from the data, never hand-counted here |
 
-**Coverage today:** 10 plugins have a promptfoo pack and can auto-capture a
-*graded* example (find-before-build, fleet-playbook-curator, graveyard,
-scope-fence, semver-gate, stop-rule, tailscale-wif, verify-before-claim,
-voice, wayfinder). 13 have no pack, so they have no eval-derived example yet
-(codebase-design, context-handoff, dev-diary, diagnosing-bugs, docs-hygiene,
-egress-gate, grill-me, orchestrate, plugin-factory, prove-the-undo,
-recurrence-detector, redgate, tracer-bullets).
+**Coverage today:** 12 plugins have a promptfoo pack and can auto-capture a
+*graded* example (agent-compiler, find-before-build, fleet-playbook-curator,
+graveyard, redgate, scope-fence, semver-gate, stop-rule, tailscale-wif,
+verify-before-claim, voice, wayfinder). 12 have no pack, so they have no
+eval-derived example yet (codebase-design, context-handoff, dev-diary,
+diagnosing-bugs, docs-hygiene, egress-gate, grill-me, orchestrate,
+plugin-factory, prove-the-undo, recurrence-detector, tracer-bullets). The
+cheap tier checks the snapshot row above against the data directory and the
+marketplace, so these counts cannot silently go stale.
 
 ## The gap that blocks everything else
 
@@ -72,9 +74,14 @@ Two honest options per plugin, decided per plugin:
 - **Done — all 13 seeded** via real model runs (a 40-agent pass: per plugin a
   designer read the SKILL.md and built a discriminating scenario, two agents
   answered it with the skill and with a generic stub, and an independent
-  reader judged the honest divergence). Judged spread: **1 stark, 9 moderate,
-  2 subtle** — published verbatim on each card, so a weak example is visible
-  as weak rather than dressed up.
+  reader judged the honest divergence). Each reader's verdict is published
+  verbatim on its card, so a weak example is visible as weak rather than
+  dressed up. At seeding the tagged verdicts were 1 stark, 7 moderate and
+  2 subtle, with three seeds described in prose without a one-word grade;
+  an earlier version of this line said "1 stark, 9 moderate, 2 subtle", which
+  was a miscount. Two more seeds (redgate, agent-compiler) arrived with
+  PR #80, one of them judged "strong" — the reader's word, kept as written.
+  The current spread is computed on the gallery page.
 - **The subtle ones are the useful signal**, not a failure: `docs-hygiene` and
   `codebase-design` are where a strong model already does most of what the
   skill asks unaided. Those are the two best candidates for a real promptfoo

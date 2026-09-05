@@ -205,6 +205,9 @@ print(f'''<!doctype html>
   .crumb a {{ text-decoration:none; }}
   header.top h1 {{ font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }}
   header.top .sub {{ color:var(--muted); margin:0 0 1.2rem; max-width:72ch; }}
+  .wip {{ border-left:3px solid var(--brg); background:var(--card); border-radius:0 10px 10px 0;
+    padding:.7rem 1rem; margin:0 0 1rem; font-size:.95rem; color:var(--muted); }}
+  .wip strong {{ color:var(--fg); }}
   .thesis {{ background:var(--accent-soft); border:1px solid var(--accent);
     border-radius:12px; padding:1rem 1.2rem; margin:1.2rem 0 1.6rem; }}
   .thesis strong {{ color:var(--accent); }}
@@ -280,6 +283,7 @@ print(f'''<!doctype html>
   stands today, and what is planned next. {shown} decisions shown of {total} recorded; the rest stay in the
   <a href="{REPO}/blob/main/docs/timeline/data/decisions.json">data file</a> with their cut reasons.</p>
 </header>
+<div class="wip"><strong>In progress.</strong> {esc(data.get("disclosure",""))}</div>
 <div class="thesis">
   <strong>The through-line.</strong> {esc(data["thesis"])}
 </div>

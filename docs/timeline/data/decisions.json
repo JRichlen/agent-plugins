@@ -1,5 +1,6 @@
 {
   "thesis": "One question, asked at escalating altitude: what does a green check actually prove? Every era is one more turn of that question — some forced by a failure the previous answer recorded, some by a gap it left open. Underneath runs a second question the same discipline keeps answering: who is allowed to do what, and what proves it. That is where the protocol, the compiler and the routing boundary come from. The story runs in three acts — earning green, building the gate, the gate meeting the world. Eras are threads of work, not calendar slots; several overlap by a day, and the dates say so. It ends, for now, on the layers of proof that are planned but not yet built.",
+  "disclosure": "A learning journey in progress. This repository is eight weeks old and this page is written while the work happens: entries are added as decisions land, receipts are re-checked, and claims a receipt does not support are corrected in the open — an editorial pass on this page's own draft found and fixed eleven of them. Read it as a working record kept honest by its receipts, not as a finished retrospective; the horizon at the end is what has not been built yet.",
   "eras": [
     {
       "id": "era-1",

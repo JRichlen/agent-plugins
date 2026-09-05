@@ -106,6 +106,18 @@ for s in snaps:
   </section>''')
 
 count = len(cards)
+# judged-divergence spread, computed from the data so it can never drift from the cards
+import re as _re, collections as _c
+_tags = _c.Counter()
+_untagged = 0
+for s in snaps:
+    m = _re.search(r"\[divergence: ([a-z]+)\]", s.get("notice") or "")
+    if m: _tags[m.group(1)] += 1
+    else: _untagged += 1
+_order = ["stark", "strong", "moderate", "subtle"]
+_parts = [f"{_tags[k]} {k}" for k in _order if _tags[k]] + [f"{_tags[k]} {k}" for k in sorted(_tags) if k not in _order]
+if _untagged: _parts.append(f"{_untagged} described without a grade")
+spread = ", ".join(_parts) if _parts else "none yet"
 toc = " · ".join(f'<a href="#{html.escape(s["plugin"])}">{html.escape(s["plugin"])}</a>' for s in snaps) or "—"
 body = "\n".join(cards) if cards else '<p class="empty">No example snapshots yet. CI captures them from behavioral eval runs.</p>'
 
@@ -181,7 +193,8 @@ print(f'''<!doctype html>
 <header>
   <h1>Skill examples — before &amp; after</h1>
   <p class="sub">Real prompt/response pairs showing what each skill changes, run with the
-  skill and without it (against a generic stub). {count} example{"s" if count!=1 else ""}.</p>
+  skill and without it (against a generic stub). {count} example{"s" if count!=1 else ""} —
+  judged divergence, in the reader's own word: {spread}.</p>
 </header>
 <div class="intro">
   <strong>Every pair here is a real, provenanced model run</strong> — captured from the

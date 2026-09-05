@@ -972,6 +972,21 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
         print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
 if found == 0:
     print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
+# PLAN.md's "committed snapshots | **N of M**" row is a hand-written count that
+# drifted twice (14 of 23 over a 15-file directory and a 24-plugin marketplace).
+# Pin it to the data: N is the snapshot count, M the marketplace plugin count.
+import re
+plan = os.path.join(root, "docs", "examples", "PLAN.md")
+mp = os.path.join(root, ".claude-plugin", "marketplace.json")
+if os.path.exists(plan) and os.path.exists(mp):
+    m = re.search(r"\| committed snapshots \| \*\*(\d+) of (\d+)\*\*", open(plan).read())
+    plugins = len((json.load(open(mp)).get("plugins") or []))
+    if not m:
+        print("  FAIL examples: PLAN.md has no 'committed snapshots | **N of M**' row"); fail += 1
+    elif (int(m.group(1)), int(m.group(2))) != (found, plugins):
+        print(f"  FAIL examples: PLAN.md says {m.group(1)} of {m.group(2)} snapshots, but docs/examples/data/ holds {found} and the marketplace lists {plugins} plugins"); fail += 1
+    else:
+        print(f"  PASS examples: PLAN.md snapshot count ({found} of {plugins}) matches the data directory and the marketplace")
 sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
@@ -1135,6 +1150,9 @@ for d in data.get("decisions", []):
 if shown == 0:
     flunk("no curated decisions — the page would be empty")
 # the methodology ladder and the horizon are published claims too
+# the page must say, in its own data, that it is a learning journey in progress
+if len((data.get("disclosure") or "").strip()) < 80:
+    flunk("disclosure: the page must carry an in-progress disclosure (data.disclosure, at least 80 chars)")
 tiers = (data.get("methodology") or {}).get("tiers") or []
 for t in tiers:
     tid = f"tier:{t.get('id','?')}"
