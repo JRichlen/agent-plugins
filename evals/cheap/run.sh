@@ -1395,6 +1395,16 @@ if [ -f evals/routing/route-contract.test.js ]; then
     else
       bad "route/step contract: routing pack present without trajectory/step-contract.test.js (fail-closed)"
     fi
+    if [ -f evals/routing/subject-provider-config.test.py ]; then
+      if out="$(python3 evals/routing/subject-provider-config.test.py 2>&1)"; then
+        ok "subject provider: GLM configs contain native mandatory max reasoning passthrough"
+      else
+        bad "subject provider: GLM request-shape test failed"
+        printf '%s\n' "$out" | sed 's/^/    /'
+      fi
+    else
+      bad "subject provider: routing pack present without subject-provider-config.test.py (fail-closed)"
+    fi
   fi
 fi
 # ─── END RQ-002 typed route/step contracts ───────────────────────────────────
@@ -1452,6 +1462,17 @@ if [ -e ".git" ]; then
   fi
 fi
 # ─── END behavioral-pack no-tools clause ─────────────────────────────────────
+
+# Price-monitor operational controls; absent only in synthetic counterfeit roots.
+if [ -e .git ]; then
+  group "model pricing controls (offline)"
+  if out="$(python3 ci/model-pricing/test_monitor.py 2>&1)"; then
+    ok "model pricing: normalization, authority and durable reservation controls"
+  else
+    bad "model pricing: offline control suite failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"

@@ -35,8 +35,15 @@ prompts:
 
 providers:
   # Same subject model as the routing pack — one provider convention per tier.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:z-ai/glm-5.3-flash
     config:
+      # Promptfoo 0.122.0 only forwards reasoning_effort for recognized reasoning
+      # names, so pass OpenRouter's native request body through explicitly. GLM
+      # requires reasoning; max preserves the prior quality posture. Lower effort
+      # has no local equivalence evidence.
+      passthrough:
+        reasoning:
+          effort: max
       # 8192, not the routing pack's 4096: this prompt injects the whole
       # redgate SKILL.md and the model reasons at length over it — PR #93 run
       # 33592810851 had a T2 row whose reply was empty because the reasoning
