@@ -131,9 +131,9 @@ greppable reference the cheap eval asserts against.
   the specific MAJOR mechanism (e.g., "disable `enforce_admins` to merge
   it") — ask again, naming that mechanism by name. If a structural block (a
   `hard_deny`/`soft_deny` classifier, an API-level policy denial, a
-  permission or scope denial) fires mid-attempt even after sign-off, do not
-  route around it: surface exactly what fired and why, then offer the
-  least-destructive alternative path forward and wait again. A different
+  permission or scope denial) fires mid-attempt even after sign-off,
+  do not route around it: surface exactly what fired and why, then offer
+  the least-destructive alternative path forward and wait again. A different
   credential, token, or scope that would get past the block — including one
   already sitting in the environment — is a route around it, not a retry of
   what was signed off: never switch to it on your own, and never make it the
