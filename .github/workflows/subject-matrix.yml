@@ -106,7 +106,10 @@ jobs:
         # statistical gate below is the verdict.
         run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.matrix.yaml --output results.matrix.json || echo "::warning::promptfoo exited non-zero — the per-provider statistical gate scores results.matrix.json and decides this leg"
       - name: per-provider statistical gate (baseline decides; subjects advisory)
+        # pipefail, or `| tee` swallows the scorer's exit code and the job goes
+        # green on a red baseline (run 34046683394 did exactly that).
         run: |
+          set -o pipefail
           evals/paid/pass-rate.sh "plugins/${{ matrix.plugin }}/evals/promptfoo/results.matrix.json" \
             --by-provider --baseline "${{ steps.overlay.outputs.baseline }}" --floor 0.6 --min-runs 2 --min-valid 2 | tee pass-rate.txt
           { echo "### subject matrix — ${{ matrix.plugin }}"; echo; echo '```'; cat pass-rate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
