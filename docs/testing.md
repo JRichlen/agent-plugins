@@ -36,6 +36,7 @@ structurally cannot.
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
+| [jori benchmark](#jori-benchmark-manual-paid) | `jori-benchmark.yml` + `evals/paid/jori-benchmark/` | repeats × 2 arms × per-attempt cap (dollars) | manual dispatch only | no — reports a cost verdict with a CI; never a merge gate |
 | [model pricing](#model-pricing-monitor) | `model-pricing.yml` + `ci/model-pricing/` | metadata free; strategy default off/$0 | daily/manual on default branch after activation; offline tests on scoped PRs | no — stages review artifacts only |
 | [demonstration](#demonstration-discipline) | PR comment | one manual skill run | every skill-change PR | no — human review gate, cannot be machine-enforced |
 
@@ -424,6 +425,24 @@ savings. Agent output is unvalidated until human review and separately approved
 existing real/control, routing, trajectory, and independent-judge calibration.
 See [activation, state recovery, scope and limits](model-pricing.md).
 
+## jori benchmark (manual, paid)
+
+Does loading the `jori` plugin change the harness-reported **cost to complete one
+activity** to a verified outcome, on the same model with the same tools? Dispatch
+`jori-benchmark.yml`: a free self-test proves the plumbing discriminates (the
+verifier fails the untouched fixture and a reward-hack, passes the oracle; the
+dry-run path never calls a model), then every attempt runs on its own fresh runner
+— one `claude -p` headless session per attempt, one arm each (`baseline` = plain
+prompt, `jori` = `/jori` prefix + `--plugin-dir plugins/jori`, everything else
+identical), one deterministic verifier — and the report job aggregates **all**
+attempts. `evals/paid/jori-benchmark/aggregate.py` refuses a verdict unless both
+arms share a realized model with at least two known-cost attempts, treats
+unreported cost as `UNKNOWN` (counted, never zero), reports cost per accepted
+outcome as `unavailable` on zero successes, and calls `jori cheaper` only when the
+95% bootstrap CI of the mean-cost difference lies below zero. Evidence about one
+activity on one model; not a general claim. Details in
+`evals/paid/jori-benchmark/README.md`.
+
 ## demonstration discipline
 
 - **What it proves.** What a changed skill actually does to real material —
@@ -545,11 +564,15 @@ job: counterfeit tier — run (corpus)
 job: deep tier (pier)
 job: deep tier — detect safety-path changes
 job: deep tier — pier run
-job: grader agreement — regrade and compare
 job: deploy
+job: grader agreement — regrade and compare
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
 job: install tier — install-smoke + evals
+job: jori benchmark — plan matrix
+job: jori benchmark — report (aggregate + verdict)
+job: jori benchmark — run
+job: jori benchmark — self-test (no model calls)
 job: model pricing — detect and stage
 job: model pricing — offline controls
 job: paid multi-plugin gate
@@ -603,6 +626,7 @@ pack: wayfinder/promptfoo
 workflow: calibration-sheet.yml
 workflow: evals.yml
 workflow: grader-agreement.yml
+workflow: jori-benchmark.yml
 workflow: model-pricing.yml
 workflow: pages.yml
 workflow: refresh-examples.yml

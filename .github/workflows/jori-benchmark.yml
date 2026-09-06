@@ -1,0 +1,142 @@
+# Jori benchmark — does the jori coordination plugin change the COST of completing an
+# activity, on the same model, with the same tools, in the same harness?
+#
+# Manual dispatch only; never a required check; never scheduled. Each attempt is one
+# fresh GitHub runner (isolation: no shared session state, no shared workspace), one
+# headless Claude Code run (`claude -p`) against a staged task fixture, one deterministic
+# outcome verifier, and one result JSON carrying the harness-reported total_cost_usd,
+# usage, turns, realized model and adoption signals. The report job aggregates every
+# attempt (errors and over-budget stops included), refuses a verdict unless both arms ran
+# on the same realized model with >= 2 known-cost attempts, and prints the verdict to the
+# step summary. See evals/paid/jori-benchmark/README.md.
+#
+# Cost: repeats × 2 arms × up to max_budget_usd, plus the free self-test. Nothing runs
+# without a person clicking Run workflow; the ANTHROPIC_API_KEY secret is the same one
+# the behavioral tier uses.
+name: jori benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Activity id under evals/paid/jori-benchmark/tasks/'
+        required: false
+        default: 'multi-module-fix'
+        type: string
+      repeats:
+        description: 'Attempts per arm (fresh runner each). Minimum 2 for a verdict.'
+        required: false
+        default: '3'
+        type: string
+      model:
+        description: 'Model id passed to --model for BOTH arms (empty = harness default; the realized model is recorded either way)'
+        required: false
+        default: 'claude-sonnet-5'
+        type: string
+      max_budget_usd:
+        description: 'Per-attempt --max-budget-usd cap'
+        required: false
+        default: '2.00'
+        type: string
+      claude_code_version:
+        description: 'npm dist-tag or version of @anthropic-ai/claude-code to install on the runner'
+        required: false
+        default: 'latest'
+        type: string
+
+concurrency:
+  group: jori-benchmark-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  self-test:
+    name: jori benchmark — self-test (no model calls)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: prove the plumbing discriminates before spending
+        run: bash evals/paid/jori-benchmark/self-test.sh
+
+  plan:
+    name: jori benchmark — plan matrix
+    needs: [self-test]
+    runs-on: ubuntu-latest
+    outputs:
+      legs: ${{ steps.legs.outputs.legs }}
+    steps:
+      - id: legs
+        env:
+          REPEATS: ${{ inputs.repeats }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os
+          n = int(os.environ["REPEATS"])
+          assert 1 <= n <= 20, "repeats must be 1..20"
+          legs = [{"leg": f"{arm}-{i}", "arm": arm, "repeat": i} for arm in ("jori", "baseline") for i in range(1, n + 1)]
+          print("legs=" + json.dumps(legs))
+          PY
+
+  run:
+    name: jori benchmark — run (${{ matrix.leg }})
+    needs: [plan]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.legs) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: install Claude Code (pinned by input; realized version is recorded per attempt)
+        env:
+          VERSION: ${{ inputs.claude_code_version }}
+        run: |
+          npm install -g "@anthropic-ai/claude-code@${VERSION}"
+          claude --version
+      - name: one isolated attempt
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ARM: ${{ matrix.arm }}
+          REPEAT: ${{ matrix.repeat }}
+          TASK: ${{ inputs.task }}
+          MODEL: ${{ inputs.model }}
+          BUDGET: ${{ inputs.max_budget_usd }}
+        run: |
+          [ -n "${ANTHROPIC_API_KEY:-}" ] || { echo "ANTHROPIC_API_KEY secret is not available; refusing to run"; exit 1; }
+          mkdir -p results
+          bash evals/paid/jori-benchmark/run-arm.sh --arm "$ARM" --task "$TASK" --repeat "$REPEAT" \
+            --out results --model "$MODEL" --budget "$BUDGET" --live
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jori-benchmark-${{ matrix.leg }}
+          path: results/
+          if-no-files-found: error
+
+  report:
+    name: jori benchmark — report (aggregate + verdict)
+    needs: [run]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: jori-benchmark-*
+          path: results
+          merge-multiple: true
+      - name: aggregate every attempt and print the verdict
+        run: |
+          python3 evals/paid/jori-benchmark/aggregate.py --results results --out report
+          cat report/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jori-benchmark-report
+          path: |
+            report/
+            results/
