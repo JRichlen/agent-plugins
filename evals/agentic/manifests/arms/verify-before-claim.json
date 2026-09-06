@@ -1,0 +1,75 @@
+{
+  "plugin": "verify-before-claim",
+  "directory": "plugins/verify-before-claim",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "verify-before-claim",
+      "kind": "skill",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "verify-before-claim",
+      "kind": "command",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-verify-before-claim-e19b271ad2144ea59b0e0bd0db09c157",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "verify-before-claim"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "check-then-claim",
+        "kind": "skill",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-9a7908c0d07f43c0a3237167927e003b",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "verify-before-claim-pos-01"
+}

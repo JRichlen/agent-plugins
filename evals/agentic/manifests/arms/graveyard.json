@@ -1,0 +1,89 @@
+{
+  "plugin": "graveyard",
+  "directory": "plugins/graveyard",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "graveyard",
+      "kind": "skill",
+      "source_plugin": "graveyard",
+      "generic_equivalent": null
+    },
+    {
+      "name": "graveyard",
+      "kind": "command",
+      "source_plugin": "graveyard",
+      "generic_equivalent": null
+    },
+    {
+      "name": "archive-repo.sh",
+      "kind": "script",
+      "source_plugin": "graveyard",
+      "generic_equivalent": "plain-bash-filesystem-git::archive-repo.sh"
+    },
+    {
+      "name": "generate-delete-script.sh",
+      "kind": "script",
+      "source_plugin": "graveyard",
+      "generic_equivalent": "plain-bash-filesystem-git::generate-delete-script.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "guidance-only-inapplicable",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-graveyard-2ad9b7c137df4988891c6791d919902c",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "graveyard"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "generate-delete-script.sh",
+        "kind": "script",
+        "source_plugin": "graveyard",
+        "generic_equivalent": "bash+gh manual guarded-delete checklist"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "generate-delete-script.sh"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-38dbc57160c846af8215085ee5ff60e4",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "bash+gh manual guarded-delete checklist"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "graveyard-pos-01"
+}

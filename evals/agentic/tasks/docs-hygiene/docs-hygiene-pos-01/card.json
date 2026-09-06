@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix",
+      "kind": "script",
+      "name": "docs-hygiene staleness heuristic + refactoring-workflow reference",
+      "source_plugin": "docs-hygiene"
+    }
+  ],
+  "card_id": "docs-hygiene-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/fixtures/pass",
+  "plugin": "docs-hygiene",
+  "task_path": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/task"
+}

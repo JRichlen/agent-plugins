@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/run-manifest.schema.json",
+  "title": "RunManifest",
+  "description": "The manifest declared BEFORE a run: catalog digest, planned strata/cells, holdout seed, noninferiority margin, and which approval tokens were actually presented.",
+  "type": "object",
+  "$defs": {
+    "skippedEntry": {
+      "type": "object",
+      "required": ["id", "reason"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "run_id",
+    "created_at",
+    "git_commit",
+    "branch",
+    "offline",
+    "toolchain",
+    "lanes",
+    "estimands",
+    "noninferiority_margin",
+    "min_valid",
+    "min_clusters",
+    "planned_n",
+    "holdout_seed",
+    "catalog_digest",
+    "skipped",
+    "approvals"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "git_commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+    "branch": { "type": "string", "minLength": 1 },
+    "offline": { "type": "boolean" },
+    "toolchain": {
+      "type": "object",
+      "description": "tool name -> version",
+      "patternProperties": { "^[a-z0-9_.-]+$": { "type": "string" } },
+      "additionalProperties": false
+    },
+    "lanes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["core", "measurement", "protocol", "registry", "adapter", "redteam", "integration"]
+      }
+    },
+    "estimands": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["full-package", "guidance-only", "composition", "version", "baseline"]
+      }
+    },
+    "noninferiority_margin": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Declared BEFORE the run; no default."
+    },
+    "min_valid": { "type": "integer", "minimum": 0 },
+    "min_clusters": { "type": "integer", "minimum": 0 },
+    "planned_n": {
+      "type": "object",
+      "description": "cell id -> planned trials",
+      "patternProperties": { "^[A-Za-z0-9_.:-]+$": { "type": "integer", "minimum": 0 } },
+      "additionalProperties": false
+    },
+    "holdout_seed": { "type": "integer" },
+    "catalog_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "skipped": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skippedEntry" }
+    },
+    "approvals": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "additionalProperties": false
+}

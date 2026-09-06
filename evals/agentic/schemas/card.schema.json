@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/card.schema.json",
+  "title": "Card",
+  "description": "One task card in the reference corpus: positive, negative (must-not-fire), or near-miss, naming a real task fixture and two separate real verifiers.",
+  "type": "object",
+  "$defs": {
+    "capability": {
+      "type": "object",
+      "required": ["name", "kind", "source_plugin", "generic_equivalent"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["tool", "script", "mcp", "hook", "skill", "command"] },
+        "source_plugin": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "generic_equivalent": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "card_id",
+    "plugin",
+    "kind",
+    "task_path",
+    "outcome_verifier",
+    "adoption_verifier",
+    "pass_fixture",
+    "fail_fixture",
+    "expected_boundary_verdict",
+    "capabilities",
+    "mutations",
+    "holdout"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "description": "<plugin>-{pos,neg,near}-<NN>; reporting.py derives the plugin name from this convention.",
+      "pattern": "^[a-z0-9-]+-(pos|neg|near)-[0-9]+$"
+    },
+    "plugin": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "kind": { "enum": ["positive", "negative", "near-miss"] },
+    "task_path": { "type": "string", "minLength": 1 },
+    "outcome_verifier": { "type": "string", "minLength": 1 },
+    "adoption_verifier": { "type": "string", "minLength": 1 },
+    "pass_fixture": { "type": "string", "minLength": 1 },
+    "fail_fixture": { "type": "string", "minLength": 1 },
+    "expected_boundary_verdict": {
+      "type": "string",
+      "description": "Non-empty only for kind=near-miss; '' for positive/negative."
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "holdout": { "type": "boolean" }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": { "kind": { "const": "near-miss" } },
+    "required": ["kind"]
+  },
+  "then": {
+    "properties": { "expected_boundary_verdict": { "minLength": 1 } }
+  },
+  "else": {
+    "properties": { "expected_boundary_verdict": { "const": "" } }
+  }
+}

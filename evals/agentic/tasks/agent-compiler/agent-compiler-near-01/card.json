@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement",
+      "kind": "mcp",
+      "name": "agent-compiler kernel (compile.py / mcp_server.py) + hooks",
+      "source_plugin": "agent-compiler"
+    }
+  ],
+  "card_id": "agent-compiler-near-01",
+  "expected_boundary_verdict": "compile-with-ceiling-not-freehand",
+  "fail_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/fixtures/pass",
+  "plugin": "agent-compiler",
+  "task_path": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/task"
+}

@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Confirm the guarded removal path (its declared safety checks) is in place
+before touching {{artifact}}.

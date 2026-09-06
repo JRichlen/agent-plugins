@@ -1,0 +1,10 @@
+{
+  "cards": [
+    {
+      "id": "client-sdk",
+      "owner": "agent-b",
+      "state": "running",
+      "last_updated": 40
+    }
+  ]
+}

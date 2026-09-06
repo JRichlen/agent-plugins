@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output",
+      "kind": "skill",
+      "name": "adversarial-verify-fanout",
+      "source_plugin": "orchestrate"
+    }
+  ],
+  "card_id": "orchestrate-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/orchestrate/orchestrate-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/orchestrate/orchestrate-pos-01/fixtures/pass",
+  "plugin": "orchestrate",
+  "task_path": "evals/agentic/tasks/orchestrate/orchestrate-pos-01/task"
+}

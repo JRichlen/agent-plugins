@@ -1,0 +1,81 @@
+{
+  "plugin": "tailscale-wif",
+  "directory": "plugins/tailscale-wif",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "tailscale-wif",
+      "kind": "skill",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": null
+    },
+    {
+      "name": "tailscale-wif",
+      "kind": "command",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": null
+    },
+    {
+      "name": "compute-subject.sh",
+      "kind": "script",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": "plain-bash-filesystem-git::compute-subject.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-tailscale-wif-a8defb69953f46ebb543a4ea099dff6f",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "tailscale-wif"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "wif-setup-procedure",
+        "kind": "skill",
+        "source_plugin": "tailscale-wif",
+        "generic_equivalent": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-3d58cde259a043fd98a771b64375454c",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "tailscale-wif-pos-01"
+}

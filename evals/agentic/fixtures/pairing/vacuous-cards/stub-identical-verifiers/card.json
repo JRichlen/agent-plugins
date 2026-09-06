@@ -1,0 +1,14 @@
+{
+  "card_id": "stubtest-pos-01",
+  "plugin": "stubtest",
+  "kind": "positive",
+  "task_path": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/task",
+  "outcome_verifier": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/always_true_verifier.py",
+  "adoption_verifier": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/always_true_verifier.py",
+  "pass_fixture": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/fixtures/pass",
+  "fail_fixture": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/fixtures/fail",
+  "expected_boundary_verdict": "",
+  "capabilities": [],
+  "mutations": ["delete-guard-line"],
+  "holdout": false
+}

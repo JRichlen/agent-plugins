@@ -1,0 +1,1 @@
+Stored as repo VARIABLES: vars.TS_OIDC_CLIENT_ID, vars.TS_OIDC_AUDIENCE.

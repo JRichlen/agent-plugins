@@ -1,0 +1,75 @@
+{
+  "plugin": "diagnosing-bugs",
+  "directory": "plugins/diagnosing-bugs",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "diagnosing-bugs",
+      "kind": "skill",
+      "source_plugin": "diagnosing-bugs",
+      "generic_equivalent": null
+    },
+    {
+      "name": "diagnosing-bugs",
+      "kind": "command",
+      "source_plugin": "diagnosing-bugs",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-diagnosing-bugs-7805c081aefb4e0da2fb088eba4217da",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "diagnosing-bugs"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "diagnosing-bugs hypothesis/tag/seam-gate procedure",
+        "kind": "skill",
+        "source_plugin": "diagnosing-bugs",
+        "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-511dc9e707244bd3a47034b56387e480",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "diagnosing-bugs-pos-01"
+}

@@ -1,0 +1,119 @@
+{
+  "plugin": "fleet-playbook-curator",
+  "directory": "plugins/fleet-playbook-curator",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "fleet-playbook-curator",
+      "kind": "skill",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": null
+    },
+    {
+      "name": "curate-fleet-playbook",
+      "kind": "command",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": null
+    },
+    {
+      "name": "deploy-fleet-playbook",
+      "kind": "command",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": null
+    },
+    {
+      "name": "fleet-playbook-curator",
+      "kind": "command",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": null
+    },
+    {
+      "name": "diff-fleet.sh",
+      "kind": "script",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": "plain-bash-filesystem-git::diff-fleet.sh"
+    },
+    {
+      "name": "gather-context.sh",
+      "kind": "script",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": "plain-bash-filesystem-git::gather-context.sh"
+    },
+    {
+      "name": "list-fleet-members.sh",
+      "kind": "script",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": "plain-bash-filesystem-git::list-fleet-members.sh"
+    },
+    {
+      "name": "scaffold-repo.sh",
+      "kind": "script",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": "plain-bash-filesystem-git::scaffold-repo.sh"
+    },
+    {
+      "name": "validate-citations.sh",
+      "kind": "script",
+      "source_plugin": "fleet-playbook-curator",
+      "generic_equivalent": "plain-bash-filesystem-git::validate-citations.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "guidance-only-inapplicable",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "available (de039a6..05b8b2e)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-fleet-playbook-curator-5522a7864b2a4a20b6a82c6fb6c80ca1",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "fleet-playbook-curator"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "fleet-playbook-curator citation validator + fleet scripts",
+        "kind": "script",
+        "source_plugin": "fleet-playbook-curator",
+        "generic_equivalent": "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "fleet-playbook-curator citation validator + fleet scripts"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-155854b7382a4204a2a69947589652d6",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "fleet-playbook-curator-pos-01"
+}

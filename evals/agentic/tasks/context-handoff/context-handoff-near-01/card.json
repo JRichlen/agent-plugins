@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "ad hoc prose summary with inline-copied source content and no phase-boundary check",
+      "kind": "skill",
+      "name": "context-handoff decision tree + portable-extraction reference",
+      "source_plugin": "context-handoff"
+    }
+  ],
+  "card_id": "context-handoff-near-01",
+  "expected_boundary_verdict": "not-confirmed-disposable-fall-through-to-compact",
+  "fail_fixture": "evals/agentic/tasks/context-handoff/context-handoff-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/context-handoff/context-handoff-near-01/fixtures/pass",
+  "plugin": "context-handoff",
+  "task_path": "evals/agentic/tasks/context-handoff/context-handoff-near-01/task"
+}

@@ -1,0 +1,6 @@
+{"kind":"session","session":{"id":"harness-sess-DDDD"}}
+{"kind":"turn_ack","turn":{"index":0}}
+{"kind":"text","text":"partial before the cancel"}
+{"kind":"usage","model":"synthetic-model-a","usage":{"input_tokens":40,"output_tokens":5,"total_tokens":45,"wall_clock_ms":300}}
+{"kind":"text","text":"THIS ARRIVED AFTER THE CANCEL"}
+{"kind":"text","text":"AND SO DID THIS"}

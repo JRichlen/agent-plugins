@@ -1,0 +1,2 @@
+- Searched `rg 'retry' .` -- found utils/legacy_retry.py, but it uses a blocking time.sleep, incompatible with this asyncio event loop; genuinely unusable here, not a style complaint.
+- Searched `package manifest` -- no async retry package installed.

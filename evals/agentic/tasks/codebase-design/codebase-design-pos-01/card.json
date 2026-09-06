@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "single-draft interface written directly with no recorded comparison of alternatives",
+      "kind": "skill",
+      "name": "design-it-twice procedure + references",
+      "source_plugin": "codebase-design"
+    }
+  ],
+  "card_id": "codebase-design-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/codebase-design/codebase-design-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/codebase-design/codebase-design-pos-01/fixtures/pass",
+  "plugin": "codebase-design",
+  "task_path": "evals/agentic/tasks/codebase-design/codebase-design-pos-01/task"
+}

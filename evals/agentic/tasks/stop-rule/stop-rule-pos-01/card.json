@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "keep retrying on momentum with no declared bound and no stop-report",
+      "kind": "skill",
+      "name": "bound-and-stop-report",
+      "source_plugin": "stop-rule"
+    }
+  ],
+  "card_id": "stop-rule-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/stop-rule/stop-rule-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/stop-rule/stop-rule-pos-01/fixtures/pass",
+  "plugin": "stop-rule",
+  "task_path": "evals/agentic/tasks/stop-rule/stop-rule-pos-01/task"
+}

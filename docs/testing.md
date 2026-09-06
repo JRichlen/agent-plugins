@@ -530,6 +530,7 @@ eval-dir: evals/agentic
 eval-dir: evals/cheap
 eval-dir: evals/counterfeits
 eval-dir: evals/paid
+eval-dir: evals/redteam
 eval-dir: evals/routing
 eval-dir: evals/templates
 job: agent-compiler scale (kernel stress)

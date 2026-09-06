@@ -1,0 +1,99 @@
+{
+  "plugin": "voice",
+  "directory": "plugins/voice",
+  "version": "0.1.0",
+  "derived_capabilities": [
+    {
+      "name": "ai-writing-mistakes",
+      "kind": "skill",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    },
+    {
+      "name": "human-voice",
+      "kind": "skill",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    },
+    {
+      "name": "machine-voice",
+      "kind": "skill",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    },
+    {
+      "name": "second-opinion",
+      "kind": "skill",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    },
+    {
+      "name": "voice",
+      "kind": "command",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    },
+    {
+      "name": "hooks/SessionStart",
+      "kind": "hook",
+      "source_plugin": "voice",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "available (de039a6..edd6db3)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-voice-dd299da67a024ff1817b74c51c80b1de",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "voice"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "human-voice checklist",
+        "kind": "skill",
+        "source_plugin": "voice",
+        "generic_equivalent": "manual self-edit pass against a banned-AI-tell checklist"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-79ed434de86b4d8ebb3c58878c081fa5",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "voice-pos-01"
+}

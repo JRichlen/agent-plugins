@@ -1,0 +1,4 @@
+--- a/parse_config.py
++++ b/parse_config.py
++    if cfg is None:
++    # removed dead code

@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand",
+      "kind": "skill",
+      "name": "dashboard workflow",
+      "source_plugin": "jori"
+    }
+  ],
+  "card_id": "jori-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/jori/jori-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/jori/jori-pos-01/fixtures/pass",
+  "plugin": "jori",
+  "task_path": "evals/agentic/tasks/jori/jori-pos-01/task"
+}

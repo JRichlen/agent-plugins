@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Keep all output about {{artifact}} inside this workspace; no external
+services are part of this task.

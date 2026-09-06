@@ -1,0 +1,233 @@
+2026-09-06T23:00:00.112Z [DEBUG] [logger-B9f-j62Q.js:1215]: Successfully enabled SQLite WAL mode
+2026-09-06T23:00:00.113Z [DEBUG] [logger-B9f-j62Q.js:1215]: Running database migrations from: /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/drizzle
+2026-09-06T23:00:00.115Z [DEBUG] [logger-B9f-j62Q.js:1215]: Database migrations completed
+2026-09-06T23:00:00.118Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cjs","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cjs"}
+2026-09-06T23:00:00.118Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cjs
+2026-09-06T23:00:00.119Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cjs' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:680:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:679:21)
+    at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31)
+2026-09-06T23:00:00.119Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cts"}
+2026-09-06T23:00:00.119Z [DEBUG] [logger-B9f-j62Q.js:1215]: TypeScript module detected, registering tsx loader
+2026-09-06T23:00:00.136Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cts
+2026-09-06T23:00:00.136Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.cts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.149Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.js","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.js"}
+2026-09-06T23:00:00.149Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.js
+2026-09-06T23:00:00.149Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.js' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.150Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mjs","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mjs"}
+2026-09-06T23:00:00.150Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mjs
+2026-09-06T23:00:00.150Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mjs' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.151Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mts"}
+2026-09-06T23:00:00.151Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mts
+2026-09-06T23:00:00.151Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.mts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.152Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.ts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.ts"}
+2026-09-06T23:00:00.152Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.ts
+2026-09-06T23:00:00.152Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/promptfooconfig.ts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.155Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cjs","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cjs"}
+2026-09-06T23:00:00.156Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cjs
+2026-09-06T23:00:00.156Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cjs' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.156Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cts"}
+2026-09-06T23:00:00.156Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cts
+2026-09-06T23:00:00.157Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.cts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.157Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.js","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.js"}
+2026-09-06T23:00:00.157Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.js
+2026-09-06T23:00:00.158Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.js' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.158Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mjs","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mjs"}
+2026-09-06T23:00:00.158Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mjs
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mjs' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mts"}
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mts
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.mts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.ts","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.ts"}
+2026-09-06T23:00:00.159Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.ts
+2026-09-06T23:00:00.160Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/jrichlen/deployment-worktrees/agent-plugins-testing/redteam.ts' imported from /home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T23:00:00.186Z [DEBUG] [logger-B9f-j62Q.js:1215]: Reading prompts from ["canary"]
+2026-09-06T23:00:00.188Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/evals/redteam/providers/canary-egress.js","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/evals/redteam/providers/canary-egress.js"}
+2026-09-06T23:00:00.189Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/evals/redteam/providers/canary-egress.js
+2026-09-06T23:00:00.190Z [DEBUG] [logger-B9f-j62Q.js:1215]: Successfully imported module: {"resolvedPath":"file:///home/jrichlen/deployment-worktrees/agent-plugins-testing/evals/redteam/providers/canary-egress.js","moduleId":"/home/jrichlen/deployment-worktrees/agent-plugins-testing/evals/redteam/providers/canary-egress.js"}
+2026-09-06T23:00:00.191Z [INFO]: Cache is disabled.
+2026-09-06T23:00:00.191Z [DEBUG] [logger-B9f-j62Q.js:1215]: Starting filterTests with options: {}
+2026-09-06T23:00:00.191Z [DEBUG] [logger-B9f-j62Q.js:1215]: Initial test count: 1
+2026-09-06T23:00:00.194Z [DEBUG] [logger-B9f-j62Q.js:1221]: [EvaluatorTracing] Checking tracing configuration
+{
+  "testSuiteKeys": [
+    "description",
+    "tags",
+    "prompts",
+    "providers",
+    "providerPromptMap",
+    "tests",
+    "scenarios",
+    "defaultTest",
+    "derivedMetrics",
+    "nunjucksFilters",
+    "redteam",
+    "extensions",
+    "tracing"
+  ]
+}
+2026-09-06T23:00:00.194Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] Tracing not enabled or OTLP HTTP receiver not configured
+2026-09-06T23:00:00.194Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] tracing.enabled: undefined
+2026-09-06T23:00:00.194Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] tracing.otlp.http.enabled: undefined
+2026-09-06T23:00:00.195Z [INFO]: Starting evaluation eval-Smu-2026-09-06T23:00:00
+2026-09-06T23:00:00.195Z [DEBUG] [logger-B9f-j62Q.js:1215]: [Evaluator] Tracing check: env=false, testCase.metadata?.tracingEnabled=undefined, testSuite.tracing?.enabled=undefined, tracingEnabled=false
+2026-09-06T23:00:00.196Z [DEBUG] [logger-B9f-j62Q.js:1215]: Progress bar settings: showProgressBar=false, isWebUI=false
+2026-09-06T23:00:00.196Z [INFO]: Running 1 test cases (up to 4 at a time)...
+2026-09-06T23:00:00.198Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] isTracingEnabled check: metadata=false, yamlConfig=false, env=false, result=false
+2026-09-06T23:00:00.198Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider type: file://../providers/canary-egress.js
+2026-09-06T23:00:02.201Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider response properties: output
+2026-09-06T23:00:02.201Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider response cached property explicitly: undefined
+2026-09-06T23:00:02.202Z [DEBUG] [logger-B9f-j62Q.js:1221]: Evaluator response
+{
+  "responsePreview": "{\"output\":\"{\\\"hostSide\\\":true,\\\"dns\\\":{\\\"ok\\\":false,\\\"error\\\":\\\"ENOTFOUND\\\"},\\\"loopback\\\":{\\\"ok\\\":tr"
+}
+2026-09-06T23:00:02.202Z [DEBUG] [logger-B9f-j62Q.js:1215]: Evaluator checking cached flag: response.cached = false, provider.delay = 0
+2026-09-06T23:00:02.204Z [DEBUG] [logger-B9f-j62Q.js:1215]: Eval #1 complete (1 of 1)
+2026-09-06T23:00:02.205Z [DEBUG] [logger-B9f-j62Q.js:1221]: [Scheduler] Final metrics for file://../providers/canary-egress.js
+{
+  "totalRequests": 1,
+  "completedRequests": 1,
+  "failedRequests": 0,
+  "rateLimitHits": 0,
+  "retriedRequests": 0,
+  "avgLatencyMs": 2002,
+  "p50LatencyMs": 2002,
+  "p99LatencyMs": 2002
+}
+2026-09-06T23:00:02.206Z [DEBUG] [logger-B9f-j62Q.js:1215]: Wants to share: false
+2026-09-06T23:00:02.206Z [DEBUG] [logger-B9f-j62Q.js:1215]: Can share eval: false
+2026-09-06T23:00:02.208Z [INFO]: ✓ Eval complete
+2026-09-06T23:00:02.208Z [INFO]: 
+2026-09-06T23:00:02.208Z [INFO]: 
+2026-09-06T23:00:02.208Z [INFO]: Results:
+2026-09-06T23:00:02.208Z [INFO]:   ✓ 1 passed (100%)
+2026-09-06T23:00:02.208Z [INFO]:   0 failed (0%)
+2026-09-06T23:00:02.209Z [INFO]:   0 errors (0%)
+2026-09-06T23:00:02.209Z [INFO]: Duration: 2s (concurrency: 4)
+2026-09-06T23:00:02.209Z [INFO]: 
+2026-09-06T23:00:02.209Z [DEBUG] [logger-B9f-j62Q.js:1215]: Shareable URL: null
+2026-09-06T23:00:02.213Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Creating new TraceStore instance
+2026-09-06T23:00:02.213Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Fetching traces for evaluation eval-Smu-2026-09-06T23:00:00
+2026-09-06T23:00:02.213Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Initializing database connection
+2026-09-06T23:00:02.214Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Found 0 traces for evaluation eval-Smu-2026-09-06T23:00:00
+2026-09-06T23:00:02.214Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Returning 0 traces with spans
+2026-09-06T23:00:02.216Z [INFO]: Writing output to /tmp/tmphn6k06wk/netproof/canary-outside.eval.json
+2026-09-06T23:00:02.217Z [DEBUG] [logger-B9f-j62Q.js:1215]: Shutting down gracefully...
+2026-09-06T23:00:02.217Z [DEBUG] [logger-B9f-j62Q.js:1215]: Closing logger file transports

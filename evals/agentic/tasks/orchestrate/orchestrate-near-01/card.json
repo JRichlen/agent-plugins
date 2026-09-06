@@ -1,0 +1,24 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output",
+      "kind": "skill",
+      "name": "adversarial-verify-fanout",
+      "source_plugin": "orchestrate"
+    }
+  ],
+  "card_id": "orchestrate-near-01",
+  "expected_boundary_verdict": "verify-single-claim-directly-no-fan-out",
+  "fail_fixture": "evals/agentic/tasks/orchestrate/orchestrate-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/orchestrate/orchestrate-near-01/fixtures/pass",
+  "plugin": "orchestrate",
+  "task_path": "evals/agentic/tasks/orchestrate/orchestrate-near-01/task"
+}

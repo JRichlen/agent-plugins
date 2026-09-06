@@ -1,0 +1,155 @@
+2026-09-06T22:52:26.554Z [DEBUG] [logger-B9f-j62Q.js:1215]: Successfully enabled SQLite WAL mode
+2026-09-06T22:52:26.555Z [DEBUG] [logger-B9f-j62Q.js:1215]: Running database migrations from: /opt/pf/node_modules/promptfoo/dist/drizzle
+2026-09-06T22:52:26.557Z [DEBUG] [logger-B9f-j62Q.js:1215]: Database migrations completed
+2026-09-06T22:52:26.570Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.cjs","moduleId":"/repo/evals/redteam/redteam.cjs"}
+2026-09-06T22:52:26.570Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.cjs
+2026-09-06T22:52:26.570Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.cjs' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:724:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+    at onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:680:36)
+    at TracingChannel.tracePromise (node:diagnostics_channel:350:14)
+    at ModuleLoader.import (node:internal/modules/esm/loader:679:21)
+    at defaultImportModuleDynamicallyForModule (node:internal/modules/esm/utils:222:31)
+2026-09-06T22:52:26.571Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.cts","moduleId":"/repo/evals/redteam/redteam.cts"}
+2026-09-06T22:52:26.571Z [DEBUG] [logger-B9f-j62Q.js:1215]: TypeScript module detected, registering tsx loader
+2026-09-06T22:52:26.587Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.cts
+2026-09-06T22:52:26.588Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.cts' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T22:52:26.602Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.js","moduleId":"/repo/evals/redteam/redteam.js"}
+2026-09-06T22:52:26.602Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.js
+2026-09-06T22:52:26.602Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.js' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T22:52:26.603Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.mjs","moduleId":"/repo/evals/redteam/redteam.mjs"}
+2026-09-06T22:52:26.603Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.mjs
+2026-09-06T22:52:26.603Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.mjs' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T22:52:26.604Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.mts","moduleId":"/repo/evals/redteam/redteam.mts"}
+2026-09-06T22:52:26.604Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.mts
+2026-09-06T22:52:26.604Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.mts' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T22:52:26.605Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/redteam.ts","moduleId":"/repo/evals/redteam/redteam.ts"}
+2026-09-06T22:52:26.605Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/redteam.ts
+2026-09-06T22:52:26.605Z [DEBUG] [logger-B9f-j62Q.js:1215]: Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/repo/evals/redteam/redteam.ts' imported from /opt/pf/node_modules/promptfoo/dist/src/esm-CB3YoI_c.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:861:10)
+    at defaultResolve (node:internal/modules/esm/resolve:985:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:747:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:783:38)
+    at nextStep (node:internal/modules/customization_hooks:189:26)
+    at resolveBaseSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:10932)
+    at resolveDirectorySync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:12238)
+    at resolveTsPathsSync (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:13445)
+    at resolve (file:///opt/pf/node_modules/tsx/dist/register-C4vWVmug.mjs:2:15991)
+2026-09-06T22:52:26.628Z [DEBUG] [logger-B9f-j62Q.js:1215]: Reading prompts from ["canary"]
+2026-09-06T22:52:26.629Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting to import module: {"resolvedPath":"/repo/evals/redteam/providers/canary-egress.js","moduleId":"providers/canary-egress.js"}
+2026-09-06T22:52:26.630Z [DEBUG] [logger-B9f-j62Q.js:1215]: Attempting ESM import from: file:///repo/evals/redteam/providers/canary-egress.js
+2026-09-06T22:52:26.631Z [DEBUG] [logger-B9f-j62Q.js:1215]: Successfully imported module: {"resolvedPath":"file:///repo/evals/redteam/providers/canary-egress.js","moduleId":"providers/canary-egress.js"}
+2026-09-06T22:52:26.632Z [INFO]: Cache is disabled.
+2026-09-06T22:52:26.632Z [DEBUG] [logger-B9f-j62Q.js:1215]: Starting filterTests with options: {}
+2026-09-06T22:52:26.632Z [DEBUG] [logger-B9f-j62Q.js:1215]: Initial test count: 1
+2026-09-06T22:52:26.635Z [DEBUG] [logger-B9f-j62Q.js:1221]: [EvaluatorTracing] Checking tracing configuration
+{
+  "testSuiteKeys": [
+    "description",
+    "tags",
+    "prompts",
+    "providers",
+    "providerPromptMap",
+    "tests",
+    "scenarios",
+    "defaultTest",
+    "derivedMetrics",
+    "nunjucksFilters",
+    "redteam",
+    "extensions",
+    "tracing"
+  ]
+}
+2026-09-06T22:52:26.635Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] Tracing not enabled or OTLP HTTP receiver not configured
+2026-09-06T22:52:26.635Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] tracing.enabled: undefined
+2026-09-06T22:52:26.635Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] tracing.otlp.http.enabled: undefined
+2026-09-06T22:52:26.635Z [INFO]: Starting evaluation eval-l14-2026-09-06T22:52:26
+2026-09-06T22:52:26.636Z [DEBUG] [logger-B9f-j62Q.js:1215]: [Evaluator] Tracing check: env=false, testCase.metadata?.tracingEnabled=undefined, testSuite.tracing?.enabled=undefined, tracingEnabled=false
+2026-09-06T22:52:26.636Z [DEBUG] [logger-B9f-j62Q.js:1215]: Progress bar settings: showProgressBar=false, isWebUI=false
+2026-09-06T22:52:26.636Z [INFO]: Running 1 test cases (up to 4 at a time)...
+2026-09-06T22:52:26.638Z [DEBUG] [logger-B9f-j62Q.js:1215]: [EvaluatorTracing] isTracingEnabled check: metadata=false, yamlConfig=false, env=false, result=false
+2026-09-06T22:52:26.638Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider type: file://../providers/canary-egress.js
+2026-09-06T22:52:26.640Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider response properties: output
+2026-09-06T22:52:26.640Z [DEBUG] [logger-B9f-j62Q.js:1215]: Provider response cached property explicitly: undefined
+2026-09-06T22:52:26.640Z [DEBUG] [logger-B9f-j62Q.js:1221]: Evaluator response
+{
+  "responsePreview": "{\"output\":\"{\\\"hostSide\\\":false,\\\"dns\\\":{\\\"ok\\\":false,\\\"error\\\":\\\"EAI_AGAIN\\\"},\\\"loopback\\\":{\\\"ok\\\":f"
+}
+2026-09-06T22:52:26.640Z [DEBUG] [logger-B9f-j62Q.js:1215]: Evaluator checking cached flag: response.cached = false, provider.delay = 0
+2026-09-06T22:52:26.643Z [DEBUG] [logger-B9f-j62Q.js:1215]: Eval #1 complete (1 of 1)
+2026-09-06T22:52:26.643Z [DEBUG] [logger-B9f-j62Q.js:1221]: [Scheduler] Final metrics for file://../providers/canary-egress.js
+{
+  "totalRequests": 1,
+  "completedRequests": 1,
+  "failedRequests": 0,
+  "rateLimitHits": 0,
+  "retriedRequests": 0,
+  "avgLatencyMs": 1,
+  "p50LatencyMs": 1,
+  "p99LatencyMs": 1
+}
+2026-09-06T22:52:26.644Z [DEBUG] [logger-B9f-j62Q.js:1215]: Wants to share: false
+2026-09-06T22:52:26.644Z [DEBUG] [logger-B9f-j62Q.js:1215]: Can share eval: false
+2026-09-06T22:52:26.646Z [INFO]: ✓ Eval complete
+2026-09-06T22:52:26.646Z [INFO]: 
+2026-09-06T22:52:26.646Z [INFO]: 
+2026-09-06T22:52:26.646Z [INFO]: Results:
+2026-09-06T22:52:26.646Z [INFO]:   ✓ 1 passed (100%)
+2026-09-06T22:52:26.646Z [INFO]:   0 failed (0%)
+2026-09-06T22:52:26.646Z [INFO]:   0 errors (0%)
+2026-09-06T22:52:26.646Z [INFO]: Duration: 0s (concurrency: 4)
+2026-09-06T22:52:26.646Z [INFO]: 
+2026-09-06T22:52:26.646Z [DEBUG] [logger-B9f-j62Q.js:1215]: Shareable URL: null
+2026-09-06T22:52:26.650Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Creating new TraceStore instance
+2026-09-06T22:52:26.650Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Fetching traces for evaluation eval-l14-2026-09-06T22:52:26
+2026-09-06T22:52:26.650Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Initializing database connection
+2026-09-06T22:52:26.651Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Found 0 traces for evaluation eval-l14-2026-09-06T22:52:26
+2026-09-06T22:52:26.651Z [DEBUG] [logger-B9f-j62Q.js:1215]: [TraceStore] Returning 0 traces with spans
+2026-09-06T22:52:26.652Z [INFO]: Writing output to /out/results/canary-inside.eval.json
+2026-09-06T22:52:26.652Z [DEBUG] [logger-B9f-j62Q.js:1215]: Shutting down gracefully...
+2026-09-06T22:52:26.652Z [DEBUG] [logger-B9f-j62Q.js:1215]: Closing logger file transports

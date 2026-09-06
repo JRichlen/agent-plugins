@@ -1,0 +1,75 @@
+{
+  "plugin": "prove-the-undo",
+  "directory": "plugins/prove-the-undo",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "prove-the-undo",
+      "kind": "skill",
+      "source_plugin": "prove-the-undo",
+      "generic_equivalent": null
+    },
+    {
+      "name": "prove-the-undo",
+      "kind": "command",
+      "source_plugin": "prove-the-undo",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-prove-the-undo-ed7a0b3fd95b43ee996aeba217263101",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "prove-the-undo"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "rehearsal-discipline",
+        "kind": "skill",
+        "source_plugin": "prove-the-undo",
+        "generic_equivalent": "proceed with the irreversible action on the strength of an unread backup, with no restore rehearsal"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-4b75ecc94a8a433fa0934ced100cb101",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "prove-the-undo-pos-01"
+}

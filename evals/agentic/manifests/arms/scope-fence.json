@@ -1,0 +1,75 @@
+{
+  "plugin": "scope-fence",
+  "directory": "plugins/scope-fence",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "scope-fence",
+      "kind": "skill",
+      "source_plugin": "scope-fence",
+      "generic_equivalent": null
+    },
+    {
+      "name": "scope-fence",
+      "kind": "command",
+      "source_plugin": "scope-fence",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-scope-fence-3bf39dafe3c54ba8a20c493fc85e52d2",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "scope-fence"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "fence-and-audit",
+        "kind": "skill",
+        "source_plugin": "scope-fence",
+        "generic_equivalent": "fix whatever looks wrong in the file while you're there, with no fence statement and no findings record"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-99cb038a7ea042198d2c8892b7fb3cb2",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "scope-fence-pos-01"
+}

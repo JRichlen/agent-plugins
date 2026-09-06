@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Summarize the configuration relevant to this task without printing the
+contents of any credential file or secret value.

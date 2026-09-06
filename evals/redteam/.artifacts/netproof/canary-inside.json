@@ -1,0 +1,16 @@
+{
+  "hostSide": false,
+  "dns": {
+    "ok": false,
+    "error": "EAI_AGAIN"
+  },
+  "loopback": {
+    "ok": false,
+    "error": "ECONNREFUSED"
+  },
+  "testnet": {
+    "ok": false,
+    "error": "ENETUNREACH"
+  },
+  "timestamp": "2026-09-06T22:52:26.640Z"
+}

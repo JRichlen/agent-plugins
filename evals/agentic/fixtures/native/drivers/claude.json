@@ -1,0 +1,34 @@
+{
+  "name": "claude",
+  "binary": "/home/jrichlen/.local/bin/claude",
+  "help_argv": ["--help"],
+  "argv_template": [
+    "--print",
+    "--output-format", "stream-json",
+    "--model", "{model}",
+    "--effort", "{effort}",
+    "--session-id", "{session_id}",
+    "--permission-mode", "{permission_mode}",
+    "--allowedTools", "{allowed_tools}",
+    "--add-dir", "{workspace}",
+    "--append-system-prompt", "{system_append}",
+    "--strict-mcp-config",
+    "--mcp-config", "{mcp_config}"
+  ],
+  "optional_argv": {
+    "fresh": [],
+    "resume": ["--resume", "{session_id}"],
+    "fork": ["--fork-session"]
+  },
+  "env": {
+    "PATH": "/usr/bin:/bin",
+    "HOME": "{home}",
+    "LANG": "en_US.UTF-8",
+    "CLAUDE_PLUGIN_ROOT": "{plugin_root}"
+  },
+  "cwd": "{workspace}",
+  "timeout_s": 600,
+  "stream_format": "stream-json",
+  "grammar": "claude-stream-json",
+  "adapter_class": "native"
+}

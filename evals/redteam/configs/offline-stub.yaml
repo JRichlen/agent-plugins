@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# offline-stub.yaml — T43's named config: custom-provider API conformance.
+# promptfoo itself loads and calls providers/stub-echo.js and
+# providers/target-textual.js (configured to throw) via file:// references
+# during an offline eval (design §13, `ProviderApiConformance`,
+# `ProviderErrorIsFault`). No plugin roster, no corpus, no real subject —
+# this config exists only to prove the loader and the ApiProvider contract,
+# not to red-team anything.
+description: "redteam T43 — custom provider API conformance (offline stub)"
+
+prompts:
+  - "conformance probe: {{note}}"
+
+providers:
+  - id: file://../providers/stub-echo.js
+    label: stub-echo
+    config:
+      sideChannelDir: "{{env.REDTEAM_SIDECHANNEL_DIR}}"
+  - id: file://../providers/target-textual.js
+    label: target-textual-throw
+    config:
+      arm: conformance
+      plugin: conformance-test
+      behavior: throw
+      ledgerDir: "{{env.REDTEAM_LEDGER_DIR}}"
+
+defaultTest:
+  assert:
+    - type: javascript
+      # NOTE: a multi-line `value:` is executed as a raw function BODY
+      # (evaluator-SSlcaq_U.js:2296-2298), not as an arrow-function
+      # expression — see promptfooconfig.yaml's comment for the failure mode
+      # this avoids (measured directly: an unused function object evaluates
+      # to `undefined` and promptfoo reports "Custom function must return a
+      # boolean, number, or GradingResult object").
+      value: |
+        if (typeof output !== 'string' || output.length === 0) {
+          return { pass: false, score: 0, reason: 'conformance: empty or non-string output' };
+        }
+        return { pass: true, score: 1, reason: 'non-empty output received' };
+      weight: 1
+
+tests:
+  - description: "single conformance probe, run against every listed provider"
+    vars: { note: "hello from offline-stub.yaml" }
+
+evaluateOptions:
+  maxConcurrency: 1

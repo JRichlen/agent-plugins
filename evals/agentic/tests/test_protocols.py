@@ -8,27 +8,18 @@ class mixes in ``_PidLeakMixin`` so `leaked_pids(before, after) ==
 frozenset()` is asserted after every single test, not just once for the
 whole module (contract §8.3's acceptance line).
 
-FINDING surfaced by this module (not a testing-framework defect — a real
-defect in the shipped ``redgate`` plugin, out of this lane's ownership):
-``plugins/redgate/hooks/hooks.json`` writes its two commands as
-``${CLAUDE_PLUGIN_ROOT}/hooks-handlers/<script>.sh``. In every other plugin
-that pattern resolves against the PLUGIN ROOT (see ``voice``, whose
-``hooks-handlers/`` really does sit at the plugin root, and ``agent-compiler``,
-whose commands say ``${CLAUDE_PLUGIN_ROOT}/hooks/<script>.py`` and whose
-scripts really do live under ``hooks/``). redgate's own handler scripts,
-however, live one level deeper, at
-``plugins/redgate/hooks/hooks-handlers/<script>.sh`` — so the command
-``hooks.json`` actually wires is a 404: running it literally, exactly as a
-real Claude Code session would, exits 127 with "No such file or directory".
-Neither of redgate's two hooks (the PreToolUse write-guard and the
-SessionStart injection) can ever fire today. ``HookDiscoveryAndExec`` asserts
-this literal, observed fact rather than silently rerouting the command to
-where the file "should" be — discovery must stay honest even when what it
-discovers is broken. ``RedgateWriteGuard`` and ``SessionStartInjection``
-separately exercise the handler scripts at their real, existing path to prove
-the underlying shell logic is otherwise correct, so the fix redgate needs is a
-one-line path correction in its own ``hooks.json``, not a rewrite of either
-handler.
+FINDING surfaced by this module, now FIXED on this branch (commit cb64d58):
+``plugins/redgate/hooks/hooks.json`` used to write its two commands as
+``${CLAUDE_PLUGIN_ROOT}/hooks-handlers/<script>.sh`` while the handler scripts
+live one level deeper at ``plugins/redgate/hooks/hooks-handlers/``. Run
+literally, exactly as a real Claude Code session would, both commands exited
+127 with "No such file or directory", so neither the PreToolUse write-guard
+nor the SessionStart announcement could ever fire on an installed plugin.
+``HookDiscoveryAndExec`` first surfaced that by asserting the observed 127; the
+one-line path correction landed in ``hooks.json`` and the same test now asserts
+the opposite, observed fact: every live handler in the marketplace resolves and
+executes (no 127 anywhere). Discovery stays honest either way — it runs what
+``hooks.json`` actually wires, never a rerouted "should be" path.
 
 A second, smaller deviation from the T19-T24 backlog text, also verified
 empirically rather than assumed: redgate's ``session-start.sh`` does not
@@ -176,23 +167,19 @@ class HookDiscoveryAndExec(_PidLeakMixin, unittest.TestCase):
             self.assertIsInstance(r.exit_code, int)
             self.assertIsInstance(r.duration_ms, int)
 
-        # See the module docstring FINDING: redgate's two hooks are wired to
-        # a path that does not exist. Assert the real, observed fact.
+        # See the module docstring FINDING (fixed in cb64d58): every live
+        # handler, redgate's two included, must resolve to a real script.
+        # A 127 here means a hooks.json command points at a path that does
+        # not exist -- the exact defect the first version of this test caught.
         redgate_results = [r for r in results if r.spec.plugin == "redgate"]
         self.assertEqual(len(redgate_results), 2)
-        for r in redgate_results:
-            self.assertEqual(
-                r.exit_code, 127,
-                "redgate's hooks.json command no longer 404s -- if this was "
-                "fixed upstream, update this test and the module docstring",
-            )
-            self.assertIn("No such file or directory", r.stderr)
-
-        # agent-compiler and voice ARE correctly wired.
         for r in results:
-            if r.spec.plugin != "redgate":
-                self.assertNotEqual(r.exit_code, 127,
-                                     f"{r.spec.plugin}/{r.spec.event} unexpectedly 404s")
+            self.assertNotEqual(
+                r.exit_code, 127,
+                f"{r.spec.plugin}/{r.spec.event} 404s: hooks.json wires a "
+                f"command whose script does not exist -- {r.stderr.strip()[:200]}",
+            )
+            self.assertNotIn("No such file or directory", r.stderr)
 
     @staticmethod
     def _payload_for(spec: HookSpec, cwd: pathlib.Path) -> dict:

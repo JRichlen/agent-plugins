@@ -1,0 +1,24 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test",
+      "kind": "skill",
+      "name": "diagnosing-bugs hypothesis/tag/seam-gate procedure",
+      "source_plugin": "diagnosing-bugs"
+    }
+  ],
+  "card_id": "diagnosing-bugs-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-neg-01/fixtures/pass",
+  "plugin": "diagnosing-bugs",
+  "task_path": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-neg-01/task"
+}

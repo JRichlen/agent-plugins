@@ -1,0 +1,81 @@
+{
+  "plugin": "context-handoff",
+  "directory": "plugins/context-handoff",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "context-handoff",
+      "kind": "skill",
+      "source_plugin": "context-handoff",
+      "generic_equivalent": null
+    },
+    {
+      "name": "context-handoff",
+      "kind": "command",
+      "source_plugin": "context-handoff",
+      "generic_equivalent": null
+    },
+    {
+      "name": "check-handoff-portability.py",
+      "kind": "script",
+      "source_plugin": "context-handoff",
+      "generic_equivalent": "plain-bash-filesystem-git::check-handoff-portability.py"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-context-handoff-7eaae651ec1e4248a190d9b37fac2e61",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "context-handoff"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "context-handoff decision tree + portable-extraction reference",
+        "kind": "skill",
+        "source_plugin": "context-handoff",
+        "generic_equivalent": "ad hoc prose summary with inline-copied source content and no phase-boundary check"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-89dd8420719a403a84d5dd96e23e92bd",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "context-handoff-pos-01"
+}

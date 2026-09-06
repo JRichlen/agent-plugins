@@ -1,0 +1,75 @@
+{
+  "plugin": "semver-gate",
+  "directory": "plugins/semver-gate",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "semver-gate",
+      "kind": "skill",
+      "source_plugin": "semver-gate",
+      "generic_equivalent": null
+    },
+    {
+      "name": "semver-gate",
+      "kind": "command",
+      "source_plugin": "semver-gate",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-semver-gate-d2c78df73ae54bb6810e077bbff8a5c1",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "semver-gate"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "classify-then-gate",
+        "kind": "skill",
+        "source_plugin": "semver-gate",
+        "generic_equivalent": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-934b2f0fc1dc4b5689562ac1e7206b85",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "semver-gate-pos-01"
+}

@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/attempt.schema.json",
+  "title": "Attempt",
+  "description": "One attempt row (contract.py Attempt, §4). Every attempt counts -- failed, cancelled, retried and coordination attempts included -- so this schema never lets a row become unclassifiable. Two invariants are encoded here rather than left to code: 'baseline' is not a control_kind, and role/control_kind are cross-constrained so a nop arm cannot be labelled as the baseline and dragged into the effect denominator.",
+  "type": "object",
+  "required": [
+    "attempt_id",
+    "run_id",
+    "card_id",
+    "arm_id",
+    "role",
+    "control_kind",
+    "parent_attempt_id",
+    "terminal_state",
+    "evidence_class",
+    "adapter_class",
+    "requested",
+    "realized",
+    "fallback_flags",
+    "usage",
+    "outcome",
+    "adoption",
+    "started_at",
+    "ended_at",
+    "session_id",
+    "event_ids",
+    "arrived_after_terminal"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "attempt_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "card_id": { "type": "string", "minLength": 1 },
+    "arm_id": { "type": "string", "minLength": 1 },
+    "role": {
+      "enum": ["treatment", "baseline", "control", "coordination"],
+      "description": "BASELINE is an arm role, NOT a control (ground rule 5). A correct direct baseline is allowed to pass."
+    },
+    "control_kind": {
+      "oneOf": [
+        { "enum": ["nop", "inversion", "oracle", "mutation"] },
+        { "type": "null" }
+      ],
+      "description": "'baseline' is deliberately absent from this enum."
+    },
+    "parent_attempt_id": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+      "description": "Set on retries. A retry is a separate row, never an overwrite."
+    },
+    "terminal_state": {
+      "enum": ["delivered", "incomplete", "cancelled", "fault", "timeout-after-delivery"]
+    },
+    "evidence_class": {
+      "enum": ["framework", "real-fixture", "simulated", "native-proven", "paid-required"],
+      "description": "DERIVED by adapters.evidence_class_for, never assigned by a caller. 'paid-required' is a placeholder that can never be summed into a pass rate."
+    },
+    "adapter_class": { "enum": ["native", "replay", "stub"] },
+    "requested": { "$ref": "#/$defs/stratum" },
+    "realized": { "$ref": "#/$defs/stratum" },
+    "fallback_flags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "enum": ["provider", "model", "revision", "effort", "harness"] }
+    },
+    "usage": { "$ref": "#/$defs/usage" },
+    "outcome": { "$ref": "#/$defs/verdict" },
+    "adoption": { "$ref": "#/$defs/verdict" },
+    "started_at": { "type": "string", "format": "date-time", "maxLength": 32 },
+    "ended_at": { "type": "string", "format": "date-time", "maxLength": 32 },
+    "session_id": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+      "description": "null unless the value came from a harness ack (§10.2). A caller-minted uuid is not an ack."
+    },
+    "event_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "arrived_after_terminal": { "type": "boolean" },
+    "notes": { "type": "string" }
+  },
+  "if": {
+    "properties": { "role": { "const": "control" } },
+    "required": ["role"]
+  },
+  "then": {
+    "properties": {
+      "control_kind": { "enum": ["nop", "inversion", "oracle", "mutation"] }
+    }
+  },
+  "else": {
+    "properties": { "control_kind": { "type": "null" } }
+  },
+  "$defs": {
+    "token_count": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "const": "UNKNOWN" }
+      ],
+      "description": "'UNKNOWN' is the wire form of the sentinel. null is NOT allowed: null reads as 'no value' and gets coerced to 0 by careless consumers; 'UNKNOWN' does not."
+    },
+    "stratum": {
+      "type": "object",
+      "required": ["provider", "model", "revision", "effort", "harness"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "minLength": 1 },
+        "effort": { "type": "string", "minLength": 1 },
+        "harness": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["passed", "verifier_id", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "passed": {
+          "oneOf": [{ "type": "boolean" }, { "type": "null" }],
+          "description": "null = not evaluated. Never coerce to false."
+        },
+        "verifier_id": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string" },
+        "hack_class": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "evidence_digest": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "description": "Inlined rather than $ref'd to usage.schema.json: §3.2 restricts $ref to the local form '#/$defs/<name>', so a cross-file reference is a SchemaError. Keep this block in step with schemas/usage.schema.json (measurement lane); tests/test_adapters_and_protocols.py asserts the two agree field-for-field so the duplication cannot drift silently.",
+      "required": [
+        "model_id",
+        "reported_by",
+        "input_tokens",
+        "output_tokens",
+        "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+        "reasoning_tokens",
+        "total_tokens",
+        "wall_clock_ms",
+        "cost_usd"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model_id": { "type": "string", "minLength": 1 },
+        "reported_by": { "type": "string", "minLength": 1 },
+        "input_tokens": { "$ref": "#/$defs/token_count" },
+        "output_tokens": { "$ref": "#/$defs/token_count" },
+        "cache_read_input_tokens": { "$ref": "#/$defs/token_count" },
+        "cache_creation_input_tokens": { "$ref": "#/$defs/token_count" },
+        "reasoning_tokens": { "$ref": "#/$defs/token_count" },
+        "total_tokens": { "$ref": "#/$defs/token_count" },
+        "wall_clock_ms": { "$ref": "#/$defs/token_count" },
+        "cost_usd": {
+          "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }],
+          "description": "null means 'not computed'. A renderer must print 'not computed', never $0.00."
+        }
+      }
+    }
+  }
+}

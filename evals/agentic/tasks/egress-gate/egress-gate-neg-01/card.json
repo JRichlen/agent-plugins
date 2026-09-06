@@ -1,0 +1,24 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "no pre-transmission manifest or secret sweep before an outbound call",
+      "kind": "skill",
+      "name": "egress-gate pre-transmission manifest/sweep discipline",
+      "source_plugin": "egress-gate"
+    }
+  ],
+  "card_id": "egress-gate-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/fixtures/pass",
+  "plugin": "egress-gate",
+  "task_path": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/task"
+}

@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap",
+      "kind": "skill",
+      "name": "grill-me stakes-tiered interview loop",
+      "source_plugin": "grill-me"
+    }
+  ],
+  "card_id": "grill-me-near-01",
+  "expected_boundary_verdict": "novelty-pushes-light-to-standard",
+  "fail_fixture": "evals/agentic/tasks/grill-me/grill-me-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/grill-me/grill-me-near-01/fixtures/pass",
+  "plugin": "grill-me",
+  "task_path": "evals/agentic/tasks/grill-me/grill-me-near-01/task"
+}

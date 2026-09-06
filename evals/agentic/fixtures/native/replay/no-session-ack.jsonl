@@ -1,0 +1,3 @@
+{"kind":"turn_ack","turn":{"index":0}}
+{"kind":"text","text":"an answer from a stream that never announced a session"}
+{"kind":"usage","model":"synthetic-model-a","usage":{"input_tokens":10,"output_tokens":2,"total_tokens":12,"wall_clock_ms":50}}

@@ -1,0 +1,93 @@
+{
+  "plugin": "plugin-factory",
+  "directory": "plugins/plugin-factory",
+  "version": "1.1.0",
+  "derived_capabilities": [
+    {
+      "name": "plugin-factory",
+      "kind": "skill",
+      "source_plugin": "plugin-factory",
+      "generic_equivalent": null
+    },
+    {
+      "name": "new-plugin",
+      "kind": "command",
+      "source_plugin": "plugin-factory",
+      "generic_equivalent": null
+    },
+    {
+      "name": "check_baseline_integrity.py",
+      "kind": "script",
+      "source_plugin": "plugin-factory",
+      "generic_equivalent": "plain-bash-filesystem-git::check_baseline_integrity.py"
+    },
+    {
+      "name": "delta_gate.py",
+      "kind": "script",
+      "source_plugin": "plugin-factory",
+      "generic_equivalent": "plain-bash-filesystem-git::delta_gate.py"
+    },
+    {
+      "name": "scaffold-plugin.sh",
+      "kind": "script",
+      "source_plugin": "plugin-factory",
+      "generic_equivalent": "plain-bash-filesystem-git::scaffold-plugin.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-plugin-factory-f12899b1a67140c59d5e7a47450b383e",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "plugin-factory"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "scaffold-plugin.sh",
+        "kind": "skill",
+        "source_plugin": "plugin-factory",
+        "generic_equivalent": "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-f77815f312cf40ffb573aedc5157ecc7",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "plugin-factory-pos-01"
+}

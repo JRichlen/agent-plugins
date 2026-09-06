@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling",
+      "kind": "script",
+      "name": "fleet-playbook-curator citation validator + fleet scripts",
+      "source_plugin": "fleet-playbook-curator"
+    }
+  ],
+  "card_id": "fleet-playbook-curator-near-01",
+  "expected_boundary_verdict": "manifest-level-removal-note-only",
+  "fail_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-near-01/fixtures/pass",
+  "plugin": "fleet-playbook-curator",
+  "task_path": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-near-01/task"
+}

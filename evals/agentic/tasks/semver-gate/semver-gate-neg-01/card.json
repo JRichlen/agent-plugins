@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask",
+      "kind": "skill",
+      "name": "classify-then-gate",
+      "source_plugin": "semver-gate"
+    }
+  ],
+  "card_id": "semver-gate-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/semver-gate/semver-gate-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/semver-gate/semver-gate-neg-01/fixtures/pass",
+  "plugin": "semver-gate",
+  "task_path": "evals/agentic/tasks/semver-gate/semver-gate-neg-01/task"
+}

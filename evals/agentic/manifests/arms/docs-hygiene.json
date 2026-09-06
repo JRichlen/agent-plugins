@@ -1,0 +1,77 @@
+{
+  "plugin": "docs-hygiene",
+  "directory": "plugins/docs-hygiene",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "docs-hygiene",
+      "kind": "skill",
+      "source_plugin": "docs-hygiene",
+      "generic_equivalent": null
+    },
+    {
+      "name": "docs-hygiene",
+      "kind": "command",
+      "source_plugin": "docs-hygiene",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-docs-hygiene-0f21abddb7d5400c8cde4795a544e94e",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "docs-hygiene"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "docs-hygiene staleness heuristic + refactoring-workflow reference",
+        "kind": "script",
+        "source_plugin": "docs-hygiene",
+        "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "docs-hygiene staleness heuristic + refactoring-workflow reference"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-e5fb2b3729c0430dbb223ab71ac3e6a5",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "manual doc read with no systematic path/command staleness check and no in-place fix"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "docs-hygiene-pos-01"
+}

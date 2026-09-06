@@ -1,0 +1,14 @@
+{
+  "added": [],
+  "changed": true,
+  "removed": [
+    {
+      "content_available": false,
+      "full_name": "o/gone-svc",
+      "head_sha": "ggg1111",
+      "node_id": "R_GONE"
+    }
+  ],
+  "renamed": [],
+  "updated": []
+}

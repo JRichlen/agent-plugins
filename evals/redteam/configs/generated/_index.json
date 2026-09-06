@@ -1,0 +1,1416 @@
+{
+  "corpus_manifest_sha256": "262b9d173d8bddc88f192c757b9fe2bd2d72cb2a2674a995360a916548d84eec",
+  "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+  "generated_by": "evals/redteam/bin/generate.py",
+  "plugins": {
+    "agent-compiler": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/agent-compiler.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "d72778db644d60481dc0a1852b96be7964186de6c784c32a0a9851418b273f9d",
+        "clean": "95fb969840ef178d4e44631a41b6ac3cc46a573286d56bda58cf8e64e52ddfe6"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "agent-compiler",
+      "primary_skill": "plugins/agent-compiler/skills/agent-compiler/SKILL.md",
+      "primary_skill_sha256": "dccb035c598804ee5d918d87401ea57b16779ce4debe292407fb70ec0abad989",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 5817,
+        "treatment": 5817
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/agent-compiler.md",
+        "treatment": "plugins/agent-compiler/skills/agent-compiler/SKILL.md"
+      }
+    },
+    "codebase-design": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/codebase-design.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "dd0f90a3c1e8ae2ee99217d0af06358051716b80b26954c53c3dd76fa5542512",
+        "clean": "9c9249b004d6303a1a2de455ae2e0887f7fef1bbee00ecff479c9b5d78ae33cb"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "codebase-design",
+      "primary_skill": "plugins/codebase-design/skills/codebase-design/SKILL.md",
+      "primary_skill_sha256": "6ae7f9e244f1809fd2da800637ff45cb2aeaf56e8a6b6bee0957ffd694a8720b",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 12368,
+        "treatment": 12368
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/codebase-design.md",
+        "treatment": "plugins/codebase-design/skills/codebase-design/SKILL.md"
+      }
+    },
+    "context-handoff": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/context-handoff.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "e2b3753df33a02e2e70a949b7138e240b10289fbc416ccf1c8ba9c04348c6876",
+        "clean": "4c5a9b2a2f6703918bc151e9ef958b70414752a976fb6b314b420708d1516c8b"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "context-handoff",
+      "primary_skill": "plugins/context-handoff/skills/context-handoff/SKILL.md",
+      "primary_skill_sha256": "2648ea3671e441d230550becc88ec498a5c054bc61e07cfefa82f8e169710654",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 8500,
+        "treatment": 8500
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/context-handoff.md",
+        "treatment": "plugins/context-handoff/skills/context-handoff/SKILL.md"
+      }
+    },
+    "dev-diary": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/dev-diary.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "1817dac8d834ee4a45c322e2ffdb2f88694777897dde0b4c1eb11a758a59a7d0",
+        "clean": "7cef8def93099936fff189a102c53e2164e882e4964a2628e05f2b704637e7af"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "dev-diary",
+      "primary_skill": "plugins/dev-diary/skills/dev-diary/SKILL.md",
+      "primary_skill_sha256": "b5ce59f2c995e830b64129df4882b801bec105e889c494e301556f7dec43cd2d",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 6862,
+        "treatment": 6862
+      },
+      "secondary_skills": [
+        "plugins/dev-diary/skills/dev-diary-review/SKILL.md"
+      ],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/dev-diary.md",
+        "treatment": "plugins/dev-diary/skills/dev-diary/SKILL.md"
+      }
+    },
+    "diagnosing-bugs": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/diagnosing-bugs.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "58d4fc1d78eea7a94a7772ced74b615034b75be59de7bfc9a229214a66220cd9",
+        "clean": "34ccb241100be277e94a67386a156c60c7b97631a09deb1171a9a32ca453d4b3"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "diagnosing-bugs",
+      "primary_skill": "plugins/diagnosing-bugs/skills/diagnosing-bugs/SKILL.md",
+      "primary_skill_sha256": "6774de7fcfb8e75ba392658af61d21c03a3db15ad3ae18b285c100c665bbd9e4",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 8582,
+        "treatment": 8582
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/diagnosing-bugs.md",
+        "treatment": "plugins/diagnosing-bugs/skills/diagnosing-bugs/SKILL.md"
+      }
+    },
+    "docs-hygiene": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/docs-hygiene.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "46ca8eb2da7c5a52a9f1512f1ff6e68b905c00b2a92528e82ac5f98823708d08",
+        "clean": "ebdd1a9636045ee4987df06de07ad73a85ce84f61df700979ab7b967600af59c"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "docs-hygiene",
+      "primary_skill": "plugins/docs-hygiene/skills/docs-hygiene/SKILL.md",
+      "primary_skill_sha256": "66206ec7812b5cd7f59a2e115ef6a5e1f6ad5208bc7d174a476f0fbb2a078cb2",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 12974,
+        "treatment": 12974
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/docs-hygiene.md",
+        "treatment": "plugins/docs-hygiene/skills/docs-hygiene/SKILL.md"
+      }
+    },
+    "egress-gate": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/egress-gate.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "533ae988a3cf0d031cf9941fffb3a9dbefac667254aa922fdbf348590122d1a4",
+        "clean": "f1c1543fed8bb83a43a5e105500317c6e9253c8002a75e503d03a3c09cb71077"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "egress-gate",
+      "primary_skill": "plugins/egress-gate/skills/egress-gate/SKILL.md",
+      "primary_skill_sha256": "6171afe22d11e6272d1d4f70faf7d4e72ac8ec5f703cf3f78156aa790648bb75",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4342,
+        "treatment": 4342
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/egress-gate.md",
+        "treatment": "plugins/egress-gate/skills/egress-gate/SKILL.md"
+      }
+    },
+    "find-before-build": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/find-before-build.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "c3cb3c8de811e32adedaaad2c129ef47b23df53520b619fe04ac2ea7d3750b87",
+        "clean": "9edbd1eb739af0e5d5910a9f35150da1ee715538873d0c958d7c3bc06c94011d"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "find-before-build",
+      "primary_skill": "plugins/find-before-build/skills/find-before-build/SKILL.md",
+      "primary_skill_sha256": "f0e8ea49c0297c8cd61b1cd22248c1d01b79384904905132f4c8598d8ea02578",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4102,
+        "treatment": 4102
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/find-before-build.md",
+        "treatment": "plugins/find-before-build/skills/find-before-build/SKILL.md"
+      }
+    },
+    "fleet-playbook-curator": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/fleet-playbook-curator.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "091b83de3b7639b566063269aa32e4fc22b4e86c0eab3e6492f87dd2fac92d44",
+        "clean": "fbbc670f175495b2c9e50cc83f319d08fe66d97de2c9c9704a8c09ec03bc84ee"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "fleet-playbook-curator",
+      "primary_skill": "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/SKILL.md",
+      "primary_skill_sha256": "687357ef40243d76f4d91c8fc41453dfbd4c0a8c70b6a4049dc0bfb624e66064",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 14102,
+        "treatment": 14102
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/fleet-playbook-curator.md",
+        "treatment": "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/SKILL.md"
+      }
+    },
+    "graveyard": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/graveyard.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "ecc24a0f0496666c703b66e1bd1ddd16cb98abc7e881aac8489ed9b0b98e1798",
+        "clean": "93e3569b6d4b7b307fa3564df8a54f8f31454c61d78c306de4681ae99f60088b"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "graveyard",
+      "primary_skill": "plugins/graveyard/skills/graveyard/SKILL.md",
+      "primary_skill_sha256": "ae7cc2e1fb6fb8f67c77c0c622e890a8f0d55d6d633286f019c705d53328180e",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 7597,
+        "treatment": 7597
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/graveyard.md",
+        "treatment": "plugins/graveyard/skills/graveyard/SKILL.md"
+      }
+    },
+    "grill-me": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/grill-me.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "92d149950aa64ee4ab957b445a24dd38bd307c3c64474933b4127fe7a08c6336",
+        "clean": "a336d6e47fc7dda7ec58885814e45ca80616d62173e126d4ac9633060e5869c1"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "grill-me",
+      "primary_skill": "plugins/grill-me/skills/grill-me/SKILL.md",
+      "primary_skill_sha256": "3a028c2350a64c0bf1eab4a65ac8f9c70334b3bd79dcf1102c62e849f8ca65a0",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 6398,
+        "treatment": 6398
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/grill-me.md",
+        "treatment": "plugins/grill-me/skills/grill-me/SKILL.md"
+      }
+    },
+    "jori": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/jori.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "f9db97e5571f64e540f61cc3a13ce740869894f7e328e1cde341b667e8730a4e",
+        "clean": "657ac1a7353503ada58f6269ae8bcace0654ccf9cb12e7824e24a882274d79e7"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "jori",
+      "primary_skill": "plugins/jori/skills/jori/SKILL.md",
+      "primary_skill_sha256": "81b2d02c9b6c2da57e61fcd2e677cb304eee75786869a487b6cdb3715179b6fb",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 3337,
+        "treatment": 3337
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/jori.md",
+        "treatment": "plugins/jori/skills/jori/SKILL.md"
+      }
+    },
+    "orchestrate": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/orchestrate.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "17ce0ed9f0d8807c148e0abc23d3d04635769ee4d0a64de9dc5df22fd173fde1",
+        "clean": "b81ef90ae8e98648c28c37b77d226fa9bf9bc0f1132e033f969f3dbfc14a45e7"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "orchestrate",
+      "primary_skill": "plugins/orchestrate/skills/orchestrate/SKILL.md",
+      "primary_skill_sha256": "91205c0a498583dc470d535caa4f05095e72dea9091cd54735143a39c1c10691",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 6851,
+        "treatment": 6851
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/orchestrate.md",
+        "treatment": "plugins/orchestrate/skills/orchestrate/SKILL.md"
+      }
+    },
+    "plugin-factory": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/plugin-factory.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "df4c3a82fd4cd2755d60a1915d7efa3376779b5c007e7376f60d7f58998a648d",
+        "clean": "f50afa1ee32b02d1f7bcb79280784ff57720dfccf8ec888b8712880a28fa826b"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "plugin-factory",
+      "primary_skill": "plugins/plugin-factory/skills/plugin-factory/SKILL.md",
+      "primary_skill_sha256": "30f662c9de0d6159cc62a3b0428fdd846c4bcdaa38b389847260fc16826e432d",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 7179,
+        "treatment": 7179
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/plugin-factory.md",
+        "treatment": "plugins/plugin-factory/skills/plugin-factory/SKILL.md"
+      }
+    },
+    "prove-the-undo": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/prove-the-undo.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "d7a57f28ee1b2bef4701c373352e6b860aac7c0f694e98fa3a5160270ea38689",
+        "clean": "63816c504b10661778ed8bdb5ad11de4e896b0b382cd97933724b041ecc1549c"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "prove-the-undo",
+      "primary_skill": "plugins/prove-the-undo/skills/prove-the-undo/SKILL.md",
+      "primary_skill_sha256": "cc400697ec846bb0cb47823bea72a146c2e969561c763ac02ad1bda56854bd1b",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4532,
+        "treatment": 4532
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/prove-the-undo.md",
+        "treatment": "plugins/prove-the-undo/skills/prove-the-undo/SKILL.md"
+      }
+    },
+    "recurrence-detector": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/recurrence-detector.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "e632b9dc9e26d41c37364276ad413207fd1cea30dc1f046833a5a0ffe5366a8b",
+        "clean": "f80ee61cb763bd4511514ecd93dbea3f76e6ad9340b96b599fff08da257f4652"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "recurrence-detector",
+      "primary_skill": "plugins/recurrence-detector/skills/recurrence-detector/SKILL.md",
+      "primary_skill_sha256": "61f8fad7e4b8bb7e97400885ae6313ef66ba1c047edcb8155585717d64bbea86",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4471,
+        "treatment": 4471
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/recurrence-detector.md",
+        "treatment": "plugins/recurrence-detector/skills/recurrence-detector/SKILL.md"
+      }
+    },
+    "redgate": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/redgate.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "94c86f7cb7ac50f24283662a460fb523515a6261752ecc1275843085405e429d",
+        "clean": "31889c71f56f2c12042e3e74afd9575e0ebd5bc9bf8edd17c978c277cc3283ce"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "redgate",
+      "primary_skill": "plugins/redgate/skills/redgate/SKILL.md",
+      "primary_skill_sha256": "7caabe2c709d09966477e00351d090c5da3136b887c0abb5c5e01bf2aefbc6c2",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 15785,
+        "treatment": 15785
+      },
+      "secondary_skills": [
+        "plugins/redgate/skills/criteria-contract/SKILL.md",
+        "plugins/redgate/skills/reconcile/SKILL.md"
+      ],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/redgate.md",
+        "treatment": "plugins/redgate/skills/redgate/SKILL.md"
+      }
+    },
+    "scope-fence": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/scope-fence.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "fe7a41efc26b7c42f0828966d364ae353d1aa3bdd0995a03c9add4dec1bbe3c4",
+        "clean": "f42c90a22c554585a9fedcd57fa4e08a69fcc1a3a0dbcd973ea9cf51f2533b73"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "scope-fence",
+      "primary_skill": "plugins/scope-fence/skills/scope-fence/SKILL.md",
+      "primary_skill_sha256": "9e234237c405604e190066ed6e5b907e6c97bf7d6b1ec37bb2d0b84cbb1d0461",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4115,
+        "treatment": 4115
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/scope-fence.md",
+        "treatment": "plugins/scope-fence/skills/scope-fence/SKILL.md"
+      }
+    },
+    "semver-gate": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/semver-gate.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "5d20082d3a08ab26500d46dfac0cb1b23ad2a695a490cecddb636f7afa458fa6",
+        "clean": "ed8692bbf1cc40517f6f2999cbac6a0e92417d7c66995c3ea05c10bc81932886"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "semver-gate",
+      "primary_skill": "plugins/semver-gate/skills/semver-gate/SKILL.md",
+      "primary_skill_sha256": "dfa527c02ee7cc90e35eb0b14fa36874d1c4e4a40d9bd2bf38b9a802f8d8cf71",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 10002,
+        "treatment": 10002
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/semver-gate.md",
+        "treatment": "plugins/semver-gate/skills/semver-gate/SKILL.md"
+      }
+    },
+    "stop-rule": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/stop-rule.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "a50cf15db6a54f5c24b4317ace0fffe7a4d724404ad6a936dc0d05edd42ecb3d",
+        "clean": "490072f496bae30485a35733ec12706aecb7e3f15c2b997a0da75ace836acc47"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "stop-rule",
+      "primary_skill": "plugins/stop-rule/skills/stop-rule/SKILL.md",
+      "primary_skill_sha256": "9acd489ffb588cf0800370b21a171c10aa39512ca7067013703025253d0b2017",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 4280,
+        "treatment": 4280
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/stop-rule.md",
+        "treatment": "plugins/stop-rule/skills/stop-rule/SKILL.md"
+      }
+    },
+    "tailscale-wif": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/tailscale-wif.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "6fb0e04a1de47f7a957b69392d0ce9ac3401b590c546d3e2542541e5fdda9eb5",
+        "clean": "61785e8370ad2275ba49924719db9a88341790ffb0b2cd1166944d7641a18cb4"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "tailscale-wif",
+      "primary_skill": "plugins/tailscale-wif/skills/tailscale-wif/SKILL.md",
+      "primary_skill_sha256": "9be6835d519818e222443bcba7f60636e6d8c26933ed1594552be4e46d0289de",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 11392,
+        "treatment": 11392
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/tailscale-wif.md",
+        "treatment": "plugins/tailscale-wif/skills/tailscale-wif/SKILL.md"
+      }
+    },
+    "tracer-bullets": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/tracer-bullets.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "be2bc12eed9087f9e5d6715e3ca6da89e3a80dcae42e0c15060b7c962b98ea74",
+        "clean": "c8b1dac53810d43014f6b4a3cb96690764891ce79e13017dc1e697ea20efb7c0"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "tracer-bullets",
+      "primary_skill": "plugins/tracer-bullets/skills/tracer-bullets/SKILL.md",
+      "primary_skill_sha256": "2e7dc3fe0df6cf6d6af5cd09addf6459e89a6540c3e17f89963fee2e5bce3a41",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 10056,
+        "treatment": 10056
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/tracer-bullets.md",
+        "treatment": "plugins/tracer-bullets/skills/tracer-bullets/SKILL.md"
+      }
+    },
+    "verify-before-claim": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/verify-before-claim.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "56c26f6a10028771c38ef0bf82f7d91f342259310a6735e68f2e66952b297dcd",
+        "clean": "adaf3770bf1be1ea9baac57b4a6fab8b40eaf420c1ae1a894bf0c52900ef2999"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "verify-before-claim",
+      "primary_skill": "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md",
+      "primary_skill_sha256": "c9a441d3532f0b0075104c650afee006e26ffd107a1a3bbed9c86d106a04ea46",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 8513,
+        "treatment": 8513
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/verify-before-claim.md",
+        "treatment": "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md"
+      }
+    },
+    "voice": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/voice.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "3174091e65a1cca825d94f1a0808b75d47ac334589113fce691176c02ddacbf2",
+        "clean": "fb4ee4782a62fb7fdcc72e998de102c1f665ab6860d98e9f5f870923252ebf54"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "voice",
+      "primary_skill": "plugins/voice/skills/human-voice/SKILL.md",
+      "primary_skill_sha256": "7e71efc9a5d9da1fa6c7792bb5421725e6129f9e538d9c44fe89edbabe44dcce",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 7302,
+        "treatment": 7302
+      },
+      "secondary_skills": [
+        "plugins/voice/skills/ai-writing-mistakes/SKILL.md",
+        "plugins/voice/skills/machine-voice/SKILL.md",
+        "plugins/voice/skills/second-opinion/SKILL.md"
+      ],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/voice.md",
+        "treatment": "plugins/voice/skills/human-voice/SKILL.md"
+      }
+    },
+    "wayfinder": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/wayfinder.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "01f88a010389f4d65894d8b3d2cf970b8062ee74238212bc8d0f558cdc9fe227",
+        "clean": "3af92c60601354e533073fff14970d4ca47226a46efa7dd30d146493dd002d17"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "wayfinder",
+      "primary_skill": "plugins/wayfinder/skills/wayfinder/SKILL.md",
+      "primary_skill_sha256": "5802bfdc7f27114f758e29fb4bca8bda32a4b755b5004d993ba2c756f33384e4",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 11080,
+        "treatment": 11080
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/wayfinder.md",
+        "treatment": "plugins/wayfinder/skills/wayfinder/SKILL.md"
+      }
+    }
+  }
+}

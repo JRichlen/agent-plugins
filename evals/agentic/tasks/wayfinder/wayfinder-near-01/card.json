@@ -1,0 +1,24 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "keep a flat todo list with no ticket types, no dependency graph, and no computed frontier",
+      "kind": "skill",
+      "name": "ticket-map-and-frontier",
+      "source_plugin": "wayfinder"
+    }
+  ],
+  "card_id": "wayfinder-near-01",
+  "expected_boundary_verdict": "open-ticket-with-empty-or-closed-deps-is-on-frontier-regardless-of-how-close-to-done",
+  "fail_fixture": "evals/agentic/tasks/wayfinder/wayfinder-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/wayfinder/wayfinder-near-01/fixtures/pass",
+  "plugin": "wayfinder",
+  "task_path": "evals/agentic/tasks/wayfinder/wayfinder-near-01/task"
+}

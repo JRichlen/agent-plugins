@@ -1,0 +1,75 @@
+{
+  "plugin": "tracer-bullets",
+  "directory": "plugins/tracer-bullets",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "tracer-bullets",
+      "kind": "skill",
+      "source_plugin": "tracer-bullets",
+      "generic_equivalent": null
+    },
+    {
+      "name": "tracer-bullets",
+      "kind": "command",
+      "source_plugin": "tracer-bullets",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-tracer-bullets-b6f9d1a941d2492e9513c55f2a4442d0",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "tracer-bullets"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "thin-slice-first",
+        "kind": "skill",
+        "source_plugin": "tracer-bullets",
+        "generic_equivalent": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-65fc52dc688c4bd29b4ec183e4dd385c",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "tracer-bullets-pos-01"
+}

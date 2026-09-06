@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "proceed with the irreversible action on the strength of an unread backup, with no restore rehearsal",
+      "kind": "skill",
+      "name": "rehearsal-discipline",
+      "source_plugin": "prove-the-undo"
+    }
+  ],
+  "card_id": "prove-the-undo-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/prove-the-undo/prove-the-undo-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/prove-the-undo/prove-the-undo-neg-01/fixtures/pass",
+  "plugin": "prove-the-undo",
+  "task_path": "evals/agentic/tasks/prove-the-undo/prove-the-undo-neg-01/task"
+}

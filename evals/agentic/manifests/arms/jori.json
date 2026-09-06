@@ -1,0 +1,75 @@
+{
+  "plugin": "jori",
+  "directory": "plugins/jori",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "jori",
+      "kind": "skill",
+      "source_plugin": "jori",
+      "generic_equivalent": null
+    },
+    {
+      "name": "jori",
+      "kind": "command",
+      "source_plugin": "jori",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-jori-bd47b2dfd8134af18b37916a8da4d108",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "jori"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "dashboard workflow",
+        "kind": "skill",
+        "source_plugin": "jori",
+        "generic_equivalent": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-6c27bd207164436f89b8181b98ef7cb6",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "jori-pos-01"
+}

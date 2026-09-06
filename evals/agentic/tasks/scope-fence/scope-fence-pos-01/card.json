@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "fix whatever looks wrong in the file while you're there, with no fence statement and no findings record",
+      "kind": "skill",
+      "name": "fence-and-audit",
+      "source_plugin": "scope-fence"
+    }
+  ],
+  "card_id": "scope-fence-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/scope-fence/scope-fence-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "corrupt-pinned-hash",
+    "reorder-backup-after-delete"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/scope-fence/scope-fence-pos-01/fixtures/pass",
+  "plugin": "scope-fence",
+  "task_path": "evals/agentic/tasks/scope-fence/scope-fence-pos-01/task"
+}

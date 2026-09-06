@@ -1,0 +1,75 @@
+{
+  "plugin": "grill-me",
+  "directory": "plugins/grill-me",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "grill-me",
+      "kind": "skill",
+      "source_plugin": "grill-me",
+      "generic_equivalent": null
+    },
+    {
+      "name": "grill-me",
+      "kind": "command",
+      "source_plugin": "grill-me",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-grill-me-458949f7472d4aafb06de6250fae3083",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "grill-me"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "grill-me stakes-tiered interview loop",
+        "kind": "skill",
+        "source_plugin": "grill-me",
+        "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-8a837aa6a694489994ee07730efbd77d",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
+  "arm_source_card": "grill-me-pos-01"
+}

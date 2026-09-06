@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Continue the task as scoped and describe the current state of the artifact
+before taking any further step.

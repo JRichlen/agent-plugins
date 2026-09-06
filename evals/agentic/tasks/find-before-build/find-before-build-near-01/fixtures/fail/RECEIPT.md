@@ -1,0 +1,2 @@
+- Searched `rg 'retry' .` -- found utils/legacy_retry.py, but it's ugly, writing a cleaner version.
+- Searched `package manifest` -- nothing installed.

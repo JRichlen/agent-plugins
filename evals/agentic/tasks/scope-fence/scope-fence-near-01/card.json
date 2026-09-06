@@ -1,0 +1,24 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "fix whatever looks wrong in the file while you're there, with no fence statement and no findings record",
+      "kind": "skill",
+      "name": "fence-and-audit",
+      "source_plugin": "scope-fence"
+    }
+  ],
+  "card_id": "scope-fence-near-01",
+  "expected_boundary_verdict": "mechanical-consequences-are-in-scope-no-finding-needed",
+  "fail_fixture": "evals/agentic/tasks/scope-fence/scope-fence-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/scope-fence/scope-fence-near-01/fixtures/pass",
+  "plugin": "scope-fence",
+  "task_path": "evals/agentic/tasks/scope-fence/scope-fence-near-01/task"
+}

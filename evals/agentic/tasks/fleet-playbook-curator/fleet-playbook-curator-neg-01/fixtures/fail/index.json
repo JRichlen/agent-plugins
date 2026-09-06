@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim": "typo fixed",
+      "curated_at": "2026-09-06",
+      "path": "README.md",
+      "repo": "this-repo",
+      "sha": "aaa"
+    }
+  ]
+}
