@@ -54,6 +54,9 @@ build_root() {
   # 12-14 mutate them to prove each gate bites.
   mkdir -p "$root/.github/workflows" "$root/ci"
   cp "$REPO_ROOT/.github/workflows/evals.yml" "$root/.github/workflows/evals.yml"
+  # §18b checks the subject-model matrix workflow's wiring whenever a workflows
+  # directory exists; stage the real copy so the baseline stays green here too.
+  cp "$REPO_ROOT/.github/workflows/subject-matrix.yml" "$root/.github/workflows/subject-matrix.yml"
   cp -R "$REPO_ROOT/ci/." "$root/ci/"
   cp -R "$REPO_ROOT/evals/paid" "$root/evals/paid"
   # Stage a top-level README.md (§5b is guarded on its presence, same as the
