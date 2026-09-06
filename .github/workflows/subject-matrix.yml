@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       subjects:
-        description: 'Extra subject provider ids, comma-separated, in promptfoo syntax (e.g. anthropic:messages:claude-haiku-4-5-20251001,openrouter:<vendor>/<model>). The pack baseline is always included first.'
+        description: 'Extra subject provider ids, comma-separated, in promptfoo syntax (e.g. anthropic:messages:claude-haiku-4-5,openrouter:<vendor>/<model>). The pack baseline is always included first.'
         required: true
         type: string
       packs:
@@ -83,7 +83,19 @@ jobs:
           base="$(evals/paid/subject-matrix.sh "$pack" --baseline-id)"
           echo "config=$cfg" >> "$GITHUB_OUTPUT"
           echo "baseline=$base" >> "$GITHUB_OUTPUT"
-          echo "baseline: $base"; grep -n '^  - id:' "$cfg"
+          echo "baseline: $base"
+          # Display only — list the overlay's providers from the YAML itself. The
+          # first dispatch died here on a grep whose indentation guess did not
+          # match PyYAML's output; a display line must never fail the step.
+          python3 - "$cfg" <<'PY'
+          import sys
+          try:
+              import yaml
+              for p in (yaml.safe_load(open(sys.argv[1])) or {}).get("providers", []):
+                  print("  provider:", p.get("id") if isinstance(p, dict) else p)
+          except Exception as e:  # display only: one warning line, never a traceback, never a failure
+              print(f"::warning::could not list the overlay's providers ({e}); continuing")
+          PY
       - name: promptfoo eval (baseline + subjects)
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
         env:

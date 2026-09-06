@@ -23,6 +23,20 @@ Commit the filled sheet and the report next to the pack they came from as
 record the kappa on #102 with the run number. The threshold for promoting any
 grader-dependent tier is chosen after the first measurement, not before.
 
+## The same procedure from CI
+
+The `calibration sheet` workflow (manual dispatch: `run_id`, `packs`, `n`)
+downloads a finished run's results artifact on the runner, draws the sheet
+with the script above, seals the verdicts as base64 (`<run>.verdicts.b64`) so
+they are not read by accident, and pushes both to a `calibration/<run-id>`
+branch under `plugins/<pack>/evals/promptfoo/calibration/`. The branch is
+based on the commit that produced the run, so the rubric beside the sheet is
+the one that graded the sealed verdicts (the sampler itself comes from the
+dispatch ref). Open a pull
+request from that branch, fill the `label` fields in the sheet, and run
+`agreement.py <run>.sheet.json <run>.verdicts.b64 --name-a human --name-b grader`.
+No model is called; the workflow never becomes a required check.
+
 ## Grader vs grader, grader vs itself (measurement 3)
 
 Grade the same cached outputs with a second grader (a different model family)
