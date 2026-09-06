@@ -31,3 +31,7 @@ plugins/*/evals/promptfoo/results.json
 # Claude Code session state (workflow worktrees, local settings)
 .claude/
 __pycache__/
+
+# subject-model matrix overlays and results (evals/paid/subject-matrix.sh, issue #102) — generated, never committed
+plugins/*/evals/promptfoo/promptfooconfig.matrix.yaml
+plugins/*/evals/promptfoo/results.matrix.json
