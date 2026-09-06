@@ -87,7 +87,15 @@ jobs:
           # Display only — list the overlay's providers from the YAML itself. The
           # first dispatch died here on a grep whose indentation guess did not
           # match PyYAML's output; a display line must never fail the step.
-          python3 -c 'import sys, yaml; [print("  provider:", p.get("id") if isinstance(p, dict) else p) for p in yaml.safe_load(open(sys.argv[1])).get("providers", [])]' "$cfg" || echo "(could not list providers; continuing)"
+          python3 - "$cfg" <<'PY'
+          import sys
+          try:
+              import yaml
+              for p in (yaml.safe_load(open(sys.argv[1])) or {}).get("providers", []):
+                  print("  provider:", p.get("id") if isinstance(p, dict) else p)
+          except Exception as e:  # display only: one warning line, never a traceback, never a failure
+              print(f"::warning::could not list the overlay's providers ({e}); continuing")
+          PY
       - name: promptfoo eval (baseline + subjects)
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
         env:
