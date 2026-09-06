@@ -386,13 +386,31 @@ jobs:
           name: example-snapshot-${{ matrix.plugin }}
           path: docs/examples/data/${{ matrix.plugin }}.json
           if-no-files-found: ignore
+      - name: record results checkout provenance
+        if: always() && steps.touched.outputs.paid == 'true'
+        working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
+        env:
+          PACK: ${{ matrix.plugin }}
+        run: |
+          python3 - <<'PYPROVENANCE'
+          import hashlib, json, os, pathlib, subprocess
+          result = pathlib.Path("results.json")
+          if result.is_file():
+              meta = {"checkout_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                      "repository": os.environ["GITHUB_REPOSITORY"], "run_id": os.environ["GITHUB_RUN_ID"],
+                      "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"], "pack": os.environ["PACK"],
+                      "result": result.name, "sha256": hashlib.sha256(result.read_bytes()).hexdigest()}
+              pathlib.Path("provenance.json").write_text(json.dumps(meta, indent=2) + "\n")
+          PYPROVENANCE
       - name: upload results.json
         if: always() && steps.touched.outputs.paid == 'true'
         uses: actions/upload-artifact@v4
         with:
           # Per-plugin name so parallel matrix legs don't collide on upload.
           name: promptfoo-results-${{ matrix.plugin }}
-          path: plugins/${{ matrix.plugin }}/evals/promptfoo/results.json
+          path: |
+            plugins/${{ matrix.plugin }}/evals/promptfoo/results.json
+            plugins/${{ matrix.plugin }}/evals/promptfoo/provenance.json
           if-no-files-found: ignore
 
   behavioral:
