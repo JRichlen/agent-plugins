@@ -8,9 +8,11 @@ turns one or more results.json files into two files:
   sheet.json     — what the human sees: scenario, request, the subject's output,
                    and an empty "label" slot. No verdict, no provider, no hint
                    of which side (with-skill / without-skill / stub) it came from.
-  verdicts.json  — what the grader said, keyed by the sha256 of the output text,
-                   kept apart so the labeller cannot peek. agreement.py joins
-                   the two on the hash.
+  verdicts.json  — what the grader said, keyed by the sha256 of scenario plus
+                   output text (pass/fail depends on the scenario's rubric, so
+                   the same stock answer under two rubrics is two rows), kept
+                   apart so the labeller cannot peek. agreement.py joins the
+                   two on the hash.
 
 Sampling is seeded (default seed 0) so a sheet is reproducible from the same
 results. Rows the scorer treats as transport FAULTs are excluded — nobody
@@ -83,9 +85,12 @@ def main():
             body = output_text(r)
             if not body.strip():
                 continue
-            h = hashlib.sha256(body.encode("utf-8")).hexdigest()
-            # the same output text graded twice keeps the first verdict seen
-            pool.setdefault(h, {"hash": h, "scenario": scenario(r), "request": request_of(r),
+            sc = scenario(r)
+            # identity is (scenario, output): the verdict belongs to a rubric, not
+            # to the text alone. Repeats of one output under one scenario keep the
+            # first verdict seen.
+            h = hashlib.sha256((sc + "\x00" + body).encode("utf-8")).hexdigest()
+            pool.setdefault(h, {"hash": h, "scenario": sc, "request": request_of(r),
                                 "output": body, "verdict": "pass" if r.get("success") is True else "fail"})
     if not pool:
         print("sample: no usable rows (all faults or empty)", file=sys.stderr); return 2

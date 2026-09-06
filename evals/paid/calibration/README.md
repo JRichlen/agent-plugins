@@ -10,7 +10,8 @@ is worth, and they need no API key to run.
    local `npx promptfoo eval --output results.json`).
 2. `sample-for-labelling.py results.json --n 20` writes `sheet.json` (blind:
    scenario, request, output, empty label) and `verdicts.json` (the grader's
-   pass/fail per output hash). Do not open `verdicts.json` until step 4.
+   pass/fail per sample, keyed by a hash of scenario plus output so the same
+   answer under two rubrics is two samples). Do not open `verdicts.json` until step 4.
 3. Label every row in `sheet.json` as `"pass"` or `"fail"` against the pack's
    rubric text, the same text the grader sees.
 4. `agreement.py sheet.json verdicts.json --name-a human --name-b grader`

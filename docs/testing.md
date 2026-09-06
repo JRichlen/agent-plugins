@@ -232,9 +232,12 @@ that it is green because it did not run, never silently.
   single 0.50 scenario), so the scorer never pools in this mode.
 - **What it cannot prove.** Anything about a subject nobody has dispatched it
   for. It also does not promote a subject: that is a human decision applied to
-  the report, under one stated rule — the pack's negative-control scenario must
-  still **fail** under the new subject. A stub that passes under a new model is
-  a finding about the rubric, not a green.
+  the report, under one stated rule — the pack's calibration control (the
+  stub-skill scenario, whose assertion **passes** when the bare model behaves
+  as an unaided model would) must still pass under the new subject. A control
+  that fails under a new model means that model already does what the skill
+  asks unaided, so the with-skill green measures nothing on that scenario: a
+  scenario finding, not a promotion.
 - **Fires.** `workflow_dispatch` only (`subjects=` required, `packs=` optional,
   empty = every plugin with a valid promptfoo pack). Never scheduled, never
   path-gated, never in `ci/required-checks.json`. The job's exit code reflects
@@ -372,7 +375,8 @@ uninterpretable n=1 and no required check goes red on the weather:
   that ([#102](https://github.com/JRichlen/agent-plugins/issues/102)):
   `sample-for-labelling.py` draws a blind sheet from a `results.json`
   (scenario, request, output, empty label; the grader's verdicts are written
-  to a separate file keyed by output hash), and `agreement.py` reports percent
+  to a separate file keyed by a hash of scenario and output, so the same stock
+  answer graded under two rubrics stays two rows), and `agreement.py` reports percent
   agreement and Cohen's kappa between any two label sets — human vs grader,
   grader vs a second grader, or the same grader graded twice (the label-noise
   floor). Both are fixture-tested in §18b. No measurement has been taken yet;

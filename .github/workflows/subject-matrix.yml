@@ -6,9 +6,12 @@
 # one. It is manual-dispatch only, never a required check, and its exit code
 # reflects the BASELINE provider alone: every other subject is scored and
 # printed as ADVISORY. Promotion of a subject to a strict leg is a human
-# decision applied to the report — the rule is that the pack's negative-control
-# scenario must still FAIL under the new subject (a stub that passes under a
-# new model is a rubric finding, not a green).
+# decision applied to the report, under one rule: the pack's calibration
+# control (the stub-skill scenario, whose assertion PASSES when the bare model
+# behaves as an unaided model would) must still pass under the new subject.
+# A control that FAILS under a new model means that model already does what
+# the skill asks unaided, so the with-skill green measures nothing there: a
+# scenario finding, not a promotion.
 #
 # Cost: roughly (1 + number of subjects) times the pack's usual spend. Secrets
 # are the same two the behavioral tier uses.
@@ -65,7 +68,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, not 20: promptfoo 0.122.0 declares engines.node >=22.22.0 and
+          # aborts on node 20 before making a model call (see evals.yml).
+          node-version: 22
       - name: ensure PyYAML (the overlay script reads the pack config with it)
         run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
       - name: overlay the pack with the extra subjects

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """agreement.py — how often do two graders agree, beyond chance?
 
-Issue #102, measurements 2 and 3. Joins two label sets on the output hash and
+Issue #102, measurements 2 and 3. Joins two label sets on the sample hash (scenario plus output) and
 reports percent agreement, Cohen's kappa, the confusion matrix, and every
 disagreement (with scenario when a sheet is given). The same script serves
 human-vs-grader (a filled sheet vs verdicts.json), grader-vs-grader (two
