@@ -1,8 +1,10 @@
-# Publish the skill example gallery (docs/examples/) to GitHub Pages.
+# Publish docs/ — the skill example gallery (docs/examples/) and the design-
+# trajectory timeline (docs/timeline/) — to GitHub Pages.
 #
-# The gallery is generated deterministically from committed snapshots by
-# docs/build-examples.sh, so this workflow just regenerates (to prove the
-# committed index.html is in sync), then deploys docs/ as the Pages site. No
+# Both surfaces are generated deterministically from committed data by
+# docs/build-examples.sh and docs/timeline/build-timeline.sh, so this workflow
+# just regenerates each (to prove the committed index.html is in sync), then
+# deploys docs/ as the Pages site. No
 # API keys, no model calls — the real transcripts are already captured into
 # docs/examples/data/ by the behavioral tier's capture step and committed.
 #
@@ -42,6 +44,8 @@ jobs:
         # Fail the publish if the committed index.html drifted from its data —
         # the same guard the cheap tier runs, enforced again at publish time.
         run: docs/build-examples.sh --check
+      - name: regenerate and verify the timeline is in sync
+        run: docs/timeline/build-timeline.sh --check
       - uses: actions/configure-pages@v5
         with:
           # Set the repo's Pages source to GitHub Actions via the API on first
