@@ -249,16 +249,18 @@ tests:
           WAYF-020, which is OPEN (not yet merged/closed) no matter how close
           it looks to done.
 
-          PASS requires the response compute the frontier as exactly
-          WAYF-020 and WAYF-022 — naming both as the only tickets eligible
-          for dispatch now — and explicitly EXCLUDE WAYF-021, with the
-          response stating or clearly implying the reason is that WAYF-020
-          has not actually closed yet, regardless of how near it appears.
-          A response that keeps WAYF-020 on the frontier but declines to
-          assign a second engineer to it because its PR is already in flight
-          still PASSES: frontier membership is what the skill computes;
-          whether to double-staff an in-flight ticket is not the skill's
-          rule, and this test does not grade it.
+          PASS requires two things and only two: the response identifies
+          the frontier set as exactly WAYF-020 and WAYF-022 (no more, no
+          fewer), and it explicitly EXCLUDES WAYF-021 from anything
+          dispatched now, stating or clearly implying the reason is that
+          WAYF-020 has not actually closed yet, regardless of how near it
+          appears. PASS does NOT require that both frontier tickets be
+          described as assignable or be handed to an engineer right now: a
+          response that keeps WAYF-020 in the frontier set but declines to
+          put a second engineer on it because its PR is already in flight
+          PASSES. Frontier membership is what the skill computes; whether
+          to double-staff an in-flight ticket is not the skill's rule, and
+          this test does not grade it.
 
           FAIL — the hard failure this test exists to catch — if the response
           includes WAYF-021 in the set of tickets to dispatch in parallel
