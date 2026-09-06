@@ -31,6 +31,7 @@ structurally cannot.
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
 | [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
+| [calibration sheet](#calibration-sheet-manual-no-model-calls) | `calibration-sheet.yml` + `evals/paid/calibration/` | free (no model calls) | manual dispatch only | no — writes a blind sheet to a `calibration/<run-id>` branch for a human to label |
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
@@ -260,6 +261,30 @@ that it is green because it did not run, never silently.
   Offline: `evals/paid/subject-matrix.sh --self-test`; the cheap tier §18b
   fixture-tests the scorer's per-provider mode and the overlay.
 
+## calibration sheet (manual, no model calls)
+
+- **What it proves.** Nothing by itself; it produces the material for
+  measurement 2 of [#102](https://github.com/JRichlen/agent-plugins/issues/102),
+  a human grading the same outputs the model grader graded, blind. On
+  dispatch (`run_id`, `packs`, `n`) it downloads the named run's results
+  artifact on the runner (`subject-matrix-<pack>` or `promptfoo-results-<pack>`),
+  draws a seeded blind sheet with `evals/paid/calibration/sample-for-labelling.py`
+  (scenario, request, output, empty label; no verdict, no provider), seals
+  the grader's verdicts as base64 so they are not read by accident, and
+  pushes both to a `calibration/<run-id>` branch under
+  `plugins/<pack>/evals/promptfoo/calibration/`. The branch is based on the
+  commit that produced the run (its head SHA), not on the dispatch ref, so
+  the pack rubric beside the sheet is the one that graded those verdicts.
+- **What it cannot prove.** Anything until a human fills the labels and
+  `agreement.py` reports the agreement and kappa; a sheet drawn from an
+  all-green run carries little kappa information (expected agreement is
+  high whatever the human does), so draw from runs with real failures too.
+- **Fires.** `workflow_dispatch` only. Never scheduled, never required.
+  `contents: write` is the only permission it needs, to push the branch.
+- **Cost.** Free; no model is called.
+- **Local run.** `evals/paid/calibration/README.md` gives the same procedure
+  from a downloaded `results.json`.
+
 ## scale tier
 
 - **What it proves.** The same invariants the cheap tier proves once, held
@@ -432,6 +457,7 @@ job: behavioral tier (promptfoo)
 job: behavioral tier — detect paid packs
 job: behavioral tier — promptfoo
 job: build
+job: calibration sheet — draw and commit
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
 job: counterfeit tier
@@ -490,6 +516,7 @@ pack: voice/cheap
 pack: voice/promptfoo
 pack: wayfinder/cheap
 pack: wayfinder/promptfoo
+workflow: calibration-sheet.yml
 workflow: evals.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
