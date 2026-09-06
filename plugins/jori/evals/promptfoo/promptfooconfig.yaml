@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
 # Behavioral check for Jori's authority and evidence rules. The real skill and
 # an invariant-free calibration stub run against the same hard scenarios; the
 # stub must fail, or the scenario measures base-model caution rather than Jori.
@@ -9,7 +10,7 @@ prompts:
 providers:
   - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
     config:
-      max_tokens: 4096
+      max_tokens: 8192
 
 evaluateOptions:
   repeat: 3
