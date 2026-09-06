@@ -44,22 +44,34 @@
 # request var — whatever is stable across a scenario's N repeats.
 set -uo pipefail
 
-FLOOR="0.6"; MIN_RUNS="2"; MIN_VALID="2"; FILE=""
+FLOOR="0.6"; MIN_RUNS="2"; MIN_VALID="2"; FILE=""; BY_PROVIDER="0"; BASELINE=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --floor)     FLOOR="${2:?}"; shift 2 ;;
-    --min-runs)  MIN_RUNS="${2:?}"; shift 2 ;;
-    --min-valid) MIN_VALID="${2:?}"; shift 2 ;;
+    --floor)       FLOOR="${2:?}"; shift 2 ;;
+    --min-runs)    MIN_RUNS="${2:?}"; shift 2 ;;
+    --min-valid)   MIN_VALID="${2:?}"; shift 2 ;;
+    # Subject-model matrix (issue #102): score each provider separately instead
+    # of pooling every provider's rows into one scenario. Pooling hides the split
+    # this mode exists to show — a skill that steers the baseline 3/3 and a new
+    # subject 0/3 pools to 0.50 and reads as one mediocre scenario.
+    --by-provider) BY_PROVIDER="1"; shift ;;
+    # With --baseline ID, only that provider's scenarios decide the exit code;
+    # every other provider is scored, printed and tagged ADVISORY (the promotion
+    # rule is applied by a human reading the report, per #102). A baseline that
+    # produced no rows fails closed: the required leg never ran. Without
+    # --baseline, every provider is strict.
+    --baseline)    BASELINE="${2:?}"; BY_PROVIDER="1"; shift 2 ;;
     -*)          echo "pass-rate: unknown flag $1" >&2; exit 2 ;;
     *)           FILE="$1"; shift ;;
   esac
 done
-[ -n "$FILE" ] || { echo "usage: pass-rate.sh RESULTS.json [--floor F] [--min-runs N] [--min-valid M]" >&2; exit 2; }
+[ -n "$FILE" ] || { echo "usage: pass-rate.sh RESULTS.json [--floor F] [--min-runs N] [--min-valid M] [--by-provider] [--baseline PROVIDER_ID]" >&2; exit 2; }
 [ -f "$FILE" ] || { echo "pass-rate: no such file: $FILE" >&2; exit 2; }
 
-python3 - "$FILE" "$FLOOR" "$MIN_RUNS" "$MIN_VALID" <<'PY'
+python3 - "$FILE" "$FLOOR" "$MIN_RUNS" "$MIN_VALID" "$BY_PROVIDER" "$BASELINE" <<'PY'
 import json, sys, re
 path, floor, min_runs, min_valid = sys.argv[1], float(sys.argv[2]), int(sys.argv[3]), int(sys.argv[4])
+by_provider, baseline = sys.argv[5] == "1", sys.argv[6]
 try:
     doc = json.load(open(path))
 except Exception as e:
@@ -137,9 +149,18 @@ def is_fault(r):
             return True
     return False
 
+def provider_of(r):
+    p = r.get("provider")
+    if isinstance(p, dict):
+        return str(p.get("id") or p.get("label") or "<unknown>")
+    if isinstance(p, str) and p.strip():
+        return p
+    return str(r.get("providerId") or "<unknown>")
+
+# agg is keyed by (provider, scenario); in pooled mode the provider slot is "".
 agg = {}
 for r in rows:
-    k = key(r)
+    k = (provider_of(r) if by_provider else "", key(r))
     a = agg.setdefault(k, {"runs": 0, "valid": 0, "pass": 0, "fault": 0})
     a["runs"] += 1
     if is_fault(r):
@@ -152,20 +173,41 @@ for r in rows:
 below = 0
 under_runs = 0
 starved = 0
-print(f"pass-rate: floor={floor:.2f}  min-runs={min_runs}  min-valid={min_valid}  scenarios={len(agg)}")
-for k in sorted(agg):
-    runs, valid, passes, fault = agg[k]["runs"], agg[k]["valid"], agg[k]["pass"], agg[k]["fault"]
-    rate = passes / valid if valid else 0.0
-    if runs < min_runs:
-        tag = "UNDER-REPEATED"; under_runs += 1
-    elif valid < min_valid:
-        tag = "STARVED"; starved += 1
-    elif rate < floor:
-        tag = "BELOW-FLOOR"; below += 1
-    else:
-        tag = "OK"
-    fnote = f"  ({fault} FAULT excluded)" if fault else ""
-    print(f"  [{tag}] {passes}/{valid} valid = {rate:.2f}  [{runs} rows]{fnote}  {k[:90]}")
+advisory_below = 0
+providers = sorted({p for p, _ in agg})
+if by_provider:
+    print(f"pass-rate: floor={floor:.2f}  min-runs={min_runs}  min-valid={min_valid}  providers={len(providers)}  scenarios={len({s for _, s in agg})}  by-provider" + (f"  baseline={baseline}" if baseline else "  (every provider strict)"))
+    if baseline and baseline not in providers:
+        print(f"pass-rate: FAIL — baseline provider '{baseline}' produced no rows; the required leg never ran (fail-closed)", file=sys.stderr)
+        sys.exit(1)
+else:
+    print(f"pass-rate: floor={floor:.2f}  min-runs={min_runs}  min-valid={min_valid}  scenarios={len(agg)}")
+for prov in providers:
+    strict = (not by_provider) or (not baseline) or prov == baseline
+    if by_provider:
+        print(f"  provider {prov}" + ("" if strict else "  [ADVISORY — does not decide the exit code]"))
+    for k in sorted(s for p, s in agg if p == prov):
+        a = agg[(prov, k)]
+        runs, valid, passes, fault = a["runs"], a["valid"], a["pass"], a["fault"]
+        rate = passes / valid if valid else 0.0
+        if runs < min_runs:
+            tag = "UNDER-REPEATED"
+            if strict: under_runs += 1
+        elif valid < min_valid:
+            tag = "STARVED"
+            if strict: starved += 1
+        elif rate < floor:
+            tag = "BELOW-FLOOR"
+            if strict: below += 1
+            else: advisory_below += 1
+        else:
+            tag = "OK"
+        if not strict and tag != "OK":
+            tag = "ADVISORY " + tag
+        fnote = f"  ({fault} FAULT excluded)" if fault else ""
+        print(f"  [{tag}] {passes}/{valid} valid = {rate:.2f}  [{runs} rows]{fnote}  {k[:90]}")
+if advisory_below:
+    print(f"pass-rate: advisory — {advisory_below} scenario(s) below the floor under a non-baseline subject; read the report before promoting that subject (#102)")
 
 if under_runs:
     print(f"pass-rate: FAIL — {under_runs} scenario(s) ran fewer than {min_runs} times; this was not a repeated run (fail-closed)", file=sys.stderr)
