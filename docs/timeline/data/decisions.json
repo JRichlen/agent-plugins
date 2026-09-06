@@ -56,7 +56,14 @@
       "title": "The gate that excused failures",
       "window": "September 2–4, 2026",
       "lesson": "Caught while landing the routing tier: the statistical gate had been quietly excluding real failures as transport faults. Scoring them against the floor turned two packs red across three PRs at once, and the protocol's own pack caught its driver scheduling a landing to happen unattended.",
-      "bridge": "Which leaves the question where it started, one altitude higher: the layers that would check a plan, a trajectory, and a composition are planned but not built. That is the horizon below."
+      "bridge": "The plan named the objection it could not yet answer: every behavioral verdict in this repository rested on one cheap subject model and one model grader. An outside reader would say the packs measure that pair, not the skill. The next days were spent giving that objection a number."
+    },
+    {
+      "id": "era-9",
+      "title": "One subject, one grader",
+      "window": "September 5–6, 2026",
+      "lesson": "A subject-model matrix found, on its first run, that the calibration controls are model-specific: a bait tuned so the baseline's bare behaviour fails to gate does not transfer to a model that gates unaided, so a with-skill green on that model measures nothing. A blind labelling sheet was drawn so a human can grade the grader, and its own pull request caught a rubric that graded staffing instead of the skill's rule.",
+      "bridge": "The sheets are on main with every label blank. The number that answers \"AI grades AI\" is the one a human has not yet written, and the layers that would check a plan, a trajectory, and a composition are still planned. That is the horizon below."
     }
   ],
   "decisions": [
@@ -1061,6 +1068,117 @@
       ],
       "curated": true,
       "cut_reason": null
+    },
+    {
+      "id": "subject-model-matrix",
+      "era": "era-9",
+      "date": "2026-09-06",
+      "title": "Calibration controls are model-specific",
+      "forced_by": "Every pack ran one cheap subject on OpenRouter and one grader, so every behavioral verdict was a statement about that pair. The adversarial read of this page put it first: two of three repeats on one model is a majority, not a measurement, and nothing showed the prose steered any other model. #102 turned the objection into four measurements in leverage order, the first of them a matrix of subjects.",
+      "decided": "A manual, advisory subject-model matrix: the same packs, two more subjects, per-provider scoring in which only the baseline decides and every other provider is tagged advisory. The promotion rule was corrected before the first run: a subject is promotable on a pack only if the pack's calibration control still passes under it, because a control that fails means the bare model already does what the skill asks and the with-skill green measures nothing. First run, 34002674057: wayfinder's controls held under both new subjects; semver-gate's two controls each failed 0/3 under a different subject, bare Haiku already stopping to ask for sign-off, bare Llama already refusing to route around a structural block. Neither is promotable on semver-gate as the pack stands.",
+      "rejected": "Promoting a subject on its pass rate alone, which would have declared both subjects green on semver-gate on scenarios where the skill was doing no work. Making the matrix a required check: it is manual dispatch, never scheduled, and its cost is stated per run. Reading a 0/3 at n=3 as more than three samples: the comment that reports the numbers says per-cell variance is real and must travel with every figure.",
+      "receipts": [
+        {
+          "label": "PR #105 (per-provider scoring, matrix workflow)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/105"
+        },
+        {
+          "label": "PR #106 (the display line that failed the step)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/106"
+        },
+        {
+          "label": "the promotion rule, corrected",
+          "url": "https://github.com/JRichlen/agent-plugins/issues/102#issuecomment-5555696849"
+        },
+        {
+          "label": "run 34002674057, the numbers",
+          "url": "https://github.com/JRichlen/agent-plugins/issues/102#issuecomment-5555992748"
+        },
+        {
+          "label": "subject-matrix.sh",
+          "path": "evals/paid/subject-matrix.sh"
+        },
+        {
+          "label": "pass-rate.sh --by-provider --baseline",
+          "path": "evals/paid/pass-rate.sh"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "blind-sheet",
+      "era": "era-9",
+      "date": "2026-09-06",
+      "title": "A human grades the grader, blind, against the rubric that graded",
+      "forced_by": "Measurement 2 of #102: how often does the model grader agree with a human reading the same rubric? The results artifacts live on a host this session cannot reach, and a sheet drawn by hand would carry the drawer's knowledge of the verdicts. The sampling had to happen where the artifact is, and the verdicts had to be present for the agreement script yet impossible to read by accident while labelling.",
+      "decided": "A manual calibration-sheet workflow: given a run id, it downloads the results artifact on the runner, draws a seeded blind sheet of twenty rows per pack (scenario, request, output, empty label; no verdict, no provider; each row keyed by a hash of scenario and output), seals the grader's verdicts as base64 beside it, and commits both to a branch based on the commit that produced the run, so the rubric next to the sheet is the one that graded those verdicts while the sampler comes from the dispatch ref. agreement.py joins the two label sets on the hash and reports percent agreement, Cohen's kappa, the confusion matrix, and the disagreements. The first sheets, from run 34002674057, are on main with every label blank.",
+      "rejected": "Committing decoded verdicts and relying on discipline not to look, which a review bot proposed as the simpler option. Basing the branch on the dispatch ref, which a second review bot caught as a P1: an older run's rubric could differ from the one beside the sheet and silently corrupt the kappa. Reading anything into the wayfinder sheet's kappa before it exists: that run was all-green, so expected agreement is high whatever the human does, and the semver-gate sheet, with six real failures, is the one that carries information.",
+      "receipts": [
+        {
+          "label": "PR #108 (the workflow)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/108"
+        },
+        {
+          "label": "the P1: base the branch on the run's commit",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/108#discussion_r3942762012"
+        },
+        {
+          "label": "commit 45cb9bb",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/45cb9bb1cff23be882def337855e3829ae30d20e"
+        },
+        {
+          "label": "PR #109 (the sheets)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/109"
+        },
+        {
+          "label": "calibration procedure",
+          "path": "evals/paid/calibration/README.md"
+        },
+        {
+          "label": "the wayfinder sheet, unlabelled",
+          "path": "plugins/wayfinder/evals/promptfoo/calibration/34002674057.sheet.json"
+        },
+        {
+          "label": "the semver-gate sheet, unlabelled",
+          "path": "plugins/semver-gate/evals/promptfoo/calibration/34002674057.sheet.json"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
+    },
+    {
+      "id": "regrade-on-record",
+      "era": "era-9",
+      "date": "2026-09-06",
+      "title": "A rubric that graded staffing, not the rule, is regraded on the record",
+      "forced_by": "The sheet pull request's own behavioral tier went red on wayfinder: the \"basically merging any minute\" scenario passed one of three. Both failing outputs computed the frontier correctly, excluded WAYF-021 because its dependency was still open, then put one engineer on the unstarted ticket and declined to add a second to the one whose pull request was already up. The grader failed them against a PASS clause that said to name both tickets as dispatchable now.",
+      "decided": "Classified as a grading defect under the plan's regrade discipline and recorded with the run number in the pack header and the pull request body: the skill's rule is frontier-only dispatch, and whether to double-staff a ticket someone is already working is not something it grades. The clause now grades the frontier set and the WAYF-021 exclusion and says in words that declining to double-staff still passes; the hard-failure clause, any dispatch of WAYF-021, is unchanged. The change is monotone, so verdicts already sealed in the sheet keep their meaning. A reviewer caught the first rewording still saying \"eligible for dispatch now\" and it was reworded again before merge.",
+      "rejected": "Re-running the job as a flake: the outputs were real and the plan says \"FAULT is a transport error; everything else is a verdict.\" Skipping or loosening the scenario without a classification. Leaving the sheet pull request red until the rubric drifted back: the regrade was merged to main and ported into the sheet branch so the same job re-ran against it.",
+      "receipts": [
+        {
+          "label": "PR #110 (the regrade)",
+          "url": "https://github.com/JRichlen/agent-plugins/pull/110"
+        },
+        {
+          "label": "run 34009716545, the failing legs",
+          "url": "https://github.com/JRichlen/agent-plugins/actions/runs/34009716545"
+        },
+        {
+          "label": "commit cb9cb67 (the second rewording)",
+          "url": "https://github.com/JRichlen/agent-plugins/commit/cb9cb67f61f630d9e8a433ef099b80ab18226f69"
+        },
+        {
+          "label": "the regrade discipline (§6.3)",
+          "path": "docs/testing-plan.md"
+        },
+        {
+          "label": "the pack header that records it",
+          "path": "plugins/wayfinder/evals/promptfoo/promptfooconfig.yaml"
+        }
+      ],
+      "curated": true,
+      "cut_reason": null
     }
   ],
   "acts": [
@@ -1089,14 +1207,15 @@
       "eras": [
         "era-6",
         "era-7",
-        "era-8"
+        "era-8",
+        "era-9"
       ],
       "summary": "Checks are turned outward into pages a reader can follow; the protocol overreaches and its scope is narrowed; and the statistical gate that scores every pack is caught excusing real failures, by the tier it was scoring. No outside user appears in this act: the reader it serves is anyone who was not in the room, the maintainer a month later included."
     }
   ],
   "methodology": {
     "intro": "Where the story has arrived: the ladder of checks as it runs today, cheapest first, each rung catching what the cheaper rungs structurally cannot. \"Proves\" on this ladder means one thing: a check that has been seen failing on the case it exists to catch. Nothing here is proof in any stronger sense. Every machine rung is documented, drift-guarded, and says out loud when it did not run; the last two are human gates and say so. Each rung names the decision on this page that created it.",
-    "spine": "Every model-driven rung shares one statistical spine: repeated trials, a k-of-N pass-rate floor over valid samples only, transport faults separated from verdicts and never scored, and fail-closed starvation, so a scenario with too few valid samples is \"never tested\" and never green. The numbers are small and stated here so no rung claims more: three repeats per scenario at a 0.6 floor (five at 0.8 for routing), one subject model (nvidia/nemotron-3-ultra on OpenRouter) and one grader (claude-sonnet-5) across every pack. Two of three is a majority, not a measurement; widening the subject models and putting a human in the grading loop is planned (#102) and not built.",
+    "spine": "Every model-driven rung shares one statistical spine: repeated trials, a k-of-N pass-rate floor over valid samples only, transport faults separated from verdicts and never scored, and fail-closed starvation, so a scenario with too few valid samples is \"never tested\" and never green. The numbers are small and stated here so no rung claims more: three repeats per scenario at a 0.6 floor (five at 0.8 for routing), one subject model (nvidia/nemotron-3-ultra on OpenRouter) and one grader (claude-sonnet-5) across every pack. Two of three is a majority, not a measurement. Widening the subject models exists as a manual, advisory matrix that has run once, and the human half of the grading loop exists as blind sheets whose labels are still blank (#102).",
     "tiers": [
       {
         "id": "cheap",
@@ -1267,6 +1386,50 @@
         ],
         "born_in": "evidence-against-self",
         "born_note": "the rule behind"
+      },
+      {
+        "id": "subject-matrix",
+        "title": "subject-model matrix — the same packs on other subjects, advisory",
+        "proves": "Whether a pack's calibration controls still hold under a subject other than the baseline, which is the only condition under which that subject's with-skill green means anything. Seen failing: semver-gate's two controls each went 0/3 under a different subject on the first run.",
+        "cannot": "Decide a merge, or claim more than n=3 per cell. Only the baseline provider decides; every other provider is scored and tagged advisory.",
+        "gate": "manual",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "subject-model-matrix-manual-advisory"
+          },
+          {
+            "label": "subject-matrix.yml",
+            "path": ".github/workflows/subject-matrix.yml"
+          }
+        ],
+        "born_in": "subject-model-matrix",
+        "born_note": "the first run behind"
+      },
+      {
+        "id": "calibration-sheet",
+        "title": "calibration sheet — a human grades the grader, blind",
+        "proves": "Nothing until a human fills the labels; then, percent agreement and Cohen's kappa between the human and the model grader on the same rows, with the sample size stated. Draws from a run's own artifact and bases the sheet on the commit that produced it.",
+        "cannot": "Make a human's labels correct, or narrow a kappa at n=20. Never a required check; never calls a model.",
+        "gate": "human",
+        "receipts": [
+          {
+            "label": "docs/testing.md",
+            "path": "docs/testing.md",
+            "anchor": "calibration-sheet-manual-no-model-calls"
+          },
+          {
+            "label": "calibration-sheet.yml",
+            "path": ".github/workflows/calibration-sheet.yml"
+          },
+          {
+            "label": "agreement.py",
+            "path": "evals/paid/calibration/agreement.py"
+          }
+        ],
+        "born_in": "blind-sheet",
+        "born_note": "the sheet behind"
       }
     ]
   },
@@ -1276,18 +1439,22 @@
       {
         "id": "subject-model-matrix",
         "title": "#102 — more than one subject model, and a human in the grading loop",
-        "status": "proposed",
-        "question": "Does a skill's prose steer models other than the one cheap subject every pack runs today, and how often does the model grader agree with a human reading the same rubric?",
-        "detail": "Four measurements in leverage order: a subject-model matrix (two more subjects per pack, advisory until the pack's calibration control still passes under each new model, since a control that fails means the model already does what the skill asks unaided); a human calibration set of about twenty blind-labelled outputs with agreement reported against the grader; grader self-consistency and a cross-family second grader to bound what two of three can mean; and real-agent runs for the protocol under the deep tier. The offline halves (per-provider scoring, the agreement script, fixtures) can land red-first without model calls.",
-        "depends_on": "nothing for the offline halves; API keys and one hour of labelling for the rest",
+        "status": "in progress · labels pending",
+        "question": "How often does the model grader agree with a human reading the same rubric, and does a second grader agree with the first?",
+        "detail": "What has landed is in the story above: the matrix ran once and found the controls model-specific, and blind sheets of twenty rows per pack sit on main with every label blank. What remains is the human half of measurement 2, an hour of labelling and one run of agreement.py per pack, then measurement 3, grader self-consistency and a cross-family second grader to bound what two of three can mean, and measurement 4, real-agent runs for the protocol under the deep tier. Until the labels exist, the grader's agreement with a human is unmeasured, and the wayfinder sheet will carry little information even then because its run was all-green.",
+        "depends_on": "an hour of labelling; a second grader key for measurement 3",
         "receipts": [
           {
             "label": "issue #102",
             "url": "https://github.com/JRichlen/agent-plugins/issues/102"
           },
           {
-            "label": "pass-rate.sh (the scorer to extend)",
-            "path": "evals/paid/pass-rate.sh"
+            "label": "the sheets to label",
+            "path": "plugins/semver-gate/evals/promptfoo/calibration/34002674057.sheet.json"
+          },
+          {
+            "label": "agreement.py",
+            "path": "evals/paid/calibration/agreement.py"
           }
         ]
       },
