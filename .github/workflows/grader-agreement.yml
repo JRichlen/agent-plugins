@@ -1,0 +1,144 @@
+# Grader agreement — issue #102, measurement 3.
+#
+# Re-grades the cached subject outputs of a finished run (a subject-matrix run
+# or a behavioral run) WITHOUT calling the subject again: the replay provider
+# (evals/paid/calibration/replay-provider.js) plays each recorded output back
+# and promptfoo runs only the assertions. Two re-grades per pack:
+#   self  — the pack's own grader, again (label-noise floor: how often the
+#           same grader agrees with itself on the same text under the same
+#           rubric);
+#   cross — a second grader from another model family, named on dispatch.
+# evals/paid/calibration/agreement.py then reports percent agreement, Cohen's
+# kappa, the confusion matrix and the disagreements of each against the run's
+# original verdicts, on the same sample hashes.
+#
+# Grading spend only (no subject calls). Manual dispatch; never a required
+# check; never promotes or demotes anything by itself — the numbers go to #102.
+name: grader agreement
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Workflow run id that produced the results artifact (subject-matrix-<pack> or promptfoo-results-<pack>).'
+        required: true
+        type: string
+      packs:
+        description: 'Plugin names, comma-separated.'
+        required: true
+        type: string
+      grader:
+        description: 'Second grader provider id in promptfoo syntax, from another model family than the pack grader (e.g. openrouter:google/gemini-2.5-pro).'
+        required: true
+        type: string
+      self:
+        description: 'Also re-grade with the pack''s own grader (self-consistency).'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  regrade:
+    name: grader agreement — regrade and compare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22, not 20: promptfoo 0.122.0 declares engines.node >=22.22.0 (see evals.yml).
+          node-version: 22
+      - name: ensure PyYAML (the overlay script reads the pack config with it)
+        run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
+      - name: validate the dispatch inputs
+        id: inputs
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ github.event.inputs.packs }}
+          GRADER: ${{ github.event.inputs.grader }}
+        # Every later step builds paths, artifact names and provider ids from
+        # these values, so they are validated once here: run_id a positive
+        # integer; each pack a plain plugin name with a promptfoo pack; the
+        # grader id restricted to promptfoo provider-id characters.
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]{1,20}$ ]] || { echo "::error::run_id must be a positive integer, got '$RUN_ID'"; exit 1; }
+          [[ "$GRADER" =~ ^[A-Za-z0-9._:/-]+$ ]] || { echo "::error::grader must be a promptfoo provider id, got '$GRADER'"; exit 1; }
+          packs=""
+          IFS=',' read -ra raw <<< "$PACKS"
+          for p in "${raw[@]}"; do
+            p="$(echo "$p" | tr -d '[:space:]')"
+            [ -n "$p" ] || continue
+            [[ "$p" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::pack name '$p' is not a plain plugin name"; exit 1; }
+            [ -d "plugins/$p/evals/promptfoo" ] || { echo "::error::plugins/$p/evals/promptfoo does not exist"; exit 1; }
+            packs="$packs $p"
+          done
+          [ -n "$packs" ] || { echo "::error::packs is empty"; exit 1; }
+          echo "packs=${packs# }" >> "$GITHUB_OUTPUT"
+          echo "validated: run_id=$RUN_ID grader=$GRADER packs=${packs# }"
+      - name: download the results artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ steps.inputs.outputs.packs }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results
+          for p in $PACKS; do
+            got=""
+            for name in "subject-matrix-$p" "promptfoo-results-$p"; do
+              if gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n "$name" -D "/tmp/results/$p" 2>/dev/null; then got="$name"; break; fi
+            done
+            [ -n "$got" ] || { echo "::error::no results artifact for $p on run $RUN_ID (tried subject-matrix-$p, promptfoo-results-$p)"; exit 1; }
+            f="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
+            [ -n "$f" ] || { echo "::error::artifact $got holds no results*.json"; exit 1; }
+            echo "$p: $got -> $f"
+          done
+      - name: re-grade and compare
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ steps.inputs.outputs.packs }}
+          GRADER: ${{ github.event.inputs.grader }}
+          SELF: ${{ github.event.inputs.self }}
+        # The assertions come from the results rows themselves, so the rubric
+        # that graded the run is the rubric re-applied here whatever ref this
+        # workflow was dispatched from. promptfoo's exit code is `|| echo`'d as
+        # in every other paid leg: agreement.py on the verdicts is the verdict.
+        run: |
+          set -euo pipefail
+          cal="$PWD/evals/paid/calibration"
+          mkdir -p /tmp/out
+          for p in $PACKS; do
+            pack="plugins/$p/evals/promptfoo"
+            res="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
+            out="/tmp/out/$p"; mkdir -p "$out"
+            python3 "$cal/sample-for-labelling.py" "$res" --n 1000000 --seed 0 --sheet "$out/all.sheet.json" --verdicts "$out/verdicts.original.json" >/dev/null
+            rm -f "$out/all.sheet.json"
+            own="$(bash "$cal/regrade.sh" "$pack" --grader-id)"
+            labels="cross"
+            if [ "$SELF" = "true" ]; then labels="self cross"; fi
+            echo "## grader agreement — $p (run $RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
+            for label in $labels; do
+              if [ "$label" = "self" ]; then g="$own"; else g="$GRADER"; fi
+              cfg="$(bash "$cal/regrade.sh" "$pack" "$res" --grader "$g" --label "$label")"
+              ( cd "$pack" && npx --yes promptfoo@0.122.0 eval -c "$(basename "$cfg")" --output "results.regrade.$label.json" ) \
+                || echo "::warning::promptfoo exited non-zero on $p/$label — agreement.py on the verdicts decides"
+              cp "$pack/results.regrade.$label.json" "$out/" 2>/dev/null || true
+              python3 "$cal/sample-for-labelling.py" "$pack/results.regrade.$label.json" --n 1000000 --seed 0 --sheet "$out/x.sheet.json" --verdicts "$out/verdicts.$label.json" >/dev/null \
+                || { echo "::warning::$p/$label produced no usable verdicts"; continue; }
+              rm -f "$out/x.sheet.json"
+              python3 "$cal/agreement.py" "$out/verdicts.original.json" "$out/verdicts.$label.json" --name-a original --name-b "$label" --json "$out/report.$label.json" | tee "$out/report.$label.txt" || true
+              { echo "### $label ($g)"; echo; echo '```'; cat "$out/report.$label.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            done
+          done
+      - name: keep the verdicts and reports for #102
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grader-agreement-${{ github.event.inputs.run_id }}
+          path: /tmp/out
+          if-no-files-found: warn

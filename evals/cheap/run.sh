@@ -1012,6 +1012,40 @@ elif [ -f .github/workflows/subject-matrix.yml ] && grep -q -- '--by-provider --
 else
   bad "matrix: subject-matrix.yml must invoke pass-rate.sh --by-provider --baseline, be workflow_dispatch, and stay out of ci/required-checks.json"
 fi
+# Measurement 3 (grader vs grader): the regrade overlay and the replay provider
+# must produce one test per usable cached sample, keyed by the sampler's hash,
+# graded by the requested grader, and the provider must refuse to play back a
+# sample it does not have (a graded blank is the wrong kind of quiet).
+_rgt="$(evals/paid/calibration/regrade.sh --self-test 2>&1)"; _rgrc=$?
+if [ $_rgrc -eq 0 ]; then
+  ok "calibration: regrade.sh overlay replays each cached sample with its own assertions under the requested grader"
+elif [ $_rgrc -eq 3 ]; then
+  ok "calibration: regrade.sh self-test NOT run — PyYAML unavailable here (it is on the CI runner); said out loud, not skipped silently"
+else
+  bad "calibration: regrade.sh self-test failed: $_rgt"
+fi
+if command -v node >/dev/null 2>&1; then
+  printf '{"h1":"cached answer"}' > "$_mx/replay.json"
+  if node -e '
+    const P=require(process.argv[1]); const p=new P({config:{file:process.argv[2]}});
+    (async()=>{ const a=await p.callApi("x",{vars:{__replay:"h1"}}); const b=await p.callApi("x",{vars:{__replay:"nope"}}); const c=await p.callApi("x",{vars:{}});
+      process.exit(a.output==="cached answer" && b.error && !("output" in b) && c.error ? 0 : 1); })();'     "$REPO_ROOT/evals/paid/calibration/replay-provider.js" "$_mx/replay.json" >/dev/null 2>&1; then
+    ok "calibration: replay-provider.js plays a cached output back by hash and errors, never blanks, on a missing sample"
+  else
+    bad "calibration: replay-provider.js did not return the cached output for a known hash or returned something other than an error for an unknown one"
+  fi
+else
+  ok "calibration: replay-provider.js NOT exercised — node unavailable here (it is on the CI runner); said out loud, not skipped silently"
+fi
+if [ ! -d .github/workflows ]; then
+  ok "calibration: no workflows directory in this root — nothing to check for grader-agreement"
+elif [ -f .github/workflows/grader-agreement.yml ] && grep -q 'regrade.sh' .github/workflows/grader-agreement.yml \
+   && grep -q 'agreement.py' .github/workflows/grader-agreement.yml && grep -q 'workflow_dispatch' .github/workflows/grader-agreement.yml \
+   && { [ ! -f ci/required-checks.json ] || ! grep -q 'grader agreement' ci/required-checks.json; }; then
+  ok "calibration: the grader-agreement workflow re-grades via regrade.sh, compares via agreement.py, is manual-dispatch only, and is not a required check"
+else
+  bad "calibration: grader-agreement.yml must invoke regrade.sh and agreement.py, be workflow_dispatch, and stay out of ci/required-checks.json"
+fi
 rm -rf "$_mx"
 
 # --- 19. Example gallery (docs/examples) is in sync and non-fabricated -------
