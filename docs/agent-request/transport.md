@@ -5,7 +5,7 @@ The canonical contract is adapter-neutral. `transport.py` maps canonical ASCII J
 - `X-Agent-Request-Schema: agent-request/v1`
 - `X-Agent-Request-Metadata: <base64url canonical JSON>`
 
-The mapper caps canonical metadata at 4,096 bytes, encoded value at 6,144 characters, and the observed header collection at 64 fields. It rejects duplicate metadata headers case-insensitively, CR/LF, malformed base64, missing metadata, and unknown versions. `openai_request_kwargs()` returns only an `extra_headers` mapping: endpoint, authorization, prompt body, retries, and provider options remain outside the metadata contract.
+Before encoding, the sender validates the closed context-free envelope shape, so unknown fields, prompt-like free-form data, malformed values, and incomplete requests cannot enter these headers. The mapper caps canonical metadata at 4,096 bytes, encoded value at 6,144 characters, and the observed header collection at 64 fields. Decoding rejects duplicate metadata headers and duplicate JSON members, noncanonical JSON bytes, CR/LF, malformed base64, missing metadata, and unknown versions. `openai_request_kwargs()` returns only an `extra_headers` mapping: endpoint, authorization, prompt body, retries, and provider options remain outside the metadata contract.
 
 Decode first, then run semantic validation with adapter-supplied `TrustedContext`. Do not derive trusted context from these headers. A terminating proxy must reject duplicate headers before coalescing and must not forward metadata beyond its intended policy boundary.
 

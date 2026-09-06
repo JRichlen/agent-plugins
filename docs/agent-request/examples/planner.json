@@ -40,6 +40,8 @@
       "network:http",
       "external:publish"
     ],
+    "context_lane": "normal",
+    "dispatcher_run_id": "run_dispatch_001",
     "issuer_id": "issuer_dispatch_001",
     "model_classes": [
       "local-general",
@@ -47,10 +49,14 @@
     ],
     "now": "2026-01-01T00:01:00Z",
     "parent_run_ids": [],
+    "phase": "plan",
     "policy_bundles": [
       "policy_public_001"
     ],
+    "privacy_class": "public",
+    "reasoning_lane": "medium",
     "run_id": "run_plan_001",
+    "sequence": 1,
     "task_id": "task_public_101"
   }
 }

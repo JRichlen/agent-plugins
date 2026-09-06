@@ -2,7 +2,7 @@
 
 ## Rejected counterfeits
 
-The deterministic corpus covers unknown versions and fields; prompt-field injection; control characters and oversized identifiers; unknown, duplicate, unsorted, and high-cardinality capabilities; identity spoofing; untrusted parents; stale requests; nonce replay; phase/model authority escalation; pending or unknown grants; cross-run/task/action grants; stale grants; invalid capability combinations; duplicate/malformed/oversized headers; and CR/LF injection.
+The deterministic corpus covers unknown versions and fields; prompt-field injection; control characters and oversized identifiers; unknown, duplicate, unsorted, and high-cardinality capabilities; identity and operational-field spoofing; untrusted parents and dispatcher provenance; stale requests; nonce replay; phase/model authority escalation; pending or unknown grants; cross-run/task/action grants; stale grants; malformed trusted fixtures and duplicate grant IDs; invalid capability combinations; duplicate/malformed/oversized headers and JSON members in request or fixture files; noncanonical metadata; and CR/LF injection.
 
 The validator returns stable non-sensitive codes. It does not echo request values, approval records, headers, or parser details. Callers should log only the code, schema version, opaque correlation identifier where policy permits, and a bounded timestamp.
 

@@ -6,9 +6,9 @@ The normative machine shape is [`schema.json`](../../evals/agent-request/schema.
 
 ## Trust boundary
 
-The entire request envelope is untrusted. An adapter supplies `TrustedContext` separately from authenticated transport/session policy. It pins issuer, agent, run, task, action, permitted parents, policy bundles, model classes, capability ceiling, current time, nonce history, and exact approval grants. A caller cannot become trusted by adding issuer or approval strings to metadata.
+The entire request envelope is untrusted. An adapter supplies `TrustedContext` separately from authenticated transport/session policy. It pins issuer, agent, run, task, action, phase, context lane, reasoning lane, privacy class, dispatcher run and sequence, permitted parents, policy bundles, model classes, capability ceiling, current time, nonce history, and exact approval grants. A caller cannot become trusted by adding issuer or approval strings to metadata. Successful normalized output reports these values from the validated trusted context.
 
-Validation binds `agent_id`, `run_id`, `task_id`, and `action_id` to that context. `parent_run_id` establishes opaque provenance only; it never inherits capabilities or approval. `provenance.dispatcher_run_id` and its bounded sequence support correlation without transcript inheritance. Nonces are consumed only after successful validation; adapters need durable replay state if protection must survive restart.
+Validation binds every listed operational field to that context. `parent_run_id` establishes opaque provenance only; it never inherits capabilities or approval. `provenance.dispatcher_run_id` and its bounded sequence support correlation without transcript inheritance and must exactly match trusted dispatcher state. Nonces are consumed only after successful validation; adapters need durable replay state if protection must survive restart. The offline JSON fixture loader is closed and bounded, rejects malformed types, duplicate grant IDs and unknown nested fields, and remains test scaffolding rather than authentication.
 
 ## Capability and approval semantics
 

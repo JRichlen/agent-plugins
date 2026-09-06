@@ -3,7 +3,7 @@
 from __future__ import annotations
 import argparse, base64, json
 from typing import Iterable
-from validator import MAX_SERIALIZED_BYTES, VERSION, ValidationError
+from validator import MAX_SERIALIZED_BYTES, VERSION, ValidationError, canonical_request_bytes
 
 SCHEMA_HEADER = "X-Agent-Request-Schema"
 METADATA_HEADER = "X-Agent-Request-Metadata"
@@ -11,8 +11,7 @@ MAX_HEADERS = 64
 MAX_HEADER_VALUE = 6144
 
 def encode_headers(request: dict) -> list[tuple[str, str]]:
-    raw = json.dumps(request, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
-    if len(raw) > MAX_SERIALIZED_BYTES: raise ValidationError("REQUEST_TOO_LARGE")
+    raw = canonical_request_bytes(request)
     value = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
     if len(value) > MAX_HEADER_VALUE: raise ValidationError("HEADER_TOO_LARGE")
     return [(SCHEMA_HEADER, VERSION), (METADATA_HEADER, value)]
@@ -34,7 +33,15 @@ def decode_headers(headers: Iterable[tuple[str, str]]) -> dict:
     try:
         raw = base64.b64decode(value + "=" * (-len(value) % 4), altchars=b"-_", validate=True)
         if len(raw) > MAX_SERIALIZED_BYTES: raise ValidationError("REQUEST_TOO_LARGE")
-        parsed = json.loads(raw)
+        def closed_object(pairs):
+            result = {}
+            for key, item in pairs:
+                if key in result: raise ValidationError("DUPLICATE_JSON_MEMBER")
+                result[key] = item
+            return result
+        parsed = json.loads(raw, object_pairs_hook=closed_object)
+        canonical = canonical_request_bytes(parsed)
+        if raw != canonical: raise ValidationError("NONCANONICAL_METADATA")
     except ValidationError: raise
     except Exception as exc: raise ValidationError("MALFORMED_METADATA_HEADER") from exc
     if not isinstance(parsed, dict): raise ValidationError("REQUEST_NOT_OBJECT")
@@ -45,7 +52,7 @@ def openai_request_kwargs(request: dict) -> dict:
     return {"extra_headers": dict(encode_headers(request))}
 
 def self_check() -> None:
-    sample={"schema_version":VERSION,"opaque":"value"}; assert decode_headers(encode_headers(sample)) == sample
+    sample={"schema_version":VERSION,"agent_id":"agent_sample_001","run_id":"run_sample_001","task_id":"task_sample_001","action_id":"action_sample_001","phase":"review","context_lane":"normal","reasoning_lane":"medium","model_class":"local-general","privacy_class":"internal","capabilities":["scm:read"],"approval":{"state":"not-required","action_id":"action_sample_001","grant_id":None},"policy_bundle":"policy_sample_001","issued_at":"2026-01-01T00:00:00Z","expires_at":"2026-01-01T00:04:00Z","nonce":"nonce_sample_0001","provenance":{"dispatcher_run_id":"run_dispatch_001","sequence":1}}; assert decode_headers(encode_headers(sample)) == sample
     try: decode_headers([(SCHEMA_HEADER, VERSION), (METADATA_HEADER, "a\r\nb")])
     except ValidationError as exc: assert exc.code == "HEADER_INJECTION"
     else: raise AssertionError("injection accepted")
