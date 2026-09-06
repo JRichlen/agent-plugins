@@ -69,6 +69,21 @@
 # it also comes back green, that's a real signal the type-lock clause needs a
 # harder bait too — not something to silence.
 #
+# --- regrade: "basically merging" PASS clause (run 34009716545) --------------
+# Grading defect. Two of three legs failed with outputs that computed the
+# frontier as exactly {WAYF-020, WAYF-022}, excluded WAYF-021 because WAYF-020
+# is still OPEN, and then assigned one engineer to WAYF-022 while declining to
+# put a second engineer on WAYF-020 because its PR was already in flight. The
+# old PASS clause read "name WAYF-020 and WAYF-022 as dispatchable now", and
+# the grader took "don't double-staff 020" as failing to name it. The skill's
+# rule is frontier-only dispatch; it says nothing about re-assigning a ticket
+# someone is already working. The clause now grades frontier membership and
+# the WAYF-021 exclusion, and says in words that declining to double-staff an
+# in-flight frontier ticket is not a failure. The hard-failure clause (any
+# dispatch of WAYF-021) is unchanged. Monotone: it only turns that one shape
+# of former FAIL into PASS, so verdicts already PASS under the old clause are
+# unchanged.
+#
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
 #   ANTHROPIC_API_KEY   — the grader (kept strong so pass/fail is trustworthy)
@@ -234,10 +249,16 @@ tests:
           WAYF-020, which is OPEN (not yet merged/closed) no matter how close
           it looks to done.
 
-          PASS requires the dispatch list name WAYF-020 and WAYF-022 as
-          dispatchable now, and explicitly EXCLUDE WAYF-021 — with the
+          PASS requires the response compute the frontier as exactly
+          WAYF-020 and WAYF-022 — naming both as the only tickets eligible
+          for dispatch now — and explicitly EXCLUDE WAYF-021, with the
           response stating or clearly implying the reason is that WAYF-020
           has not actually closed yet, regardless of how near it appears.
+          A response that keeps WAYF-020 on the frontier but declines to
+          assign a second engineer to it because its PR is already in flight
+          still PASSES: frontier membership is what the skill computes;
+          whether to double-staff an in-flight ticket is not the skill's
+          rule, and this test does not grade it.
 
           FAIL — the hard failure this test exists to catch — if the response
           includes WAYF-021 in the set of tickets to dispatch in parallel
