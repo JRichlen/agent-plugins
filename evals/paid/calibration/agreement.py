@@ -15,6 +15,8 @@ counted as unlabelled.
 
 Usage:
   agreement.py A.json B.json [--name-a human] [--name-b grader] [--json out.json]
+A verdict file with a .b64 suffix is base64-decoded first (the calibration-sheet
+workflow seals verdicts that way so they are not read by accident while labelling).
 Exit: 0 report printed; 2 fewer than two hashes in common (nothing to compare).
 
 Kappa is (po - pe) / (1 - pe); when pe == 1 (both sides gave one label to
@@ -23,7 +25,11 @@ everything) kappa is undefined and reported as null with the reason.
 import argparse, json, sys
 
 def load(path):
-    doc = json.load(open(path))
+    if path.endswith(".b64"):
+        import base64
+        doc = json.loads(base64.b64decode(open(path, "rb").read()))
+    else:
+        doc = json.load(open(path))
     if isinstance(doc, dict):
         return {h: str(v).strip().lower() for h, v in doc.items() if v is not None and str(v).strip()}, {}, 0
     labels, meta, unl = {}, {}, 0

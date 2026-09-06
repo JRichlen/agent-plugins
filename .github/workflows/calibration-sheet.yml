@@ -1,0 +1,94 @@
+# Calibration sheet — issue #102, measurement 2.
+#
+# Draws a BLIND labelling sheet from a finished subject-matrix (or behavioral)
+# run's results artifact, using evals/paid/calibration/sample-for-labelling.py,
+# and commits the sheet plus the grader's verdicts to a calibration/<run-id>
+# branch so a human can label the sheet in a pull request. The verdicts file is
+# written base64-encoded so it cannot be read by accident while labelling;
+# agreement.py decodes it (see evals/paid/calibration/README.md).
+#
+# Manual dispatch only; no model calls; never a required check.
+name: calibration sheet
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Workflow run id that produced the results artifact (a subject-matrix run: artifact subject-matrix-<pack>; a behavioral run: promptfoo-results-<pack>).'
+        required: true
+        type: string
+      packs:
+        description: 'Plugin names, comma-separated.'
+        required: true
+        type: string
+      n:
+        description: 'Rows per pack.'
+        required: false
+        default: '20'
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  sheet:
+    name: calibration sheet — draw and commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: download the results artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ github.event.inputs.packs }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results
+          for p in $(echo "$PACKS" | tr ',' ' '); do
+            got=""
+            for name in "subject-matrix-$p" "promptfoo-results-$p"; do
+              if gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n "$name" -D "/tmp/results/$p" 2>/dev/null; then got="$name"; break; fi
+            done
+            [ -n "$got" ] || { echo "::error::no results artifact for $p on run $RUN_ID (tried subject-matrix-$p, promptfoo-results-$p)"; exit 1; }
+            f="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
+            [ -n "$f" ] || { echo "::error::artifact $got holds no results*.json"; exit 1; }
+            echo "$p: $got -> $f"
+          done
+      - name: draw the blind sheets
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ github.event.inputs.packs }}
+          N: ${{ github.event.inputs.n }}
+        run: |
+          set -euo pipefail
+          seed=$(( RUN_ID % 2147483647 ))
+          for p in $(echo "$PACKS" | tr ',' ' '); do
+            f="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
+            d="plugins/$p/evals/promptfoo/calibration"; mkdir -p "$d"
+            python3 evals/paid/calibration/sample-for-labelling.py "$f" --n "$N" --seed "$seed" \
+              --sheet "$d/$RUN_ID.sheet.json" --verdicts "/tmp/results/$p/verdicts.json"
+            base64 -w0 "/tmp/results/$p/verdicts.json" > "$d/$RUN_ID.verdicts.b64"
+            echo "### calibration sheet — $p (run $RUN_ID, seed $seed)" >> "$GITHUB_STEP_SUMMARY"
+            python3 - "$d/$RUN_ID.sheet.json" >> "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, sys, collections
+          s = json.load(open(sys.argv[1]))
+          c = collections.Counter(r["scenario"] for r in s)
+          print(f"\n{len(s)} rows across {len(c)} scenarios; labels blank.\n")
+          for k, v in sorted(c.items()): print(f"- {v} × {k[:90]}")
+          PY
+          done
+      - name: commit the sheets to a calibration branch
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          branch="calibration/$RUN_ID"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add plugins/*/evals/promptfoo/calibration/
+          git commit -m "calibration: blind sheets drawn from run $RUN_ID (labels blank; verdicts base64-sealed)"
+          git push --force-with-lease origin "$branch"
+          echo "branch: $branch" >> "$GITHUB_STEP_SUMMARY"
