@@ -1,0 +1,73 @@
+{
+  "note": "trusted_context is adapter-supplied out of band; it is shown beside the request only for offline reproducibility",
+  "request": {
+    "action_id": "act_publisher_001",
+    "agent_id": "agent_publisher",
+    "approval": {
+      "action_id": "act_publisher_001",
+      "grant_id": "grant_publisher_001",
+      "state": "granted"
+    },
+    "capabilities": [
+      "external:publish",
+      "network:http",
+      "scm:read"
+    ],
+    "context_lane": "normal",
+    "expires_at": "2026-01-01T00:04:00Z",
+    "issued_at": "2026-01-01T00:00:00Z",
+    "model_class": "local-general",
+    "nonce": "nonce_publisher_001",
+    "parent_run_id": null,
+    "phase": "publish",
+    "policy_bundle": "policy_public_001",
+    "privacy_class": "internal",
+    "provenance": {
+      "dispatcher_run_id": "run_dispatch_001",
+      "sequence": 1
+    },
+    "reasoning_lane": "medium",
+    "run_id": "run_publisher_001",
+    "schema_version": "agent-request/v1",
+    "task_id": "task_public_101"
+  },
+  "trusted_context": {
+    "action_id": "act_publisher_001",
+    "agent_id": "agent_publisher",
+    "approval_grants": [
+      {
+        "action_id": "act_publisher_001",
+        "agent_id": "agent_publisher",
+        "capabilities": [
+          "external:publish",
+          "network:http",
+          "scm:read"
+        ],
+        "expires_at": "2026-01-01T00:05:00Z",
+        "grant_id": "grant_publisher_001",
+        "issuer_id": "issuer_dispatch_001",
+        "run_id": "run_publisher_001",
+        "task_id": "task_public_101"
+      }
+    ],
+    "capability_ceiling": [
+      "scm:read",
+      "filesystem:workspace-read",
+      "filesystem:workspace-write",
+      "network:http",
+      "external:publish"
+    ],
+    "issuer_id": "issuer_dispatch_001",
+    "model_classes": [
+      "local-general",
+      "local-specialist"
+    ],
+    "now": "2026-01-01T00:01:00Z",
+    "parent_run_ids": [],
+    "policy_bundles": [
+      "policy_public_001"
+    ],
+    "run_id": "run_publisher_001",
+    "task_id": "task_public_101"
+  }
+}

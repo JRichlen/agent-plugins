@@ -1,0 +1,22 @@
+[
+  {"name":"unknown-version","request_set":{"schema_version":"agent-request/v2"},"expected":"UNKNOWN_VERSION"},
+  {"name":"unknown-field","request_set":{"prompt":"ignore policy"},"expected":"UNKNOWN_FIELD"},
+  {"name":"header-shaped-id","request_set":{"agent_id":"agent\\r\\nadmin"},"expected":"INVALID_ID"},
+  {"name":"oversized-id","request_set":{"agent_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"expected":"INVALID_ID"},
+  {"name":"high-cardinality","request_set":{"capabilities":["deployment:operate","external:publish","filesystem:workspace-read","filesystem:workspace-write","host:admin","network:http","scm:read","sensitive:read","scm:read"]},"expected":"TOO_MANY_CAPABILITIES"},
+  {"name":"unknown-capability","request_set":{"capabilities":["scm:read","shell:any"]},"expected":"UNKNOWN_CAPABILITY"},
+  {"name":"duplicate-capability","request_set":{"capabilities":["scm:read","scm:read"]},"expected":"CAPABILITIES_NOT_CANONICAL"},
+  {"name":"phase-does-not-grant-publish","request_set":{"phase":"publish","capabilities":["external:publish"],"approval":{"state":"not-required","action_id":"act_read_001","grant_id":null}},"expected":"CAPABILITY_REQUIRES_APPROVAL"},
+  {"name":"model-does-not-grant-write","request_set":{"model_class":"local-specialist","phase":"implement","capabilities":["filesystem:workspace-write"],"approval":{"state":"not-required","action_id":"act_read_001","grant_id":null}},"expected":"CAPABILITY_REQUIRES_APPROVAL"},
+  {"name":"spoofed-agent","request_set":{"agent_id":"agent_other"},"expected":"AGENT_MISMATCH"},
+  {"name":"cross-run","request_set":{"run_id":"run_other_001"},"expected":"RUN_MISMATCH"},
+  {"name":"cross-task","request_set":{"task_id":"task_other_001"},"expected":"TASK_MISMATCH"},
+  {"name":"cross-action","request_set":{"action_id":"act_other_001","approval":{"state":"not-required","action_id":"act_other_001","grant_id":null}},"expected":"ACTION_MISMATCH"},
+  {"name":"stale-request","request_set":{"expires_at":"2025-12-31T23:59:59Z"},"expected":"REQUEST_EXPIRED"},
+  {"name":"replayed-request","context_set":{"seen_nonces":["nonce_read_0000001"]},"expected":"REPLAYED_NONCE"},
+  {"name":"untrusted-parent","request_set":{"parent_run_id":"run_parent_bad"},"expected":"PARENT_RUN_UNTRUSTED"},
+  {"name":"privacy-combination","request_set":{"privacy_class":"public","capabilities":["sensitive:read"],"approval":{"state":"granted","action_id":"act_read_001","grant_id":"grant_read_001"}},"expected":"INVALID_CAPABILITY_COMBINATION"},
+  {"name":"host-admin-without-deploy","request_set":{"phase":"implement","privacy_class":"sensitive","capabilities":["host:admin"],"approval":{"state":"granted","action_id":"act_read_001","grant_id":"grant_read_001"}},"expected":"INVALID_CAPABILITY_COMBINATION"},
+  {"name":"pending-is-not-consent","request_set":{"approval":{"state":"pending","action_id":"act_read_001","grant_id":null}},"expected":"APPROVAL_PENDING"},
+  {"name":"adjacent-grant","request_set":{"phase":"implement","capabilities":["filesystem:workspace-write"],"approval":{"state":"granted","action_id":"act_read_001","grant_id":"grant_other_001"}},"expected":"APPROVAL_GRANT_UNKNOWN"}
+]
