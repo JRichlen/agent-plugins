@@ -274,17 +274,24 @@ that it is green because it did not run, never silently.
   the grader's verdicts as base64 so they are not read by accident, and
   pushes both to a `calibration/<run-id>` branch under
   `plugins/<pack>/evals/promptfoo/calibration/`. The branch is based on the
-  commit that produced the run (its head SHA), not on the dispatch ref, so
-  the pack rubric beside the sheet is the one that graded those verdicts.
+  actual checkout SHA recorded in each results artifact, including the merge
+  checkout for PR evaluations. Provenance binds the repository, run, attempt,
+  pack, filename, and results digest. Missing or inconsistent provenance is
+  rejected; legacy artifacts must be regenerated. All packs must share a
+  checkout SHA and run attempt. Existing calibration branches are never
+  overwritten, preserving human labels even across concurrent dispatches.
 - **What it cannot prove.** Anything until a human fills the labels and
   `agreement.py` reports the agreement and kappa; a sheet drawn from an
   all-green run carries little kappa information (expected agreement is
   high whatever the human does), so draw from runs with real failures too.
 - **Fires.** `workflow_dispatch` only. Never scheduled, never required.
-  `contents: write` is the only permission it needs, to push the branch.
+  `contents: write` publishes the new branch; `actions: read` downloads artifacts.
 - **Cost.** Free; no model is called.
 - **Local run.** `evals/paid/calibration/README.md` gives the same procedure
-  from a downloaded `results.json`.
+  from a downloaded `results.json`. The cheap gate runs
+  `python3 evals/paid/calibration/test-workflow.py`: offline fixtures execute
+  the real workflow steps for decimal inputs, provenance, file selection,
+  historical checkout, and preservation of labelled branches.
 
 ## grader agreement (manual, grading only)
 

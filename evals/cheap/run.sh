@@ -1068,6 +1068,15 @@ elif [ -f .github/workflows/grader-agreement.yml ] && grep -q 'regrade.sh' .gith
 else
   bad "calibration: grader-agreement.yml must invoke regrade.sh and agreement.py, be workflow_dispatch, and stay out of ci/required-checks.json"
 fi
+if [ -d .github/workflows ]; then
+  if ! python3 -c 'import yaml' >/dev/null 2>&1; then
+    bad "calibration workflow fixtures require PyYAML"
+  elif python3 evals/paid/calibration/test-workflow.py; then
+    ok "calibration workflow: provenance, inputs, artifacts and label preservation"
+  else
+    bad "calibration workflow regression fixtures failed"
+  fi
+fi
 rm -rf "$_mx"
 
 # --- 19. Example gallery (docs/examples) is in sync and non-fabricated -------
