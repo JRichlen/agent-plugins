@@ -7,6 +7,12 @@
 # written base64-encoded so it cannot be read by accident while labelling;
 # agreement.py decodes it (see evals/paid/calibration/README.md).
 #
+# The branch is based on the COMMIT THAT PRODUCED THE RUN (its head SHA), not
+# on the ref this workflow was dispatched from, so the pack rubric next to the
+# sheet is the one the grader actually applied to those verdicts. The sampling
+# script itself is taken from the dispatch ref, so a newer sampler can be
+# pointed at an older run.
+#
 # Manual dispatch only; no model calls; never a required check.
 name: calibration sheet
 on:
@@ -65,6 +71,29 @@ jobs:
           [ -n "$packs" ] || { echo "::error::packs is empty"; exit 1; }
           echo "packs=${packs# }" >> "$GITHUB_OUTPUT"
           echo "validated: run_id=$RUN_ID n=$N packs=${packs# }"
+      - name: check out the commit that produced the run
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ steps.inputs.outputs.packs }}
+        # The verdicts were produced by the rubric at the run's head commit.
+        # Keep the sampler from the dispatch ref (copied aside), then move the
+        # working tree to that commit so the sheet is committed next to the
+        # rubric that graded it, not next to whatever the dispatch ref carries.
+        run: |
+          set -euo pipefail
+          sha="$(gh run view "$RUN_ID" -R "$GITHUB_REPOSITORY" --json headSha -q .headSha)"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::could not resolve the head SHA of run $RUN_ID (got '$sha')"; exit 1; }
+          mkdir -p /tmp/tools
+          cp evals/paid/calibration/sample-for-labelling.py /tmp/tools/
+          git cat-file -e "$sha^{commit}" 2>/dev/null || git fetch --no-tags origin "$sha"
+          git checkout --detach "$sha"
+          for p in $PACKS; do
+            [ -d "plugins/$p/evals/promptfoo" ] || { echo "::error::plugins/$p/evals/promptfoo does not exist at run $RUN_ID's commit $sha"; exit 1; }
+          done
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "run $RUN_ID was produced at $sha; sheets will be committed on top of it"
       - name: download the results artifacts
         env:
           GH_TOKEN: ${{ github.token }}
@@ -94,7 +123,7 @@ jobs:
           for p in $PACKS; do
             f="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
             d="plugins/$p/evals/promptfoo/calibration"; mkdir -p "$d"
-            python3 evals/paid/calibration/sample-for-labelling.py "$f" --n "$N" --seed "$seed" \
+            python3 /tmp/tools/sample-for-labelling.py "$f" --n "$N" --seed "$seed" \
               --sheet "$d/$RUN_ID.sheet.json" --verdicts "/tmp/results/$p/verdicts.json"
             base64 -w0 "/tmp/results/$p/verdicts.json" > "$d/$RUN_ID.verdicts.b64"
             echo "### calibration sheet — $p (run $RUN_ID, seed $seed)" >> "$GITHUB_STEP_SUMMARY"
@@ -109,13 +138,15 @@ jobs:
       - name: commit the sheets to a calibration branch
         env:
           RUN_ID: ${{ github.event.inputs.run_id }}
+          SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
           branch="calibration/$RUN_ID"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B "$branch"
+          git checkout -B "$branch" "$SHA"
           git add plugins/*/evals/promptfoo/calibration/
-          git commit -m "calibration: blind sheets drawn from run $RUN_ID (labels blank; verdicts base64-sealed)"
+          git commit -m "calibration: blind sheets drawn from run $RUN_ID (labels blank; verdicts base64-sealed)" \
+            -m "Based on $SHA, the commit that produced run $RUN_ID, so the pack rubric beside each sheet is the one that graded these verdicts."
           git push --force-with-lease origin "$branch"
-          echo "branch: $branch" >> "$GITHUB_STEP_SUMMARY"
+          echo "branch: $branch (based on $SHA)" >> "$GITHUB_STEP_SUMMARY"

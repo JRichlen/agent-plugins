@@ -272,7 +272,9 @@ that it is green because it did not run, never silently.
   (scenario, request, output, empty label; no verdict, no provider), seals
   the grader's verdicts as base64 so they are not read by accident, and
   pushes both to a `calibration/<run-id>` branch under
-  `plugins/<pack>/evals/promptfoo/calibration/`.
+  `plugins/<pack>/evals/promptfoo/calibration/`. The branch is based on the
+  commit that produced the run (its head SHA), not on the dispatch ref, so
+  the pack rubric beside the sheet is the one that graded those verdicts.
 - **What it cannot prove.** Anything until a human fills the labels and
   `agreement.py` reports the agreement and kappa; a sheet drawn from an
   all-green run carries little kappa information (expected agreement is
