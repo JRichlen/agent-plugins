@@ -27,9 +27,11 @@ import argparse, json, sys
 def load(path):
     if path.endswith(".b64"):
         import base64
-        doc = json.loads(base64.b64decode(open(path, "rb").read()))
+        with open(path, "rb") as f:
+            doc = json.loads(base64.b64decode(f.read()))
     else:
-        doc = json.load(open(path))
+        with open(path) as f:
+            doc = json.load(f)
     if isinstance(doc, dict):
         return {h: str(v).strip().lower() for h, v in doc.items() if v is not None and str(v).strip()}, {}, 0
     labels, meta, unl = {}, {}, 0

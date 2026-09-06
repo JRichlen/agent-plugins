@@ -38,15 +38,42 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: validate the dispatch inputs
+        id: inputs
+        env:
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          PACKS: ${{ github.event.inputs.packs }}
+          N: ${{ github.event.inputs.n }}
+        # Every later step builds paths, artifact names and a branch name from
+        # these values, so they are validated once here and re-exported in a
+        # normalised form: run_id and n must be positive integers; each pack
+        # must be a plain name (letters, digits, dot, underscore, hyphen) that
+        # names an installed plugin with a promptfoo pack.
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]{1,20}$ ]] || { echo "::error::run_id must be a positive integer, got '$RUN_ID'"; exit 1; }
+          [[ "$N" =~ ^[0-9]{1,4}$ ]] && [ "$N" -ge 1 ] || { echo "::error::n must be a positive integer, got '$N'"; exit 1; }
+          packs=""
+          IFS=',' read -ra raw <<< "$PACKS"
+          for p in "${raw[@]}"; do
+            p="$(echo "$p" | tr -d '[:space:]')"
+            [ -n "$p" ] || continue
+            [[ "$p" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "::error::pack name '$p' is not a plain plugin name"; exit 1; }
+            [ -d "plugins/$p/evals/promptfoo" ] || { echo "::error::plugins/$p/evals/promptfoo does not exist"; exit 1; }
+            packs="$packs $p"
+          done
+          [ -n "$packs" ] || { echo "::error::packs is empty"; exit 1; }
+          echo "packs=${packs# }" >> "$GITHUB_OUTPUT"
+          echo "validated: run_id=$RUN_ID n=$N packs=${packs# }"
       - name: download the results artifacts
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.event.inputs.run_id }}
-          PACKS: ${{ github.event.inputs.packs }}
+          PACKS: ${{ steps.inputs.outputs.packs }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/results
-          for p in $(echo "$PACKS" | tr ',' ' '); do
+          for p in $PACKS; do
             got=""
             for name in "subject-matrix-$p" "promptfoo-results-$p"; do
               if gh run download "$RUN_ID" -R "$GITHUB_REPOSITORY" -n "$name" -D "/tmp/results/$p" 2>/dev/null; then got="$name"; break; fi
@@ -59,12 +86,12 @@ jobs:
       - name: draw the blind sheets
         env:
           RUN_ID: ${{ github.event.inputs.run_id }}
-          PACKS: ${{ github.event.inputs.packs }}
+          PACKS: ${{ steps.inputs.outputs.packs }}
           N: ${{ github.event.inputs.n }}
         run: |
           set -euo pipefail
           seed=$(( RUN_ID % 2147483647 ))
-          for p in $(echo "$PACKS" | tr ',' ' '); do
+          for p in $PACKS; do
             f="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
             d="plugins/$p/evals/promptfoo/calibration"; mkdir -p "$d"
             python3 evals/paid/calibration/sample-for-labelling.py "$f" --n "$N" --seed "$seed" \
