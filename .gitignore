@@ -35,3 +35,7 @@ __pycache__/
 # subject-model matrix overlays and results (evals/paid/subject-matrix.sh, issue #102) — generated, never committed
 plugins/*/evals/promptfoo/promptfooconfig.matrix.yaml
 plugins/*/evals/promptfoo/results.matrix.json
+# grader-agreement overlays, replay maps and re-grade results (evals/paid/calibration/regrade.sh, issue #102) — generated, never committed
+plugins/*/evals/promptfoo/promptfooconfig.regrade.*.yaml
+plugins/*/evals/promptfoo/replay.*.json
+plugins/*/evals/promptfoo/results.regrade.*.json

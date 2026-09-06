@@ -21,6 +21,12 @@ should label a 504.
 Usage:
   sample-for-labelling.py RESULTS.json [RESULTS2.json ...] --n 20 [--seed 0]
                           [--sheet sheet.json] [--verdicts verdicts.json]
+                          [--model-graded-only]
+--model-graded-only takes the verdict from the model-graded assertion(s) of the
+row (pass iff every llm-rubric-style component passed) instead of the row's
+overall success, and skips rows that have no model-graded component; use it
+when comparing grader against grader (measurement 3), so a deterministic
+assertion such as `icontains` cannot force the same verdict on both sides.
 Exit: 0 wrote both files; 2 nothing usable to sample.
 """
 import argparse, hashlib, json, random, re, sys
@@ -55,6 +61,21 @@ def output_text(r):
     # canonical dump so semantically identical JSON outputs hash identically
     return out if isinstance(out, str) else json.dumps(out, sort_keys=True, separators=(",", ":"))
 
+_MODEL_GRADED = ("llm-rubric", "model-graded-closedqa", "model-graded-factuality", "factuality", "answer-relevance",
+                 "context-faithfulness", "context-recall", "context-relevance", "g-eval", "select-best", "pi")
+
+def _is_model_graded(a):
+    t = str((a or {}).get("type", ""))
+    return t in _MODEL_GRADED or t.startswith("llm-") or t.startswith("model-graded")
+
+def model_graded_verdict(r):
+    """'pass'/'fail' from the row's model-graded components only; None if it has none."""
+    comps = ((r.get("gradingResult") or {}).get("componentResults") or [])
+    mg = [c for c in comps if _is_model_graded(c.get("assertion"))]
+    if not mg:
+        return None
+    return "pass" if all(c.get("pass") is True for c in mg) else "fail"
+
 def is_fault(r):
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
@@ -72,6 +93,7 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--sheet", default="sheet.json")
     ap.add_argument("--verdicts", default="verdicts.json")
+    ap.add_argument("--model-graded-only", action="store_true")
     a = ap.parse_args()
     pool = {}
     for path in a.results:
@@ -86,12 +108,17 @@ def main():
             if not body.strip():
                 continue
             sc = scenario(r)
+            verdict = "pass" if r.get("success") is True else "fail"
+            if a.model_graded_only:
+                verdict = model_graded_verdict(r)
+                if verdict is None:
+                    continue
             # identity is (scenario, output): the verdict belongs to a rubric, not
             # to the text alone. Repeats of one output under one scenario keep the
             # first verdict seen.
             h = hashlib.sha256((sc + "\x00" + body).encode("utf-8")).hexdigest()
             pool.setdefault(h, {"hash": h, "scenario": sc, "request": request_of(r),
-                                "output": body, "verdict": "pass" if r.get("success") is True else "fail"})
+                                "output": body, "verdict": verdict})
     if not pool:
         print("sample: no usable rows (all faults or empty)", file=sys.stderr); return 2
     items = sorted(pool.values(), key=lambda x: x["hash"])

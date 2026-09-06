@@ -32,6 +32,7 @@ structurally cannot.
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
 | [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
 | [calibration sheet](#calibration-sheet-manual-no-model-calls) | `calibration-sheet.yml` + `evals/paid/calibration/` | free (no model calls) | manual dispatch only | no — writes a blind sheet to a `calibration/<run-id>` branch for a human to label |
+| [grader agreement](#grader-agreement-manual-grading-only) | `grader-agreement.yml` + `evals/paid/calibration/regrade.sh` | grading spend only (no subject calls) | manual dispatch only | no — reports agreement and kappa between graders on a finished run's outputs |
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
@@ -285,6 +286,37 @@ that it is green because it did not run, never silently.
 - **Local run.** `evals/paid/calibration/README.md` gives the same procedure
   from a downloaded `results.json`.
 
+## grader agreement (manual, grading only)
+
+- **What it proves.** Measurement 3 of
+  [#102](https://github.com/JRichlen/agent-plugins/issues/102): how often the
+  model grader agrees with itself, and with a grader from another model
+  family, on the same outputs under the same rubric. On dispatch (`run_id`,
+  `packs`, `grader`, `self`) it downloads the run's results artifact,
+  `evals/paid/calibration/regrade.sh` writes an overlay whose provider is
+  `replay-provider.js` (it plays each recorded output back; the subject is
+  never called again) and whose tests carry each sample's own assertions
+  copied from the results rows (model-graded assertions only, so a
+  deterministic `icontains` beside a rubric cannot force the same verdict on
+  both sides), promptfoo runs only the grading, and `agreement.py` reports
+  percent agreement, Cohen's kappa, the confusion matrix and the
+  disagreements of each re-grade against the run's original model-graded
+  verdicts, joined on the sampler's hash. The self grader is read from the
+  run's own rows, not from the dispatch checkout, so an older run is compared
+  against the grader that actually graded it; a leg that yields no report
+  fails the job. Self-agreement is the label-noise
+  floor: if it sits below the pass-rate floor, two of three cannot separate
+  a skill effect from grader noise.
+- **What it cannot prove.** Which grader is right; only whether they agree.
+  It does not promote or demote a grader by itself, and an all-green run
+  gives kappa little to say (expected agreement is already high).
+- **Fires.** `workflow_dispatch` only. Never scheduled, never required.
+  `actions: read` to fetch the artifact, `contents: read` for the checkout.
+- **Cost.** Grading only: roughly a third of the original run per re-grade.
+- **Local run.** `evals/paid/calibration/README.md`, measurement 3. Offline:
+  `evals/paid/calibration/regrade.sh --self-test`; the cheap tier §18b
+  fixture-tests the overlay and the replay provider.
+
 ## scale tier
 
 - **What it proves.** The same invariants the cheap tier proves once, held
@@ -428,10 +460,12 @@ exist; when one goes live it moves into this document and out of the plan's
   artifact audits of `.redgate/`; owned by
   [#88](https://github.com/JRichlen/agent-plugins/issues/88) (see the scope
   split recorded on #89).
-- **Grader calibration measurements** — the human-labelled set, the
-  cross-grader and self-consistency runs, and the subject-promotion rule for
-  the matrix above; the scripts exist (see the statistical spine), the
-  measurements do not: [#102](https://github.com/JRichlen/agent-plugins/issues/102).
+- **Grader calibration measurements** — the human labels for the blind
+  sheets the calibration-sheet workflow draws, and the cross-grader and
+  self-consistency numbers the grader-agreement workflow produces; the
+  workflows exist (above), the measurements do not until someone labels a
+  sheet and dispatches a re-grade:
+  [#102](https://github.com/JRichlen/agent-plugins/issues/102).
 
 ## Machine-verified inventory
 
@@ -466,6 +500,7 @@ job: counterfeit tier — run (corpus)
 job: deep tier (pier)
 job: deep tier — detect safety-path changes
 job: deep tier — pier run
+job: grader agreement — regrade and compare
 job: deploy
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
@@ -518,6 +553,7 @@ pack: wayfinder/cheap
 pack: wayfinder/promptfoo
 workflow: calibration-sheet.yml
 workflow: evals.yml
+workflow: grader-agreement.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
 workflow: scale.yml

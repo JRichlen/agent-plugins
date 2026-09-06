@@ -57,6 +57,7 @@ build_root() {
   # §18b checks the subject-model matrix workflow's wiring whenever a workflows
   # directory exists; stage the real copy so the baseline stays green here too.
   cp "$REPO_ROOT/.github/workflows/subject-matrix.yml" "$root/.github/workflows/subject-matrix.yml"
+  cp "$REPO_ROOT/.github/workflows/grader-agreement.yml" "$root/.github/workflows/grader-agreement.yml"
   cp -R "$REPO_ROOT/ci/." "$root/ci/"
   cp -R "$REPO_ROOT/evals/paid" "$root/evals/paid"
   # Stage a top-level README.md (§5b is guarded on its presence, same as the

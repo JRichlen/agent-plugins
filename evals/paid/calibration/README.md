@@ -40,10 +40,32 @@ No model is called; the workflow never becomes a required check.
 ## Grader vs grader, grader vs itself (measurement 3)
 
 Grade the same cached outputs with a second grader (a different model family)
-or with the same grader again, and feed the two `verdicts.json` files to
+or with the same grader again, and feed the two verdict files to
 `agreement.py`. Self-agreement is the label-noise floor: if it sits below the
 pass-rate floor, two of three cannot separate a skill effect from grader
 noise, and the repeat count has to rise before the floor means anything.
+
+`regrade.sh` does the re-grading without calling the subject again:
+
+```sh
+# verdicts of the original run from its model-graded components only, keyed by the sampler's hash
+python3 sample-for-labelling.py results.json --n 1000000 --model-graded-only --sheet /dev/null --verdicts verdicts.original.json
+# an overlay that replays every cached output through replay-provider.js and
+# grades it with the named grader (the grader that graded results.json:
+# `regrade.sh <pack> --grader-id --from results.json`)
+cfg="$(regrade.sh plugins/<pack>/evals/promptfoo results.json --grader <provider id> --label cross)"
+( cd plugins/<pack>/evals/promptfoo && npx promptfoo@0.122.0 eval -c "$(basename "$cfg")" --output results.regrade.cross.json )
+python3 sample-for-labelling.py plugins/<pack>/evals/promptfoo/results.regrade.cross.json --n 1000000 --model-graded-only --sheet /dev/null --verdicts verdicts.cross.json
+python3 agreement.py verdicts.original.json verdicts.cross.json --name-a original --name-b cross
+```
+
+The assertions come from the results rows themselves, so the rubric that
+graded the run is the rubric re-applied; only model-graded assertions are
+replayed and compared, so a deterministic `icontains` beside a rubric cannot
+force the same verdict on both sides. The `grader agreement` workflow
+(manual dispatch: `run_id`, `packs`, `grader`, `self`) runs exactly this on
+the runner for a self re-grade and a cross-family re-grade and uploads the
+verdicts and reports as `grader-agreement-<run-id>`.
 
 ## What these scripts cannot do
 
