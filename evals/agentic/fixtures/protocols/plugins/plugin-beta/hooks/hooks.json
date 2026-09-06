@@ -1,0 +1,12 @@
+{
+  "description": "synthetic fixture plugin for T19 hook discovery — the third of the tree's three hooks; no matcher key at all, matching agent-compiler's real UserPromptSubmit shape",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/handler.py"}
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "description": "benchmark-spec §5 worked example: plugin redgate, N=40 scoring-valid attempts. n11=18 n10=6 n01=11 n00=5. outcome_rate=24/40=0.600 adoption_rate=29/40=0.725 ritual_without_outcome=11/29=0.379 outcome_without_ritual=6/24=0.250.",
+  "plugin": "redgate",
+  "n11": 18,
+  "n10": 6,
+  "n01": 11,
+  "n00": 5,
+  "expected": {
+    "outcome_rate": 0.600,
+    "adoption_rate": 0.725,
+    "ritual_without_outcome": 0.37931034,
+    "outcome_without_ritual": 0.25
+  }
+}

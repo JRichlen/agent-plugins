@@ -526,6 +526,7 @@ of these, update this block (and the prose above) in the same PR;
 
 <!-- BEGIN LIVE-INVENTORY (verified by evals/cheap/check-testing-doc.sh) -->
 ```
+eval-dir: evals/agentic
 eval-dir: evals/cheap
 eval-dir: evals/counterfeits
 eval-dir: evals/paid

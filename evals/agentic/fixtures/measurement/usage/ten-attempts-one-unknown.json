@@ -1,0 +1,11 @@
+{
+  "description": "benchmark-spec §1.3 worked example: 10 attempts, 9 report output_tokens summing to 18,430, one reports nothing. Correct render: '18,430+ (1 of 10 attempts unknown)'. The negative control sum(x or 0 for x in tokens) silently reports 18430 as complete.",
+  "model_id": "claude-sonnet-5",
+  "output_tokens": [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2430, "UNKNOWN"],
+  "expected": {
+    "known": 18430,
+    "unknown_count": 1,
+    "contributors": 10,
+    "render": "18,430+ (1 of 10 attempts unknown)"
+  }
+}

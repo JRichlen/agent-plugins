@@ -1,0 +1,6 @@
+{
+  "description": "benchmark-spec §9 worked examples, reusing the §6.2 clustered intervals: margin=0.05. Example A (12-card interval, lo=+0.0336) is ESTABLISHED. Example B (4-card interval, lo=-0.2596) is NOT ESTABLISHED, and in practice is reported unavailable first because C=4 < min_clusters=8 (§6.4's stricter refusal).",
+  "margin": 0.05,
+  "established_case": {"lo": 0.0336, "hi": 0.1664},
+  "not_established_case": {"lo": -0.2596, "hi": 0.5346}
+}

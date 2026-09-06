@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/test-fixtures/mini-attempt.schema.json",
+  "type": "object",
+  "required": ["role", "control_kind"],
+  "properties": {
+    "role": {"type": "string", "enum": ["treatment", "baseline", "control", "coordination"]},
+    "control_kind": {
+      "oneOf": [
+        {"type": "string", "enum": ["nop", "inversion", "oracle", "mutation"]},
+        {"type": "null"}
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {"role": {"const": "control"}},
+    "required": ["role"]
+  },
+  "then": {
+    "properties": {"control_kind": {"not": {"type": "null"}}}
+  },
+  "else": {
+    "properties": {"control_kind": {"type": "null"}}
+  }
+}
