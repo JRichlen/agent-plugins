@@ -1024,6 +1024,28 @@ elif [ $_rgrc -eq 3 ]; then
 else
   bad "calibration: regrade.sh self-test failed: $_rgt"
 fi
+# --model-graded-only: the verdict comes from the llm-rubric components alone,
+# and a row with no model-graded component is skipped, so a deterministic
+# assertion cannot force the same verdict on both sides of a grader comparison.
+python3 - "$_mx" <<'PYG'
+import json, sys
+d = sys.argv[1]
+def row(desc, out, comps):
+    ok = all(c[1] for c in comps)
+    return {"testCase": {"description": desc}, "vars": {"request": "r"}, "provider": {"id": "p"}, "success": ok,
+            "failureReason": 0 if ok else 1, "error": None, "response": {"output": out},
+            "gradingResult": {"componentResults": [{"pass": p, "assertion": {"type": t, "value": "v"}} for t, p in comps]}}
+rows = [row("S1", "a", [("llm-rubric", True), ("icontains", False)]),   # row fails overall; rubric passed
+        row("S2", "b", [("icontains", True)]),                           # no model-graded component
+        row("S3", "c", [("llm-rubric", False)])]
+json.dump({"results": {"results": rows}}, open(d + "/mg.json", "w"))
+PYG
+if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/mg.json" --n 100 --model-graded-only --sheet "$_mx/mg.sheet.json" --verdicts "$_mx/mg.v.json" >/dev/null 2>&1 \
+   && python3 -c 'import json,sys; v=json.load(open(sys.argv[1])); assert sorted(v.values())==["fail","pass"] and len(v)==2' "$_mx/mg.v.json" 2>/dev/null; then
+  ok "calibration: --model-graded-only takes the verdict from the rubric components and skips rows with none"
+else
+  bad "calibration: sample-for-labelling.py --model-graded-only did not yield exactly {S1: pass, S3: fail} (S2 skipped)"
+fi
 if command -v node >/dev/null 2>&1; then
   printf '{"h1":"cached answer"}' > "$_mx/replay.json"
   if node -e '

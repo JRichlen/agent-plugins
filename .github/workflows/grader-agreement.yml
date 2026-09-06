@@ -48,8 +48,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # 22, not 20: promptfoo 0.122.0 declares engines.node >=22.22.0 (see evals.yml).
-          node-version: 22
+          # promptfoo 0.122.0 declares engines.node >=22.22.0 (see evals.yml); a
+          # bare major could resolve to an older 22.x from a runner cache.
+          node-version: '>=22.22.0 <23'
       - name: ensure PyYAML (the overlay script reads the pack config with it)
         run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
       - name: validate the dispatch inputs
@@ -106,19 +107,28 @@ jobs:
           SELF: ${{ github.event.inputs.self }}
         # The assertions come from the results rows themselves, so the rubric
         # that graded the run is the rubric re-applied here whatever ref this
-        # workflow was dispatched from. promptfoo's exit code is `|| echo`'d as
-        # in every other paid leg: agreement.py on the verdicts is the verdict.
+        # workflow was dispatched from; the self grader is read from the same
+        # rows (or the config archived beside them), not from this checkout, so
+        # an older run is compared against the grader that actually graded it.
+        # Original and re-grade verdicts are both taken from the model-graded
+        # components only, so a deterministic assertion cannot force the same
+        # verdict on both sides. promptfoo's exit code is `|| echo`'d as in
+        # every other paid leg; a leg that yields no agreement report is
+        # recorded and fails the job at the end, never a quiet green.
         run: |
           set -euo pipefail
           cal="$PWD/evals/paid/calibration"
           mkdir -p /tmp/out
+          failed=""
           for p in $PACKS; do
             pack="plugins/$p/evals/promptfoo"
             res="$(find "/tmp/results/$p" -name 'results*.json' | head -1)"
             out="/tmp/out/$p"; mkdir -p "$out"
-            python3 "$cal/sample-for-labelling.py" "$res" --n 1000000 --seed 0 --sheet "$out/all.sheet.json" --verdicts "$out/verdicts.original.json" >/dev/null
+            python3 "$cal/sample-for-labelling.py" "$res" --n 1000000 --seed 0 --model-graded-only --sheet "$out/all.sheet.json" --verdicts "$out/verdicts.original.json" >/dev/null \
+              || { echo "::error::$p: the source results hold no model-graded verdicts"; failed="$failed $p/original"; continue; }
             rm -f "$out/all.sheet.json"
-            own="$(bash "$cal/regrade.sh" "$pack" --grader-id)"
+            own="$(bash "$cal/regrade.sh" "$pack" --grader-id --from "$res")"
+            echo "$p: self grader = $own"
             labels="cross"
             if [ "$SELF" = "true" ]; then labels="self cross"; fi
             echo "## grader agreement — $p (run $RUN_ID)" >> "$GITHUB_STEP_SUMMARY"
@@ -128,13 +138,19 @@ jobs:
               ( cd "$pack" && npx --yes promptfoo@0.122.0 eval -c "$(basename "$cfg")" --output "results.regrade.$label.json" ) \
                 || echo "::warning::promptfoo exited non-zero on $p/$label — agreement.py on the verdicts decides"
               cp "$pack/results.regrade.$label.json" "$out/" 2>/dev/null || true
-              python3 "$cal/sample-for-labelling.py" "$pack/results.regrade.$label.json" --n 1000000 --seed 0 --sheet "$out/x.sheet.json" --verdicts "$out/verdicts.$label.json" >/dev/null \
-                || { echo "::warning::$p/$label produced no usable verdicts"; continue; }
+              if ! python3 "$cal/sample-for-labelling.py" "$pack/results.regrade.$label.json" --n 1000000 --seed 0 --model-graded-only --sheet "$out/x.sheet.json" --verdicts "$out/verdicts.$label.json" >/dev/null; then
+                echo "::error::$p/$label produced no usable verdicts (grader $g)"; failed="$failed $p/$label"; continue
+              fi
               rm -f "$out/x.sheet.json"
-              python3 "$cal/agreement.py" "$out/verdicts.original.json" "$out/verdicts.$label.json" --name-a original --name-b "$label" --json "$out/report.$label.json" | tee "$out/report.$label.txt" || true
-              { echo "### $label ($g)"; echo; echo '```'; cat "$out/report.$label.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              if python3 "$cal/agreement.py" "$out/verdicts.original.json" "$out/verdicts.$label.json" --name-a original --name-b "$label" --json "$out/report.$label.json" | tee "$out/report.$label.txt"; then
+                { echo "### $label ($g)"; echo; echo '```'; cat "$out/report.$label.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "::error::$p/$label: agreement.py produced no report (fewer than two samples in common with the original)"; failed="$failed $p/$label"
+                { echo "### $label ($g) — NO REPORT"; echo; echo "agreement.py could not compare the re-grade with the original (see the job log)."; } >> "$GITHUB_STEP_SUMMARY"
+              fi
             done
           done
+          if [ -n "$failed" ]; then echo "::error::legs without a measurement:$failed"; exit 1; fi
       - name: keep the verdicts and reports for #102
         if: always()
         uses: actions/upload-artifact@v4

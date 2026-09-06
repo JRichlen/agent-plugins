@@ -296,10 +296,15 @@ that it is green because it did not run, never silently.
   `evals/paid/calibration/regrade.sh` writes an overlay whose provider is
   `replay-provider.js` (it plays each recorded output back; the subject is
   never called again) and whose tests carry each sample's own assertions
-  copied from the results rows, promptfoo runs only the grading, and
-  `agreement.py` reports percent agreement, Cohen's kappa, the confusion
-  matrix and the disagreements of each re-grade against the run's original
-  verdicts, joined on the sampler's hash. Self-agreement is the label-noise
+  copied from the results rows (model-graded assertions only, so a
+  deterministic `icontains` beside a rubric cannot force the same verdict on
+  both sides), promptfoo runs only the grading, and `agreement.py` reports
+  percent agreement, Cohen's kappa, the confusion matrix and the
+  disagreements of each re-grade against the run's original model-graded
+  verdicts, joined on the sampler's hash. The self grader is read from the
+  run's own rows, not from the dispatch checkout, so an older run is compared
+  against the grader that actually graded it; a leg that yields no report
+  fails the job. Self-agreement is the label-noise
   floor: if it sits below the pass-rate floor, two of three cannot separate
   a skill effect from grader noise.
 - **What it cannot prove.** Which grader is right; only whether they agree.
