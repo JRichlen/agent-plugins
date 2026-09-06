@@ -130,11 +130,18 @@ greppable reference the cheap eval asserts against.
   adjacent or general request (e.g., "merge it") does not transfer to
   the specific MAJOR mechanism (e.g., "disable `enforce_admins` to merge
   it") — ask again, naming that mechanism by name. If a structural block (a
-  `hard_deny`/`soft_deny` classifier, an API-level policy denial) fires mid-
-  attempt even after sign-off, do not route around it: surface exactly what
-  fired and why, then offer the least-destructive alternative path forward
-  and wait again. Never let time pressure or a retry loop become an excuse
-  to skip the ask. Example: disabling a branch-protection setting,
+  `hard_deny`/`soft_deny` classifier, an API-level policy denial, a
+  permission or scope denial) fires mid-attempt even after sign-off,
+  do not route around it: surface exactly what fired and why, then offer
+  the least-destructive alternative path forward and wait again. A different
+  credential, token, or scope that would get past the block — including one
+  already sitting in the environment — is a route around it, not a retry of
+  what was signed off: never switch to it on your own, and never make it the
+  only path you offer. Lead with the least-destructive alternative; if you
+  also ask whether to escalate, name the escalation as its own MAJOR
+  mechanism and put it beside that alternative, never in place of it. Never
+  let time pressure or a retry loop become an excuse to skip the ask.
+  Example: disabling a branch-protection setting,
   force-pushing, running a destructive recursive delete, applying a schema
   migration against a prod-gated runner.
 
