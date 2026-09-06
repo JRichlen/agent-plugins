@@ -66,6 +66,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: ensure PyYAML (the overlay script reads the pack config with it)
+        run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
       - name: overlay the pack with the extra subjects
         id: overlay
         env:

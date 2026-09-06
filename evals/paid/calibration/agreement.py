@@ -25,7 +25,7 @@ import argparse, json, sys
 def load(path):
     doc = json.load(open(path))
     if isinstance(doc, dict):
-        return {h: str(v).lower() for h, v in doc.items() if v is not None}, {}, 0
+        return {h: str(v).strip().lower() for h, v in doc.items() if v is not None and str(v).strip()}, {}, 0
     labels, meta, unl = {}, {}, 0
     for row in doc:
         h = row.get("hash")

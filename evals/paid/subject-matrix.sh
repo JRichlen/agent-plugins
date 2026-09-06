@@ -36,6 +36,11 @@ if mode == "--self-test":
     sys.argv = [sys.argv[0], d, "--subjects", "anthropic:messages:claude-haiku-4-5-20251001, openrouter:other/model,openrouter:base/model"]
     mode = d
 pack = mode
+USAGE = "usage: subject-matrix.sh PACK_DIR --subjects \"id1,id2\" | PACK_DIR --baseline-id | --self-test"
+if len(sys.argv) < 3 or sys.argv[2] not in ("--subjects", "--baseline-id"):
+    print(f"subject-matrix: {USAGE}", file=sys.stderr); sys.exit(2)
+if sys.argv[2] == "--subjects" and (len(sys.argv) < 4 or not sys.argv[3].strip()):
+    print("subject-matrix: --subjects needs a comma-separated list of provider ids", file=sys.stderr); sys.exit(2)
 src = os.path.join(pack, "promptfooconfig.yaml")
 if not os.path.isfile(src):
     print(f"subject-matrix: no promptfooconfig.yaml in {pack}", file=sys.stderr); sys.exit(2)
@@ -48,8 +53,6 @@ base_id = base.get("id") if isinstance(base, dict) else str(base)
 base_cfg = (base.get("config") if isinstance(base, dict) else None) or {}
 if sys.argv[2] == "--baseline-id":
     print(base_id); sys.exit(0)
-if sys.argv[2] != "--subjects":
-    print("subject-matrix: expected --subjects or --baseline-id", file=sys.stderr); sys.exit(2)
 subjects = [s.strip() for s in sys.argv[3].split(",") if s.strip()]
 subjects = [s for s in subjects if s != base_id]
 if not subjects:

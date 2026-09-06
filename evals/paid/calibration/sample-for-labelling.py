@@ -50,7 +50,8 @@ def output_text(r):
         out = r.get("output")
     if out is None:
         return ""
-    return out if isinstance(out, str) else json.dumps(out)
+    # canonical dump so semantically identical JSON outputs hash identically
+    return out if isinstance(out, str) else json.dumps(out, sort_keys=True, separators=(",", ":"))
 
 def is_fault(r):
     fr = r.get("failureReason")
