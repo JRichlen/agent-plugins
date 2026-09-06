@@ -44,7 +44,7 @@ Use the exact model ID and lifecycle status when implementing a validated route.
 
 NVIDIA's dated Nemotron 3.5 Lightning card describes that specific checkpoint as suited to long-running autonomous agents, sub-agent workhorse deployments, and agentic workflows. That is a deployment-oriented candidate to validate when such a provider is available, configured, and authorized. The card does not support assigning Lightning to Luna, Terra, Sol, or Astra, or making a reasoning, safety, latency, cost, or tool-compatibility comparison.
 
-The marketplace's behavioral fixtures currently name a different OpenRouter evaluator, `nvidia/nemotron-3-ultra-550b-a55b`. That evaluator is not a recommendation or an equivalence claim for NVIDIA Lightning; its price, availability, tool support, effort controls, and context in another runtime are **Unknown** here.
+Jori's behavioral fixture and the shared routing/trajectory subjects use OpenRouter evaluator `z-ai/glm-5.3-flash`, whose mandatory reasoning is explicitly configured at `max`. That evaluator is not a recommendation or an equivalence claim for any runtime/model role; its endpoint selection, realized price, availability, tool support, effort behavior, and context in another runtime are **Unknown** here.
 
 ## GitHub Copilot routing
 

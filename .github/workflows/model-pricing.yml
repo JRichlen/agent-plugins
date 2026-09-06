@@ -1,0 +1,79 @@
+name: model-pricing
+
+on:
+  schedule:
+    - cron: '25 13 * * *'
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/model-pricing.yml'
+      - 'ci/model-pricing/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-pricing-state
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: model pricing — offline controls
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: verify detector and budget invariants without network
+        run: python3 ci/model-pricing/test_monitor.py
+
+  monitor:
+    name: model pricing — detect and stage
+    needs: test
+    # No PR credentials/inference. Dispatch from a feature branch is refused.
+    if: >-
+      github.event_name != 'pull_request' &&
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      vars.OPENROUTER_PRICE_MONITOR_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # only the dedicated state branch; never main or a PR
+    steps:
+      - uses: actions/checkout@v4
+      - name: read public prices and persist evidence
+        run: python3 ci/model-pricing/monitor.py scan
+      - name: run authorized bounded strategy on pending material changes
+        # policy.json is an additional default-off gate, with zero spend shipped.
+        env:
+          PRICE_STRATEGY_KEY: ${{ secrets.PRICE_STRATEGY_KEY }}
+        run: python3 ci/model-pricing/monitor.py review
+      - name: summarize actionable change
+        if: always()
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path('work/model-pricing')
+          status = json.loads((root / 'status.json').read_text()) if (root / 'status.json').exists() else {}
+          if os.environ['JOB_STATUS'] != 'success':
+              message = 'Price monitor stopped. Inspect sanitized logs and restore missing state or authorization; no automatic retry or promotion.'
+          elif (root / 'proposal.json').exists():
+              message = 'A bounded agent strategy and config-change plan are staged in the model-pricing artifact. Quality is unvalidated; human review and existing gates are required. No settings were applied.'
+          elif status.get('status') == 'material_change':
+              message = 'Material price/control changes are staged in the model-pricing artifact. Agent analysis remains subject to its separate budget and provider authorization.'
+          else:
+              message = ''
+          if message:
+              with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as stream:
+                  stream.write(message + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-pricing-${{ github.run_id }}
+          path: work/model-pricing/*.json
+          retention-days: 90
+          if-no-files-found: ignore

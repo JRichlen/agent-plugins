@@ -8,8 +8,15 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:z-ai/glm-5.3-flash
     config:
+      # Promptfoo 0.122.0 only forwards reasoning_effort for recognized reasoning
+      # names, so pass OpenRouter's native request body through explicitly. GLM
+      # requires reasoning; max preserves the prior quality posture. Lower effort
+      # has no local equivalence evidence.
+      passthrough:
+        reasoning:
+          effort: max
       max_tokens: 8192
 
 evaluateOptions:

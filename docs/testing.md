@@ -34,6 +34,7 @@ structurally cannot.
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
+| [model pricing](#model-pricing-monitor) | `model-pricing.yml` + `ci/model-pricing/` | metadata free; strategy default off/$0 | daily/manual on default branch after activation; offline tests on scoped PRs | no — stages review artifacts only |
 | [demonstration](#demonstration-discipline) | PR comment | one manual skill run | every skill-change PR | no — human review gate, cannot be machine-enforced |
 
 The six **required** status checks are frozen in `ci/required-checks.json` and
@@ -59,6 +60,8 @@ that it is green because it did not run, never silently.
   self-test, example-gallery sync/provenance, design-timeline sync/receipts
   (`docs/timeline/`: page in sync with its decision data, every receipt
   resolving), and the testing-doc drift guard defending this document.
+  The model-pricing unit suite also exercises malformed prices, material-change
+  thresholds, stale evidence, budget reservations/dedupe, and proposal authority.
 - **What it cannot prove.** Whether any load-bearing sentence still *means*
   anything to a model, or whether a skill's behavior changed. It greps and
   parses; it never runs a model.
@@ -160,6 +163,10 @@ unverified, and rejects invented CLI syntax or credit-to-dollar guarantees. Its
 four calibration rows replace both the skill and routing reference with
 invariant-free stubs, so a baseline that independently produces all
 Jori-specific controls fails as nondiscriminating.
+Its current subject is OpenRouter `z-ai/glm-5.3-flash`, with explicit `max`
+reasoning in the request; the independent Sonnet 5 rubric judge is unchanged.
+This setting change requires behavioral validation; cheap checks cannot prove
+GLM's quality or equivalent behavior to a previous subject.
 It is single-turn and tool-less: it does not prove real worker dispatch,
 persistent monitoring, provider availability, cross-provider equivalence,
 HydraFusion performance, cost savings, or a multi-round project outcome.
@@ -334,6 +341,32 @@ HydraFusion performance, cost savings, or a multi-round project outcome.
 - **Local run.** `docs/build-examples.sh --check` (sync only; the capture
   itself needs the behavioral tier's keys).
 
+## model pricing monitor
+
+`model-pricing.yml` has two jobs: `model pricing — offline controls` runs the
+stdlib unit suite without credentials/network; `model pricing — detect and stage`
+checks public endpoint metadata and conditionally invokes a bounded strategy
+agent. This is operational automation, not an additional LLM evaluation tier.
+It does not replace the statistical gates or provide a model-quality verdict.
+
+Both monitoring and strategy are off by default. After reviewed activation,
+metadata scans run daily at 13:25 UTC or on manual default-branch dispatch.
+The real GLM analyst can run automatically on pending material changes only
+with positive approved policy allowances and a dedicated limited key. Code
+ceilings are $0.05/reservation and $1/UTC month; shipped allowances are $0.
+The Git state branch records the full reservation before the single request,
+retains it after success/fault, and prevents automatic retries or cache resets.
+Artifacts stage evidence and an allowlisted config-change plan, with no active
+configuration write, auto-PR, or merge. Unchanged runs stay quiet.
+
+**Local command:** `python3 ci/model-pricing/test_monitor.py` (also included in
+`evals/cheap/run.sh`). Rejection fixtures and a removed-budget-guard mutation
+check cover deterministic control failures. They cannot prove live provider
+enforcement, schedule delivery, billing totals, semantic strategy quality, or
+savings. Agent output is unvalidated until human review and separately approved
+existing real/control, routing, trajectory, and independent-judge calibration.
+See [activation, state recovery, scope and limits](model-pricing.md).
+
 ## demonstration discipline
 
 - **What it proves.** What a changed skill actually does to real material —
@@ -456,6 +489,8 @@ job: deploy
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
 job: install tier — install-smoke + evals
+job: model pricing — detect and stage
+job: model pricing — offline controls
 job: paid multi-plugin gate
 job: redgate scale (lifecycle stress)
 job: refresh
@@ -505,6 +540,7 @@ pack: voice/promptfoo
 pack: wayfinder/cheap
 pack: wayfinder/promptfoo
 workflow: evals.yml
+workflow: model-pricing.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
 workflow: scale.yml
