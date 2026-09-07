@@ -200,13 +200,19 @@ def load_driver_config(name: str) -> DriverConfig:
         raise ContractError(f"load_driver_config: {path} binary must be a non-empty string")
     binary = declared_binary
     if not os.path.isabs(binary) or not os.path.isfile(binary):
-        found = shutil.which(name)
+        # Fall back by the DECLARED binary's basename (claude / codex), never by
+        # the config's name: control configs such as ``invented-flag`` and
+        # ``dangerous-flag`` declare the real claude binary under a different
+        # config name, and on a host where the committed absolute path is gone
+        # (CI, a reinstall) they must still resolve to the same installed CLI.
+        wanted = os.path.basename(declared_binary)
+        found = shutil.which(wanted)
         if found is None:
             raise ContractError(
                 f"load_driver_config: {name!r} binary {declared_binary!r} does not exist "
-                f"and shutil.which({name!r}) found nothing"
+                f"and shutil.which({wanted!r}) found nothing"
             )
-        binary = found
+        binary = os.path.abspath(found)
 
     optional_raw = raw["optional_argv"]
     if not isinstance(optional_raw, Mapping):

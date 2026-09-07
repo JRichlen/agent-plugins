@@ -277,6 +277,52 @@ class DriverArgvConformance(_TempMixin):
             getattr(caught.exception, "flag", None), "--dangerously-skip-permissions"
         )
 
+    def test_control_configs_resolve_by_declared_binary_basename_on_a_foreign_host(self):
+        """A control config (invented-flag, dangerous-flag) declares the real claude
+        binary under a different config NAME. On a host where the committed absolute
+        path does not exist (CI, a reinstall) the loader must fall back by the
+        declared binary's basename, not by the config name -- otherwise the
+        negative controls cannot even load there and T25's sibling executes
+        nothing (observed on the GitHub runner, 2026-09-07)."""
+        import json as _json, tempfile as _tempfile, pathlib as _pathlib
+        from evals.agentic.framework.adapters import DRIVERS_DIR
+        real = load_driver_config("claude")
+        src = _json.loads((DRIVERS_DIR() / "invented-flag.json").read_text())
+        src["binary"] = "/nonexistent/host/path/bin/claude"
+        with _tempfile.TemporaryDirectory() as tmp:
+            alt = _pathlib.Path(tmp) / "drivers"
+            alt.mkdir()
+            (alt / "invented-flag.json").write_text(_json.dumps(src))
+            import evals.agentic.framework.adapters as _ad
+            saved = _ad.DRIVERS_DIR
+            try:
+                _ad.DRIVERS_DIR = lambda: alt
+                cfg = load_driver_config("invented-flag")
+            finally:
+                _ad.DRIVERS_DIR = saved
+        self.assertTrue(os.path.isabs(cfg.binary))
+        self.assertEqual(os.path.basename(cfg.binary), "claude")
+        self.assertEqual(os.path.realpath(cfg.binary), os.path.realpath(real.binary))
+
+    def test_control_configs_resolve_by_declared_binary_basename_on_a_foreign_host__negative(self):
+        """A basename that is installed nowhere must still fail closed."""
+        import json as _json, tempfile as _tempfile, pathlib as _pathlib
+        from evals.agentic.framework.adapters import DRIVERS_DIR
+        src = _json.loads((DRIVERS_DIR() / "invented-flag.json").read_text())
+        src["binary"] = "/nonexistent/host/path/bin/no-such-cli-xyz"
+        with _tempfile.TemporaryDirectory() as tmp:
+            alt = _pathlib.Path(tmp) / "drivers"
+            alt.mkdir()
+            (alt / "invented-flag.json").write_text(_json.dumps(src))
+            import evals.agentic.framework.adapters as _ad
+            saved = _ad.DRIVERS_DIR
+            try:
+                _ad.DRIVERS_DIR = lambda: alt
+                with self.assertRaises(ContractError):
+                    load_driver_config("invented-flag")
+            finally:
+                _ad.DRIVERS_DIR = saved
+
     def test_bypass_permissions_mode_is_banned_by_value_not_by_flag_spelling(self):
         """The handoff bans the *mode*; neither CLI spells it as a flag.
 
