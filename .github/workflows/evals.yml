@@ -48,6 +48,12 @@ jobs:
           npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
+          # /usr/bin:/bin (contract 10.1) -- it never inherits the runner's PATH.
+          # The npm codex wrapper is a `#!/usr/bin/env node` script, so node must
+          # be reachable on that allowlisted PATH; expose the setup-node binary
+          # there (a provisioning step, not a framework change).
+          sudo ln -sf "$(command -v node)" /usr/bin/node
           # Diagnostics only: prove the three binaries answer --version/--help here.
           export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
           node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
@@ -109,6 +115,12 @@ jobs:
           npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
+          # /usr/bin:/bin (contract 10.1) -- it never inherits the runner's PATH.
+          # The npm codex wrapper is a `#!/usr/bin/env node` script, so node must
+          # be reachable on that allowlisted PATH; expose the setup-node binary
+          # there (a provisioning step, not a framework change).
+          sudo ln -sf "$(command -v node)" /usr/bin/node
           # Diagnostics only: prove the three binaries answer --version/--help here.
           export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
           node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
