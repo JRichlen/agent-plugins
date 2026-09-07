@@ -48,6 +48,12 @@ jobs:
           npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          # Diagnostics only: prove the three binaries answer --version/--help here.
+          export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
+          node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
+          claude --version
+          codex --version || true
+          codex exec --help 2>&1 | head -5 || true
       - name: run cheap eval gate
         run: evals/cheap/run.sh
 
@@ -103,6 +109,12 @@ jobs:
           npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
+          # Diagnostics only: prove the three binaries answer --version/--help here.
+          export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
+          node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
+          claude --version
+          codex --version || true
+          codex exec --help 2>&1 | head -5 || true
       - name: prove the cheap gate discriminates (counterfeit corpus)
         run: evals/counterfeits/run.sh
 

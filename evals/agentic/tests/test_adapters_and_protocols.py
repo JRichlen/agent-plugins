@@ -223,7 +223,10 @@ class DriverArgvConformance(_TempMixin):
             self.assertTrue(os.path.isfile(config.binary), f"{name}: binary must exist")
 
             help_text = installed_help(config)
-            self.assertGreater(len(help_text), 200, f"{name}: --help produced nothing usable")
+            self.assertGreater(
+                len(help_text), 200,
+                f"{name}: --help produced nothing usable ({len(help_text)} chars): {help_text[:300]!r}",
+            )
 
             flags = declared_flags(config)
             self.assertGreater(len(flags), 3, f"{name}: template declares almost no flags")
