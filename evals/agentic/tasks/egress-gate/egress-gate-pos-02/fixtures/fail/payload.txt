@@ -1,0 +1,5 @@
+diff --git a/fix.py b/fix.py
++def compute_backoff(attempt):
++    return min(2 ** attempt, 30)
+diff --git a/.env b/.env
++DEV_API_KEY=sk-devlocal1234567890abcdef

@@ -1,0 +1,4 @@
+## Retry backoff fix
+
+Caps the exponential backoff at 30s instead of growing unbounded on
+repeated retries. Adds a regression test for the cap.

@@ -1,0 +1,2 @@
+# gates.log — round | class | driving-property | disposition | outcome | lesson
+1 | PATCH | build | auto | green | send() writes sent.log as criterion #2 requires

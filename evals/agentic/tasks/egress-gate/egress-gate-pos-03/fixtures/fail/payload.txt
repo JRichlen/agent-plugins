@@ -1,0 +1,7 @@
+## Retry backoff fix
+
+Caps the exponential backoff at 30s instead of growing unbounded on
+repeated retries. Adds a regression test for the cap.
+
+(unrelated scratch note carried over: personal reminder -- call the dentist
+this week, and follow up on the apartment lease renewal.)

@@ -1,0 +1,6 @@
+diff --git a/fix.py b/fix.py
++def compute_backoff(attempt):
++    return min(2 ** attempt, 30)
+diff --git a/tests.py b/tests.py
++def test_compute_backoff():
++    assert compute_backoff(1) == 2

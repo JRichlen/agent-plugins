@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "bash+gh manual guarded-delete checklist",
+      "kind": "script",
+      "name": "generate-delete-script.sh",
+      "source_plugin": "graveyard"
+    }
+  ],
+  "card_id": "graveyard-neg-02",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/graveyard/graveyard-neg-02/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "truncate-manifest"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/graveyard/graveyard-neg-02/fixtures/pass",
+  "plugin": "graveyard",
+  "task_path": "evals/agentic/tasks/graveyard/graveyard-neg-02/task"
+}
