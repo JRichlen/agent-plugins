@@ -334,7 +334,15 @@ class ForgedHostProof(unittest.TestCase):
             host_sessions=frozenset({"sess-1"}),
         )
         attempt = _attempt_claiming(session_id="sess-1", event_ids=("ev-1",))
-        assert_native_backed(attempt, ledger)  # must not raise
+        # INTEGRATION FINDING (T52): this method previously had no
+        # unittest-style assertion at all -- "must not raise" alone is
+        # invisible to registry.run_entry's assertion-counting guard
+        # (contract §3.9), which correctly reported it as 0-assertion
+        # vacuous when driven through the T09 catalog entry. assert_native_
+        # backed returns None on success, so asserting that return value
+        # both keeps the "must not raise" property AND registers a real,
+        # countable assertion. See the integration lane's final report.
+        self.assertIsNone(assert_native_backed(attempt, ledger))
 
     def test_unknown_event_id_is_forged(self):
         ledger = _FakeLedger(verified=True, events={}, host_sessions=frozenset({"sess-1"}))

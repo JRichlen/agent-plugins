@@ -19,7 +19,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REDTEAM_ROOT="$(cd "$HERE/.." && pwd)"
 PIN_JSON="$REDTEAM_ROOT/pin.json"
 
-: "${PROMPTFOO_HOME:=/home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo}"
+: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo}"
 PF_ENTRY="$PROMPTFOO_HOME/dist/src/entrypoint.js"
 PF_PKG="$PROMPTFOO_HOME/package.json"
 MIN_NODE_MAJOR=22

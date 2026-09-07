@@ -39,3 +39,10 @@ plugins/*/evals/promptfoo/results.matrix.json
 plugins/*/evals/promptfoo/promptfooconfig.regrade.*.yaml
 plugins/*/evals/promptfoo/replay.*.json
 plugins/*/evals/promptfoo/results.regrade.*.json
+
+# Agentic test framework run manifests (evals/agentic/run.py, contract §9) — emitted per run, never committed.
+evals/agentic/manifests/runs/
+*.out.json
+
+# red-team runner scratch (promptfoo home, logs, results) — generated, never committed
+evals/redteam/.artifacts/

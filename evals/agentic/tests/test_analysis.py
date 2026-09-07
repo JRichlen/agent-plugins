@@ -114,6 +114,13 @@ class NoCrossModelTokenAverage(unittest.TestCase):
         for total in by_model.values():
             self.assertNotAlmostEqual(total.known / total.contributors, naive_mean, places=1)
 
+    def test_pool_without_by_raises_across_models__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T34. entry.negative_control
+        names fixtures/measurement/tokens/two-models.json: this must FAIL the
+        naive cross-model pooled mean (it must describe neither model) for
+        the T34 catalog entry to be considered non-vacuous."""
+        return self.test_naive_pooled_mean_describes_neither_model()
+
 
 # ---------------------------------------------------------------------------
 # T35 -- matched strata and fallback flags
@@ -208,6 +215,14 @@ class MatchedStrataAndFallbacks(unittest.TestCase):
         # none of the fallback cards made it into the matched set
         self.assertEqual(matched_card_ids & fallback_card_ids, set())
 
+    def test_matched_pairs_excludes_fallback_attempts__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T35. entry.negative_control
+        names fixtures/measurement/strata/fallback-40-cards.json: this must
+        FAIL the naive pooling of a fallback attempt against an on-request
+        attempt (none of the fallback cards may appear matched) for the T35
+        catalog entry to be considered non-vacuous."""
+        return self.test_pooling_fallback_attempt_with_on_request_attempt_is_wrong()
+
 
 # ---------------------------------------------------------------------------
 # T36 -- empirical any-pass and all-pass
@@ -265,6 +280,14 @@ class AnyAllPass(unittest.TestCase):
         wrong_rate = correct_rate.numerator / wrong_denominator
         self.assertNotEqual(wrong_denominator, correct_rate.denominator)
         self.assertNotAlmostEqual(wrong_rate, correct_rate.value)
+
+    def test_five_trials_three_pass_one_fail_one_fault__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T36. entry.negative_control
+        names fixtures/measurement/anyall/redgate-pos-01.json: this must FAIL
+        the naive 'count faults as failures' rate (it must disagree with the
+        correct fault-excluded rate) for the T36 catalog entry to be
+        considered non-vacuous."""
+        return self.test_counting_faults_as_failures_corrupts_the_rate()
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +392,14 @@ class ClusteredUncertainty(unittest.TestCase):
         clustered = wilson_with_cluster_inflation(clusters, min_clusters=8)
         self.assertLess(naive_hi - naive_lo, clustered.hi - clustered.lo)
 
+    def test_wilson_with_cluster_inflation_widens_and_respects_band__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T37. entry.negative_control
+        names fixtures/measurement/clustered/wilson-cluster-inflation-16x5.json:
+        this must FAIL the naive i.i.d. binomial interval (it must be
+        narrower than the correct clustered one on the same data) for the
+        T37 catalog entry to be considered non-vacuous."""
+        return self.test_naive_iid_interval_is_narrower_than_clustered()
+
 
 # ---------------------------------------------------------------------------
 # T38 -- zero denominator reports "unavailable"
@@ -415,6 +446,14 @@ class ZeroDenominatorUnavailable(unittest.TestCase):
         self.assertNotEqual(rate.render(), "0%")
         self.assertIn("unavailable", rate.render())
 
+    def test_all_fault_card_is_unavailable_with_reason__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T38. entry.negative_control
+        names fixtures/measurement/zero_denom/voice-neg-02.json: this must
+        FAIL the naive passes/max(valid,1) rendering (it must not read
+        'unavailable' as '0%') for the T38 catalog entry to be considered
+        non-vacuous."""
+        return self.test_naive_zero_over_max_valid_one_reads_as_the_plugin_failed()
+
     def test_perfect_single_sample_stratum_is_not_100_percent(self):
         """The inverse banned rendering: a stratum whose only valid sample
         passed must not print 100% -- min_valid catches it."""
@@ -451,6 +490,14 @@ class NoninferiorityLowerBound(unittest.TestCase):
         )
         result = noninferiority(interval, spec["margin"])
         self.assertFalse(result.established)
+
+    def test_established_when_lower_bound_clears_margin__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T39. entry.negative_control
+        names fixtures/measurement/noninferiority/margins.json's own
+        'not_established_case': this must FAIL the established claim (the
+        wide interval must NOT be reported established) for the T39 catalog
+        entry to be considered non-vacuous."""
+        return self.test_not_established_when_lower_bound_misses_margin()
 
     def test_missing_margin_raises(self):
         interval = Interval(

@@ -60,6 +60,13 @@ build_root() {
   cp "$REPO_ROOT/.github/workflows/grader-agreement.yml" "$root/.github/workflows/grader-agreement.yml"
   cp -R "$REPO_ROOT/ci/." "$root/ci/"
   cp -R "$REPO_ROOT/evals/paid" "$root/evals/paid"
+  # Agentic and red-team suites (contract §8.8): staged so section 22's
+  # `evals/agentic/run.sh --gate` / `evals/redteam/run.sh --gate` calls have
+  # something to run, and so fixtures 19-31 have a copy to mutate.
+  cp -R "$REPO_ROOT/evals/agentic" "$root/evals/agentic"
+  cp -R "$REPO_ROOT/evals/redteam" "$root/evals/redteam"
+  mkdir -p "$root/evals"
+  touch "$root/evals/__init__.py"
   # Stage a top-level README.md (§5b is guarded on its presence, same as the
   # gates above) so "README documents every registered plugin" fires here too;
   # fixture 16 mutates it to prove the gate bites.
@@ -67,8 +74,21 @@ build_root() {
   printf '%s' "$root"
 }
 
+# The synthetic root must never reach the network. Counterfeit mutations are
+# arbitrary shell edits to staged scripts, and one (fixture 26, first version)
+# once inserted an executable `npx promptfoo@latest` line that ran before the
+# gate it was meant to trip and upgraded the host's shared npx cache in place.
+# So every tier run in a synthetic root gets `npx` and `npm` shimmed out of
+# PATH: invoking either exits 99 loudly. The cheap tier itself uses neither.
+NO_NET_BIN="$(mktemp -d)"
+for shim in npx npm; do
+  printf '#!/usr/bin/env bash\necho "counterfeit sandbox: %s invoked inside the synthetic root -- network package managers are forbidden here" >&2\nexit 99\n' "$shim" > "$NO_NET_BIN/$shim"
+  chmod +x "$NO_NET_BIN/$shim"
+done
+trap 'rm -rf "$NO_NET_BIN"' EXIT
+
 run_tier() {  # <root> -> prints combined output, returns run.sh exit code
-  "$1/evals/cheap/run.sh" 2>&1
+  PATH="$NO_NET_BIN:$PATH" "$1/evals/cheap/run.sh" 2>&1
 }
 
 # --- calibration: the baseline must be GREEN --------------------------------
@@ -90,14 +110,31 @@ rm -rf "$cal_root"
 # would silently pass by never triggering — this catches that coverage regression
 # (the "add a gate but leave it unexercised" drift the corpus exists to prevent).
 group "gate coverage — repo-level gates fire in the synthetic root"
-for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin"; do
+for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin" "agentic suite (offline)" "redteam suite (offline)"; do
   if grep -qF "$g" <<<"$cal_out"; then ok "gate fires in synthetic root: $g"; else bad "gate '$g' did NOT fire in the synthetic root — build_root staging regressed"; fi
 done
 
 # --- each counterfeit must be rejected by its expected gate -----------------
-group "counterfeits — each broken plugin is rejected for the right reason"
+# COUNTERFEIT_ONLY=<fixture-dir-name> restricts this loop to exactly one
+# fixture (default: unset, all fixtures run -- unchanged behavior). Added for
+# the bounded T51 test (coordinator's integration-cost-decisions.md decision
+# 1): T51 must exercise ONE fixture end to end without running the full
+# 31-fixture corpus (and, transitively, the full cheap tier 31 times) from
+# inside a single unittest method. Calibration and gate-coverage above are
+# unaffected -- they are cheap (reuse the one already-computed $cal_out) and
+# are part of what makes a single-fixture run trustworthy at all.
+if [ -n "${COUNTERFEIT_ONLY:-}" ]; then
+  group "counterfeits — single fixture (COUNTERFEIT_ONLY=$COUNTERFEIT_ONLY)"
+else
+  group "counterfeits — each broken plugin is rejected for the right reason"
+fi
+matched=0
 for dir in "$FIXTURES"/*/; do
   name="$(basename "$dir")"
+  if [ -n "${COUNTERFEIT_ONLY:-}" ] && [ "$name" != "$COUNTERFEIT_ONLY" ]; then
+    continue
+  fi
+  matched=$((matched + 1))
   defect="$dir/DEFECT.md"
   mutate="$dir/mutate.sh"
   if [ ! -f "$defect" ] || [ ! -f "$mutate" ]; then
@@ -124,6 +161,9 @@ for dir in "$FIXTURES"/*/; do
   fi
   rm -rf "$root"
 done
+if [ -n "${COUNTERFEIT_ONLY:-}" ] && [ "$matched" -eq 0 ]; then
+  bad "COUNTERFEIT_ONLY=$COUNTERFEIT_ONLY matched no fixture directory under $FIXTURES"
+fi
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"

@@ -43,7 +43,7 @@ fail() {
 }
 
 NODE_HOME_DIR="$(dirname "$(dirname "$(command -v node)")")"
-NPX_CACHE_ROOT="/home/jrichlen/.npm/_npx/81bbc6515d992ace"
+NPX_CACHE_ROOT="/home/jrichlen/ai/tools/promptfoo-0.122.0"
 
 docker_available() {
   command -v docker >/dev/null 2>&1 || return 1

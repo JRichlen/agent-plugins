@@ -1474,6 +1474,36 @@ if [ -e .git ]; then
   fi
 fi
 
+# --- 22. Agentic and red-team suites (offline, fail-closed) ------------------
+# Both new eval dirs run their own offline suite here so a broken framework reds the
+# always-on tier. Fail-closed: a MISSING runner is a failure, not a skip — the same rule
+# section 10 applies to per-plugin packs. The gate runs `--gate`, the root-portable
+# subset (see the contract's 9.3): tests that need the real 25-plugin marketplace, and
+# any test that itself invokes evals/cheap/run.sh, are excluded so this cannot recurse.
+group "agentic suite (offline)"
+if [ -f "evals/agentic/run.sh" ]; then
+  if out="$(evals/agentic/run.sh --gate 2>&1)"; then
+    ok "evals/agentic/run.sh --gate"
+  else
+    bad "agentic suite gate: evals/agentic/run.sh --gate failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+else
+  bad "agentic suite gate: evals/agentic/run.sh is missing"
+fi
+
+group "redteam suite (offline)"
+if [ -f "evals/redteam/run.sh" ]; then
+  if out="$(evals/redteam/run.sh --gate 2>&1)"; then
+    ok "evals/redteam/run.sh --gate"
+  else
+    bad "redteam suite gate: evals/redteam/run.sh --gate failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+else
+  bad "redteam suite gate: evals/redteam/run.sh is missing"
+fi
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

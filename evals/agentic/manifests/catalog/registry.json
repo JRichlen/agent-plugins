@@ -46,7 +46,7 @@
       "evidence_class": "real-fixture",
       "approval_gate": "none",
       "negative_control": "evals/agentic/tasks/graveyard/graveyard-near-01/fixtures/near-fail",
-      "requires_real_marketplace": false,
+      "requires_real_marketplace": true,
       "reentrant_unsafe": false
     },
     {
@@ -58,7 +58,7 @@
       "evidence_class": "real-fixture",
       "approval_gate": "none",
       "negative_control": "evals/agentic/tasks/voice/voice-pos-01/fixtures/pass",
-      "requires_real_marketplace": false,
+      "requires_real_marketplace": true,
       "reentrant_unsafe": false
     },
     {
@@ -70,7 +70,7 @@
       "evidence_class": "framework",
       "approval_gate": "none",
       "negative_control": "evals/agentic/fixtures/pairing/exposure-parity",
-      "requires_real_marketplace": false,
+      "requires_real_marketplace": true,
       "reentrant_unsafe": false
     },
     {
@@ -82,7 +82,7 @@
       "evidence_class": "framework",
       "approval_gate": "none",
       "negative_control": "evals/agentic/fixtures/pairing/estimand-arms",
-      "requires_real_marketplace": false,
+      "requires_real_marketplace": true,
       "reentrant_unsafe": false
     },
     {

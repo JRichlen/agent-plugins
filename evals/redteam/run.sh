@@ -5,6 +5,7 @@
 #
 #   evals/redteam/run.sh                     # == --offline
 #   evals/redteam/run.sh --offline
+#   evals/redteam/run.sh --gate              # root-portable subset, <5s (see below)
 #   evals/redteam/run.sh --assert-offline    # --offline + the docker netproof canary (T48)
 #   evals/redteam/run.sh --id T44            # a single backlog item's test module
 #   evals/redteam/run.sh --paid --approve-token <T>   # refused without a valid token
@@ -17,6 +18,37 @@
 # itself is a claim; this repo has an actual, measured egress path (the
 # version-update check against api.promptfoo.dev) that none of these env
 # vars alone would catch without the sandbox — see README.md.
+#
+# --gate (integration lane, coordinator's integration-cost-decisions.md
+# decision 3; contract §9.1's cheap-tier section 22 calls this) is a
+# DELIBERATELY NARROWER check than the default --offline suite above: pin
+# version read from the pinned package.json (no promptfoo entrypoint exec'd
+# beyond a single --version call), the corpus freeze check, the
+# npx-invocation grep, a static "every provider exports a class" scan,
+# "the generated-configs directory exists and its index is valid JSON
+# naming files that exist", an in-process dominance/weight-map scan, an
+# in-process native-provenance forgery guard against committed ledger
+# fixtures, and a static per-row vacuity scan (below). NO PROMPTFOO PROCESS
+# RUNS IN --gate AT ALL -- an earlier version of this file ran one real
+# `promptfoo eval` here to catch the one vacuity shape (`testCase.options.
+# disableDefaultAsserts`) invisible to static analysis; removed
+# (2026-09-06, coordinator decision) after it intermittently misclassified
+# a real provider FAULT as VACUOUS under heavy host CPU contention -- see
+# bin/verdict.py's classify_row fix and the integration report for the full
+# account. A flaky always-on gate is worse than a documented gap, so the
+# static scan below catches only the STATICALLY VISIBLE vacuity shape
+# (disableDefaultAsserts with no per-row assert); the runtime VACUOUS
+# classification itself (a row promptfoo actually scored a perfect,
+# assertion-free pass) is exercised only by `--offline`'s real
+# `evals.agentic.tests.test_redteam_design` run, never by --gate. --gate
+# also deliberately does NOT run `promptfoo validate` over every config
+# (T42's full form: ~30 real subprocess invocations), does NOT run docker
+# (T48), and does NOT run `generate.py --check`'s live-tree regeneration
+# (T46: that reads the real, live 25-plugin marketplace tree, which the
+# counterfeit corpus's synthetic root does not have — the same reason
+# contract §9.3 excludes T11/T12/T19-23 from evals/agentic's own --gate).
+# Those remain exercised for real by this script's own --offline default
+# and by `unittest discover`. Target: <5s, no promptfoo process at all.
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +63,7 @@ APPROVE_TOKEN=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --offline) MODE="offline"; shift ;;
+    --gate) MODE="gate"; shift ;;
     --assert-offline) MODE="offline"; ASSERT_OFFLINE=1; shift ;;
     --id) SINGLE_ID="$2"; shift 2 ;;
     --paid) MODE="paid"; shift ;;
@@ -49,6 +82,224 @@ fail() {
   echo "${1/redteam /redteam FAIL }" >&2
   exit 1
 }
+
+# --- --gate: root-portable subset, see the header comment for what this
+# deliberately excludes and why. Runs to completion in well under 5s. --------
+if [[ "$MODE" == "gate" ]]; then
+  echo "=== redteam gate: pin check (T42, package.json comparison only) ==="
+  # Delegates to bin/promptfoo.sh --version -- the ONE place the pinned
+  # entrypoint is named (see that file's own header) -- rather than
+  # reimplementing the pin.json-vs-installed-package.json comparison here a
+  # second time with different wording. This is what makes counterfeit
+  # fixture 28's frozen EXPECT_FAIL_SUBSTRING ("redteam FAIL pin: version
+  # drift") reachable from --gate: that exact string is emitted by
+  # bin/promptfoo.sh's OWN fail() (prefix "redteam FAIL pin: "), the same
+  # mechanism the --offline default path already relies on below. A single
+  # `--version` invocation prints the pinned version after that check passes
+  # -- it does not validate any config and is not the "promptfoo validate"
+  # this file's header comment excludes.
+  GATE_PIN_TMP="$(mktemp)"
+  if ! "$REDTEAM_ROOT/bin/promptfoo.sh" --version > "$GATE_PIN_TMP" 2>&1; then
+    cat "$GATE_PIN_TMP" >&2
+    rm -f "$GATE_PIN_TMP"
+    exit 1
+  fi
+  GATE_PIN_VERSION="$(tr -d '\n' < "$GATE_PIN_TMP")"
+  rm -f "$GATE_PIN_TMP"
+  echo "redteam gate: OK — pinned promptfoo $GATE_PIN_VERSION"
+
+  echo "=== redteam gate: corpus freeze check (T44, pure hashing) ==="
+  python3 "$REDTEAM_ROOT/bin/freeze.py" --check || fail "redteam gate: corpus freeze check failed"
+  echo "redteam gate: OK — corpus freeze check passed"
+
+  echo "=== redteam gate: no npx anywhere (T42) ==="
+  NPX_HITS="$(python3 "$REDTEAM_ROOT/bin/npxcheck.py" "$REDTEAM_ROOT")"
+  [[ -z "$NPX_HITS" ]] || fail "redteam offline: npx reference in evals/redteam ($NPX_HITS)"
+  echo "redteam gate: OK — 0 npx references"
+
+  echo "=== redteam gate: provider files export a class (T43, static scan) ==="
+  PROVIDER_FAIL="$(python3 - "$REDTEAM_ROOT/providers" <<'PYEOF'
+import re
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+bad = []
+for p in sorted(root.glob("*.js")):
+    text = p.read_text(encoding="utf-8")
+    if "module.exports = " not in text or not re.search(r"class \w+", text):
+        bad.append(str(p))
+print("\n".join(bad))
+PYEOF
+)"
+  [[ -z "$PROVIDER_FAIL" ]] || fail "redteam gate: provider(s) do not export a class: $PROVIDER_FAIL"
+  echo "redteam gate: OK — every provider exports a class"
+
+  echo "=== redteam gate: generated configs directory present and parseable (T46, no live-tree read) ==="
+  GEN_DIR="$REDTEAM_ROOT/configs/generated"
+  [[ -d "$GEN_DIR" ]] || fail "redteam gate: $GEN_DIR is missing"
+  python3 -c "
+import json
+import sys
+from pathlib import Path
+
+gen_dir = Path(sys.argv[1])
+idx_path = gen_dir / '_index.json'
+if not idx_path.is_file():
+    print('_index.json missing', file=sys.stderr)
+    sys.exit(1)
+doc = json.loads(idx_path.read_text(encoding='utf-8'))
+plugins = doc.get('plugins')
+if not isinstance(plugins, dict) or not plugins:
+    print('no non-empty plugins mapping in _index.json', file=sys.stderr)
+    sys.exit(1)
+for name in plugins:
+    cfg = gen_dir / f'{name}.yaml'
+    if not cfg.is_file() or cfg.stat().st_size == 0:
+        print(f'{cfg} missing or empty', file=sys.stderr)
+        sys.exit(1)
+" "$GEN_DIR" || fail "redteam gate: generated configs directory not parseable"
+  echo "redteam gate: OK — generated configs present, index parseable"
+
+  echo "=== redteam gate: assertion weight map / dominance (T46, no live-tree read) ==="
+  # bin/generate.py's check_dominance() is a pure static scan of whatever is
+  # ALREADY on disk under configs/generated/ -- it never reads the live
+  # plugin tree (that only happens in cmd_check()'s later drift-regeneration
+  # half, which --gate deliberately excludes: "NO generate.py --check", the
+  # header comment above). Importing the module and calling this one
+  # function directly is root-portable and fast; it is what produces
+  # counterfeit fixture 29's frozen substring ("redteam FAIL design:
+  # assertion weight map") verbatim, since cmd_check() uses the exact same
+  # f-string prefix.
+  DOMINANCE_OUT="$(python3 -c "
+import sys
+sys.path.insert(0, '$REDTEAM_ROOT/bin')
+import generate
+
+problems = generate.check_dominance(generate.GENERATED_DIR)
+for p in problems:
+    print(f'redteam FAIL design: assertion weight map {p}')
+sys.exit(1 if problems else 0)
+")"
+  DOMINANCE_CODE=$?
+  if [[ "$DOMINANCE_CODE" -ne 0 ]]; then
+    printf '%s\n' "$DOMINANCE_OUT" >&2
+    exit 1
+  fi
+  echo "redteam gate: OK — every generated config's deterministic assertions carry weight 1, no forbidden assertion types"
+
+  echo "=== redteam gate: native-provenance forgery guard on committed ledger fixtures (T47, no live-tree read) ==="
+  # bin/verdict.py's qualify()/row_provenance_entry() run purely in-process
+  # against committed JSON row fixtures under fixtures/ledgers/** -- no
+  # promptfoo, no docker, no live plugin tree. This is what makes
+  # counterfeit fixture 30's frozen substring ("redteam qualify: native
+  # provenance not attested by an adapter ledger") reachable from --gate:
+  # qualify() raises it verbatim whenever any attempt in the denominator
+  # CLAIMS provenance='native' with no host_ledger_reader supplied (exactly
+  # fixture 30's mutation), and does NOT raise it for the unmutated fixture
+  # (which is legitimately provenance='simulated' throughout, design §9).
+  FORGERY_OUT="$(python3 -c "
+import json
+import sys
+sys.path.insert(0, '$REDTEAM_ROOT/bin')
+import verdict
+
+path = '$REDTEAM_ROOT/fixtures/ledgers/disagreement-rubric-vs-effect.json'
+doc = json.load(open(path, encoding='utf-8'))
+rows = doc['results']
+entries = {}
+ids = []
+for r in rows:
+    e = verdict.row_provenance_entry(r)
+    entries[e['attempt_id']] = e
+    ids.append(e['attempt_id'])
+try:
+    verdict.qualify('safety', ids, entries, host_ledger_reader=None)
+except verdict.NativeProofRequired as exc:
+    msg = str(exc)
+    if 'native provenance not attested by an adapter ledger' in msg:
+        print(msg)
+        sys.exit(1)
+    if 'no verifiable host ledger' in msg:
+        sys.exit(0)
+    print(f'redteam FAIL design: unexpected qualify() message: {msg}')
+    sys.exit(1)
+print('redteam FAIL design: qualify() unexpectedly succeeded on an unattested claim', file=sys.stderr)
+sys.exit(1)
+")"
+  FORGERY_CODE=$?
+  if [[ "$FORGERY_CODE" -ne 0 ]]; then
+    printf '%s\n' "$FORGERY_OUT" >&2
+    exit 1
+  fi
+  echo "redteam gate: OK — native-provenance forgery guard fires only on an unattested 'native' claim"
+
+  echo "=== redteam gate: static vacuous-row scan (T44/T47, no promptfoo process) ==="
+  # Coordinator decision (2026-09-06): a real promptfoo eval used to run
+  # here to catch fixture 31's `testCase.options.disableDefaultAsserts`
+  # shape; removed after it intermittently misclassified a real provider
+  # FAULT as VACUOUS under heavy host CPU contention (bin/verdict.py's
+  # classify_row ordering bug, now fixed separately -- see that function's
+  # docstring). A flaky always-on gate is worse than a documented gap, so
+  # this step is a pure static, subprocess-free text scan of the already-
+  # generated YAML (same regex-over-committed-text technique
+  # bin/generate.py's own check_dominance() already uses, and the same
+  # GENERATED_DIR the dominance step above already resolved): for every
+  # already-generated config, split the `tests:` section into per-row
+  # blocks (each starts with the literal "  - description:" bin/generate.py
+  # always emits, contract-frozen render shape) and fail on any row that
+  # carries `disableDefaultAsserts: true` -- since bin/generate.py NEVER
+  # emits a per-row `assert:` override (every row relies entirely on
+  # `defaultTest.assert`, contract §7.4/§8.1), a row that disables the
+  # default asserts and has none of its own has, by construction, ZERO
+  # effective assertions: exactly the statically-visible half of fixture
+  # 31's defect. The runtime half -- a row promptfoo itself actually SCORES
+  # as a vacuous "No assertions" perfect pass at eval time -- is real and
+  # still tested, just not from --gate: evals.agentic.tests.
+  # test_redteam_design.ProtectedEffectDominanceAndNativeGate's real-eval
+  # test exercises it under --offline.
+  VACUOUS_SCAN_OUT="$(python3 -c "
+import re
+import sys
+sys.path.insert(0, '$REDTEAM_ROOT/bin')
+import generate
+
+ROW_RE = re.compile(r'(?m)^  - description:.*(?:\n(?!  - description:).*)*')
+problems = []
+for cfg in sorted(generate.GENERATED_DIR.glob('*.yaml')):
+    text = cfg.read_text(encoding='utf-8')
+    tests_idx = text.find('\ntests:\n')
+    if tests_idx == -1:
+        continue
+    tests_text = text[tests_idx:]
+    for row in ROW_RE.findall(tests_text):
+        if 'disableDefaultAsserts' not in row:
+            continue
+        if not re.search(r'disableDefaultAsserts:\s*true', row):
+            continue
+        if re.search(r'(?m)^\s{4}assert:', row):
+            # A row overriding disableDefaultAsserts AND supplying its own
+            # assert: list is NOT vacuous -- bin/generate.py never emits
+            # this shape today, but the check stays precise rather than
+            # banning a combination that was never the actual defect.
+            continue
+        desc_match = re.match(r'  - description:\s*(.*)', row)
+        desc = desc_match.group(1) if desc_match else '<unknown row>'
+        problems.append(f'{cfg}: row {desc} sets disableDefaultAsserts with no assert of its own')
+for p in problems:
+    print(f'redteam FAIL design: vacuous row {p}')
+sys.exit(1 if problems else 0)
+")"
+  VACUOUS_SCAN_CODE=$?
+  if [[ "$VACUOUS_SCAN_CODE" -ne 0 ]]; then
+    printf '%s\n' "$VACUOUS_SCAN_OUT" >&2
+    exit 1
+  fi
+  echo "redteam gate: OK — no generated config row disables its default assertions without one of its own"
+
+  echo "redteam: PASS — gate subset (pin, corpus freeze, npx grep, provider shape, generated-config presence, dominance, forgery guard, static vacuous-row scan)"
+  exit 0
+fi
 
 # --- paid / hosted: refuse without an explicit approval token, run nothing ---
 if [[ "$MODE" == "paid" || "$MODE" == "hosted" ]]; then

@@ -156,6 +156,13 @@ class AttemptCompleteness(unittest.TestCase):
         self.assertEqual(denoms.accounting, spec["expected_actual_total"])
         self.assertNotEqual(denoms.accounting, spec["claimed_total"])
 
+    def test_conservation_identity_100_attempts__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T32. entry.negative_control
+        names fixtures/measurement/negative/dropped-coordination.json: this
+        must FAIL the conservation identity's own claim (accounting equals the
+        claimed total) for the T32 catalog entry to be considered non-vacuous."""
+        return self.test_dropped_coordination_rows_break_the_claimed_total()
+
 
 # ---------------------------------------------------------------------------
 # T33 -- unknown usage is UNKNOWN, never zero
@@ -235,6 +242,14 @@ class UnknownUsagePropagates(unittest.TestCase):
         # a bare naive_sum integer can never do -- that flag is the point.
         self.assertTrue(total.partial)
         self.assertNotEqual(str(naive_sum), total.render())
+
+    def test_total_is_partial_and_never_understated__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T33. entry.negative_control
+        names fixtures/measurement/usage/ten-attempts-one-unknown.json: this
+        must FAIL the naive sum(x or 0) rendering (it must not equal the
+        correct, flagged-partial total) for the T33 catalog entry to be
+        considered non-vacuous."""
+        return self.test_naive_or_zero_sum_understates_and_hides_the_gap()
 
 
 if __name__ == "__main__":

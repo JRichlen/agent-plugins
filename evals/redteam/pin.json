@@ -1,7 +1,7 @@
 {
   "promptfoo": {
     "version": "0.122.0",
-    "home": "/home/jrichlen/.npm/_npx/81bbc6515d992ace/node_modules/promptfoo",
+    "home": "/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo",
     "package_json_sha256": "75148c918084bb9960042879f4f564cf315239db1eb98c7a39f47080335fe8fd",
     "dist_manifest_sha256": "091beac42d0f8f997edd6251f6d632dc01724b9cdebdca8facddb6c131c36fba",
     "dist_manifest_algo": "sha256 over sorted 'dist/src/<name>  <sha256>\\n' lines for every dist/src/*.js and dist/src/*.d.ts file, relative to the promptfoo package root",

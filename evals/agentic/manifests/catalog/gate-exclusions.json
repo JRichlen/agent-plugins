@@ -1,0 +1,41 @@
+{
+  "_comment": [
+    "Integration-owned (contract SHARED files list + coordinator's",
+    "integration-cost-decisions.md decision 2, 2026-09-06). This file is NOT one",
+    "of the seven <lane>.json catalog fragments registry.load_catalog() iterates",
+    "-- manifests/catalog/index.json's 'ids' mapping names exactly core, measurement,",
+    "protocol, registry, adapter, redteam, integration, so a sibling file with a",
+    "different name is invisible to load_catalog and cannot collide with it.",
+    "",
+    "Why this lives here instead of as a 'heavy_external' key directly on the",
+    "affected CatalogEntry objects (the coordinator's literal wording):",
+    "framework/registry.py (registry lane, not integration-owned; contract section",
+    "6 ownership map) parses each catalog-entry JSON object against a FIXED field",
+    "tuple (_CATALOG_ENTRY_FIELDS) and raises CatalogUnresolvable on any key",
+    "outside it. Adding 'heavy_external' straight onto a fragment entry would break",
+    "load_catalog for every ID in that fragment -- not just gate the slow ones --",
+    "the moment any fragment carried the key. Integration's hard-rule scope for",
+    "this delivery is 'contract section 6 shared files, evals/redteam/run.sh, any",
+    "manifests/catalog/<lane>.json to add the optional heavy_external key, and any",
+    "test module' -- it does NOT include framework/registry.py, so extending",
+    "CatalogEntry's schema is out of scope here. This file delivers decision 2's",
+    "functional intent (a fast, documented exclusion set consulted by --gate)",
+    "without touching a non-owned file or weakening any lane's parsing.",
+    "See integration-report.md for the full account and the per-test evidence",
+    "(promptfoo validate / promptfoo eval / docker netproof calls) that justifies",
+    "each ID below."
+  ],
+  "heavy_external": {
+    "T42": "PinnedVersionAndConfigValidity.test_wrapper_reports_pinned_version_and_validates_every_config runs `promptfoo validate` against every committed redteam config (~30 files) via bin/promptfoo.sh -- a real subprocess per config.",
+    "T43": "ProviderApiConformance.test_promptfoo_actually_invokes_the_custom_provider runs a real `promptfoo eval` over configs/offline-stub.yaml through the pinned entrypoint.",
+    "T45": "SafeVulnerableControls.setUpClass runs THREE real `promptfoo eval` passes (control-safe, control-vulnerable, control-refusenik x 32 rows each) before any test method in the class executes.",
+    "T48": "OfflineDefaultDoesNotNetwork.test_docker_netproof_verifies_isolation spins up a real `docker run --network=none` container cycle (bin/netproof.sh)."
+  },
+  "not_flagged_and_why": {
+    "T44": "FrozenCorpusIntegrity.test_freeze_check_passes_on_the_committed_corpus is bin/freeze.py --check -- pure sha256 hashing over committed files, no promptfoo/docker. Kept in --gate per the integration brief.",
+    "T46": "TwoByTwoCompleteness's CATALOG-MAPPED method (test_two_by_two_design_has_four_balanced_cells_with_shared_corpus_and_grader) reads committed configs/generated/_index.json and calls generate.check_dominance() -- no subprocess call. (Its sibling test_generated_configs_are_not_drifted DOES shell out to generate.py --check and would be heavy, but that sibling is not T46's catalog resolution target per contract section 7.3/7.4 -- see manifests/catalog/redteam.json's own _comment.) Already excluded from --gate anyway: approval_gate=paid-required.",
+    "T47": "ProtectedEffectDominanceAndNativeGate's catalog-mapped test reads only committed JSON row fixtures under fixtures/ledgers/** and calls bin/verdict.py in-process -- no subprocess call.",
+    "T23": "McpInspectReadOnly already carries requires_real_marketplace: true in manifests/catalog/protocol.json (it spawns the real plugins/agent-compiler MCP server) and is therefore already excluded from --gate by the existing rrm exclusion; heavy_external is not needed for it. It is fast (a single stdio round trip) when it does run under --offline/--catalog."
+  },
+  "_resolved_2026-09-06": "requires_real_marketplace_undeclared (T14,T15,T16,T17) was folded into manifests/catalog/registry.json by the coordinator; the empirical evidence lives in integration-report.md section 5."
+}

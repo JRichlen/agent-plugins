@@ -136,6 +136,13 @@ class HookDiscoveryAndExec(_PidLeakMixin, unittest.TestCase):
         self.assertEqual({s.plugin for s in specs},
                           {"plugin-alpha", "plugin-beta", "plugin-gamma"})
 
+    def test_discovers_exactly_the_live_marketplace_hooks__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T19. entry.negative_control
+        names fixtures/protocols/mutated-fourth-hook-root: this must FAIL a
+        hardcoded-count discovery (it must see the added fourth hook) for the
+        T19 catalog entry to be considered non-vacuous."""
+        return self.test_negative_hardcoded_discovery_would_miss_a_fourth_hook()
+
     def test_payload_fixtures_share_the_real_envelope_shape(self):
         # Documents the PreToolUse/PostToolUse/UserPromptSubmit/SessionStart
         # payload shapes Claude Code emits (deliverable requirement), even
@@ -260,6 +267,14 @@ class AgentCompilerHooks(_PidLeakMixin, unittest.TestCase):
         self.assertEqual(result.json["hookSpecificOutput"]["permissionDecision"], "deny",
                           "the mutant should wrongly deny an ordinary write")
 
+    def test_four_real_subprocess_outcomes_inject_silent_deny_allow__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T20. entry.negative_control
+        names fixtures/protocols/mutants/guard-deny-everything.py: this must
+        FAIL the allow case (the deny-everything mutant must wrongly deny an
+        ordinary write) for the T20 catalog entry to be considered
+        non-vacuous."""
+        return self.test_negative_deny_everything_mutant_would_wrongly_deny_the_allow_case()
+
 
 # ---------------------------------------------------------------------------
 # T21 — redgate PreToolUse denies writes to a ratified contract mid-round
@@ -331,6 +346,14 @@ class RedgateWriteGuard(_PidLeakMixin, unittest.TestCase):
         self.assertEqual(result.exit_code, 2,
                           "path-only mutant should wrongly deny a legitimate ARM-phase write")
 
+    def test_denies_ratified_contract_write_in_trace_phase__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T21. entry.negative_control
+        names fixtures/protocols/mutants/guard-redgate-path-only.sh: this must
+        FAIL the ARM-phase allow case (the path-only mutant must wrongly deny
+        a legitimate write) for the T21 catalog entry to be considered
+        non-vacuous."""
+        return self.test_negative_path_only_mutant_would_wrongly_deny_the_arm_case()
+
 
 # ---------------------------------------------------------------------------
 # T22 — SessionStart injection: redgate and voice
@@ -395,6 +418,14 @@ class SessionStartInjection(_PidLeakMixin, unittest.TestCase):
         self.assertFalse(0 < len(ctx) < 4000,
                           "this mutant's huge payload should fail the bound assertion used above")
 
+    def test_voice_emits_one_bounded_json_object_on_every_matcher__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T22. entry.negative_control
+        names fixtures/protocols/mutants/session-start-double-print.sh: this
+        must FAIL the single-JSON-object contract (two concatenated objects
+        must not parse as one) for the T22 catalog entry to be considered
+        non-vacuous."""
+        return self.test_negative_two_json_objects_would_break_the_single_object_contract()
+
 
 # ---------------------------------------------------------------------------
 # T23 — MCP read-only inspect probe against the agent-compiler kernel
@@ -446,6 +477,13 @@ class McpInspectReadOnly(_PidLeakMixin, unittest.TestCase):
                 with McpStdioClient([sys.executable, str(MUTANTS / "broken_mcp_server.py")],
                                      cwd=cwd, timeout_s=5.0) as client:
                     client.initialize()
+
+    def test_handshake_tools_list_and_read_only_inspect__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T23. entry.negative_control
+        names fixtures/protocols/mutants/broken_mcp_server.py: this must FAIL
+        the vacuous metadata-only check (it must not prove a crashing server
+        starts) for the T23 catalog entry to be considered non-vacuous."""
+        return self.test_negative_metadata_only_check_does_not_prove_the_server_starts()
 
     def test_negative_a_write_during_inspect_is_caught_by_diff_tree(self):
         with tempfile.TemporaryDirectory() as td:
@@ -545,6 +583,13 @@ class SubprocessLifecycle(_PidLeakMixin, unittest.TestCase):
                 pool.close()
         self.assertNotEqual(r.stdout.strip(), "", "post-cancel output must not be discarded")
         self.assertTrue(r.arrived_after_terminal)
+
+    def test_coordination_order_independent_of_completion_order__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T24. entry.negative_control
+        names fixtures/protocols/workers/worker_ignore_sigterm.py: this must
+        FAIL the 'discard post-cancel output' shortcut (real stdout must not
+        be empty) for the T24 catalog entry to be considered non-vacuous."""
+        return self.test_negative_discarding_post_cancel_output_would_hide_continued_work()
 
     def test_leaked_pids_is_nonempty_mid_run_and_empty_after_close(self):
         # Proves leaked_pids()/live-descendant accounting is not vacuously

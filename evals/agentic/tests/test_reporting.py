@@ -149,6 +149,14 @@ class OutcomeVsAdoption(unittest.TestCase):
         self.assertGreater(cell.ritual_without_outcome().value, 0.0)
         self.assertNotAlmostEqual(composite_rate, cell.outcome_rate().value)
 
+    def test_2x2_matches_worked_example__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T40. entry.negative_control
+        names fixtures/measurement/outcome_adoption/redgate-40.json: this must
+        FAIL the composite 'ritual earns credit regardless of outcome' score
+        (it must disagree with the correct outcome rate) for the T40 catalog
+        entry to be considered non-vacuous."""
+        return self.test_composite_score_would_make_every_plugin_work_by_construction()
+
 
 # ---------------------------------------------------------------------------
 # T41 -- grader agreement reuses agreement.py
@@ -193,6 +201,14 @@ class GraderAgreementReuse(unittest.TestCase):
         self.assertIsNotNone(result.unavailable_reason)
         self.assertIn("labels outside pass/fail", result.unavailable_reason)
         self.assertNotIn("fewer than two hashes", result.unavailable_reason)
+
+    def test_round_trips_worked_example_via_the_real_script__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T41. entry.negative_control
+        names fixtures/measurement/agreement/grader-a.json: paired against a
+        corrupted labels file, the real script must FAIL closed with a
+        grader-defect reason, never silently miscounting, for the T41
+        catalog entry to be considered non-vacuous."""
+        return self.test_exit_2_bad_labels_is_a_grader_defect_not_a_sample_size_problem()
 
     def test_sample_hash_matches_agreement_py_join_key_shape(self):
         h = sample_hash("card-1", "arm-1", "attempt-1", "digest-1")

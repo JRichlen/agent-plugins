@@ -7,6 +7,7 @@ binary by path (never `npx`) with the lane's offline environment, exactly as
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import pathlib
@@ -18,6 +19,18 @@ import unittest
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 REDTEAM_ROOT = REPO_ROOT / "evals" / "redteam"
 PROMPTFOO_SH = REDTEAM_ROOT / "bin" / "promptfoo.sh"
+
+
+def _load_verdict():
+    # Loaded as a file (not imported as a package) for the same reason
+    # test_redteam_design.py does this: bin/verdict.py inserts its own
+    # sys.path entries and does local imports, which only works loaded this
+    # way, matching a real `python3 bin/verdict.py` invocation.
+    spec = importlib.util.spec_from_file_location("redteam_verdict_pt", REDTEAM_ROOT / "bin" / "verdict.py")
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 PINNED_VERSION = "0.122.0"
 
 
@@ -221,6 +234,18 @@ class ProviderErrorIsFault(unittest.TestCase):
             throw_row = by_label["target-textual-throw"]
             self.assertFalse(throw_row["success"])
             self.assertEqual(throw_row.get("failureReason"), 2, throw_row)
+            # The row this class is actually named for: classify_row() must
+            # call this FAULT, not VACUOUS. A throwing provider's row has
+            # gradingResult=None (promptfoo never ran an assertion against a
+            # call that itself threw) -- structurally IDENTICAL, componentResults-
+            # wise, to a genuinely vacuous (disableDefaultAsserts) row. Found
+            # during integration acceptance (2026-09-06): classify_row's
+            # VACUOUS check ran BEFORE its failureReason==2 check, so this
+            # exact row silently classified VACUOUS -- a real provider fault
+            # hidden as a config-shape defect, never surfacing as an error.
+            verdict = _load_verdict()
+            self.assertIsNone(throw_row.get("gradingResult"))
+            self.assertEqual(verdict.classify_row(throw_row), "FAULT")
 
     def test_throwing_provider_is_classified_fault_not_pass__negative(self):
         """Catalog sibling. negative_control: the SAME config's stub-echo
@@ -253,6 +278,44 @@ class ProviderErrorIsFault(unittest.TestCase):
             echo_row = by_label["stub-echo"]
             self.assertTrue(echo_row["success"])
             self.assertNotEqual(echo_row.get("failureReason"), 2)
+            verdict = _load_verdict()
+            self.assertNotEqual(verdict.classify_row(echo_row), "FAULT")
+
+
+class ClassifyRowFaultVsVacuous(unittest.TestCase):
+    """Regression test for the classify_row ordering bug found during
+    integration acceptance (2026-09-06, coordinator-directed fix): a
+    synthetic row shaped exactly like a real provider error (gradingResult
+    None, failureReason 2, zero componentResults) must classify FAULT, not
+    VACUOUS -- the two were structurally indistinguishable by
+    componentResults alone, and VACUOUS was checked first, silently hiding
+    real provider/transport faults as a config-shape defect that a run could
+    (and, once, under heavy host contention, did) misreport."""
+
+    def test_synthetic_errored_row_is_fault_not_vacuous(self):
+        verdict = _load_verdict()
+        errored_row = {
+            "success": False,
+            "failureReason": 2,
+            "gradingResult": None,
+            "error": "Error: simulated transport failure -- provider never returned",
+        }
+        self.assertEqual(verdict.classify_row(errored_row), "FAULT")
+
+    def test_synthetic_errored_row_is_fault_not_vacuous__negative(self):
+        """Catalog sibling: the SAME shape but failureReason absent (0/None,
+        a real completed call) with zero componentResults IS the genuine
+        vacuous shape (e.g. disableDefaultAsserts) -- must classify VACUOUS,
+        proving the FAULT branch is specific to failureReason==2, not a
+        blanket 'no componentResults' rule that would swallow real vacuous
+        rows too."""
+        verdict = _load_verdict()
+        vacuous_row = {
+            "success": True,
+            "failureReason": None,
+            "gradingResult": {"reason": "No assertions", "componentResults": []},
+        }
+        self.assertEqual(verdict.classify_row(vacuous_row), "VACUOUS")
 
 
 class ClassExportRequired(unittest.TestCase):
