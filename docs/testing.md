@@ -628,6 +628,13 @@ If you add, remove, rename, or re-scope any
 of these, update this block (and the prose above) in the same PR;
 `evals/cheap/check-testing-doc.sh --print` emits the current live list.
 
+> **CI portability of the new gates.** The cheap-tier and counterfeit CI jobs install the
+> pinned tooling the gates verify against (promptfoo 0.122.0, Claude Code 2.1.263, Codex
+> 0.153.4 — exact versions, never `npx`, never `@latest`) into the runner's temp dir and export
+> `PROMPTFOO_HOME` and the `.bin` PATH. The gates never log in or call a model; they read
+> `--help`/`--version` and compare digests. On a developer host, export `PROMPTFOO_HOME` the
+> same way (see `evals/redteam/bin/promptfoo.sh`).
+
 <!-- BEGIN LIVE-INVENTORY (verified by evals/cheap/check-testing-doc.sh) -->
 ```
 eval-dir: evals/agentic

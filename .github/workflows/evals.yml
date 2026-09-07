@@ -30,6 +30,24 @@ jobs:
           # Full history: the timeline guard verifies /commit/<sha> receipts
           # against the object store, which a depth-1 checkout cannot see.
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install the pinned offline tooling the agentic and red-team gates verify against
+        # The always-on gate is host-portable, not host-free: evals/redteam checks
+        # the promptfoo 0.122.0 pin by package.json + dist-manifest digest at
+        # PROMPTFOO_HOME, and the agentic adapter lane reads the INSTALLED
+        # claude/codex --help to refuse any driver flag the binaries do not
+        # support (T25). Install exactly the pinned versions into the runner's
+        # temp dir (never npx, never @latest) and export the two locations. No
+        # login, no model call: --help and --version are all the gate touches.
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
+          echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: run cheap eval gate
         run: evals/cheap/run.sh
 
@@ -67,6 +85,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: install the pinned offline tooling the agentic and red-team gates verify against
+        # The always-on gate is host-portable, not host-free: evals/redteam checks
+        # the promptfoo 0.122.0 pin by package.json + dist-manifest digest at
+        # PROMPTFOO_HOME, and the agentic adapter lane reads the INSTALLED
+        # claude/codex --help to refuse any driver flag the binaries do not
+        # support (T25). Install exactly the pinned versions into the runner's
+        # temp dir (never npx, never @latest) and export the two locations. No
+        # login, no model call: --help and --version are all the gate touches.
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
+          echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - name: prove the cheap gate discriminates (counterfeit corpus)
         run: evals/counterfeits/run.sh
 
