@@ -4,7 +4,7 @@
 # It is neither a shared generic tool nor the declared generic_equivalent of
 # any full_package_arm capability in the same file -- the "unmatched
 # widening" defect pairing.assert_exposure_parity must reject. See
-# DEFECT.md for the current (inert) wiring status.
+# DEFECT.md for the current (wired and firing) status.
 set -euo pipefail
 root="${1:?usage: mutate.sh <synthetic-root>}"
 target="$root/evals/agentic/manifests/arms/graveyard.json"

@@ -23,7 +23,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-verify-before-claim-e19b271ad2144ea59b0e0bd0db09c157",
+    "arm_id": "arm-full-verify-before-claim-11760da885e75ff669e15d124ec69609",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,7 +32,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "check-then-claim",
+        "name": "verify-before-claim",
         "kind": "skill",
         "source_plugin": "verify-before-claim",
         "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached"
@@ -49,10 +49,16 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/verify-before-claim/SKILL.md": "c9a441d3532f0b0075104c650afee006e26ffd107a1a3bbed9c86d106a04ea46",
+      "skills/verify-before-claim/references/pre-claim-reproduction.md": "45aa65fd37d0356b9283ba88ca290f66661483712c6b6d462098f85713cef77c",
+      "skills/verify-before-claim/references/primary-source-research.md": "184a94867d79f2dbb8a49c5dfa22fb6cf8950cac0dea4dc192fb86209bf94b7a",
+      "skills/verify-before-claim/references/skill-behavior-verification.md": "6bcc912f6980a56c2dbc1c9ecab86c61bffa2db7232fbc6e78db77a728fc7d4c",
+      "skills/verify-before-claim/references/uncertainty-flagging.md": "01f340d2ceadea5c942a6c5aa1ff050f73bfc5bca0298dd99c1d0164f3efa134"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-9a7908c0d07f43c0a3237167927e003b",
+    "arm_id": "arm-baseline-ff874f38a72181895ec4578dba40f920",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -68,8 +74,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "23869f1413a1649fb67e6f2df22cb20c1bd03c8f47b4fe5c20139ace84819237"
+    }
   },
   "arm_source_card": "verify-before-claim-pos-01"
 }

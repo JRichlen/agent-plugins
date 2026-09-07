@@ -18,10 +18,13 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -189,14 +192,19 @@ class SafeVulnerableControls(unittest.TestCase):
         controls = json.loads(CONTROLS_JSON.read_text(encoding="utf-8"))
         floor = controls["control_vulnerable"]["heldout_detection_floor"]
 
+        # A variant may carry its own `vars` override, merged over the base:
+        # the `guard_bypass` probe (review finding R3) only exercises anything
+        # when a REAL guard list is in play, and with the base `guards: []` it
+        # would be detected even by the defective scanner it exists to catch.
         script = f"""
 const {{ scan }} = require({json.dumps(str(REDTEAM_ROOT / "providers" / "lib" / "effects.js"))});
 const heldout = require({json.dumps(str(HELD_OUT_JSON))});
-const vars = {{ canary_secret: "CANARY_SECRET_7f3a9c1e4b6d", sandbox_root: "/work/repo", guards: [] }};
+const base = {{ canary_secret: "CANARY_SECRET_7f3a9c1e4b6d", sandbox_root: "/work/repo", guards: [] }};
 let total = 0, hit = 0;
 for (const data of Object.values(heldout.families)) {{
   for (const v of data.variants) {{
     total++;
+    const vars = v.vars ? {{ ...base, ...v.vars }} : base;
     if (scan(v.text, vars).violations.length > 0) hit++;
   }}
 }}
@@ -385,6 +393,648 @@ class OfflineDefaultDoesNotNetwork(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), str(staged))
+
+    # -- review finding R8: the npx gate's own blind spots ------------------
+
+    def test_npx_gate_catches_every_resolver_and_scans_python(self):
+        """R8 (2026-09-06). The gate scanned only ('.sh','.js','.yaml','.yml',
+        '.json') and knew only the resolver `npx` -- yet every script in
+        `bin/` except two is PYTHON. MEASURED: these exact three appends
+        produced ZERO hits and run.sh printed "OK -- 0 npx references".
+
+        The names below are the REAL files a mutation would target, staged
+        into a temp dir, so this is the same shape as fixture 26's mutation
+        rather than a synthetic one. Every planted file must be reported;
+        this test fails if even one resolver or one extension slips."""
+        planted = {
+            "bin/freeze.py":
+                'import subprocess\nsubprocess.run(["npx", "promptfoo@latest", "eval"])\n',
+            "bin/promptfoo.sh":
+                "#!/usr/bin/env bash\nnpm exec -- promptfoo@latest --version\n",
+            "bin/netproof.sh":
+                "#!/usr/bin/env bash\nbunx promptfoo@latest --version\n",
+            "bin/helper.mjs":
+                "import {execSync} from 'node:child_process';\n"
+                "execSync('pnpm dlx promptfoo@latest eval');\n",
+            "tools/build.mk":
+                "check:\n\tyarn dlx promptfoo@latest --version\n",
+        }
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            for rel, body in planted.items():
+                target = root / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(body, encoding="utf-8")
+            # An extensionless executable, the other way around the old
+            # extension allowlist.
+            bare = root / "bin" / "run-eval"
+            bare.write_text("#!/usr/bin/env bash\nnpx promptfoo@latest eval\n", encoding="utf-8")
+            bare.chmod(0o755)
+
+            result = subprocess.run(
+                [sys.executable, str(REDTEAM_ROOT / "bin" / "npxcheck.py"), str(root)],
+                capture_output=True, text=True, timeout=15,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            reported = {str(pathlib.Path(line).relative_to(root))
+                        for line in result.stdout.split("\n") if line.strip()}
+            expected = set(planted) | {"bin/run-eval"}
+            self.assertEqual(
+                reported, expected,
+                f"npx gate missed {sorted(expected - reported)}",
+            )
+
+    def test_npx_gate_catches_every_resolver_and_scans_python__negative(self):
+        """Sibling. The widened pattern must still not fire on PROSE: this
+        lane's own diagnostics and headers necessarily name the ban, and
+        `bin/npxcheck.py` is itself now scanned and carries a worked example
+        of the mutation in its docstring. A checker that reports itself, or
+        every file that discusses the rule, is useless."""
+        with tempfile.TemporaryDirectory() as td:
+            root = pathlib.Path(td)
+            (root / "prose.sh").write_text(
+                "#!/usr/bin/env bash\n"
+                "# a worked example of the banned shape: npx promptfoo@latest eval\n"
+                "echo 'redteam offline: npx reference in evals/redteam'\n",
+                encoding="utf-8",
+            )
+            (root / "notes.py").write_text(
+                '"""\n'
+                "#   an example, comment-prefixed inside a docstring on purpose:\n"
+                "#   npx promptfoo@latest eval\n"
+                '"""\n',
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(REDTEAM_ROOT / "bin" / "npxcheck.py"), str(root)],
+                capture_output=True, text=True, timeout=15,
+            )
+            self.assertEqual(result.stdout.strip(), "", f"false positive on prose: {result.stdout}")
+
+        live = subprocess.run(
+            [sys.executable, str(REDTEAM_ROOT / "bin" / "npxcheck.py"), str(REDTEAM_ROOT)],
+            capture_output=True, text=True, timeout=30,
+        )
+        self.assertEqual(live.stdout.strip(), "",
+                         f"the widened gate reports the live tree: {live.stdout}")
+
+
+class EgressIsFailedClosedOnTheHost(unittest.TestCase):
+    """Review finding R1 (2026-09-06). `run.sh` used to claim the offline
+    default runs "with NO network ... ever". It did not.
+
+    `PROMPTFOO_DISABLE_TELEMETRY=1` does not stop the telemetry POST -- in
+    the pinned build it CAUSES one: `record()` -> `recordTelemetryDisabled()`
+    -> `sendEvent()`, whose trailing
+    `fetchWithProxy("https://r.promptfoo.app/")` POST is unconditional and
+    `.catch(() => {})`-swallowed (dist/src/telemetry-VjpZ13i_.js:112-152).
+    MEASURED with a loopback CONNECT sink: one `bin/promptfoo.sh validate`
+    made 5 `CONNECT r.promptfoo.app:443` attempts while the lane printed
+    `redteam: PASS`.
+
+    `bin/promptfoo.sh` now forces every proxy variable at a CLOSED loopback
+    port with an empty `no_proxy`, so every request in the pinned build --
+    which all funnel through `fetchWithProxy` -- dies on this host. These
+    tests measure that, they do not read the comment that claims it.
+
+    NOT a substitute for T48: `bin/netproof.sh`'s real `--network=none`
+    sandbox is still the proof, and OfflineDefaultDoesNotNetwork above still
+    runs it.
+    """
+
+    OFFLINE_PROXY = "http://127.0.0.1:1"
+
+    @staticmethod
+    def _connect_sink():
+        """A loopback listener that records the first line of anything that
+        connects. An HTTP proxy names its target in `CONNECT host:port`, so
+        this identifies the destination WITHOUT any packet leaving the host."""
+        srv = socket.socket()
+        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        srv.bind(("127.0.0.1", 0))
+        srv.listen(64)
+        port = srv.getsockname()[1]
+        seen: list[str] = []
+        stop = threading.Event()
+
+        def serve():
+            srv.settimeout(0.25)
+            while not stop.is_set():
+                try:
+                    conn, _ = srv.accept()
+                except (socket.timeout, OSError):
+                    continue
+                try:
+                    conn.settimeout(1)
+                    seen.append(conn.recv(4096).split(b"\r\n")[0].decode("latin1"))
+                except OSError:
+                    pass
+                finally:
+                    conn.close()
+            srv.close()
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        return port, seen, stop, thread
+
+    def _validate(self, extra_env: dict) -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as td:
+            env = _offline_env(pathlib.Path(td), extra=extra_env)
+            return subprocess.run(
+                [str(PROMPTFOO_SH), "validate", "-c",
+                 str(REDTEAM_ROOT / "configs" / "offline-stub.yaml")],
+                capture_output=True, text=True, timeout=120, env=env,
+            )
+
+    def test_no_request_from_a_real_promptfoo_invocation_leaves_this_host(self):
+        """Two independent measurements of one real `promptfoo validate`.
+
+        (a) portable: a caller-supplied proxy sink must record ZERO
+            connections -- the wrapper's forced value wins, so no caller can
+            re-open egress by exporting a proxy of their own; and the forced
+            destination is a closed port, asserted from the wrapper's source.
+        (b) when strace is on this host (it is what `bin/netproof.sh`'s own
+            `strace_available()` probes for): EVERY `connect()` the process
+            makes must be to loopback. That is the direct measurement, and it
+            is what actually re-runs finding R1's repro.
+        """
+        source = PROMPTFOO_SH.read_text(encoding="utf-8")
+        for var in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY",
+                    "http_proxy", "https_proxy", "all_proxy"):
+            self.assertRegex(
+                source, rf"export [^\n]*\b{var}=",
+                f"bin/promptfoo.sh must FORCE {var} (export), not default it",
+            )
+        self.assertIn('OFFLINE_PROXY="http://127.0.0.1:1"', source,
+                      "the forced proxy must point at a closed loopback port")
+        self.assertRegex(source, r'export [^\n]*\bNO_PROXY=""',
+                         "no_proxy must be forced EMPTY so nothing carves an exception back out")
+
+        port, seen, stop, thread = self._connect_sink()
+        try:
+            caller_proxy = f"http://127.0.0.1:{port}"
+            result = self._validate({
+                "HTTP_PROXY": caller_proxy, "HTTPS_PROXY": caller_proxy, "NO_PROXY": "",
+            })
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        finally:
+            stop.set()
+            thread.join(timeout=5)
+        self.assertEqual(
+            seen, [],
+            "a caller-supplied proxy received traffic: bin/promptfoo.sh's forced value "
+            f"did not win, so egress is caller-controllable ({seen})",
+        )
+
+        strace = shutil.which("strace")
+        strace_works = strace is not None and subprocess.run(
+            [strace, "-f", "-qq", "-e", "trace=connect", "/bin/true"],
+            capture_output=True,
+        ).returncode == 0
+        if strace_works:
+            with tempfile.TemporaryDirectory() as td:
+                trace = pathlib.Path(td) / "connect.strace"
+                env = _offline_env(pathlib.Path(td))
+                subprocess.run(
+                    [strace, "-f", "-qq", "-s", "200", "-e", "trace=connect",
+                     "-o", str(trace), str(PROMPTFOO_SH), "validate",
+                     "-c", str(REDTEAM_ROOT / "configs" / "offline-stub.yaml")],
+                    capture_output=True, text=True, timeout=180, env=env,
+                )
+                text = trace.read_text(encoding="utf-8", errors="replace")
+            addrs = re.findall(r'connect\(\d+, \{sa_family=AF_INET6?, [^}]*'
+                               r'inet(?:6)?_addr\("([^"]+)"\)', text)
+            offhost = [a for a in addrs
+                       if not (a.startswith("127.") or a in ("::1", "0.0.0.0"))]
+            self.assertEqual(
+                offhost, [],
+                f"one `promptfoo validate` connected off-host: {sorted(set(offhost))} "
+                "(finding R1: the telemetry POST to r.promptfoo.app survives "
+                "PROMPTFOO_DISABLE_TELEMETRY)",
+            )
+            self.assertNotIn("promptfoo.app", text,
+                             "the vendor telemetry endpoint was still resolved or contacted")
+
+    def test_no_request_from_a_real_promptfoo_invocation_leaves_this_host__negative(self):
+        """Sibling. The measurement above must be able to FAIL: run the same
+        pinned entrypoint WITHOUT the wrapper (bare `node dist/src/entrypoint.js`
+        with the disable-vars set exactly as the lane sets them, and the
+        caller's proxy honoured) and the very same loopback sink DOES record
+        `CONNECT r.promptfoo.app:443`.
+
+        That is finding R1's original repro, reproduced with zero packets
+        leaving this host: the sink terminates the connection. It proves the
+        disable-vars never closed this path, and that the passing test above
+        measures the wrapper's forcing rather than an absence of traffic."""
+        pf_home = os.environ.get(
+            "PROMPTFOO_HOME",
+            "/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo",
+        )
+        entry = pathlib.Path(pf_home) / "dist" / "src" / "entrypoint.js"
+        self.assertTrue(entry.is_file(), f"pinned entrypoint missing at {entry}")
+
+        port, seen, stop, thread = self._connect_sink()
+        try:
+            with tempfile.TemporaryDirectory() as td:
+                caller_proxy = f"http://127.0.0.1:{port}"
+                env = _offline_env(pathlib.Path(td))
+                env.update({
+                    "PROMPTFOO_DISABLE_UPDATE": "1",
+                    "PROMPTFOO_DISABLE_TELEMETRY": "1",
+                    "PROMPTFOO_DISABLE_REMOTE_GENERATION": "1",
+                    "PROMPTFOO_CACHE_ENABLED": "0",
+                    "HTTP_PROXY": caller_proxy, "HTTPS_PROXY": caller_proxy, "NO_PROXY": "",
+                })
+                subprocess.run(
+                    ["node", str(entry), "validate",
+                     "-c", str(REDTEAM_ROOT / "configs" / "offline-stub.yaml")],
+                    capture_output=True, text=True, timeout=120, env=env,
+                )
+        finally:
+            stop.set()
+            thread.join(timeout=5)
+
+        self.assertTrue(
+            any("r.promptfoo.app" in line for line in seen),
+            "the pinned build no longer attempts the telemetry POST even with the "
+            "disable-vars set -- if that is genuinely true, this negative control is "
+            f"vacuous and must be rewritten rather than deleted (saw: {seen})",
+        )
+
+
+class CredentialsAndInstallLocation(unittest.TestCase):
+    """Review findings R10 and F3 (2026-09-06)."""
+
+    def test_wrapper_forces_a_private_home_and_strips_provider_credentials(self):
+        """R10. The wrapper used `: "${HOME:=...}"`, which NEVER fires --
+        HOME is always already set in a real shell. The proof it never fired
+        was on disk: `.artifacts/adhoc/` held `pfhome/` and `no-codex/` and
+        no `home/` at all. `CODEX_HOME` was covered only by the accident of
+        normally being unset; a caller that sets it (running this suite
+        inside a Codex session) restored reachability of the real
+        `~/.codex/auth.json`. The comment also claimed run.sh "sets its own
+        distinct per-run directories" -- run.sh sets no environment at all.
+
+        Measured behaviourally, not by reading the source: the child's HOME
+        must NOT be the caller's, and the credential vars must be gone."""
+        provider_js = """'use strict';
+class EnvProbeProvider {
+  constructor(options) { this.providerId = (options && options.id) || 'env-probe'; }
+  id() { return this.providerId; }
+  async callApi() {
+    return { output: JSON.stringify({
+      home: process.env.HOME,
+      codexHome: process.env.CODEX_HOME,
+      openai: process.env.OPENAI_API_KEY ?? null,
+      codexKey: process.env.CODEX_API_KEY ?? null,
+      anthropic: process.env.ANTHROPIC_API_KEY ?? null,
+      httpsProxy: process.env.HTTPS_PROXY ?? null,
+    }) };
+  }
+}
+module.exports = EnvProbeProvider;
+"""
+        config_yaml = """description: "env probe"
+prompts:
+  - "probe"
+providers:
+  - id: file://env-probe.js
+    label: env-probe
+tests:
+  - description: "one probe row"
+    vars: { note: "probe" }
+"""
+        with tempfile.TemporaryDirectory() as td:
+            tmp = pathlib.Path(td)
+            caller_home = tmp / "caller-home"
+            caller_codex = tmp / "caller-codex"
+            caller_home.mkdir()
+            caller_codex.mkdir()
+            (tmp / "env-probe.js").write_text(provider_js, encoding="utf-8")
+            (tmp / "probe.yaml").write_text(config_yaml, encoding="utf-8")
+            out_path = tmp / "probe-results.json"
+            env = dict(os.environ)
+            env.update({
+                "HOME": str(caller_home),
+                "CODEX_HOME": str(caller_codex),
+                "OPENAI_API_KEY": "sk-should-never-reach-the-child",
+                "CODEX_API_KEY": "sk-should-never-reach-the-child",
+                "ANTHROPIC_API_KEY": "sk-should-never-reach-the-child",
+                "PROMPTFOO_CONFIG_DIR": str(tmp / "pfhome"),
+            })
+            # Through the REAL wrapper, in a REAL eval: what this provider
+            # reports is literally the environment promptfoo's own providers
+            # run in.
+            result = subprocess.run(
+                [str(PROMPTFOO_SH), "eval", "-c", str(tmp / "probe.yaml"),
+                 "--no-cache", "--no-write", "--no-table", "--no-progress-bar",
+                 "-o", str(out_path)],
+                capture_output=True, text=True, timeout=120, env=env,
+            )
+            self.assertIn(result.returncode, (0, 100), result.stdout + result.stderr)
+            rows = _rows(json.loads(out_path.read_text(encoding="utf-8")))
+            self.assertEqual(len(rows), 1, rows)
+            child = json.loads(rows[0]["response"]["output"])
+
+        self.assertNotEqual(child["home"], str(caller_home),
+                            "the caller's HOME reached the child: ~/.codex/auth.json is reachable")
+        self.assertNotEqual(child["codexHome"], str(caller_codex),
+                            "the caller's CODEX_HOME reached the child")
+        self.assertTrue(pathlib.Path(child["home"]).is_dir(),
+                        "the forced HOME must actually exist (the wrapper mkdir -p's it)")
+        for key in ("openai", "codexKey", "anthropic"):
+            self.assertIsNone(child[key], f"{key} reached the child process")
+        self.assertEqual(child["httpsProxy"], "http://127.0.0.1:1")
+
+    def test_wrapper_forces_a_private_home_and_strips_provider_credentials__negative(self):
+        """Sibling: run.sh REFUSES to start an offline run in a shell that
+        holds a provider credential at all, so the wrapper's `unset` is not
+        the only line of defense. Proves the assertion loop actually reads
+        these vars rather than only the PROMPTFOO_* ones it started with."""
+        env = dict(os.environ)
+        env["ANTHROPIC_API_KEY"] = "sk-should-block-the-run"
+        result = subprocess.run(
+            [str(REDTEAM_ROOT / "run.sh")],
+            capture_output=True, text=True, timeout=120, env=env, cwd=str(REDTEAM_ROOT),
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("redteam FAIL offline: ANTHROPIC_API_KEY is set",
+                      result.stdout + result.stderr)
+
+    def test_pinned_install_location_is_env_overridable_and_documented(self):
+        """F3. Both scripts pointed at single-user absolute paths, and
+        `NPX_CACHE_ROOT` was not even overridable -- so the lane was not just
+        undocumented off this machine, T48 was unfixable off it. Measured:
+        a bogus PROMPTFOO_HOME must change the wrapper's OUTCOME (it fails
+        closed, naming the path), and the README must name both variables."""
+        with tempfile.TemporaryDirectory() as td:
+            env = _offline_env(pathlib.Path(td))
+            env["PROMPTFOO_HOME"] = str(pathlib.Path(td) / "nowhere")
+            result = subprocess.run(
+                [str(PROMPTFOO_SH), "--version"],
+                capture_output=True, text=True, timeout=60, env=env,
+            )
+        self.assertNotEqual(result.returncode, 0, "PROMPTFOO_HOME was ignored")
+        self.assertIn("redteam FAIL pin: promptfoo not installed at", result.stderr)
+        self.assertIn("nowhere", result.stderr,
+                      "the failure must name the path the caller actually supplied")
+
+        readme = (REDTEAM_ROOT / "README.md").read_text(encoding="utf-8")
+        run_it = readme.split("## Run it", 1)[1].split("\n## ", 1)[0]
+        for var in ("PROMPTFOO_HOME", "NPX_CACHE_ROOT"):
+            self.assertIn(var, run_it,
+                          f"README.md's 'Run it' section must document {var} (F3)")
+
+        netproof = (REDTEAM_ROOT / "bin" / "netproof.sh").read_text(encoding="utf-8")
+        self.assertIn(': "${NPX_CACHE_ROOT:=', netproof,
+                      "NPX_CACHE_ROOT must be overridable, not hardcoded")
+
+    def test_pinned_install_location_is_env_overridable_and_documented__negative(self):
+        """Sibling: with NO override, the default still resolves on this
+        host and the wrapper reports the pinned version -- proving the
+        override path above did not simply break the wrapper for everyone."""
+        with tempfile.TemporaryDirectory() as td:
+            env = _offline_env(pathlib.Path(td))
+            env.pop("PROMPTFOO_HOME", None)
+            result = subprocess.run(
+                [str(PROMPTFOO_SH), "--version"],
+                capture_output=True, text=True, timeout=60, env=env,
+            )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("0.122.0", result.stdout)
+
+
+class GateHeaderMatchesTheProcessesItRuns(unittest.TestCase):
+    """Review finding R11 (2026-09-06). `run.sh`'s header asserted
+    "NO PROMPTFOO PROCESS RUNS IN --gate AT ALL" and "Target: <5s, no
+    promptfoo process at all", while the same file said, twelve lines
+    earlier, "no promptfoo entrypoint exec'd beyond a single --version
+    call". The second sentence was the true one: the pin check delegates to
+    `bin/promptfoo.sh --version`, which ends in
+    `exec node $PROMPTFOO_HOME/dist/src/entrypoint.js --version`.
+
+    Measured here without strace, so it runs anywhere the suite does: a
+    `node` shim earlier on PATH records every argv and then execs the real
+    interpreter, and a `docker` shim records any docker invocation at all.
+    """
+
+    #: A bash shim that appends its argv to $SHIM_LOG and then delegates.
+    _NODE_SHIM = (
+        '#!/usr/bin/env bash\n'
+        'printf "node %s\\n" "$*" >> "$SHIM_LOG"\n'
+        'exec {real} "$@"\n'
+    )
+    _DOCKER_SHIM = (
+        '#!/usr/bin/env bash\n'
+        'printf "docker %s\\n" "$*" >> "$SHIM_LOG"\n'
+        'exit 127\n'
+    )
+
+    def _run_gate_under_shims(self, tmp: pathlib.Path, argv: list[str]) -> tuple[subprocess.CompletedProcess, list[str]]:
+        real_node = shutil.which("node")
+        self.assertIsNotNone(real_node, "node must be on PATH for the red-team lane")
+        shim_dir = tmp / "shims"
+        shim_dir.mkdir(parents=True, exist_ok=True)
+        (shim_dir / "node").write_text(self._NODE_SHIM.format(real=real_node), encoding="utf-8")
+        (shim_dir / "docker").write_text(self._DOCKER_SHIM, encoding="utf-8")
+        for name in ("node", "docker"):
+            (shim_dir / name).chmod(0o755)
+        log = tmp / "shim.log"
+        log.write_text("", encoding="utf-8")
+        env = _offline_env(tmp)
+        env["SHIM_LOG"] = str(log)
+        env["PATH"] = f"{shim_dir}:{env['PATH']}"
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=300, env=env,
+                              cwd=str(REPO_ROOT))
+        return proc, [ln for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+    def test_the_gate_header_describes_the_processes_it_actually_runs(self):
+        header = (REDTEAM_ROOT / "run.sh").read_text(encoding="utf-8")[:6000]
+        self.assertNotIn("NO PROMPTFOO PROCESS RUNS IN --gate AT ALL", header,
+                         "the absolute claim R11 falsified must not come back")
+        self.assertNotIn("no promptfoo process at all", header)
+        self.assertIn("EXACTLY ONE promptfoo process runs in --gate", header)
+
+        with tempfile.TemporaryDirectory() as td:
+            tmp = pathlib.Path(td)
+            proc, lines = self._run_gate_under_shims(
+                tmp, [str(REDTEAM_ROOT / "run.sh"), "--gate"])
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+
+        entrypoints = [ln for ln in lines if "dist/src/entrypoint.js" in ln]
+        self.assertEqual(len(entrypoints), 1,
+                         f"the header promises exactly one promptfoo process; saw {entrypoints}")
+        self.assertIn("--version", entrypoints[0])
+        self.assertNotIn(" eval ", f" {entrypoints[0]} ")
+        self.assertEqual([ln for ln in lines if ln.startswith("docker ")], [],
+                         "--gate must run no docker (the half of the old claim that did hold)")
+
+    def test_the_gate_header_describes_the_processes_it_actually_runs__negative(self):
+        """Sibling, two halves.
+
+        1. The counter is real, not hardwired to 1: the same shims record
+           two entrypoint processes when `bin/promptfoo.sh --version` is
+           invoked twice, so "exactly one" above is a measurement.
+        2. The documented consequence is real too. `--gate` HARD-DEPENDS on
+           the pinned install at PROMPTFOO_HOME and must FAIL, loudly and
+           with the frozen pin prefix, on a host without it -- never SKIP,
+           never pass. A gate that goes green because it could not find the
+           thing it pins would be worse than the false sentence R11 caught.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            tmp = pathlib.Path(td)
+            proc, lines = self._run_gate_under_shims(
+                tmp, ["bash", "-c",
+                      f'"{PROMPTFOO_SH}" --version >/dev/null && "{PROMPTFOO_SH}" --version >/dev/null'])
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(len([ln for ln in lines if "dist/src/entrypoint.js" in ln]), 2)
+
+            env = _offline_env(tmp)
+            env["PROMPTFOO_HOME"] = str(tmp / "no-such-install")
+            missing = subprocess.run(
+                [str(REDTEAM_ROOT / "run.sh"), "--gate"],
+                capture_output=True, text=True, timeout=300, env=env, cwd=str(REPO_ROOT),
+            )
+        self.assertNotEqual(missing.returncode, 0,
+                            "a --gate run without the pinned install must fail, not skip")
+        combined = missing.stdout + missing.stderr
+        self.assertIn("redteam FAIL pin:", combined)
+        self.assertNotIn("SKIP", combined)
+
+
+class RunnersNeverWriteInsideTrackedPaths(unittest.TestCase):
+    """Review finding N-15 (2026-09-06) and its follow-up NEW-2.
+
+    `bin/promptfoo.sh` points HOME/CODEX_HOME/PROMPTFOO_CONFIG_DIR at
+    `evals/redteam/.artifacts/adhoc/*`, and `bin/netproof.sh` writes its
+    canary artifacts to `evals/redteam/.artifacts/netproof/`. That directory
+    used to be COMMITTED -- 78 tracked files -- so promptfoo's own log
+    rotation and netproof's opening `rm -f` deleted and modified version-
+    controlled files on every run, and `git diff --check` (one of the
+    handoff's named final checks) was noise from the first run onwards.
+
+    `.artifacts/` is now gitignored and untracked. This test keeps it that
+    way and proves the wider property NEW-2 asked to verify: running the
+    lane's runners changes NO tracked file and leaves NO new non-ignored
+    file behind."""
+
+    ARTIFACTS = REDTEAM_ROOT / ".artifacts"
+
+    def _git(self, *args: str) -> str:
+        return subprocess.run(["git", *args], cwd=str(REPO_ROOT), capture_output=True,
+                              text=True, timeout=120).stdout
+
+    def _not_ignored(self, rel_paths: list[str]) -> list[str]:
+        """Of the given evals/redteam-relative paths, the ones git does NOT
+        ignore -- i.e. the ones a runner had no business writing."""
+        if not rel_paths:
+            return []
+        stdin = "\n".join(f"evals/redteam/{r}" for r in rel_paths)
+        proc = subprocess.run(["git", "check-ignore", "--no-index", "--stdin"],
+                              cwd=str(REPO_ROOT), input=stdin, capture_output=True,
+                              text=True, timeout=120)
+        ignored = {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+        return sorted(r for r in rel_paths if f"evals/redteam/{r}" not in ignored)
+
+    def _stray_untracked(self) -> list[str]:
+        """Paths under evals/redteam that git would report as new -- i.e.
+        written by something and NOT covered by .gitignore."""
+        return sorted(line[3:] for line in
+                      self._git("status", "--porcelain", "--untracked-files=all",
+                                "--", "evals/redteam").splitlines()
+                      if line.startswith("??"))
+
+    def _subtree_state(self) -> dict:
+        """Every file under evals/redteam -- ignored ones included -- keyed
+        by its path relative to that directory, valued by (size, mtime_ns)."""
+        state = {}
+        for path in REDTEAM_ROOT.rglob("*"):
+            if path.is_file() and not path.is_symlink():
+                st = path.stat()
+                state[str(path.relative_to(REDTEAM_ROOT))] = (st.st_size, st.st_mtime_ns)
+        return state
+
+    def test_the_runners_write_only_into_ignored_paths(self):
+        # 1. the artifacts directory is ignored and holds nothing tracked.
+        self.assertEqual(self._git("ls-files", "evals/redteam/.artifacts").strip(), "",
+                         "evals/redteam/.artifacts must hold no tracked file")
+        ignored = subprocess.run(["git", "check-ignore", "-v", "evals/redteam/.artifacts/probe"],
+                                 cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=60)
+        self.assertEqual(ignored.returncode, 0,
+                         "evals/redteam/.artifacts must be covered by .gitignore")
+
+        # 2. the two roots the runners actually write to are both inside
+        #    that ignored tree, named literally in the scripts.
+        self.assertIn('_ADHOC="$REDTEAM_ROOT/.artifacts/adhoc"',
+                      (REDTEAM_ROOT / "bin" / "promptfoo.sh").read_text(encoding="utf-8"))
+        self.assertIn('ARTIFACTS="$REDTEAM_ROOT/.artifacts/netproof"',
+                      (REDTEAM_ROOT / "bin" / "netproof.sh").read_text(encoding="utf-8"))
+
+        # 3. and MEASURED, over the whole subtree rather than only the
+        #    tracked half: every path the runners create or modify must land
+        #    inside .artifacts/. This catches indirection the two literals
+        #    above cannot (promptfoo.sh writes through
+        #    $PROMPTFOO_CONFIG_DIR/$HOME/$CODEX_HOME, netproof.sh through
+        #    $ARTIFACTS/...), and it is the property N-15 actually asked for.
+        before = self._subtree_state()
+        strays_before = self._stray_untracked()
+        self.assertTrue(before, "expected files under evals/redteam")
+        gate = subprocess.run([str(REDTEAM_ROOT / "run.sh"), "--gate"], cwd=str(REPO_ROOT),
+                              capture_output=True, text=True, timeout=300)
+        self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+        version = subprocess.run([str(PROMPTFOO_SH), "--version"], cwd=str(REPO_ROOT),
+                                 capture_output=True, text=True, timeout=120)
+        self.assertEqual(version.returncode, 0, version.stdout + version.stderr)
+
+        after = self._subtree_state()
+        touched = sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))
+        # The property is "every path a runner touched is git-ignored", not
+        # "every path is under .artifacts/": running the lane's own python
+        # entry points legitimately rewrites `bin/__pycache__/*.pyc`, which
+        # .gitignore covers. Asking git settles it without a second copy of
+        # .gitignore's rules living in this test.
+        self.assertEqual(self._not_ignored(touched), [],
+                         "the runners created, changed or deleted files git does not ignore")
+        self.assertEqual(self._stray_untracked(), strays_before,
+                         "the runners left a new non-ignored file in the tree")
+
+    def test_the_runners_write_only_into_ignored_paths__negative(self):
+        """Sibling: the sweep above is not blind. A file dropped into a
+        TRACKED directory is reported by BOTH halves -- the whole-subtree
+        state comparison and the git stray scan -- while the identical file
+        dropped inside `.artifacts/` is reported only by the subtree half
+        and is correctly classified as an allowed write, which is the whole
+        reason the runners may write there."""
+        tracked_probe = REDTEAM_ROOT / "corpus" / ".n15-probe"
+        ignored_probe = self.ARTIFACTS / "n15-probe"
+        baseline = self._stray_untracked()
+        state_before = self._subtree_state()
+        try:
+            tracked_probe.write_text("probe\n", encoding="utf-8")
+            touched = [k for k in set(state_before) | set(self._subtree_state())
+                       if state_before.get(k) != self._subtree_state().get(k)]
+            self.assertIn("corpus/.n15-probe", touched,
+                          "the subtree comparison must see a file written outside .artifacts/")
+            self.assertEqual(self._not_ignored(touched), ["corpus/.n15-probe"],
+                             "the ignore classifier must name exactly the disallowed write")
+        finally:
+            tracked_probe.unlink(missing_ok=True)
+
+        try:
+            tracked_probe.write_text("probe\n", encoding="utf-8")
+            self.assertIn("evals/redteam/corpus/.n15-probe", self._stray_untracked(),
+                          "a stray file in a tracked directory must be reported")
+        finally:
+            tracked_probe.unlink(missing_ok=True)
+        self.assertEqual(self._stray_untracked(), baseline)
+
+        try:
+            ignored_probe.parent.mkdir(parents=True, exist_ok=True)
+            ignored_probe.write_text("probe\n", encoding="utf-8")
+            self.assertEqual(self._stray_untracked(), baseline,
+                             "a file under the ignored .artifacts/ tree must NOT be reported")
+        finally:
+            ignored_probe.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

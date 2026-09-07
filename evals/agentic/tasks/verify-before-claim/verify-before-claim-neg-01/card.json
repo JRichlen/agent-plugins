@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached",
       "kind": "skill",
-      "name": "check-then-claim",
+      "name": "verify-before-claim",
       "source_plugin": "verify-before-claim"
     }
   ],

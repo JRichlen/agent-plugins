@@ -43,7 +43,16 @@ fail() {
 }
 
 NODE_HOME_DIR="$(dirname "$(dirname "$(command -v node)")")"
-NPX_CACHE_ROOT="/home/jrichlen/ai/tools/promptfoo-0.122.0"
+# The pinned promptfoo install root that gets bind-mounted at /opt/pf. Like
+# PROMPTFOO_HOME in bin/promptfoo.sh this is a HOST FACT, and it used to be a
+# second, NON-overridable hardcoded absolute path -- so T48 was not merely
+# undocumented off this machine, it was unfixable off it. It is now derived
+# from PROMPTFOO_HOME (the one variable README.md's "Run it" section asks a
+# new host to export) and still overridable on its own.
+: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo}"
+: "${NPX_CACHE_ROOT:=$(cd "$PROMPTFOO_HOME/../.." 2>/dev/null && pwd)}"
+[[ -n "$NPX_CACHE_ROOT" && -d "$NPX_CACHE_ROOT/node_modules/promptfoo" ]] || \
+  fail "NPX_CACHE_ROOT=$NPX_CACHE_ROOT does not contain node_modules/promptfoo (export PROMPTFOO_HOME or NPX_CACHE_ROOT -- see README.md's \"Run it\")"
 
 docker_available() {
   command -v docker >/dev/null 2>&1 || return 1

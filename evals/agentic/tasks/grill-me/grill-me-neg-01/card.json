@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same one-line plan and a plain editing capability -- a trivial rename needs no interview.",
   "capabilities": [
     {
       "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap",
       "kind": "skill",
-      "name": "grill-me stakes-tiered interview loop",
+      "name": "grill-me",
       "source_plugin": "grill-me"
     }
   ],
@@ -18,6 +19,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Whole plan: rename tmp to buffer in one function. Nothing else.",
+    "Trivial one-line rename, tmp -> buffer, single function, that's the full plan."
+  ],
   "pass_fixture": "evals/agentic/tasks/grill-me/grill-me-neg-01/fixtures/pass",
   "plugin": "grill-me",
   "task_path": "evals/agentic/tasks/grill-me/grill-me-neg-01/task"

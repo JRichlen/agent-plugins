@@ -7,6 +7,10 @@
 #   (b) ReplaySession's witness guard removed, plus a driver that builds a
 #       HostLedger(witness=HOST_OBSERVED) and replays a recorded stream
 #       through it -- host-observed entries minted by a file reader.
+#   (c) the same laundering with NO source edit at all: a legally-constructed
+#       CALLER_ASSERTED ledger whose private _witness/_key are reassigned after
+#       ReplaySession has already accepted it. Strictly cheaper than (b), so a
+#       repair that only re-adds (b)'s guard must not turn this fixture green.
 # See DEFECT.md for the current (inert) wiring status.
 set -euo pipefail
 root="${1:?usage: mutate.sh <synthetic-root>}"
@@ -129,4 +133,71 @@ if __name__ == "__main__":
     raise SystemExit(main())
 PY
 
-echo "mutate.sh: staged a self-asserted native attempt and defeated ReplaySession's witness guard in $agentic"
+
+# --- (c) launder a replay by flipping the ledger's witness after the fact -----
+# Strictly cheaper than (b): no adapters.py edit at all. A legally-constructed
+# CALLER_ASSERTED ledger is handed to a ReplaySession (which accepts it, because
+# the witness is checked once, at construction), and its private witness/key are
+# then reassigned. Every subsequent append() mints a correctly-HMAC'd
+# host-observed entry under a key the forger chose. HostLedger seals both
+# attributes, so this script must raise EvidencePromotionRefused; if it prints a
+# laundered session id instead, the seal is gone.
+cat > "$agentic/fixtures/native/replay/flip_witness.py" <<'PY'
+#!/usr/bin/env python3
+"""COUNTERFEIT 23(c): launder a replay by flipping HostLedger's witness."""
+from __future__ import annotations
+
+import json
+import pathlib
+import secrets
+import tempfile
+
+from evals.agentic.framework.adapters import (
+    HostLedger, JsonPathSpec, LedgerReader, ReplaySession, StreamGrammar,
+)
+from evals.agentic.framework.contract import EventKind, SignatureClass
+
+HERE = pathlib.Path(__file__).resolve().parent
+
+
+def main() -> int:
+    raw = json.loads(
+        (HERE / "synthetic-offline-form.grammar.json").read_text(encoding="utf-8")
+    )
+    grammar = StreamGrammar(
+        name=raw["name"],
+        session_ack=JsonPathSpec(**raw["session_ack"]),
+        turn_ack=JsonPathSpec(**raw["turn_ack"]),
+        usage=JsonPathSpec(**raw["usage"]),
+        session_id_field=raw["session_id_field"],
+        turn_index_field=raw["turn_index_field"],
+    )
+    scratch = pathlib.Path(tempfile.mkdtemp(prefix="counterfeit-23c-"))
+    ledger = HostLedger(
+        scratch / "events.jsonl", run_id="run-counterfeit-23c",
+        witness=SignatureClass.CALLER_ASSERTED,
+    )
+    session = ReplaySession(str(HERE / "two-turn-acked.jsonl"), grammar, ledger)
+
+    # No source edit. Two assignments.
+    key = secrets.token_bytes(32)
+    ledger._witness = SignatureClass.HOST_OBSERVED
+    ledger._key = key
+
+    session.send("laundered")
+    ledger.append(
+        EventKind.SESSION_ACK, attempt_id="attempt-23c",
+        session_id=session.session_id, payload={"source": "laundered"},
+    )
+    ledger.close()
+    reader = LedgerReader(ledger.path, key=key)
+    print("forged host_observed_session_ids:", sorted(reader.host_observed_session_ids()))
+    print("forged is_verified:", reader.is_verified())
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+PY
+
+echo "mutate.sh: staged a self-asserted native attempt, defeated ReplaySession's witness guard, and staged the witness-flip laundering in $agentic"

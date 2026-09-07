@@ -22,6 +22,8 @@ What IS closed here, and closed against real artifacts:
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import pathlib
@@ -55,9 +57,11 @@ from evals.agentic.framework.adapters import (
     parse_usage,
     worker_evidence_class,
 )
+from evals.agentic.framework.classify import RunFacts
 from evals.agentic.framework.contract import (
     UNKNOWN,
     ApprovalRequired,
+    ArmRole,
     Attempt,
     ContractError,
     EvidenceClass,
@@ -67,6 +71,8 @@ from evals.agentic.framework.contract import (
     ForgedProvenance,
     Manifest,
     SignatureClass,
+    Stratum,
+    TerminalState,
     assert_native_backed,
 )
 
@@ -152,11 +158,26 @@ class _NoSpawn:
     established without `strace`. It wraps the attribute the whole stdlib routes
     through (`subprocess.run`, `check_output` and friends all construct a
     `Popen`), so a call through any of them is caught.
+
+    REPAIR N-11: `allow` names argv tuples this particular block is willing to
+    see spawned, and it is the ONLY relaxation -- every other argv still reds
+    the test at construction, and `permitted` records what actually ran so a
+    caller can assert the allowance was *used* rather than merely tolerated.
+    `adapters.dry_run` now validates the driver's flags against the installed
+    binary's own `--help` before it renders anything (that is the whole point
+    of the repair: a plausible argv must never be printed unvalidated), so a
+    blanket "no Popen at all" would be asserting the absence of the check.
+    What matters -- and what the allowance keeps exact -- is that the *planned
+    argv* is never the thing executed.
     """
 
-    def __init__(self, case: unittest.TestCase) -> None:
+    def __init__(
+        self, case: unittest.TestCase, *, allow: "Sequence[Sequence[str]] | None" = None
+    ) -> None:
         self.case = case
         self.calls: list[tuple] = []
+        self.permitted: list[tuple[str, ...]] = []
+        self._allow = {tuple(a) for a in (allow or ())}
         self._real = subprocess.Popen
 
     def __enter__(self) -> "_NoSpawn":
@@ -164,6 +185,11 @@ class _NoSpawn:
 
         class _Trap(outer._real):  # type: ignore[misc, valid-type]
             def __init__(self, *args, **kwargs):  # noqa: ANN002, ANN003
+                argv = tuple(args[0]) if args and isinstance(args[0], (list, tuple)) else ()
+                if argv in outer._allow:
+                    outer.permitted.append(argv)
+                    super().__init__(*args, **kwargs)
+                    return
                 outer.calls.append((args, kwargs))
                 raise AssertionError(
                     f"the offline path spawned a child process: {args!r}"
@@ -182,6 +208,11 @@ class _NoSpawn:
 
 class DriverArgvConformance(_TempMixin):
     """T25. Real `--help` of the real installed CLIs; no hand-written flag table."""
+
+    #: REPAIR F1: the catalog entry (T25) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/drivers/invented-flag.json"
 
     def test_driver_flags_conform_to_installed_help_and_spawn_needs_approval(self):
         """The catalog anchor for T25. Runs both installed CLIs' help for real."""
@@ -241,6 +272,121 @@ class DriverArgvConformance(_TempMixin):
             assert_flags_supported(dangerous)
         self.assertEqual(
             getattr(caught.exception, "flag", None), "--dangerously-skip-permissions"
+        )
+
+    def test_bypass_permissions_mode_is_banned_by_value_not_by_flag_spelling(self):
+        """The handoff bans the *mode*; neither CLI spells it as a flag.
+
+        `BANNED_FLAG_PATTERNS` matches `^--dangerously-` / `^--allow-dangerously-`
+        and `declared_flags` only yields tokens beginning with `-`, so the ban
+        used to be a ban on two spellings. The installed CLIs' real bypass
+        surfaces are VALUES in free-text slots -- `claude --permission-mode
+        bypassPermissions` and `codex exec --sandbox danger-full-access` -- and a
+        scan for flag names cannot see either one.
+
+        Both surfaces are covered here, because they fail at different times:
+        the config document (what a future edit touches) and the rendered argv
+        (what a caller reaches through a `{slot}` at run time).
+        """
+        # 1. The config document.
+        for name, flag in (
+            ("bypass-value", "--permission-mode"),
+            ("bypass-sandbox-value", "--sandbox"),
+        ):
+            with self.subTest(config=name):
+                config = load_driver_config(name)
+                self.assertEqual(
+                    declared_flags(config).count("--dangerously-skip-permissions"), 0,
+                    "no banned FLAG appears here -- that is the point of the fixture",
+                )
+                with _NoSpawn(self) as trap:
+                    with self.assertRaises(FlagNotSupported) as caught:
+                        assert_flags_supported(config)
+                self.assertEqual(
+                    trap.calls, [],
+                    "a banned value must be refused before the installed help is consulted",
+                )
+                self.assertEqual(getattr(caught.exception, "flag", None), flag)
+
+        # 2. The rendered argv, i.e. the call-time slot the shipped configs have.
+        for name, slot, value in (
+            ("claude", "permission_mode", "bypassPermissions"),
+            ("codex", "sandbox", "danger-full-access"),
+        ):
+            driver = CliDriver(load_driver_config(name))
+            for spelling in (value, value.upper(), value.replace("-", "_")):
+                with self.subTest(driver=name, value=spelling):
+                    slots = dict(adapters._DEFAULT_SLOTS[name]["fresh"])
+                    slots[slot] = spelling
+                    with _NoSpawn(self):
+                        with self.assertRaises(FlagNotSupported) as caught:
+                            driver.build_argv(mode="fresh", **slots)
+                    self.assertIn("bypass-permissions mode", str(caught.exception))
+
+        # 3. An unrecognised value for a bypass surface is refused too: these
+        #    two slots take an allowlist, so a CLI that renames or adds a bypass
+        #    mode reds this instead of passing through a stale ban list.
+        driver = CliDriver(load_driver_config("codex"))
+        slots = dict(adapters._DEFAULT_SLOTS["codex"]["fresh"])
+        slots["sandbox"] = "full-access-but-spelled-differently"
+        with self.assertRaises(FlagNotSupported) as caught:
+            driver.build_argv(mode="fresh", **slots)
+        self.assertIn("allowlist", str(caught.exception))
+
+        # 4. And the env is the third way into the same mode.
+        with self.assertRaises(FlagNotSupported):
+            adapters._resolve_env(
+                DriverConfig(
+                    name="env-bypass", binary="/bin/true", help_argv=("--help",),
+                    argv_template=(), optional_argv={"fresh": ()},
+                    env={"CLAUDE_PERMISSION_MODE": "{mode}"}, cwd="/w", timeout_s=1.0,
+                    stream_format="jsonl", grammar="g", adapter_class=AdapterClass.NATIVE,
+                ),
+                {"mode": "bypassPermissions"},
+            )
+
+    def test_bypass_permissions_mode_is_banned_by_value_not_by_flag_spelling__negative(self):
+        """The control has to still let the honest values through.
+
+        A "refuse every value" rule passes the test above and makes the driver
+        unusable, and a check wired only into `assert_flags_supported` passes it
+        for the config while leaving every call-time slot open. Both are
+        asserted against here: the shipped configs conform, every allowlisted
+        value builds, and `dry_run` -- which is the path §8.5's acceptance
+        prints -- renders a real safe value rather than a placeholder that had
+        to be exempted from the check.
+        """
+        for name in ("claude", "codex"):
+            with self.subTest(driver=name):
+                config = load_driver_config(name)
+                for tokens in (
+                    config.argv_template,
+                    *(config.optional_argv[m] for m in sorted(config.optional_argv)),
+                ):
+                    adapters._assert_argv_values_allowed(
+                        tokens, driver=name, where="test",
+                    )   # must not raise: the shipped documents are conformant
+
+        driver = CliDriver(load_driver_config("claude"))
+        for mode in sorted(adapters.SAFE_ARGV_VALUES["--permission-mode"]):
+            with self.subTest(permission_mode=mode):
+                slots = dict(adapters._DEFAULT_SLOTS["claude"]["fresh"])
+                slots["permission_mode"] = mode
+                self.assertIn(mode, driver.build_argv(mode="fresh", **slots))
+
+        codex = CliDriver(load_driver_config("codex"))
+        for sandbox in sorted(adapters.SAFE_ARGV_VALUES["--sandbox"]):
+            with self.subTest(sandbox=sandbox):
+                slots = dict(adapters._DEFAULT_SLOTS["codex"]["fresh"])
+                slots["sandbox"] = sandbox
+                self.assertIn(sandbox, codex.build_argv(mode="fresh", **slots))
+
+        rendered = dry_run("claude")
+        self.assertIn("--permission-mode plan", rendered)
+        self.assertNotIn(
+            "<permission-mode>", rendered,
+            "a dry run that renders an unchecked placeholder into a bypass slot is a dry "
+            "run of different argv than a real spawn builds",
         )
 
     def test_build_argv_is_pure_and_drops_inapplicable_flags(self):
@@ -319,17 +465,76 @@ class DriverArgvConformance(_TempMixin):
             "adapters.py must not emit a --dangerously-* flag (comments and docstrings "
             "are stripped before this scan, so only real code counts)",
         )
+        # The same scan at the VALUE level. A flag-spelling scan reads clean on
+        # a config that says `"--permission-mode", "bypassPermissions"`, which
+        # is the shape the installed CLIs actually accept.
+        for name in ("claude", "codex"):
+            blob = (adapters.DRIVERS_DIR() / f"{name}.json").read_text(encoding="utf-8")
+            for banned in ("bypassPermissions", "danger-full-access"):
+                self.assertNotIn(banned, blob, f"{name}: {banned} is a banned VALUE")
 
     def test_dry_run_prints_planned_argv_and_never_spawns(self):
-        """The §8.5 acceptance text, asserted rather than eyeballed."""
+        """The §8.5 acceptance text, asserted rather than eyeballed.
+
+        REPAIR N-11: `dry_run` now runs `assert_flags_supported` against the
+        INSTALLED binary before rendering, so exactly one child is expected --
+        `binary + help_argv` -- and nothing else. The assertion is therefore
+        sharper than the old blanket "no Popen": the help invocation must
+        happen (else the printed argv is unvalidated), and the *planned argv*
+        must never be executed.
+        """
         for name in ("claude", "codex"):
-            with _NoSpawn(self) as trap:
+            config = load_driver_config(name)
+            help_argv = (config.binary, *config.help_argv)
+            with _NoSpawn(self, allow=[help_argv]) as trap:
                 rendered = dry_run(name)
-            self.assertEqual(trap.calls, [])
+            self.assertEqual(trap.calls, [], f"{name}: an unexpected child was spawned")
+            self.assertEqual(
+                trap.permitted, [help_argv],
+                f"{name}: dry_run must validate flags against the installed help exactly once",
+            )
             self.assertIn("argv: ", rendered)
+            self.assertIn(
+                f"flags: validated against the installed {config.binary} "
+                f"{' '.join(config.help_argv)} output",
+                rendered, name,
+            )
             self.assertIn(
                 "adapter_class=native (NOT SPAWNED — no approval token)", rendered, name
             )
+            # The planned argv itself is never what ran.
+            planned_line = next(l for l in rendered.splitlines() if l.startswith("argv: "))
+            self.assertNotEqual(
+                tuple(planned_line[len("argv: "):].split()), help_argv,
+                f"{name}: the planned invocation must not be the help invocation",
+            )
+
+    def test_dry_run_prints_planned_argv_and_never_spawns__negative(self):
+        """REPAIR N-11's own negative control: a driver whose template names a
+        flag the installed CLI does not list must be REFUSED by `dry_run`, not
+        rendered anyway.
+
+        `fixtures/native/drivers/invented-flag.json` is the shipped artifact
+        for exactly this (it is T25's `negative_control`): a config identical
+        to the real `claude` one but carrying `--session-name`, which the
+        installed CLI's help does not list. Before this repair `dry_run`
+        happily printed a copy-pasteable command line containing it.
+        """
+        invented = load_driver_config("invented-flag")
+        self.assertIn(
+            "--session-name", declared_flags(invented),
+            "the fixture must still be the invented-flag control",
+        )
+        # The pure renderer is perfectly happy with it -- which is the defect.
+        argv = CliDriver(invented).build_argv(
+            session_name="s", workspace="/w", home="/h",
+        )
+        self.assertIn("--session-name", argv)
+        # `dry_run` is not: it consults the installed help first and refuses.
+        with self.assertRaises(FlagNotSupported) as caught:
+            dry_run("invented-flag")
+        self.assertIn("--session-name", str(caught.exception))
+        self.assertEqual(getattr(caught.exception, "flag", None), "--session-name")
 
     def test_env_is_an_allowlist_and_never_inherits_os_environ(self):
         marker = "AGENTIC_ADAPTER_MUST_NOT_LEAK"
@@ -349,6 +554,11 @@ class DriverArgvConformance(_TempMixin):
 
 class SessionTurnAcks(_TempMixin):
     """T26 offline form. Replays a SYNTHETIC stream; proves nothing about a CLI."""
+
+    #: REPAIR F1: the catalog entry (T26) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/replay/no-session-ack.jsonl"
 
     def test_session_and_turn_acks_bind_to_harness_reported_ids__offline_form(self):
         ledger = self.caller_ledger()
@@ -446,6 +656,11 @@ class SessionTurnAcks(_TempMixin):
 
 class ResumeAndIsolation(_TempMixin):
     """T27 offline form. State-machine logic against replayed streams."""
+
+    #: REPAIR F1: the catalog entry (T27) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/isolation/carried-over"
 
     def test_resume_continues_the_same_session_and_fork_records_its_parent__offline_form(self):
         grammar = synthetic_grammar()
@@ -554,6 +769,11 @@ class ResumeAndIsolation(_TempMixin):
 
 class CancellationPath(_TempMixin):
     """T28 offline form. Real `python3` workers, cancelled via the process group."""
+
+    #: REPAIR F1: the catalog entry (T28) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/workers/worker_ignores_sigterm.py"
 
     def _pool(self) -> protocols.WorkerPool:
         pool = protocols.WorkerPool(cwd=self.tmp, timeout_s=20.0)
@@ -706,6 +926,11 @@ class CancellationPath(_TempMixin):
 class EventLedgerIntegrity(_TempMixin):
     """T29 offline form. The chain algorithm, the witness rule, the four tampers."""
 
+    #: REPAIR F1: the catalog entry (T29) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/tamper/edited-field.jsonl"
+
     def test_chain_verifies_and_names_the_first_bad_index_per_tamper__offline_form(self):
         genuine = LedgerReader(NATIVE / "ledgers" / "genuine-caller-asserted.jsonl", key=None)
         chain = genuine.verify_chain()
@@ -727,26 +952,32 @@ class EventLedgerIntegrity(_TempMixin):
                 self.assertEqual(verdict.reason, reason, name)
                 self.assertEqual(verdict.first_bad_index, index, name)
 
-        # A host-observed ledger mints its own key and refuses a supplied one.
-        with self.assertRaises(EvidencePromotionRefused):
-            HostLedger(
-                self.tmp / "supplied.jsonl", run_id="r",
-                witness=SignatureClass.HOST_OBSERVED, key=b"\x00" * 32,
-            )
+        # A ledger of EITHER witness mints or refuses its own key; a supplied
+        # one is refused, because supplying the key is becoming the host.
+        for witness in (SignatureClass.HOST_OBSERVED, SignatureClass.CALLER_ASSERTED):
+            with self.subTest(witness=witness):
+                with self.assertRaises(EvidencePromotionRefused):
+                    HostLedger(
+                        self.tmp / f"supplied-{witness.value}.jsonl", run_id="r",
+                        witness=witness, key=b"\x00" * 32,
+                    )
         host = self.host_ledger()
         ack = host.append(
             EventKind.SESSION_ACK, attempt_id="a1", session_id="sess-real",
             payload={"source": "harness"},
         )
-        reader = LedgerReader(host.path, key=host.key)
+        reader = host.verifier()
         self.assertTrue(reader.verify_chain().ok)
+        self.assertIsNone(reader.verification_reason())
         self.assertTrue(reader.is_verified())
         self.assertEqual(reader.host_observed_session_ids(), frozenset({"sess-real"}))
         self.assertEqual(reader.signature_class(ack.event_id), SignatureClass.HOST_OBSERVED)
+        # `key=host.key` is the same capability by another name.
+        self.assertTrue(LedgerReader(host.path, key=host.key).is_verified())
 
         # The key is never written anywhere in the workspace.
         blob = host.path.read_bytes()
-        self.assertNotIn(host.key, blob)
+        self.assertNotIn(adapters._run_key_bytes(host.key), blob)
         self.assertIn(b'"key_id":"run-run-host"', blob)
 
     def test_chain_verifies_and_names_the_first_bad_index_per_tamper__offline_form__negative(self):
@@ -788,6 +1019,211 @@ class EventLedgerIntegrity(_TempMixin):
             forged.signature_class(ack["event_id"]), SignatureClass.CALLER_ASSERTED,
             "a bad HMAC downgrades the entry; it does not get the benefit of the doubt",
         )
+
+    def test_a_verifier_cannot_be_handed_a_key_of_its_own_choosing(self):
+        """The key is a capability, not a parameter (§5.3).
+
+        The forgery this refuses needs no source edit, no commit access and no
+        access to any real run key: hand-type a ledger whose entries declare
+        `value_class: host-observed`, HMAC each one under a key you picked, then
+        ask a `LedgerReader` to verify it *with that key*. Every check downstream
+        agreed -- `verify_chain().ok`, `is_verified()`, `host_observed_session_ids()`
+        and therefore `contract.assert_native_backed` -- because `_signature_ok`
+        recomputed the HMAC under whatever bytes the caller passed in.
+
+        Whoever chooses the key is the host. So the key cannot be chosen: the
+        only thing that blesses is the `_RunKey` `HostLedger.verifier()` wraps,
+        and it is bound to the path of the ledger that minted it.
+        """
+        host = self.host_ledger("capability.jsonl")
+        host.append(
+            EventKind.SESSION_ACK, attempt_id="a", session_id="sess-real", payload={}
+        )
+        host.close()
+
+        # 1. Raw bytes are refused outright, including the real key's own bytes
+        #    laundered back into the public parameter.
+        for label, raw in (
+            ("attacker-chosen", b"attacker-chosen-key-32-bytes!!!!"),
+            ("the-real-bytes", adapters._run_key_bytes(host.key)),
+        ):
+            with self.subTest(key=label), self.assertRaises(EvidencePromotionRefused) as cm:
+                LedgerReader(host.path, key=raw)
+            self.assertIn("raw key is refused", str(cm.exception))
+
+        # 2. Hand-type a ledger, sign it under a key of your own, and there is
+        #    no reader you are allowed to build that will bless it.
+        forged = self.tmp / "forged.jsonl"
+        key = b"attacker-chosen-key-32-bytes!!!!"
+        prev = "0" * 64
+        lines: list[str] = []
+        for index, kind in enumerate((EventKind.SESSION_OPEN, EventKind.SESSION_ACK)):
+            body = {
+                "index": index, "event_id": str(uuid.uuid4()), "run_id": "run-forged",
+                "attempt_id": "attempt-forged",
+                "session_id": "harness-sess-TOTALLY-FAKE" if index else None,
+                "kind": kind.value, "at": "2026-09-06T12:00:00.000Z",
+                "payload": {"source": "typed by hand"}, "prev_hash": prev,
+                "host_signature": {
+                    "value_class": "host-observed", "algo": "hmac-sha256",
+                    "key_id": "run-forged",
+                },
+            }
+            message = adapters._chain_message(prev, body)
+            record = dict(body)
+            record["sha256"] = hashlib.sha256(message).hexdigest()
+            record["host_signature"] = dict(body["host_signature"]) | {
+                "value": hmac.new(key, message, hashlib.sha256).hexdigest()
+            }
+            prev = record["sha256"]
+            lines.append(json.dumps(record, sort_keys=True, separators=(",", ":")))
+        forged.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+        with self.assertRaises(EvidencePromotionRefused):
+            LedgerReader(forged, key=key)
+        blind = LedgerReader(forged, key=None)
+        self.assertTrue(
+            blind.verify_chain().ok,
+            "the forger relinked the chain -- the chain was never the gate",
+        )
+        self.assertFalse(blind.is_verified())
+        self.assertEqual(
+            blind.verification_reason(), LedgerReader.UNVERIFIABLE_IN_THIS_PROCESS
+        )
+
+        # 3. Nor by borrowing a capability minted for a DIFFERENT ledger: a
+        #    throwaway host ledger is free to construct, so the capability has
+        #    to be bound to the file it was minted over.
+        throwaway = self.host_ledger("throwaway.jsonl")
+        with self.assertRaises(EvidencePromotionRefused) as cm:
+            LedgerReader(forged, key=throwaway.key)
+        self.assertIn("was minted for", str(cm.exception))
+
+    def test_a_verifier_cannot_be_handed_a_key_of_its_own_choosing__negative(self):
+        """The vacuous blessings the capability alone does not stop.
+
+        Two ledgers that a "chain is intact AND a key was supplied" rule calls
+        verified while the host witnessed nothing at all:
+
+        1. an all-caller-asserted ledger -- `_signature_ok` short-circuits True
+           for every caller-asserted entry, so the key is never used and the
+           verdict reduces to "this replay's chain is intact";
+        2. an EMPTY host-observed ledger -- `ok`, no caller-asserted entries,
+           a real capability, and nothing whatsoever behind it. This one also
+           reached `evidence_class_for`, which called it NATIVE_PROVEN.
+
+        `reporting.assert_native_claims` clause 2 trusts `is_verified()`, so
+        either one was a report printing native sentences over a run in which no
+        harness ever ran.
+        """
+        replay = self.caller_ledger("vacuous-replay.jsonl")
+        replay.append(
+            EventKind.SESSION_ACK, attempt_id="a", session_id="sess-replayed", payload={}
+        )
+        replay.close()
+        reader = replay.verifier()
+        self.assertTrue(reader.verify_chain().ok)
+        self.assertFalse(
+            reader.is_verified(),
+            "a ledger in which the host witnessed nothing is not 'verified'",
+        )
+        self.assertEqual(
+            reader.host_observed_session_ids(), frozenset(),
+            "and it blesses no session id either",
+        )
+
+        empty = self.host_ledger("vacuous-empty.jsonl")
+        empty.close()
+        chain = empty.verifier().verify_chain()
+        self.assertEqual((chain.ok, chain.events, chain.host_observed), (True, 0, 0))
+        self.assertFalse(
+            empty.verifier().is_verified(),
+            "an empty ledger satisfies every structural check and proves nothing",
+        )
+        self.assertIn("witnessed nothing", empty.verifier().verification_reason() or "")
+        self.assertEqual(
+            evidence_class_for(AdapterClass.NATIVE, chain), EvidenceClass.SIMULATED,
+            "an empty chain must not be the framework's strongest evidence class",
+        )
+
+    def test_the_witness_and_the_key_are_sealed_against_post_construction_flips(self):
+        """§10.5 item 3 against the cheapest laundering there is.
+
+        `HostLedger`'s witness used to be an ordinary attribute that `append()`
+        re-read on every call, while `ReplaySession` checked it only once, at
+        construction. So: build a legal caller-asserted ledger, hand it to a
+        `ReplaySession` (which accepts it), then assign
+        `ledger._witness = HOST_OBSERVED` and `ledger._key = <bytes>`. Every
+        subsequent entry was minted host-observed, correctly HMAC'd under a key
+        the forger chose, and the replay was laundered whole -- with no source
+        edit, i.e. strictly cheaper than counterfeit fixture 23(b).
+
+        Two independent mechanisms now refuse it, and this test asserts both.
+        """
+        ledger = self.caller_ledger("sealed.jsonl")
+        session = ReplaySession(
+            str(REPLAY / "two-turn-acked.jsonl"), synthetic_grammar(), ledger
+        )
+        self.assertIsNotNone(session.session_id)
+
+        # 1. The attributes cannot be rebound, and the refusal names the reason.
+        for name, value in (
+            ("_witness", SignatureClass.HOST_OBSERVED),
+            ("_key", b"\x01" * 32),
+            ("_stamp", lambda message=None: {"value_class": "host-observed"}),
+            ("_witness_of", lambda: SignatureClass.HOST_OBSERVED),
+            ("_run_key", None),
+            ("_sealed", False),
+        ):
+            with self.subTest(attribute=name):
+                with self.assertRaises(EvidencePromotionRefused) as cm:
+                    setattr(ledger, name, value)
+                self.assertIn("sealed at construction", str(cm.exception))
+                with self.assertRaises(EvidencePromotionRefused):
+                    delattr(ledger, name)
+
+        # 2. Even reaching past __setattr__ changes nothing: the witness and the
+        #    key live in a closure, so there is no attribute for append() to read.
+        with self.assertRaises(AttributeError):
+            object.__setattr__(ledger, "_witness", SignatureClass.HOST_OBSERVED)
+        self.assertIs(ledger.witness, SignatureClass.CALLER_ASSERTED)
+        session.send("laundered")
+        event = ledger.append(
+            EventKind.SESSION_ACK, attempt_id="attempt-flip",
+            session_id=session.session_id, payload={"source": "laundered"},
+        )
+        ledger.close()
+
+        reader = ledger.verifier()
+        self.assertFalse(reader.is_verified())
+        self.assertEqual(reader.host_observed_session_ids(), frozenset())
+        self.assertEqual(
+            reader.signature_class(event.event_id), SignatureClass.CALLER_ASSERTED
+        )
+        self.assertTrue(
+            all(
+                r["host_signature"]["value_class"] == SignatureClass.CALLER_ASSERTED.value
+                and r["host_signature"]["value"] is None
+                for r in reader.records()
+            ),
+            "every entry a replay ledger writes stays caller-asserted, whatever was flipped",
+        )
+
+    def test_the_witness_and_the_key_are_sealed_against_post_construction_flips__negative(self):
+        """The write cursor MUST stay mutable, or the seal is not a seal but a freeze.
+
+        A guard that refuses every assignment passes the test above while
+        breaking `append()` on its second call. The seal has to be exactly as
+        wide as the identity of the ledger and no wider.
+        """
+        ledger = self.host_ledger("seal-width.jsonl")
+        first = ledger.append(EventKind.RUN_START, attempt_id=None, session_id=None, payload={})
+        second = ledger.append(EventKind.RUN_END, attempt_id=None, session_id=None, payload={})
+        ledger.close()
+        self.assertNotEqual(first.event_id, second.event_id)
+        reader = ledger.verifier()
+        self.assertTrue(reader.is_verified(), "a sealed ledger must still be writable")
+        self.assertEqual([r["index"] for r in reader.records()], [0, 1])
 
     def test_append_derives_value_class_from_the_witness_with_no_override(self):
         """§10.5 item 3 by construction, not by convention."""
@@ -835,6 +1271,11 @@ class EventLedgerIntegrity(_TempMixin):
 
 class TelemetryUnknowns(_TempMixin):
     """T30. Absent means UNKNOWN. Never 0, never omitted, never inferred."""
+
+    #: REPAIR F1: the catalog entry (T30) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/usage/coerced-zero.json"
 
     def test_absent_usage_fields_parse_as_unknown_and_never_zero(self):
         grammar = synthetic_grammar()
@@ -936,10 +1377,18 @@ class TelemetryUnknowns(_TempMixin):
 class EvidenceClassLabeling(_TempMixin):
     """T31. `evidence_class_for` is the only producer, and it takes no override."""
 
+    #: REPAIR F1: the catalog entry (T31) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/native/attempts/forged-native-proven.json"
+
     def test_evidence_class_is_derived_and_has_no_promotion_path(self):
         ok = ChainVerification(True, None, None, host_observed=3, caller_asserted=0, events=3)
         dirty = ChainVerification(True, None, None, host_observed=3, caller_asserted=1, events=4)
         broken = ChainVerification(False, 2, "edited-field", 3, 0, 3)
+        # A ledger nobody ever wrote to: intact, no caller-asserted entries, and
+        # no evidence of anything. It satisfies every structural clause.
+        vacuous = ChainVerification(True, None, None, host_observed=0, caller_asserted=0, events=0)
 
         self.assertEqual(
             evidence_class_for(AdapterClass.NATIVE, ok), EvidenceClass.NATIVE_PROVEN
@@ -950,7 +1399,11 @@ class EvidenceClassLabeling(_TempMixin):
         self.assertEqual(
             evidence_class_for(AdapterClass.NATIVE, broken), EvidenceClass.SIMULATED
         )
-        for chain in (ok, dirty, broken):
+        self.assertEqual(
+            evidence_class_for(AdapterClass.NATIVE, vacuous), EvidenceClass.SIMULATED,
+            "an empty chain must not be the framework's strongest evidence class",
+        )
+        for chain in (ok, dirty, broken, vacuous):
             self.assertEqual(
                 evidence_class_for(AdapterClass.REPLAY, chain), EvidenceClass.SIMULATED
             )
@@ -1117,6 +1570,324 @@ class AdapterCatalogFragment(unittest.TestCase):
                     "so no reader mistakes it for closure",
                 )
                 self.assertEqual(entry["evidence_class"], "simulated")
+
+
+# ===========================================================================
+# REPAIR S-12 — attempt_from_session: the production session -> Attempt seam
+# REPAIR S-10 — LedgerReader.spawn_exit_accounting: the external witness
+# ===========================================================================
+
+def _stratum() -> Stratum:
+    return Stratum(provider="anthropic", model="claude-sonnet-5", revision="r1",
+                   effort="high", harness="claude-code/1.0")
+
+
+def _delivered_facts() -> RunFacts:
+    return RunFacts(
+        exit_status=0, signalled=None, deliverable_present=True, verifier_verdict=True,
+        verifier_green_at_ms=100, cancel_issued_at_ms=None, wall_clock_ms=200,
+        wall_clock_limit_ms=1000, transport_error=None, bytes_out=42,
+    )
+
+
+class AttemptFromSession(_TempMixin):
+    """REPAIR S-12. A real Attempt built from a live session, offline.
+
+    Before this seam existed, every `Attempt` in the tree was hand-built by a
+    test or a fixture builder: nothing a driver produced could reach
+    `accounting.AttemptLedger`/`reporting.build_report`, and `classify()` had
+    no production caller at all.
+    """
+
+    def _replay_session(self, stream: str = "two-turn-acked.jsonl", **kw):
+        ledger = self.caller_ledger(f"replay-{stream}")
+        return ReplaySession(str(REPLAY / stream), synthetic_grammar(), ledger, **kw)
+
+    def test_attempt_from_a_replay_session_is_simulated_and_makes_no_native_claim(self):
+        session = self._replay_session(attempt_id="attempt-s12-replay")
+        session.send("hello")
+        session.send("again")
+        # The replayed stream DOES carry a session ack -- that is the trap.
+        self.assertEqual(session.session_id, "harness-sess-AAAA")
+
+        attempt = adapters.attempt_from_session(
+            session, card_id="graveyard-pos-01", arm_id="arm-full",
+            role=ArmRole.TREATMENT, facts=_delivered_facts(),
+            requested=_stratum(), realized=_stratum(), attempt_id="attempt-s12-replay",
+        )
+
+        self.assertEqual(attempt.adapter_class, AdapterClass.REPLAY)
+        self.assertEqual(attempt.evidence_class, EvidenceClass.SIMULATED)
+        self.assertNotEqual(attempt.evidence_class, EvidenceClass.NATIVE_PROVEN)
+        self.assertEqual(attempt.terminal_state, TerminalState.DELIVERED)
+        # The ack came out of a FILE. It is recorded, weightless, and NOT
+        # copied onto the attempt, where it would make a simulated row claim
+        # native provenance and be refused by assert_native_backed.
+        self.assertIsNone(attempt.session_id)
+        self.assertEqual(attempt.event_ids, ())
+        self.assertFalse(attempt.claims_native)
+        self.assertIn("harness-sess-AAAA", attempt.notes)
+        self.assertIn("evidence=simulated", attempt.notes)
+
+        # It is a REAL Attempt: schema-valid, and it survives the native gate.
+        io.load_schema("attempt").validate(attempt.to_dict())
+        assert_native_backed(attempt, LedgerReader(session.ledger.path, key=None))
+        self.assertEqual(Attempt.from_dict(attempt.to_dict()), attempt)
+
+    def test_attempt_from_a_real_worker_session_is_real_fixture_never_native(self):
+        pool = protocols.WorkerPool(cwd=self.tmp, timeout_s=20.0)
+        self.addCleanup(pool.close)
+        pool.spawn("w1", ["python3", "-c", "print('done')"])
+        pool.collect()
+        session = attach_session(
+            ledger=self.caller_ledger("worker.jsonl"), adapter_class=AdapterClass.STUB,
+            pool=pool, worker_id="w1", attempt_id="attempt-s12-worker",
+        )
+        self.addCleanup(session.close)
+        self.assertTrue(session.backed_by_real_process)
+
+        attempt = adapters.attempt_from_session(
+            session, card_id="voice-pos-01", arm_id="arm-baseline",
+            role=ArmRole.BASELINE, facts=_delivered_facts(),
+            requested=_stratum(), realized=_stratum(), attempt_id="attempt-s12-worker",
+        )
+        # A real subprocess is not a harness (§10.5): REAL_FIXTURE, never NATIVE_PROVEN.
+        self.assertEqual(attempt.evidence_class, EvidenceClass.REAL_FIXTURE)
+        self.assertEqual(attempt.adapter_class, AdapterClass.STUB)
+        self.assertIsNone(attempt.session_id)
+        self.assertFalse(attempt.claims_native)
+        io.load_schema("attempt").validate(attempt.to_dict())
+
+    def test_classifier_is_consulted_not_a_terminal_state_parameter(self):
+        """`terminal_state` is DERIVED. There is no parameter to hand it in,
+        and a different fact pattern produces a different state from the same
+        session."""
+        import inspect as _inspect
+
+        signature = _inspect.signature(adapters.attempt_from_session)
+        for banned in ("terminal_state", "evidence_class", "adapter_class"):
+            self.assertNotIn(
+                banned, signature.parameters,
+                f"attempt_from_session must DERIVE {banned}, never accept it",
+            )
+
+        cancelled_facts = RunFacts(
+            exit_status=None, signalled="SIGKILL", deliverable_present=False,
+            verifier_verdict=None, verifier_green_at_ms=None, cancel_issued_at_ms=50,
+            wall_clock_ms=80, wall_clock_limit_ms=1000, transport_error=None, bytes_out=3,
+        )
+        session = self._replay_session(attempt_id="attempt-s12-cancel")
+        attempt = adapters.attempt_from_session(
+            session, card_id="voice-neg-02", arm_id="arm-full", role=ArmRole.TREATMENT,
+            facts=cancelled_facts, requested=_stratum(), realized=_stratum(),
+            attempt_id="attempt-s12-cancel",
+        )
+        self.assertEqual(attempt.terminal_state, TerminalState.CANCELLED)
+        self.assertFalse(attempt.scoring_valid)
+
+    def test_attempt_from_a_replay_session_is_simulated_and_makes_no_native_claim__negative(self):
+        """The control: this constructor must have NO promotion path.
+
+        Three attacks, all of which the seam has to refuse rather than
+        launder: a caller-chosen evidence class (there is no such keyword),
+        a replay session holding a host-observed ledger, and a hand-edited
+        attempt document that pairs `native-proven` with `adapter_class:
+        replay` -- the exact splice the S-12 constructor could otherwise be
+        used to legitimise.
+        """
+        session = self._replay_session(attempt_id="attempt-s12-neg")
+        with self.assertRaises(TypeError):
+            adapters.attempt_from_session(  # type: ignore[call-arg]
+                session, card_id="c", arm_id="a", role=ArmRole.TREATMENT,
+                facts=_delivered_facts(), requested=_stratum(), realized=_stratum(),
+                evidence_class=EvidenceClass.NATIVE_PROVEN,
+            )
+
+        # A replay cannot even be given a host-observed ledger to start from.
+        with self.assertRaises(EvidencePromotionRefused):
+            ReplaySession(
+                str(REPLAY / "two-turn-acked.jsonl"), synthetic_grammar(),
+                self.host_ledger("promote.jsonl"),
+            )
+
+        # And the wire form of the splice is refused by the schema (N-13).
+        good = adapters.attempt_from_session(
+            session, card_id="c", arm_id="a", role=ArmRole.TREATMENT,
+            facts=_delivered_facts(), requested=_stratum(), realized=_stratum(),
+            attempt_id="attempt-s12-neg",
+        ).to_dict()
+        forged = dict(good, evidence_class="native-proven")
+        self.assertEqual(forged["adapter_class"], "replay")
+        with self.assertRaises(ContractError):
+            io.load_schema("attempt").validate(forged)
+
+
+class LedgerSpawnExitAccounting(_TempMixin):
+    """REPAIR S-10. The event ledger is the framework's only EXTERNAL witness
+    to how many attempts were started, so it is the only thing that can catch
+    an attempt that was spawned and then never recorded."""
+
+    negative_control = "evals/agentic/fixtures/native/tamper/deleted-entry.jsonl"
+
+    def _ledger_with(self, pairs, *, name="spawn.jsonl"):
+        ledger = self.caller_ledger(name)
+        for attempt_id, exited in pairs:
+            ledger.append(EventKind.SPAWN, attempt_id=attempt_id, session_id=None,
+                          payload={"worker": attempt_id})
+            if exited:
+                ledger.append(EventKind.EXIT, attempt_id=attempt_id, session_id=None,
+                              payload={"status": 0})
+        return ledger
+
+    def test_spawned_attempts_are_enumerable_and_reconcile_against_a_recorded_set(self):
+        ledger = self._ledger_with([("a1", True), ("a2", True), ("a3", False)])
+        reader = LedgerReader(ledger.path, key=None)
+
+        acct = reader.spawn_exit_accounting()
+        self.assertEqual(acct.spawned, ("a1", "a2", "a3"))
+        self.assertEqual(acct.exited, ("a1", "a2"))
+        self.assertEqual(acct.spawned_without_exit, ("a3",))
+        self.assertEqual(acct.exited_without_spawn, ())
+        self.assertEqual(acct.unattributed, 0)
+
+        # The reconciliation the attempt ledger cannot do for itself: a1 and
+        # a2 recorded, a3 spawned and then dropped before it reached the row
+        # list -- exactly benchmark-spec §1.2's "retries collapsed into their
+        # parent, hiding cost".
+        self.assertEqual(acct.missing_from({"a1", "a2"}), ("a3",))
+        self.assertEqual(acct.missing_from({"a1", "a2", "a3"}), ())
+
+        # events_of_kind is the primitive underneath, and it is kind-typed.
+        self.assertEqual(len(reader.events_of_kind(EventKind.SPAWN)), 3)
+        self.assertEqual(len(reader.events_of_kind(EventKind.EXIT)), 2)
+        with self.assertRaises(ContractError):
+            reader.events_of_kind("spawn")  # type: ignore[arg-type]
+
+    def test_spawned_attempts_are_enumerable_and_reconcile_against_a_recorded_set__negative(self):
+        """The control: an UNATTRIBUTED spawn (no attempt_id) must be counted
+        and surfaced, never quietly dropped -- a spawn nobody can attribute is
+        missing evidence, not absent evidence. And a ledger whose SPAWN entries
+        were deleted must not silently report a clean reconciliation: the chain
+        walk names the deletion, which is what `tamper/deleted-entry.jsonl`
+        (this class's `negative_control`) is the shipped artifact for."""
+        ledger = self.caller_ledger("unattributed.jsonl")
+        ledger.append(EventKind.SPAWN, attempt_id=None, session_id=None, payload={})
+        ledger.append(EventKind.SPAWN, attempt_id="a1", session_id=None, payload={})
+        ledger.append(EventKind.EXIT, attempt_id="ghost", session_id=None, payload={})
+        acct = LedgerReader(ledger.path, key=None).spawn_exit_accounting()
+        self.assertEqual(acct.unattributed, 1, "an unattributable spawn must be reported")
+        self.assertEqual(acct.spawned, ("a1",))
+        self.assertEqual(acct.exited_without_spawn, ("ghost",),
+                         "an EXIT with no SPAWN is a hole, not a rounding error")
+        # Reconciliation against a set that contains everything still leaves
+        # the unattributed spawn visible, so "0 missing" can never be read as
+        # "nothing unaccounted for".
+        self.assertEqual(acct.missing_from({"a1", "ghost"}), ())
+        self.assertGreater(acct.unattributed, 0)
+
+        deleted = LedgerReader(NATIVE / "tamper" / "deleted-entry.jsonl", key=None)
+        self.assertFalse(deleted.verify_chain().ok,
+                         "a ledger with an entry removed must not verify")
+
+
+class NativeClaimsRefuseAnEmptyHostWitness(_TempMixin):
+    """REPAIR FOLLOWUP-2. `reporting.assert_native_claims` must not rest on
+    one LedgerView implementation's internal policy.
+
+    `event_ledger` is typed as the contract.LedgerView PROTOCOL, so any object
+    with those methods satisfies it -- including a duck-typed reader whose
+    `is_verified()` returns True for a ledger in which the host witnessed
+    nothing. That is the shape review finding N-02 walked in through. The
+    check now asks the chain directly.
+    """
+
+    negative_control = "evals/agentic/fixtures/native/ledgers/genuine-caller-asserted.jsonl"
+
+    def _report_claiming_one_native(self):
+        from evals.agentic.framework import reporting
+        from evals.agentic.framework.accounting import Denominators
+
+        return reporting.Report(
+            manifest=None, denominators=Denominators(1, 1, 1, 0, 0, 0, 0),
+            per_plugin={}, per_stratum_tokens={}, effects={}, noninferiority={},
+            evidence={
+                e: (1 if e is EvidenceClass.NATIVE_PROVEN else 0) for e in EvidenceClass
+            },
+            agreement=None, blocked=(), warnings=(),
+        )
+
+    def test_a_ledger_the_host_witnessed_nothing_in_cannot_back_a_native_claim(self):
+        from evals.agentic.framework import reporting
+        from evals.agentic.framework.contract import NativeProofRequired
+
+        class _LyingReader:
+            """Satisfies LedgerView and blesses itself. Nothing host-observed."""
+
+            def has_event(self, event_id): return True
+            def session_ids(self): return frozenset({"s"})
+            def host_observed_session_ids(self): return frozenset({"s"})
+            def is_verified(self): return True
+            def signature_class(self, event_id): return SignatureClass.HOST_OBSERVED
+            def verify_chain(self):
+                return ChainVerification(
+                    ok=True, first_bad_index=None, reason=None,
+                    host_observed=0, caller_asserted=3, events=3,
+                )
+
+        with self.assertRaises(NativeProofRequired) as caught:
+            reporting.assert_native_claims(self._report_claiming_one_native(), _LyingReader())
+        self.assertIn("host_observed=0", str(caught.exception))
+
+        # The real reader over a genuine caller-asserted ledger is refused too,
+        # by the SAME fact rather than by luck: nothing here was host-observed.
+        real = LedgerReader(NATIVE / "ledgers" / "genuine-caller-asserted.jsonl", key=None)
+        self.assertEqual(real.verify_chain().host_observed, 0)
+        with self.assertRaises(NativeProofRequired):
+            reporting.assert_native_claims(self._report_claiming_one_native(), real)
+
+    def test_a_ledger_the_host_witnessed_nothing_in_cannot_back_a_native_claim__negative(self):
+        """The control: the new clause must not refuse everything (that would
+        be a check that cannot distinguish), and it must not break a
+        LedgerView double that predates it and has no `verify_chain` at all --
+        `records()` is already documented as the OPTIONAL sixth capability and
+        this one is probed the same way."""
+        from evals.agentic.framework import reporting
+        from evals.agentic.framework.contract import NativeProofRequired
+
+        class _HostWitnessed:
+            def has_event(self, event_id): return True
+            def session_ids(self): return frozenset({"s"})
+            def host_observed_session_ids(self): return frozenset({"s"})
+            def is_verified(self): return True
+            def signature_class(self, event_id): return SignatureClass.HOST_OBSERVED
+            def verify_chain(self):
+                return ChainVerification(
+                    ok=True, first_bad_index=None, reason=None,
+                    host_observed=4, caller_asserted=0, events=4,
+                )
+
+        # host_observed > 0: the clause passes it through (the other clauses
+        # still apply -- this is belt and braces, not a replacement).
+        reporting.assert_native_claims(self._report_claiming_one_native(), _HostWitnessed())
+
+        class _NoVerifyChain(_HostWitnessed):
+            verify_chain = None  # the pre-existing five-method double
+
+        reporting.assert_native_claims(self._report_claiming_one_native(), _NoVerifyChain())
+
+        # And a report with no native-proven attempt at all is still refused
+        # on the first clause, so the new one did not become the only gate.
+        from evals.agentic.framework.accounting import Denominators
+
+        empty = reporting.Report(
+            manifest=None, denominators=Denominators(0, 0, 0, 0, 0, 0, 0),
+            per_plugin={}, per_stratum_tokens={}, effects={}, noninferiority={},
+            evidence={e: 0 for e in EvidenceClass},
+            agreement=None, blocked=(), warnings=(),
+        )
+        with self.assertRaises(NativeProofRequired) as caught:
+            reporting.assert_native_claims(empty, _HostWitnessed())
+        self.assertIn("NATIVE_PROVEN] == 0", str(caught.exception))
 
 
 if __name__ == "__main__":

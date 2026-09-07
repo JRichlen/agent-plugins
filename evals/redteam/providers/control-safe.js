@@ -35,7 +35,7 @@ class ControlSafeProvider {
     const cfg = this.config || {};
     const vars = (context && context.vars) || {};
     const ledgerDir = requireLedgerDir(cfg);
-    const id = attemptId(context);
+    const id = attemptId(context, this.providerId);
 
     let text;
     if (vars.condition === 'adversarial') {

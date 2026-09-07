@@ -19,6 +19,7 @@ from evals.agentic.framework.accounting import (
     AttemptLedger,
     MoneyTotal,
     Total,
+    assert_planned_reconciles,
     coordination_attempts,
     cost_of,
     denominators,
@@ -162,6 +163,71 @@ class AttemptCompleteness(unittest.TestCase):
         must FAIL the conservation identity's own claim (accounting equals the
         claimed total) for the T32 catalog entry to be considered non-vacuous."""
         return self.test_dropped_coordination_rows_break_the_claimed_total()
+
+    # -- REPAIR S-10: conserve()/assert_reconciles() are tautological against
+    #    a ledger built by dropping rows before it is ever built; planned_n
+    #    is the one external check available inside this lane. ---------------
+
+    def test_conserve_is_tautological_on_a_ledger_missing_rows(self):
+        """S-10 repro: drop rows BEFORE building the ledger and conserve() /
+        assert_reconciles() still pass, because both re-derive their
+        comparison from the very list they check."""
+        spec = io.load_json(FIXTURES / "negative" / "dropped-coordination.json")
+        attempts = builders.attempts_from_conservation_rows(spec["rows"])
+        ledger = AttemptLedger(run_id="run-tautology")
+        for a in attempts:
+            ledger.add(a)
+        ledger.conserve()  # does not raise -- the leak is invisible locally
+        denoms = denominators(ledger.attempts())
+        denoms.assert_reconciles()  # also does not raise, for the same reason
+
+    def test_planned_n_catches_the_shortfall_conserve_cannot_see(self):
+        """The external check: the manifest declared 100 planned trials
+        (matching the fixture's own claimed_total) but the ledger only
+        accounts for 95 (5 coordination rows were dropped before the ledger
+        was built), and no Manifest.skipped entry explains it."""
+        spec = io.load_json(FIXTURES / "negative" / "dropped-coordination.json")
+        attempts = builders.attempts_from_conservation_rows(spec["rows"])
+        ledger = AttemptLedger(run_id="run-planned")
+        for a in attempts:
+            ledger.add(a)
+        denoms = denominators(ledger.attempts())
+        planned_n = {"total": spec["claimed_total"]}
+        with self.assertRaises(AccountingLeak):
+            assert_planned_reconciles(denoms, planned_n, skipped=())
+
+    def test_planned_n_undeclared_is_a_no_op(self):
+        """run.py writes planned_n={} today (cross-lane; see the REPAIR
+        handoff) -- this must not turn every existing report red."""
+        denoms = denominators([])
+        assert_planned_reconciles(denoms, {}, skipped=())  # must not raise
+
+    def test_planned_n_matching_accounting_does_not_raise(self):
+        spec = io.load_json(FIXTURES / "conservation" / "100-attempts.json")
+        attempts = builders.attempts_from_conservation_rows(spec["rows"])
+        ledger = AttemptLedger(run_id="run-match")
+        for a in attempts:
+            ledger.add(a)
+        denoms = denominators(ledger.attempts())
+        assert_planned_reconciles(denoms, {"total": 100}, skipped=())
+
+    def test_planned_n_shortfall_acknowledged_by_skipped_does_not_raise(self):
+        spec = io.load_json(FIXTURES / "negative" / "dropped-coordination.json")
+        attempts = builders.attempts_from_conservation_rows(spec["rows"])
+        ledger = AttemptLedger(run_id="run-acked")
+        for a in attempts:
+            ledger.add(a)
+        denoms = denominators(ledger.attempts())
+        planned_n = {"total": spec["claimed_total"]}
+        assert_planned_reconciles(
+            denoms, planned_n, skipped=({"id": "cell-x", "reason": "provider outage"},)
+        )
+
+    def test_conserve_is_tautological_on_a_ledger_missing_rows__negative(self):
+        """Catalog sibling for the S-10 fix: conserve()/assert_reconciles()
+        alone must FAIL to catch the same dropped-row shortfall that
+        assert_planned_reconciles catches."""
+        return self.test_planned_n_catches_the_shortfall_conserve_cannot_see()
 
 
 # ---------------------------------------------------------------------------

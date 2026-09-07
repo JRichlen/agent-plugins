@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "manual self-edit pass against a banned-AI-tell checklist",
       "kind": "skill",
-      "name": "human-voice checklist",
+      "name": "human-voice",
       "source_plugin": "voice"
     }
   ],

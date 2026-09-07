@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice",
       "kind": "skill",
-      "name": "thin-slice-first",
+      "name": "tracer-bullets",
       "source_plugin": "tracer-bullets"
     }
   ],

@@ -3,7 +3,7 @@
   "capabilities": [
     {
       "generic_equivalent": "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel",
-      "kind": "skill",
+      "kind": "script",
       "name": "scaffold-plugin.sh",
       "source_plugin": "plugin-factory"
     }

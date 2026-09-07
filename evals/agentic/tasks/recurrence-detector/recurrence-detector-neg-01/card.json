@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "eyeball the exhaust once and guess at a pattern with no citation count or threshold",
       "kind": "skill",
-      "name": "cluster-and-cite",
+      "name": "recurrence-detector",
       "source_plugin": "recurrence-detector"
     }
   ],

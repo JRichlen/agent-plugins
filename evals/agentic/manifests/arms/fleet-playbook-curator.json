@@ -65,7 +65,7 @@
     "version": "available (de039a6..05b8b2e)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-fleet-playbook-curator-5522a7864b2a4a20b6a82c6fb6c80ca1",
+    "arm_id": "arm-full-fleet-playbook-curator-5938c4dbc8800fd27decae30e99a82d1",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -74,7 +74,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "fleet-playbook-curator citation validator + fleet scripts",
+        "name": "validate-citations.sh",
         "kind": "script",
         "source_plugin": "fleet-playbook-curator",
         "generic_equivalent": "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling"
@@ -88,14 +88,14 @@
       "Bash",
       "Grep",
       "Glob",
-      "fleet-playbook-curator citation validator + fleet scripts"
+      "validate-citations.sh"
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {}
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-155854b7382a4204a2a69947589652d6",
+    "arm_id": "arm-baseline-a3200a6a1f6cf9a488c2d91086ec3d5f",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],

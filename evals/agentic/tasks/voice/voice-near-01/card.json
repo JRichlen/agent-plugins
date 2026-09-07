@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "manual self-edit pass against a banned-AI-tell checklist",
       "kind": "skill",
-      "name": "human-voice checklist",
+      "name": "human-voice",
       "source_plugin": "voice"
     }
   ],
@@ -20,6 +20,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Partway through the task, the user asks for a second opinion -- but there's no subagent-spawning tool available here.",
+    "The user requests a second opinion mid-task. This environment has no way to spawn a subagent to provide one."
+  ],
   "pass_fixture": "evals/agentic/tasks/voice/voice-near-01/fixtures/pass",
   "plugin": "voice",
   "task_path": "evals/agentic/tasks/voice/voice-near-01/task"

@@ -159,19 +159,40 @@ class EstimandArms(unittest.TestCase):
             self.assertIn("redgate", pq_sources)
 
             # --- version ------------------------------------------------------
+            # Uses the FULL discovered capability set (skill/command/script),
+            # not just graveyard-pos-01's single card-curated script
+            # capability: a script-kind capability never gets a
+            # realized_tree footprint by design (see
+            # _materialize_capability), so a version comparison built from
+            # ONLY a script capability is structurally vacuous regardless of
+            # revisions -- exactly what pairing.version_arms now correctly
+            # refuses to build (CV-06). The root commit vs HEAD guarantees a
+            # real difference (the skill/command files did not exist yet at
+            # the root commit) without depending on recent, arbitrary commit
+            # history actually having touched graveyard.
             rev_b = subprocess.run(
                 ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
             ).stdout.strip()
             rev_a = subprocess.run(
-                ["git", "rev-parse", "HEAD~3"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-            ).stdout.strip()
-            arm_a, arm_b = pairing.version_arms(ref, rev_a, rev_b, card, workspace)
+                ["git", "rev-list", "--max-parents=0", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+            ).stdout.strip().splitlines()[-1]
+            full_caps_card = dataclasses.replace(card, capabilities=pairing.discover_plugin_capabilities(ref, REPO_ROOT))
+            arm_a, arm_b = pairing.version_arms(ref, rev_a, rev_b, full_caps_card, workspace)
             self.assertEqual(arm_a.revisions, {"graveyard": rev_a})
             self.assertEqual(arm_b.revisions, {"graveyard": rev_b})
             self.assertNotEqual(arm_a.config_hash(), arm_b.config_hash())
+            self.assertNotEqual(dict(arm_a.realized_tree), dict(arm_b.realized_tree))
 
-            # All arms constructed above must be pairwise config-hash distinct.
-            all_arms = [full, guidance, empty, p_only, q_only, p_and_q, arm_a, arm_b]
+            # All arms constructed above must be pairwise config-hash distinct
+            # -- EXCEPT `full` and `p_only`, which are the exact same
+            # configuration (graveyard alone, FULL_PACKAGE role) built two
+            # different ways (build_arm directly vs. composition_arms) and
+            # are legitimately expected to collide now that config_hash no
+            # longer includes the nondeterministic arm_id (CV-06); `p_only`
+            # is already exercised for distinctness against its composition
+            # siblings above.
+            self.assertEqual(full.config_hash(), p_only.config_hash())
+            all_arms = [full, guidance, empty, q_only, p_and_q, arm_a, arm_b]
             all_hashes = {a.config_hash() for a in all_arms}
             self.assertEqual(len(all_hashes), len(all_arms))
 
@@ -345,6 +366,353 @@ class EstimandAvailabilitySummary(unittest.TestCase):
         removed plugin as 'available'."""
         summary = pairing.estimand_availability(REPO_ROOT)
         self.assertNotIn("this-plugin-does-not-exist", summary)
+
+
+# ---------------------------------------------------------------------------
+# CV-05: a capability that names a non-existent plugin surface
+# ---------------------------------------------------------------------------
+
+class CapabilityMustResolveOnDisk(unittest.TestCase):
+    def test_materializing_a_bogus_skill_capability_raises(self):
+        """A card capability's `name` is a REAL surface name, not free-text
+        prose about the capability -- prose belongs in `generic_equivalent`.
+        Silently writing nothing (the old behavior) let 69 of 75 corpus
+        cards carry a capability that materialized zero files with no
+        error anywhere."""
+        from evals.agentic.framework.contract import Capability
+        ref = _ref("voice")
+        bogus = Capability(
+            name="this skill does not exist on disk", kind="skill",
+            source_plugin="voice", generic_equivalent="some prose",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ContractError):
+                pairing._materialize_capability(bogus, REPO_ROOT, pathlib.Path(tmp), {})
+
+    def test_materializing_a_bogus_skill_capability_raises__negative(self):
+        """Negative control: the REAL skill name for the same plugin
+        materializes without error and produces real file content --
+        proving the rejection above is about the bogus name, not that
+        materialization has been made unconditionally strict."""
+        from evals.agentic.framework.contract import Capability
+        real = Capability(name="human-voice", kind="skill", source_plugin="voice", generic_equivalent=None)
+        with tempfile.TemporaryDirectory() as tmp:
+            written: dict[str, str] = {}
+            pairing._materialize_capability(real, REPO_ROOT, pathlib.Path(tmp), written)
+            self.assertGreater(len(written), 0)
+
+    def test_every_corpus_cards_curated_capability_resolves_on_disk(self):
+        """Sweeps the full corpus: no card may declare a capability whose
+        (kind, name) does not resolve to a real surface under its own
+        plugin's directory. This is exactly the 69/75 defect CV-05 found,
+        made permanent so it cannot silently regress card-by-card."""
+        for card in CARDS:
+            with self.subTest(card=card.card_id):
+                ref = _ref(card.plugin)
+                for cap in card.capabilities:
+                    if cap.kind not in ("skill", "command", "hook", "mcp", "script", "tool"):
+                        continue
+                    with tempfile.TemporaryDirectory() as tmp:
+                        try:
+                            pairing._materialize_capability(cap, REPO_ROOT, pathlib.Path(tmp), {})
+                        except ContractError as exc:
+                            self.fail(f"{card.card_id}: capability {cap.name!r} ({cap.kind}) does not resolve: {exc}")
+
+
+class ArmNonVacuity(unittest.TestCase):
+    def test_treatment_with_no_files_and_no_divergence_is_rejected(self):
+        """CV-05: a treatment arm that materializes nothing and diverges
+        from its baseline nowhere is indistinguishable from that baseline
+        by construction -- exactly the state all 25 FULL_PACKAGE arms were
+        in before this repair (every card's capability silently failed to
+        materialize)."""
+        # A treatment arm with the SAME shape as its own baseline (no
+        # capabilities, no tools beyond the shared generic set, no tree) is
+        # vacuous by definition.
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            baseline = pairing.build_arm(_card("graveyard-pos-01"), Estimand.BASELINE, (), workspace=ws)
+            vacuous_treatment = dataclasses.replace(baseline, arm_id=pairing.new_id("arm-vacuous-test"))
+            with self.assertRaises(ContractError):
+                pairing.assert_arm_is_nonvacuous(vacuous_treatment, baseline)
+
+    def test_treatment_with_no_files_and_no_divergence_is_rejected__negative(self):
+        """Negative control: graveyard's REAL full-package arm has zero
+        realized_tree footprint too (its only capability is script-kind,
+        which never materializes files by design), but it DOES diverge from
+        baseline via the matched allowed_tools substitution -- so it must
+        NOT be rejected as vacuous. A check that rejects any empty
+        realized_tree outright, with no OR-exposure-diff escape hatch,
+        would wrongly reject every script-dominant plugin's real, valid
+        treatment arm."""
+        card = _card("graveyard-pos-01")
+        ref = _ref("graveyard")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+            baseline = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            self.assertEqual(treatment.realized_tree, {})
+            pairing.assert_arm_is_nonvacuous(treatment, baseline)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# CV-06: config_hash must not be inflated by the nondeterministic arm_id
+# ---------------------------------------------------------------------------
+
+class ConfigHashExcludesArmId(unittest.TestCase):
+    def test_two_arms_differing_only_in_arm_id_hash_equal(self):
+        card = _card("graveyard-pos-01")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            a = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            b = dataclasses.replace(a, arm_id=pairing.new_id("arm-baseline"))
+            self.assertNotEqual(a.arm_id, b.arm_id)
+            self.assertEqual(a.config_hash(), b.config_hash())
+
+    def test_two_arms_differing_only_in_arm_id_hash_equal__negative(self):
+        """Negative control: a REAL configuration difference (different
+        allowed_tools) still changes config_hash -- proving the equality
+        above is specifically about arm_id, not that config_hash has been
+        made to ignore everything."""
+        card = _card("graveyard-pos-01")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            a = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            b = dataclasses.replace(a, allowed_tools=a.allowed_tools + ("SomeExtraTool",))
+            self.assertNotEqual(a.config_hash(), b.config_hash())
+
+    def test_version_arms_raises_when_both_revisions_materialize_the_same_tree(self):
+        """CV-06's exact reproduction: the SAME revision on both sides of a
+        version comparison must not silently produce 'two distinct arms'
+        (previously guaranteed only by the nondeterministic arm_id)."""
+        ref = _ref("jori")
+        card = _card("jori-pos-01")
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ContractError):
+                pairing.version_arms(ref, head, head, card, pathlib.Path(tmp))
+
+    def test_version_arms_raises_when_both_revisions_materialize_the_same_tree__negative(self):
+        """Negative control: two revisions that genuinely differ (the root
+        commit, before the plugin's skill file existed, vs HEAD) build
+        distinct, non-raising arms -- proving the rejection above is about
+        the revisions being identical, not that version_arms has been made
+        to always refuse."""
+        ref = _ref("jori")
+        full_caps_card = dataclasses.replace(_card("jori-pos-01"), capabilities=pairing.discover_plugin_capabilities(ref, REPO_ROOT))
+        head = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        root_commit = subprocess.run(
+            ["git", "rev-list", "--max-parents=0", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout.strip().splitlines()[-1]
+        with tempfile.TemporaryDirectory() as tmp:
+            arm_a, arm_b = pairing.version_arms(ref, root_commit, head, full_caps_card, pathlib.Path(tmp))
+            self.assertNotEqual(dict(arm_a.realized_tree), dict(arm_b.realized_tree))
+
+
+# ---------------------------------------------------------------------------
+# CV-16: arm_id must be reproducible from configuration, not a fresh uuid4
+# ---------------------------------------------------------------------------
+
+ARMS_DIR = REPO_ROOT / "evals" / "agentic" / "manifests" / "arms"
+
+
+class CommittedManifestsAreReproducible(unittest.TestCase):
+    """CV-16: `manifests/arms/graveyard.json` is a DERIVED artifact
+    (`manifests/arms/README.md`); nothing previously checked that
+    re-deriving it from the exact same configuration reproduces the
+    committed file. `pairing.deterministic_arm_id` makes `arm_id` a pure
+    function of configuration (see its docstring for why `realized_tree`
+    cannot be part of that digest), so rebuilding a committed manifest's
+    two arms from the same card must now reproduce both `arm_id`s AND both
+    `config_hash()`es exactly."""
+
+    def test_rebuilding_graveyard_reproduces_the_committed_arm_ids(self):
+        committed = json.loads((ARMS_DIR / "graveyard.json").read_text())
+        card = _card("graveyard-pos-01")
+        ref = _ref("graveyard")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            full = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+            base = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+        self.assertEqual(full.arm_id, committed["full_package_arm"]["arm_id"])
+        self.assertEqual(base.arm_id, committed["baseline_arm"]["arm_id"])
+        # config_hash is independently deterministic too (CV-06 + CV-16
+        # together): rebuilding twice must agree with itself as well as
+        # with the committed arm_id.
+        self.assertEqual(
+            full.config_hash(),
+            dataclasses.replace(full, arm_id=pairing.new_id("arm-full-graveyard")).config_hash(),
+        )
+
+    def test_rebuilding_graveyard_reproduces_the_committed_arm_ids__negative(self):
+        """Negative control: this is not a vacuous always-equal check --
+        mutating the configuration (one extra allowed_tool) before minting
+        the id changes it, so a REAL drift between the committed manifest
+        and what the code would build today is exactly what this class
+        would catch."""
+        committed = json.loads((ARMS_DIR / "graveyard.json").read_text())
+        card = _card("graveyard-pos-01")
+        ref = _ref("graveyard")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            full = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+        mutated_id = pairing.deterministic_arm_id(
+            "arm-full-graveyard", estimand=full.estimand, role=full.role,
+            plugins=full.plugins, revisions=full.revisions,
+            capabilities=full.capabilities,
+            allowed_tools=full.allowed_tools + ("SomeExtraTool",),
+            extra_dirs=full.extra_dirs, system_prompt_append=full.system_prompt_append,
+        )
+        self.assertNotEqual(mutated_id, committed["full_package_arm"]["arm_id"])
+
+    def test_arm_id_is_stable_across_repeated_builds(self):
+        """The primitive CV-16 actually requires: two independent calls to
+        build_arm with the SAME configuration must mint the SAME arm_id --
+        the exact property `new_id`'s uuid4 could never have satisfied."""
+        card = _card("jori-pos-01")
+        ref = _ref("jori")
+        with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
+            a = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=pathlib.Path(tmp1))
+            b = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=pathlib.Path(tmp2))
+        self.assertEqual(a.arm_id, b.arm_id)
+
+    def test_arm_id_is_stable_across_repeated_builds__negative(self):
+        """Negative control: two DIFFERENT plugins' full-package arms must
+        not collide -- proving stability isn't from collapsing every
+        arm_id to one constant."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            a = pairing.build_arm(_card("jori-pos-01"), Estimand.FULL_PACKAGE, (_ref("jori"),), workspace=ws)
+            b = pairing.build_arm(_card("graveyard-pos-01"), Estimand.FULL_PACKAGE, (_ref("graveyard"),), workspace=ws)
+        self.assertNotEqual(a.arm_id, b.arm_id)
+
+
+# ---------------------------------------------------------------------------
+# CV-10: exposure parity, gated over the FULL roster, not just graveyard
+# ---------------------------------------------------------------------------
+
+class ExposureParityFullRoster(unittest.TestCase):
+    """run.py's own --gate probe only checks manifests/arms/graveyard.json
+    (integration lane, cross-lane fix requested separately) -- this
+    registry-owned test sweeps every roster plugin so the corpus itself
+    cannot regress into an unmatched baseline widening or a vacuous
+    treatment arm undetected."""
+
+    def test_every_roster_plugin_has_permitted_exposure_and_a_nonvacuous_arm(self):
+        cards_by_plugin = {c.plugin: c for c in CARDS if c.card_id.endswith("-pos-01")}
+        for ref in ROSTER:
+            with self.subTest(plugin=ref.name):
+                card = cards_by_plugin.get(ref.name)
+                with tempfile.TemporaryDirectory() as tmp:
+                    ws = pathlib.Path(tmp)
+                    if card is None:
+                        from evals.agentic.framework.contract import Card, CardKind
+                        caps = pairing.discover_plugin_capabilities(ref, REPO_ROOT)
+                        card = Card(
+                            card_id=f"{ref.name}-survey-00", plugin=ref.name, kind=CardKind.POSITIVE,
+                            task_path="", outcome_verifier="", adoption_verifier="", pass_fixture="",
+                            fail_fixture="", expected_boundary_verdict="", capabilities=caps,
+                            mutations=("survey-placeholder",), holdout=False,
+                        )
+                    treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+                    baseline = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+                    pairing.assert_exposure_parity(treatment, baseline)
+                    pairing.assert_arm_is_nonvacuous(treatment, baseline)
+
+    def test_every_roster_plugin_has_permitted_exposure_and_a_nonvacuous_arm__negative(self):
+        """Negative control: an unmatched-widening baseline (T16's own
+        counterfeit-25 shape) fails this same sweep for a real roster
+        plugin -- proving the sweep actually exercises assert_exposure_parity
+        rather than vacuously passing every plugin."""
+        ref = _ref("jori")
+        card = _card("jori-pos-01")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+            baseline = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            contaminated = dataclasses.replace(baseline, allowed_tools=baseline.allowed_tools + ("AdminOverride",))
+            with self.assertRaises(ExposureParityViolation):
+                pairing.assert_exposure_parity(treatment, contaminated)
+
+
+# ---------------------------------------------------------------------------
+# CV-11: a skill/command/hook capability's generic_equivalent must not be
+# silently discarded -- it becomes the baseline's compensating prose.
+# ---------------------------------------------------------------------------
+
+class ProseSubstituteForNonToolCapabilities(unittest.TestCase):
+    def test_skill_generic_equivalent_lands_in_baseline_system_prompt_append(self):
+        card = _card("voice-pos-01")
+        self.assertEqual(card.capabilities[0].kind, "skill")
+        self.assertTrue(card.capabilities[0].generic_equivalent)
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            baseline = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            self.assertEqual(baseline.system_prompt_append, card.capabilities[0].generic_equivalent)
+            ref = _ref("voice")
+            treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+            self.assertEqual(treatment.system_prompt_append, "")
+            # The whole point: exposure parity must still hold, because this
+            # divergence is the PERMITTED prose substitute, not free widening.
+            pairing.assert_exposure_parity(treatment, baseline)
+
+    def test_skill_generic_equivalent_lands_in_baseline_system_prompt_append__negative(self):
+        """Negative control: a baseline carrying prose that does NOT match
+        the treatment's declared generic_equivalent (unmatched prompt-level
+        widening) must still be rejected -- proving CV-11's fix permits
+        only the exact compensating text, not any system_prompt_append."""
+        card = _card("voice-pos-01")
+        ref = _ref("voice")
+        with tempfile.TemporaryDirectory() as tmp:
+            ws = pathlib.Path(tmp)
+            treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+            baseline = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+            contaminated = dataclasses.replace(baseline, system_prompt_append="some unrelated prompt injection")
+            with self.assertRaises(ExposureParityViolation):
+                pairing.assert_exposure_parity(treatment, contaminated)
+
+
+# ---------------------------------------------------------------------------
+# CV-13: a plugin's own skills/commands/agents markdown IS behavior
+# ---------------------------------------------------------------------------
+
+class DiffTouchesBehaviorIncludesOwnMarkdown(unittest.TestCase):
+    def test_a_skill_md_only_diff_counts_as_behavior(self):
+        diff_text = (
+            "diff --git a/plugins/demo/skills/demo/SKILL.md b/plugins/demo/skills/demo/SKILL.md\n"
+            "index 111..222 100644\n--- a/plugins/demo/skills/demo/SKILL.md\n"
+            "+++ b/plugins/demo/skills/demo/SKILL.md\n@@ -1 +1 @@\n-old\n+new\n"
+        )
+        self.assertTrue(pairing._diff_touches_behavior(diff_text, "plugins/demo"))
+
+    def test_a_skill_md_only_diff_counts_as_behavior__negative(self):
+        """Negative control: the plugin's own top-level README.md/AGENTS.md
+        is still exempted -- proving the fix narrowed the exclusion rather
+        than removing it (a diff touching ONLY those must still read as
+        'not behavior')."""
+        diff_text = (
+            "diff --git a/plugins/demo/README.md b/plugins/demo/README.md\n"
+            "index 111..222 100644\n--- a/plugins/demo/README.md\n"
+            "+++ b/plugins/demo/README.md\n@@ -1 +1 @@\n-old\n+new\n"
+        )
+        self.assertFalse(pairing._diff_touches_behavior(diff_text, "plugins/demo"))
+
+    def test_plugin_factory_real_md_only_bump_is_now_a_behavior_changing_target(self):
+        """The concrete regression CV-13 cited: plugin-factory's
+        de039a6..d02c66c (1.0.0 -> 1.1.0) touches only SKILL.md/
+        authoring-checklist.md and was wrongly rejected as 'not behavior'
+        under the old blanket .md exclusion."""
+        diff = subprocess.run(
+            ["git", "diff", "de039a6", "d02c66c", "--", "plugins/plugin-factory"],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+        )
+        if diff.returncode != 0 or not diff.stdout.strip():
+            self.skipTest("reference revisions not present in this checkout's git history")
+        self.assertTrue(pairing._diff_touches_behavior(diff.stdout, "plugins/plugin-factory"))
 
 
 if __name__ == "__main__":

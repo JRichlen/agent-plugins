@@ -23,17 +23,16 @@ red, which is precisely the property `test_controls.py`'s
 `VacuousVerifierDetection` (and `MutationControl`'s catalog `__negative`
 sibling) exist to catch for the corpus's own toy cards.
 
-**Status: INERT until the integration lane wires this in.** As of this
-change, `evals/agentic/run.sh` does not exist (it is an integration-owned
-deliverable, contract §1/§6), `evals/cheap/run.sh` section 22 has not been
-added, and `evals/counterfeits/run.sh`'s `build_root()` does not yet stage
-`evals/agentic/**` into the synthetic root. Until all three land, this
-fixture cannot actually run inside the counterfeit tier's gate-coverage
-loop — the tail below documents what a lane-local run of
-`assert_not_vacuous` against the mutated file reports, not a result from
-`evals/counterfeits/run.sh` itself. Once section 22 is wired, this fixture's
-`EXPECT_FAIL_SUBSTRING` is what `evals/agentic/run.sh`'s own vacuousness
-check must echo (four-space indented, per contract §8.8) through
+**Status: WIRED and firing (CV-15).** `evals/agentic/run.sh` exists,
+`evals/cheap/run.sh` section 22 stages `evals/agentic/**` into the synthetic
+root, and `evals/counterfeits/run.sh`'s gate-coverage loop drives it.
+Verified live: `COUNTERFEIT_ONLY=21-agentic-vacuous-verifier bash
+evals/counterfeits/run.sh` reports `PASS 21-agentic-vacuous-verifier
+rejected by the expected gate ('agentic FAIL core: vacuous verifier')`
+alongside the baseline-green calibration step and all six repo-level gates.
+The tail below is what `assert_not_vacuous` reports against the mutated
+file; `evals/agentic/run.sh`'s own vacuousness check echoes this same
+substring (four-space indented, per contract §8.8) through
 `evals/cheap/run.sh`'s section 22 and `evals/counterfeits/run.sh`'s grep.
 
 EXPECT_FAIL_SUBSTRING=agentic FAIL core: vacuous verifier

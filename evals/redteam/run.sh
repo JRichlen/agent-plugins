@@ -1,23 +1,44 @@
 #!/usr/bin/env bash
 # evals/redteam/run.sh — the only entry point for the red-team lane
-# (T42-T48, design/contract §6, §8.6). `--offline` is the default: it runs
-# with NO network, no `npx`, no model call, ever (design §10).
+# (T42-T48, design/contract §6, §8.6). `--offline` is the default: no `npx`,
+# no model call, and every outbound request failed closed at a dead loopback
+# proxy before it can leave this host (design §10, and see "measured egress"
+# below -- the earlier "NO network ... ever" wording here was FALSE and is
+# deliberately gone).
 #
 #   evals/redteam/run.sh                     # == --offline
 #   evals/redteam/run.sh --offline
-#   evals/redteam/run.sh --gate              # root-portable subset, <5s (see below)
+#   evals/redteam/run.sh --gate              # repo-root-portable subset, <5s (see below;
+#                                            #   still requires the pinned install at
+#                                            #   PROMPTFOO_HOME -- portable across repo
+#                                            #   roots, not across hosts)
 #   evals/redteam/run.sh --assert-offline    # --offline + the docker netproof canary (T48)
 #   evals/redteam/run.sh --id T44            # a single backlog item's test module
 #   evals/redteam/run.sh --paid --approve-token <T>   # refused without a valid token
 #   evals/redteam/run.sh --hosted --approve-token <T> # refused without a valid token (design §12)
 #
 # IMPORTANT — read before trusting a green run (design §11): the offline
-# environment below (PROMPTFOO_DISABLE_REMOTE_GENERATION and friends) is
-# DEFENSE IN DEPTH, NOT THE PROOF. The proof is `--assert-offline`'s real
-# network-denied sandbox (bin/netproof.sh) plus its canary. A config flag by
-# itself is a claim; this repo has an actual, measured egress path (the
-# version-update check against api.promptfoo.dev) that none of these env
-# vars alone would catch without the sandbox — see README.md.
+# environment bin/promptfoo.sh exports (PROMPTFOO_DISABLE_REMOTE_GENERATION
+# and friends) is DEFENSE IN DEPTH, NOT THE PROOF. The proof is
+# `--assert-offline`'s real network-denied sandbox (bin/netproof.sh) plus its
+# canary. A config flag by itself is a claim, and this lane has TWO measured
+# egress paths that prove it:
+#
+#   1. the version-update check against api.promptfoo.dev, closed by
+#      PROMPTFOO_DISABLE_UPDATE=1; and
+#   2. an unconditional telemetry POST to https://r.promptfoo.app/ that
+#      PROMPTFOO_DISABLE_TELEMETRY=1 does NOT close -- setting that flag makes
+#      the pinned build send a "telemetry disabled" event to the SAME endpoint
+#      (dist/src/telemetry-VjpZ13i_.js:112-152). Measured 2026-09-06 with a
+#      loopback CONNECT sink: one `promptfoo validate` through
+#      bin/promptfoo.sh made 5 `CONNECT r.promptfoo.app:443` attempts while
+#      this script printed a fully green "redteam: PASS".
+#
+# (2) is now failed closed on the host by bin/promptfoo.sh forcing
+# HTTP_PROXY/HTTPS_PROXY/ALL_PROXY at a dead loopback port with an empty
+# no_proxy; re-measured after the fix, strace records exactly one connect(),
+# to 127.0.0.1:1, and zero packets naming promptfoo.app. See README.md's "A
+# real, measured egress path" section.
 #
 # --gate (integration lane, coordinator's integration-cost-decisions.md
 # decision 3; contract §9.1's cheap-tier section 22 calls this) is a
@@ -26,12 +47,39 @@
 # beyond a single --version call), the corpus freeze check, the
 # npx-invocation grep, a static "every provider exports a class" scan,
 # "the generated-configs directory exists and its index is valid JSON
-# naming files that exist", an in-process dominance/weight-map scan, an
+# naming files that exist", an in-process dominance ALLOWLIST scan (the
+# whole defaultTest shape: threshold 1, exactly the three deterministic
+# `javascript` assertions at weight 1, and no per-row override of `assert`
+# or `threshold` -- widened 2026-09-06 from a three-pattern denylist that
+# missed every OTHER model-graded assertion type the pinned build routes to
+# a grading provider, and never looked at `threshold` at all), an
 # in-process native-provenance forgery guard against committed ledger
-# fixtures, and a static per-row vacuity scan (below). NO PROMPTFOO PROCESS
-# RUNS IN --gate AT ALL -- an earlier version of this file ran one real
-# `promptfoo eval` here to catch the one vacuity shape (`testCase.options.
-# disableDefaultAsserts`) invisible to static analysis; removed
+# fixtures, and a static per-row vacuity scan (below).
+#
+# EXACTLY ONE promptfoo process runs in --gate: the pin check's single
+# `bin/promptfoo.sh --version`, which ends in `exec node
+# $PROMPTFOO_HOME/dist/src/entrypoint.js --version`. It evaluates nothing.
+# This sentence used to assert, in capitals, that no promptfoo process ran
+# in --gate whatsoever, which was FALSE and contradicted this same file a
+# few lines up ("no promptfoo entrypoint exec'd beyond a single --version
+# call" -- that one was the accurate half all along); corrected
+# 2026-09-07 for review finding R11 after
+# `strace -f -e trace=execve ./run.sh --gate` recorded
+# `execve(.../bin/node, ["node", ".../promptfoo-0.122.0/.../entrypoint.js",
+# "--version"])` alongside three `node -e` package.json/version reads.
+#
+# One consequence is deliberate and is NOT papered over with a skip: --gate
+# HARD-DEPENDS on the pinned install being present at PROMPTFOO_HOME (the
+# absolute path in pin.json is only this host's default; every other machine
+# must export it -- see README.md's "Run it"). On a host without it, --gate
+# FAILS with "redteam FAIL pin: ..." rather than reporting SKIP. That is the
+# intended behaviour: a gate that passes because it could not find the thing
+# it pins is worse than one that says so out loud.
+#
+# What --gate does NOT run is a promptfoo EVAL. An earlier version of this
+# file ran one real `promptfoo eval` here to catch the one vacuity shape
+# (`testCase.options.disableDefaultAsserts`) invisible to static analysis;
+# removed
 # (2026-09-06, coordinator decision) after it intermittently misclassified
 # a real provider FAULT as VACUOUS under heavy host CPU contention -- see
 # bin/verdict.py's classify_row fix and the integration report for the full
@@ -48,7 +96,10 @@
 # counterfeit corpus's synthetic root does not have — the same reason
 # contract §9.3 excludes T11/T12/T19-23 from evals/agentic's own --gate).
 # Those remain exercised for real by this script's own --offline default
-# and by `unittest discover`. Target: <5s, no promptfoo process at all.
+# and by `unittest discover`. Target: <5s -- MEASURED 0.94s and 0.97s on two
+# consecutive runs, 2026-09-07 -- with exactly one promptfoo process, the
+# `--version` call described above, and no docker (that half of the old
+# claim did hold: no docker execve appears in the strace).
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -186,7 +237,7 @@ sys.exit(1 if problems else 0)
     printf '%s\n' "$DOMINANCE_OUT" >&2
     exit 1
   fi
-  echo "redteam gate: OK — every generated config's deterministic assertions carry weight 1, no forbidden assertion types"
+  echo "redteam gate: OK — every generated config carries threshold 1 and exactly the three deterministic assertions, each at weight 1"
 
   echo "=== redteam gate: native-provenance forgery guard on committed ledger fixtures (T47, no live-tree read) ==="
   # bin/verdict.py's qualify()/row_provenance_entry() run purely in-process
@@ -344,12 +395,20 @@ fi
 echo "redteam offline: OK — 0 npx references outside documentation"
 
 echo "=== redteam offline: environment assertions (T48/§11) ==="
-for var in PROMPTFOO_REMOTE_GENERATION_URL PROMPTFOO_UNALIGNED_INFERENCE_ENDPOINT PROMPTFOO_CLOUD_API_URL PROMPTFOO_API_KEY; do
+# The provider-credential vars are in this loop as well as bin/promptfoo.sh's
+# `unset` list: the wrapper stops a key reaching the CHILD, and this loop
+# stops an offline run being STARTED in a shell that holds one at all
+# (hasCodexDefaultCredentials() reads CODEX_API_KEY / OPENAI_API_KEY, and the
+# pinned tree ships @openai/codex-sdk, so canLoadCodexSdkPackage() is already
+# satisfied). Both halves are needed; neither is redundant.
+for var in PROMPTFOO_REMOTE_GENERATION_URL PROMPTFOO_UNALIGNED_INFERENCE_ENDPOINT \
+           PROMPTFOO_CLOUD_API_URL PROMPTFOO_API_KEY \
+           OPENAI_API_KEY CODEX_API_KEY ANTHROPIC_API_KEY; do
   if [[ -n "${!var:-}" ]]; then
     fail "redteam offline: $var is set"
   fi
 done
-echo "redteam offline: OK — no remote-generation override vars set"
+echo "redteam offline: OK — no remote-generation override or provider-credential vars set"
 
 echo "=== redteam corpus: frozen-corpus integrity (T44) ==="
 python3 "$REDTEAM_ROOT/bin/freeze.py" --check || exit 1

@@ -1504,6 +1504,32 @@ else
   bad "redteam suite gate: evals/redteam/run.sh is missing"
 fi
 
+# --- 23. Gitignored generated content is never left tracked ------------------
+# .gitignore documents directories as generated and "never committed" — eval
+# artifacts, promptfoo debug/error logs, canary/listener output, under
+# evals/redteam/.artifacts/ in particular. Adding the ignore RULE does not
+# retroactively untrack a path already tracked before the rule existed: git
+# only consults .gitignore for paths it does not already know about (REPAIR
+# F1/blocker — 78 files under evals/redteam/.artifacts/ stayed tracked here
+# after the ignore rule landed, so every real evals/redteam tool invocation
+# kept dirtying tracked state; the fix is `git rm -r --cached <path>`, a git
+# index change outside this tier's own remit, which is why this check exists
+# to hold the gap open and visible instead of letting it re-drift silently).
+# REPO-level gate: needs a real .git, so it is inert in the synthetic
+# counterfeit root, which is not itself a git worktree.
+if [ -e ".git" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  group "gitignored generated content is not tracked"
+  _gi_hits="$(git ls-files -z 2>/dev/null | git check-ignore --no-index -z --stdin 2>/dev/null | tr '\0' '\n' | grep -v '^$')"
+  if [ -z "$_gi_hits" ]; then
+    ok "no tracked file matches a .gitignore pattern"
+  else
+    _gi_n=$(printf '%s\n' "$_gi_hits" | grep -c .)
+    bad "$_gi_n tracked file(s) match a .gitignore pattern (needs 'git rm -r --cached <path>'):"
+    printf '%s\n' "$_gi_hits" | head -5 | sed 's/^/    /'
+    if [ "$_gi_n" -gt 5 ]; then printf '    ... and %d more\n' "$((_gi_n - 5))"; fi
+  fi
+fi
+
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

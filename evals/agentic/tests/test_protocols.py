@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 import time
@@ -492,6 +493,64 @@ class McpInspectReadOnly(_PidLeakMixin, unittest.TestCase):
             (root / "sneaky.txt").write_text("a write that a read-only probe must never make")
             after = snapshot_tree(root)
         self.assertEqual(diff_tree(before, after), ("sneaky.txt",))
+
+    def test_call_through_client_is_bounded_by_timeout_s_even_when_server_hangs(self):
+        """F2 regression: a real call through McpStdioClient must never block
+        past the configured timeout_s, even against a server that starts
+        cleanly and then never writes a single line
+        (fixtures/protocols/mutants/hanging_mcp_server.py). This is a
+        different failure shape than broken_mcp_server.py's immediate
+        ``sys.exit(1)``: that crash is caught by the EOF branch in
+        ``_read_response`` (an empty ``readline()`` result) before any
+        timeout logic runs at all, so it gave zero coverage of the deadline
+        itself. Before the fix, this call blocked on an unbounded
+        ``readline()`` no matter what ``timeout_s`` said."""
+        with tempfile.TemporaryDirectory() as td:
+            cwd = pathlib.Path(td)
+            started = time.monotonic()
+            with self.assertRaises(TimeoutError):
+                with McpStdioClient([sys.executable, str(MUTANTS / "hanging_mcp_server.py")],
+                                     cwd=cwd, timeout_s=2.0) as client:
+                    client.initialize()
+            elapsed = time.monotonic() - started
+        self.assertLess(
+            elapsed, 8.0,
+            "McpStdioClient must enforce timeout_s on every call (not just wait for "
+            "process exit in __exit__) -- this call should fail in ~timeout_s, not hang",
+        )
+        self.assertGreaterEqual(elapsed, 2.0, "must not fire before the configured timeout_s")
+
+    def test_negative_liveness_only_check_would_call_the_hang_healthy(self):
+        """Names the vacuous shape this guards against: a check that only asks
+        'did the process exit unexpectedly' (``proc.poll()``) would call this
+        fixture perfectly healthy forever -- it is alive, running, and has
+        crashed nothing. Only a real call bounded by a read deadline (proved
+        above) can tell a live-but-silent server apart from a working one."""
+        with tempfile.TemporaryDirectory() as td:
+            cwd = pathlib.Path(td)
+            proc = subprocess.Popen(
+                [sys.executable, str(MUTANTS / "hanging_mcp_server.py")],
+                cwd=str(cwd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            try:
+                time.sleep(0.2)
+                self.assertIsNone(
+                    proc.poll(),
+                    "hang fixture must still be alive (a liveness-only check sees no problem)",
+                )
+            finally:
+                proc.kill()
+                proc.wait(timeout=5)
+                for stream in (proc.stdout, proc.stderr):
+                    if stream is not None:
+                        stream.close()
+
+    def test_call_through_client_is_bounded_by_timeout_s_even_when_server_hangs__negative(self):
+        """Catalog sibling (contract §7.4 item 4) for T23's additional
+        coverage. fixtures/protocols/mutants/hanging_mcp_server.py: a
+        liveness-only check must FAIL to notice this server never responds,
+        for the hang regression above to be considered non-vacuous."""
+        return self.test_negative_liveness_only_check_would_call_the_hang_healthy()
 
 
 # ---------------------------------------------------------------------------

@@ -9,18 +9,32 @@ mapping takes no argument that a caller could use to promote a simulated run.
 Three structural properties carry that boundary; none of them is a convention a
 future edit can quietly drop without a test going red:
 
-1. **The witness is fixed at construction.** :class:`HostLedger` derives every
-   entry's ``host_signature.value_class`` from ``self.witness``. There is no
-   per-``append`` override, so a holder of a replay ledger cannot mint a
-   host-observed entry. A ``HOST_OBSERVED`` ledger mints its own HMAC key with
-   ``secrets.token_bytes(32)`` and *refuses* a caller-supplied one
-   (:class:`~evals.agentic.framework.contract.EvidencePromotionRefused`).
+1. **The witness is sealed at construction.** :class:`HostLedger` derives every
+   entry's ``host_signature.value_class`` from a closure created in ``__init__``
+   (:func:`_sealed_signer`), and ``__slots__`` plus ``__setattr__`` refuse to
+   rebind the witness or the key afterwards. There is no per-``append``
+   override and no attribute left to flip, so a holder of a replay ledger cannot
+   mint a host-observed entry. A ``HOST_OBSERVED`` ledger mints its own HMAC key
+   with ``secrets.token_bytes(32)``; both witnesses *refuse* a caller-supplied
+   one (:class:`~evals.agentic.framework.contract.EvidencePromotionRefused`).
 2. **Replay and worker paths cannot hold a host-observed ledger.**
    :class:`ReplaySession` and :func:`attach_session` reject one outright.
 3. **Spawning a real harness needs an approval token that is in the run
    manifest.** :meth:`CliDriver.spawn` raises
    :class:`~evals.agentic.framework.contract.ApprovalRequired` *before* it
    constructs any argv or touches :mod:`subprocess`.
+4. **Verification authority is a capability, not a parameter.**
+   :class:`LedgerReader` refuses raw key bytes; the only thing that can bless a
+   ledger is the :class:`_RunKey` :meth:`HostLedger.verifier` wraps, which is
+   bound to that ledger's own path and exists only in the minting process. A
+   ledger in which the host witnessed nothing is never "verified", whatever key
+   it is shown.
+5. **Bypass-permissions mode is banned by value, not by spelling.**
+   :data:`BANNED_ARGV_VALUES` and :data:`SAFE_ARGV_VALUES` are enforced over the
+   shipped configs (:func:`assert_flags_supported`) *and* over rendered argv
+   (:meth:`CliDriver.build_argv`), because ``--permission-mode`` and
+   ``--sandbox`` take their dangerous settings as ordinary values that no
+   flag-name scan can see.
 
 §10.2's UNKNOWN is honoured rather than guessed: no capture of either installed
 CLI's event stream exists, so ``fixtures/native/streams/`` holds no grammar and
@@ -46,13 +60,17 @@ from collections.abc import Mapping, Sequence
 from hashlib import sha256
 from typing import Any, Iterator
 
+from evals.agentic.framework import classify as _classify
 from evals.agentic.framework import io as _io
 from evals.agentic.framework import protocols as _protocols
 from evals.agentic.framework.contract import (
     UNKNOWN,
     AdapterClass,
     ApprovalRequired,
+    ArmRole,
+    Attempt,
     ContractError,
+    ControlKind,
     EvidenceClass,
     EvidencePromotionRefused,
     Event,
@@ -63,8 +81,12 @@ from evals.agentic.framework.contract import (
     LedgerTampered,
     Manifest,
     SignatureClass,
+    Stratum,
     Usage,
+    Verdict,
+    assert_native_backed,
     canonical_json,
+    new_id,
     now_rfc3339,
 )
 
@@ -74,14 +96,17 @@ __all__ = [
     "DRIVERS_DIR", "NATIVE_FIXTURES_DIR", "STREAMS_DIR",
     "load_driver_config", "load_grammar",
     "installed_help", "declared_flags", "assert_flags_supported",
-    "BANNED_FLAG_PATTERNS", "FlagNotSupported", "FlagNotSupportedError",
+    "BANNED_FLAG_PATTERNS", "BANNED_ARGV_VALUES", "SAFE_ARGV_VALUES",
+    "FlagNotSupported", "FlagNotSupportedError",
     # §3.12 driver
     "CliDriver", "PlannedInvocation", "dry_run",
     # §3.12 sessions
     "HarnessSession", "TurnRecord", "ReplaySession", "attach_session",
     "IsolationReport", "check_fresh_isolation",
+    # REPAIR S-12: the production session -> Attempt constructor
+    "attempt_from_session",
     # §3.12 ledger
-    "HostLedger", "LedgerReader", "ChainVerification",
+    "HostLedger", "LedgerReader", "ChainVerification", "SpawnAccounting",
     # §3.12 evidence and telemetry
     "evidence_class_for", "worker_evidence_class", "parse_usage",
     # re-exported per contract §2.5
@@ -339,6 +364,94 @@ BANNED_FLAG_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"^--allow-dangerously-"),
 )
 
+#: Argv **values** that select a bypass-permissions mode. The handoff bans the
+#: *mode*, and neither installed CLI spells that mode as a flag: the real
+#: surfaces are ``claude --permission-mode bypassPermissions`` and
+#: ``codex exec --sandbox danger-full-access``. Both are ordinary values in a
+#: free-text ``{slot}``, so a scan over tokens that start with ``-`` sees
+#: nothing at all -- which is exactly what this table exists to fix. Compared
+#: after :func:`_normalised_value`, so ``danger_full_access`` and
+#: ``BypassPermissions`` are the same refusal.
+BANNED_ARGV_VALUES: frozenset[str] = frozenset({
+    "bypasspermissions",
+    "dangerfullaccess",
+})
+
+#: What each dangerous slot IS allowed to hold. An **allowlist**, because a ban
+#: list only knows the bypass names that existed when it was written: a CLI
+#: upgrade that renames or adds one has to red this check rather than sail
+#: through it. Values are compared literally, because the CLIs match their own
+#: choices literally. An unresolved ``{placeholder}`` is not yet a value and is
+#: checked where it becomes one, in :meth:`CliDriver.build_argv`.
+SAFE_ARGV_VALUES: Mapping[str, frozenset[str]] = {
+    "--permission-mode": frozenset({"plan", "manual", "acceptEdits"}),
+    "--sandbox": frozenset({"read-only", "workspace-write"}),
+}
+
+_PLACEHOLDER_IN_TOKEN = re.compile(r"\{[a-zA-Z_][a-zA-Z0-9_]*\}")
+
+
+def _normalised_value(value: str) -> str:
+    """Fold case and the ``-``/``_``/space spellings of one value together."""
+    return re.sub(r"[-_\s]", "", value).lower()
+
+
+def _flag_value_pairs(tokens: Sequence[str]) -> Iterator[tuple[str | None, str]]:
+    """Walk argv yielding ``(flag or None, value)`` for every non-flag token.
+
+    Handles both ``--sandbox danger-full-access`` and
+    ``--sandbox=danger-full-access``; a bare positional yields ``(None, value)``
+    so the banned-value check still sees it.
+    """
+    previous: str | None = None
+    for token in tokens:
+        if token.startswith("-"):
+            head, sep, tail = token.partition("=")
+            if sep:
+                yield head, tail
+                previous = None
+            else:
+                previous = token
+            continue
+        yield previous, token
+        previous = None
+
+
+def _assert_value_allowed(flag: str | None, value: str, *, driver: str, where: str) -> None:
+    """Refuse a bypass-permissions **value**, then enforce :data:`SAFE_ARGV_VALUES`.
+
+    ``where`` names the surface, because both matter and they fail at different
+    times: the shipped driver document is what a future edit touches, and the
+    rendered argv is what a caller reaches at run time through a free-text slot.
+    """
+    if _normalised_value(value) in BANNED_ARGV_VALUES:
+        subject = flag if flag is not None else "a positional argument"
+        raise FlagNotSupportedError(
+            f"{driver}: value {value!r} for {subject} selects bypass-permissions mode and is "
+            "banned outright (no bypass-permissions mode; handoff 'Authority'), regardless "
+            f"of whether the CLI supports it [{where}]",
+            flag=flag if flag is not None else value, driver=driver,
+        )
+    if flag is None or flag not in SAFE_ARGV_VALUES:
+        return
+    if _PLACEHOLDER_IN_TOKEN.search(value):
+        return  # not a value yet -- build_argv checks what it renders to
+    allowed = SAFE_ARGV_VALUES[flag]
+    if value not in allowed:
+        raise FlagNotSupportedError(
+            f"{driver}: {flag} value {value!r} is not on this framework's allowlist "
+            f"{sorted(allowed)!r}. {flag} is a bypass surface, so it takes an allowlist and "
+            "not a ban list: a CLI that renames or adds a bypass mode must red this check "
+            f"instead of passing it [{where}]",
+            flag=flag, driver=driver,
+        )
+
+
+def _assert_argv_values_allowed(tokens: Sequence[str], *, driver: str, where: str) -> None:
+    for flag, value in _flag_value_pairs(tokens):
+        _assert_value_allowed(flag, value, driver=driver, where=where)
+
+
 
 def _resolve_env(config: DriverConfig, slots: Mapping[str, str]) -> dict[str, str]:
     """Resolve `config.env`'s `{slot}` placeholders. `os.environ` is never inherited."""
@@ -351,6 +464,11 @@ def _resolve_env(config: DriverConfig, slots: Mapping[str, str]) -> dict[str, st
                     f"{config.name}: env[{key!r}] needs slot {match!r}, which was not supplied"
                 )
             value = value.replace("{" + match + "}", str(slots[match]))
+        # A resolved env value is a third way into the same mode (an exported
+        # CLAUDE_PERMISSION_MODE, say), so it takes the same ban.
+        _assert_value_allowed(
+            None, value, driver=config.name, where=f"resolved env[{key!r}]",
+        )
         resolved[key] = value
     return resolved
 
@@ -426,16 +544,27 @@ def _whole_word_present(flag: str, help_text: str) -> bool:
 def assert_flags_supported(config: DriverConfig) -> None:
     """T25. Refuse any flag the installed binary's own help does not list.
 
-    Two refusals, in this order:
+    Three refusals, in this order:
 
     * a ``--dangerously-*`` / ``--allow-dangerously-*`` flag is refused
       unconditionally, *before* the help is even consulted — the handoff bans
       bypass-permissions mode, and the CLI supporting it is not a defence;
+    * a banned **value** is refused on the same terms. The ban is on the mode,
+      not on a spelling, and neither installed CLI spells the mode as a flag:
+      ``claude --permission-mode bypassPermissions`` and ``codex exec --sandbox
+      danger-full-access`` are both ordinary values, invisible to any scan that
+      only looks at tokens beginning with ``-``. Where a slot is a known bypass
+      surface, :data:`SAFE_ARGV_VALUES` allowlists it instead;
     * every remaining ``-``-leading token must appear as a whole word in
       ``binary + help_argv`` output. The list is derived from the installed
       binary on every call; there is no table of known flags in this source, so
       a CLI upgrade that drops a flag reds this check instead of producing argv
       the CLI silently ignores.
+
+    The value refusal covers what the *config document* hardcodes. A value that
+    arrives through a ``{slot}`` at call time is covered by the identical check
+    in :meth:`CliDriver.build_argv`, so neither surface can be reached without
+    passing one of them.
     """
     for flag in declared_flags(config):
         for pattern in BANNED_FLAG_PATTERNS:
@@ -445,6 +574,17 @@ def assert_flags_supported(config: DriverConfig) -> None:
                     "mode; handoff 'Authority'), regardless of whether the CLI supports it",
                     flag=flag, driver=config.name,
                 )
+    for mode_tokens in (
+        config.argv_template,
+        *(config.optional_argv[mode] for mode in sorted(config.optional_argv)),
+    ):
+        _assert_argv_values_allowed(
+            mode_tokens, driver=config.name, where=f"{config.name}.json",
+        )
+    for key, value in config.env.items():
+        _assert_value_allowed(
+            None, value, driver=config.name, where=f"{config.name}.json env[{key!r}]",
+        )
     help_text = installed_help(config)
     for flag in declared_flags(config):
         if not _whole_word_present(flag, help_text):
@@ -501,6 +641,14 @@ class CliDriver:
         how an inapplicable flag is omitted rather than handed the literal
         string ``"n/a"`` (benchmark-spec §2 defines effort as "n/a where the
         harness has none", which is a *report* value, not a CLI argument).
+
+        The **rendered** argv is checked against :data:`BANNED_ARGV_VALUES` and
+        :data:`SAFE_ARGV_VALUES` before it is returned. ``assert_flags_supported``
+        can only see what the config document hardcodes; ``permission_mode`` and
+        ``sandbox`` are free-text slots, so ``bypassPermissions`` and
+        ``danger-full-access`` reach argv without passing through the config at
+        all. This is the check that sees them, and it is on the path every
+        caller uses -- :meth:`dry_run` and :meth:`spawn` both build argv here.
         """
         if mode not in self._config.optional_argv:
             raise ContractError(
@@ -541,6 +689,9 @@ class CliDriver:
             for name in names:
                 rendered = rendered.replace("{" + name + "}", str(slots[name]))
             out.append(rendered)
+        _assert_argv_values_allowed(
+            out[1:], driver=self._config.name, where=f"rendered argv (mode {mode!r})",
+        )
         return out
 
     def dry_run(self, *, mode: str = "fresh", **slots: str | None) -> PlannedInvocation:
@@ -609,11 +760,25 @@ def dry_run(name: str, *, mode: str = "fresh", **slots: str | None) -> str:
     This is what ``run.py driver --dry-run --name <n>`` (integration lane, §8.5)
     prints. It is exposed here as a function so the adapter lane's acceptance is
     provable without the integration lane's CLI existing yet.
+
+    REPAIR N-11: :func:`assert_flags_supported` runs **before** a single argv
+    token is rendered, against the *installed* binary's own help. Without it
+    this function printed a plausible, copy-pasteable command line for a CLI
+    that may have dropped or renamed one of the flags in it -- a plausible
+    argv is exactly the artifact a reader trusts, and only T25's unit test
+    would have noticed the drift. There is no flag, environment variable or
+    keyword that skips the check: an unvalidatable driver (binary absent,
+    ``--help`` timing out) is a *refusal*, not a dry run rendered anyway,
+    because "we could not check" and "we checked and it is fine" must not
+    print the same thing.
     """
     config = load_driver_config(name)
+    assert_flags_supported(config)
     driver = CliDriver(config)
     planned = driver.dry_run(mode=mode, **(slots or _DEFAULT_SLOTS[name][mode]))
     lines = [
+        f"flags: validated against the installed "
+        f"{config.binary} {' '.join(config.help_argv)} output",
         f"driver={config.name} mode={mode}",
         f"argv: {' '.join(planned.argv)}",
         f"cwd={planned.cwd} timeout_s={planned.timeout_s}",
@@ -623,13 +788,18 @@ def dry_run(name: str, *, mode: str = "fresh", **slots: str | None) -> str:
 
 
 #: Placeholder values used only to render a dry run. They are obviously-fake
-#: paths, never a real workspace, and nothing consumes them.
+#: paths, never a real workspace, and nothing consumes them. The two bypass
+#: surfaces are the exception and are deliberately REAL, safe values
+#: (``sandbox: "read-only"``, ``permission_mode: "plan"``): they are checked
+#: against SAFE_ARGV_VALUES like any other rendered value, and a dry run that
+#: had to be exempted from that check would be a dry run of a different argv
+#: than the one a real spawn builds.
 _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
     "claude": {
         "fresh": {
             "model": "<model-id>", "effort": "<effort>",
             "session_id": "00000000-0000-4000-8000-000000000000",
-            "permission_mode": "<permission-mode>", "allowed_tools": "<allowed-tools>",
+            "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
             "plugin_root": "<plugin-root>",
@@ -637,7 +807,7 @@ _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
         "resume": {
             "model": "<model-id>", "effort": "<effort>",
             "session_id": "00000000-0000-4000-8000-000000000000",
-            "permission_mode": "<permission-mode>", "allowed_tools": "<allowed-tools>",
+            "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
             "plugin_root": "<plugin-root>",
@@ -645,7 +815,7 @@ _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
         "fork": {
             "model": "<model-id>", "effort": "<effort>",
             "session_id": "00000000-0000-4000-8000-000000000000",
-            "permission_mode": "<permission-mode>", "allowed_tools": "<allowed-tools>",
+            "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
             "plugin_root": "<plugin-root>",
@@ -699,23 +869,154 @@ def _chain_message(prev_hash: str, body: Mapping[str, Any]) -> bytes:
     return prev_hash.encode("ascii") + b"\n" + canonical_json(body)
 
 
+class _RunKey:
+    """A *capability* to verify one ledger — not a key anyone may supply.
+
+    Minted only inside :meth:`HostLedger.__init__`, for a ``HOST_OBSERVED``
+    ledger, and reachable only through :attr:`HostLedger.key` and
+    :meth:`HostLedger.verifier`. There is no public constructor, no accessor for
+    the bytes, and ``repr`` redacts.
+
+    It binds three things together, and the binding is the point:
+
+    * the run's HMAC key,
+    * the run id,
+    * the **resolved path of the ledger the key was minted for**.
+
+    The path binding is what makes "mint a throwaway host ledger, take its key,
+    and verify a hand-typed file with it" fail as well: a capability over run
+    A's ledger is not a capability over any other file.
+
+    Before this existed, ``LedgerReader(path, key=<bytes>)`` took the key as an
+    ordinary argument, so whoever chose the key *was* the host: a hand-typed
+    ledger signed under an attacker-chosen key satisfied ``verify_chain()``,
+    ``is_verified()``, ``host_observed_session_ids()`` and therefore
+    ``contract.assert_native_backed``, with no source edit and no access to the
+    real run key. §5.3's "a verifier without the key cannot forge, and cannot
+    bless" only holds when the key cannot be supplied from outside.
+    """
+
+    __slots__ = ("__key", "__run_id", "__ledger_path")
+
+    def __init__(self, key: bytes, run_id: str, ledger_path: pathlib.Path) -> None:
+        self.__key = bytes(key)
+        self.__run_id = str(run_id)
+        self.__ledger_path = pathlib.Path(ledger_path).resolve()
+
+    @property
+    def run_id(self) -> str:
+        return self.__run_id
+
+    @property
+    def ledger_path(self) -> pathlib.Path:
+        return self.__ledger_path
+
+    def mac(self, message: bytes) -> str:
+        """The only use of the key bytes anywhere outside :class:`HostLedger`."""
+        return hmac.new(self.__key, message, sha256).hexdigest()
+
+    def covers(self, path: pathlib.Path) -> bool:
+        return pathlib.Path(path).resolve() == self.__ledger_path
+
+    def __repr__(self) -> str:
+        return (
+            f"<_RunKey run_id={self.__run_id!r} "
+            f"ledger={self.__ledger_path.name!r} key=REDACTED>"
+        )
+
+
+def _run_key_bytes(run_key: _RunKey) -> bytes:
+    """The raw key behind a capability. Deliberately module-private.
+
+    Exists for exactly one assertion — that the key bytes never appear in the
+    ledger file — and for nothing else. Reaching for it is reaching into this
+    module's private state, which is the access class §5.3 already concedes.
+    """
+    return getattr(run_key, "_RunKey__key")
+
+
+def _sealed_signer(
+    witness: SignatureClass, key: bytes | None, key_id: str
+) -> tuple[Any, Any]:
+    """Close over the witness and the key so no attribute holds either one.
+
+    Returns ``(stamp, witness_of)``. ``stamp(None)`` is the signature block as it
+    appears in the hashed *body*; ``stamp(message)`` is the block as it appears in
+    the written record. Neither reads ``self``, so :meth:`HostLedger.append` has
+    nothing left to re-read per call — which is what makes "the witness is fixed
+    at construction" a property of the object graph rather than of a docstring.
+    """
+    if witness is SignatureClass.HOST_OBSERVED:
+        assert key is not None
+        base: dict[str, Any] = {
+            "value_class": witness.value, "algo": "hmac-sha256", "key_id": key_id,
+        }
+
+        def stamp(message: bytes | None = None) -> dict[str, Any]:
+            if message is None:
+                return dict(base)
+            return dict(base) | {"value": hmac.new(key, message, sha256).hexdigest()}
+    else:
+        base = {"value_class": witness.value, "algo": "none", "key_id": None}
+
+        def stamp(message: bytes | None = None) -> dict[str, Any]:
+            if message is None:
+                return dict(base)
+            return dict(base) | {"value": None}
+
+    def witness_of() -> SignatureClass:
+        return witness
+
+    return stamp, witness_of
+
+
+#: The only attributes a sealed :class:`HostLedger` may still rebind: its write
+#: cursor. Everything that decides *what an entry means* is sealed.
+_MUTABLE_LEDGER_ATTRS: frozenset[str] = frozenset(
+    {"_index", "_last_hash", "_fd", "_closed"}
+)
+
+
 class HostLedger:
     """Append-only, hash-chained event ledger (§5.1, §5.2).
 
-    ``witness`` is the ledger's identity and is fixed at construction:
+    ``witness`` is the ledger's identity and is **sealed** at construction:
 
     * ``HOST_OBSERVED`` — the host itself witnessed the facts. It mints a
       32-byte run-scoped HMAC key with :func:`secrets.token_bytes` and **refuses
       a caller-supplied key**. The key lives in memory only; ``key_id`` names it,
-      the ledger never contains it.
+      the ledger never contains it, and the only way to hand it to a verifier is
+      :meth:`verifier` (or the :attr:`key` capability it wraps).
     * ``CALLER_ASSERTED`` — the fact was reported by the thing under test. Every
       entry is ``algo: "none"``, ``value: null``. Recorded, zero provenance
-      weight.
+      weight. It refuses a key too: a ledger that signs nothing has no use for
+      one, and a key it accepted could only ever be used to launder it.
 
     ``value_class`` is *derived* from ``witness`` on every append. It is not a
     parameter and there is no per-call override; that is the mechanism, not the
     convention, behind ground rule 3 (§10.5 item 3).
+
+    "Sealed" is literal, and it is two independent mechanisms:
+
+    1. The witness and the key live in a **closure** (:func:`_sealed_signer`),
+       not in an attribute. :meth:`append` calls that closure and re-reads
+       nothing per call, so there is no ``self._witness`` for a later assignment
+       to change.
+    2. ``__slots__`` plus :meth:`__setattr__` refuse to rebind anything but the
+       write cursor once ``__init__`` returns, raising
+       :class:`~evals.agentic.framework.contract.EvidencePromotionRefused`.
+
+    Both exist because either alone is thin: before them,
+    ``ledger._witness = SignatureClass.HOST_OBSERVED; ledger._key = <bytes>``
+    turned a legally-constructed replay ledger into a host-observed one on the
+    next ``append()``, with no source edit at all — strictly cheaper than the
+    ``adapters.py`` patch counterfeit fixture 23(b) models.
     """
+
+    __slots__ = (
+        "_path", "_run_id", "_key_id", "_run_key", "_stamp", "_witness_of",
+        "_index", "_last_hash", "_fd", "_closed", "_sealed",
+    )
 
     def __init__(
         self,
@@ -725,13 +1026,14 @@ class HostLedger:
         witness: SignatureClass,
         key: bytes | None = None,
     ) -> None:
+        object.__setattr__(self, "_sealed", False)
         if not isinstance(witness, SignatureClass):
             raise ContractError(f"HostLedger: witness must be a SignatureClass, got {witness!r}")
         self._path = pathlib.Path(path)
         self._run_id = run_id
-        self._witness = witness
         self._key_id = f"run-{run_id}"
 
+        minted: bytes | None
         if witness is SignatureClass.HOST_OBSERVED:
             if key is not None:
                 raise EvidencePromotionRefused(
@@ -740,9 +1042,23 @@ class HostLedger:
                     "'someone with the key said so'; a host-observed ledger mints its own "
                     "(contract §3.12, §10.5)."
                 )
-            self._key: bytes | None = secrets.token_bytes(32)
+            minted = secrets.token_bytes(32)
+            self._run_key: _RunKey | None = _RunKey(minted, run_id, self._path)
         else:
-            self._key = key
+            if key is not None:
+                raise EvidencePromotionRefused(
+                    "HostLedger(witness=CALLER_ASSERTED): a key is refused. A caller-asserted "
+                    "ledger signs nothing (algo 'none', value null), so the only thing a key "
+                    "it accepted could ever do is launder it into a host-observed one "
+                    "(contract §3.12, §10.5)."
+                )
+            minted = None
+            self._run_key = None
+
+        stamp, witness_of = _sealed_signer(witness, minted, self._key_id)
+        self._stamp = stamp
+        self._witness_of = witness_of
+        del minted  # from here on the bytes exist only in the closure and the _RunKey
 
         self._path.parent.mkdir(parents=True, exist_ok=True)
         existing = list(_io.read_jsonl(self._path)) if self._path.exists() else []
@@ -753,11 +1069,31 @@ class HostLedger:
             self._path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600
         )
         self._closed = False
+        object.__setattr__(self, "_sealed", True)
+
+    # -- the seal -----------------------------------------------------------
+    def __setattr__(self, name: str, value: Any) -> None:
+        if self._sealed and name not in _MUTABLE_LEDGER_ATTRS:
+            raise EvidencePromotionRefused(
+                f"HostLedger.{name}: the witness and the signing key are sealed at "
+                "construction and cannot be rebound. Flipping them on a live ledger would "
+                "launder a caller-asserted replay into host-observed entries with no source "
+                "edit at all, which is the cheapest forgery there is (contract §10.5 item 3). "
+                "A ledger with a different witness is a different ledger: construct one."
+            )
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name: str) -> None:
+        raise EvidencePromotionRefused(
+            f"HostLedger.{name}: sealed at construction; deleting it is the same forgery as "
+            "rebinding it (contract §10.5 item 3)."
+        )
 
     # -- identity -----------------------------------------------------------
     @property
     def witness(self) -> SignatureClass:
-        return self._witness
+        """Read out of the sealed closure, never out of an attribute."""
+        return self._witness_of()
 
     @property
     def path(self) -> pathlib.Path:
@@ -772,14 +1108,26 @@ class HostLedger:
         return self._last_hash
 
     @property
-    def key(self) -> bytes | None:
-        """The in-memory signing key, for handing to a :class:`LedgerReader`.
+    def key(self) -> "_RunKey | None":
+        """The run's verification **capability**, or ``None`` when nothing was signed.
 
         Not part of §3.12's listed surface but unavoidable: §5.3 says a verifier
         without the key "cannot forge, and cannot bless", so the host must be
-        able to pass the key to its own reader without it ever reaching disk.
+        able to pass verification authority to its own reader without it ever
+        reaching disk. What it hands over is a :class:`_RunKey` bound to *this*
+        ledger's path — not raw bytes, which anyone could have chosen.
         """
-        return self._key
+        return self._run_key
+
+    def verifier(self) -> "LedgerReader":
+        """The only reader that can bless this ledger. Blesses nothing else.
+
+        ``HostLedger(...).verifier()`` is the whole cross-process story too: a
+        later process cannot obtain one, so it reads the chain and reports
+        ``LedgerReader.UNVERIFIABLE_IN_THIS_PROCESS`` rather than a verdict it
+        has no standing to give.
+        """
+        return LedgerReader(self._path, key=self._run_key)
 
     # -- write --------------------------------------------------------------
     def append(
@@ -796,11 +1144,6 @@ class HostLedger:
             raise ContractError(f"HostLedger.append: kind must be an EventKind, got {kind!r}")
 
         prev_hash = self._last_hash
-        signature: dict[str, Any] = {
-            "value_class": self._witness.value,
-            "algo": "hmac-sha256" if self._witness is SignatureClass.HOST_OBSERVED else "none",
-            "key_id": self._key_id if self._witness is SignatureClass.HOST_OBSERVED else None,
-        }
         body: dict[str, Any] = {
             "index": self._index,
             "event_id": str(uuid.uuid4()),
@@ -811,18 +1154,13 @@ class HostLedger:
             "at": now_rfc3339(),
             "payload": dict(payload),
             "prev_hash": prev_hash,
-            "host_signature": signature,
+            # The sealed closure decides value_class. There is no self._witness.
+            "host_signature": self._stamp(None),
         }
         message = _chain_message(prev_hash, body)
         record = dict(body)
         record["sha256"] = sha256(message).hexdigest()
-        if self._witness is SignatureClass.HOST_OBSERVED:
-            assert self._key is not None
-            record["host_signature"] = dict(signature) | {
-                "value": hmac.new(self._key, message, sha256).hexdigest()
-            }
-        else:
-            record["host_signature"] = dict(signature) | {"value": None}
+        record["host_signature"] = self._stamp(message)
 
         line = json.dumps(record, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         os.write(self._fd, (line + "\n").encode("utf-8"))
@@ -843,12 +1181,79 @@ class HostLedger:
         self.close()
 
 
-class LedgerReader:
-    """Reads and verifies a ledger. Implements `contract.LedgerView`."""
+@dataclasses.dataclass(frozen=True, slots=True)
+class SpawnAccounting:
+    """REPAIR S-10: what :meth:`LedgerReader.spawn_exit_accounting` found.
 
-    def __init__(self, path: pathlib.Path, *, key: bytes | None) -> None:
+    ``spawned``/``exited`` are attempt ids in ledger order, deduplicated.
+    ``unattributed`` counts SPAWN/EXIT entries with no ``attempt_id`` -- they
+    are reported, never silently dropped.
+    """
+
+    spawned: tuple[str, ...]
+    exited: tuple[str, ...]
+    spawned_without_exit: tuple[str, ...]
+    exited_without_spawn: tuple[str, ...]
+    unattributed: int
+
+    def missing_from(self, recorded_attempt_ids: "frozenset[str] | set[str]") -> tuple[str, ...]:
+        """Spawned attempt ids that the attempt ledger never recorded."""
+        return tuple(a for a in self.spawned if a not in recorded_attempt_ids)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "spawned": list(self.spawned),
+            "exited": list(self.exited),
+            "spawned_without_exit": list(self.spawned_without_exit),
+            "exited_without_spawn": list(self.exited_without_spawn),
+            "unattributed": self.unattributed,
+        }
+
+
+class LedgerReader:
+    """Reads and verifies a ledger. Implements `contract.LedgerView`.
+
+    ``key`` is a :class:`_RunKey` **capability** or ``None``. It is not bytes,
+    and raw bytes are refused: whoever picks the key is the host, so a key taken
+    as an ordinary argument let a hand-typed ledger verify against itself. The
+    only ways to obtain a capability are :meth:`HostLedger.verifier` and
+    :attr:`HostLedger.key`, both of which exist only inside the process that
+    minted the run key.
+
+    A reader without one is not broken — it is the honest state of every reader
+    outside that process. It re-walks the hash chain, reports every tamper class,
+    and refuses to bless, naming :data:`UNVERIFIABLE_IN_THIS_PROCESS` as the
+    reason.
+    """
+
+    #: The reason a reader with no capability gives. §5.3's "cannot forge, and
+    #: cannot bless", and the sentence a cross-process report must print.
+    UNVERIFIABLE_IN_THIS_PROCESS = "unverifiable in this process (no run key)"
+
+    def __init__(self, path: pathlib.Path, *, key: "_RunKey | None") -> None:
         self._path = pathlib.Path(path)
-        self._key = key
+        if key is None:
+            self._run_key: _RunKey | None = None
+        elif isinstance(key, _RunKey):
+            if not key.covers(self._path):
+                raise EvidencePromotionRefused(
+                    f"LedgerReader: this run key was minted for {key.ledger_path}, so it "
+                    f"cannot verify {pathlib.Path(self._path).resolve()}. A capability over "
+                    "one run's ledger is not a capability over another file -- otherwise "
+                    "'mint a throwaway host ledger and reuse its key' would be a forgery "
+                    "path (contract §5.3)."
+                )
+            self._run_key = key
+        else:
+            raise EvidencePromotionRefused(
+                "LedgerReader: a raw key is refused. Whoever chooses the key IS the host, so "
+                "a caller-supplied one lets a hand-typed ledger verify against itself: an "
+                "intact chain, a passing HMAC, host_observed_session_ids() populated, and "
+                "contract.assert_native_backed waved through, with no source edit and no "
+                "access to any real run key. Verification authority comes from "
+                "HostLedger.verifier() (or LedgerReader(path, key=host_ledger.key)), which "
+                "only the process that minted the run key can produce (contract §5.3, §10.5)."
+            )
         self._records: tuple[dict[str, Any], ...] = tuple(_io.read_jsonl(self._path))
 
     @property
@@ -936,23 +1341,51 @@ class LedgerReader:
             return False
         if sig.get("value_class") != SignatureClass.HOST_OBSERVED.value:
             return True  # caller-asserted entries carry no signature to check
-        if self._key is None:
+        if self._run_key is None:
             return False
-        expected = hmac.new(
-            self._key, _chain_message(record.get("prev_hash", ""), _body_of(record)), sha256
-        ).hexdigest()
+        expected = self._run_key.mac(
+            _chain_message(record.get("prev_hash", ""), _body_of(record))
+        )
         got = sig.get("value")
         return isinstance(got, str) and hmac.compare_digest(expected, got)
 
+    def verification_reason(self) -> str | None:
+        """Why this ledger cannot bless a native claim, or ``None`` when it can.
+
+        Four refusals, and the third is the one a chain-plus-key check misses:
+
+        1. the chain is broken;
+        2. this reader holds no run-key capability
+           (:data:`UNVERIFIABLE_IN_THIS_PROCESS`);
+        3. **the host witnessed nothing**. Every entry is caller-asserted, so
+           ``_signature_ok`` short-circuits ``True`` for all of them and the key
+           is never actually used. "Verified" would then mean no more than "this
+           replay's chain is intact", which is precisely the sentence §5.4 exists
+           to keep out of a report;
+        4. a host-observed entry's HMAC does not check out.
+        """
+        chain = self.verify_chain()
+        if not chain.ok:
+            return f"chain broken at index {chain.first_bad_index} ({chain.reason})"
+        if self._run_key is None:
+            return self.UNVERIFIABLE_IN_THIS_PROCESS
+        if chain.host_observed == 0:
+            return (
+                "no host-observed entries: the host witnessed nothing in this ledger, so "
+                "there is nothing here to bless"
+            )
+        if not all(self._signature_ok(r) for r in self._records):
+            return "a host-observed entry's HMAC does not check out"
+        return None
+
     def is_verified(self) -> bool:
-        """True only when the chain is intact, a key was supplied, and every
-        host-observed HMAC checks out. A reader without the key can verify the
-        hash chain but can never *bless* a native claim (§5.3)."""
-        if not self.verify_chain().ok:
-            return False
-        if self._key is None:
-            return False
-        return all(self._signature_ok(r) for r in self._records)
+        """True only when :meth:`verification_reason` finds nothing to refuse.
+
+        A reader without the capability can verify the hash chain but can never
+        *bless* a native claim (§5.3) — and neither can a reader whose ledger
+        holds no host-observed entry at all.
+        """
+        return self.verification_reason() is None
 
     # -- contract.LedgerView ------------------------------------------------
     def has_event(self, event_id: str) -> bool:
@@ -1002,6 +1435,64 @@ class LedgerReader:
             return klass
         return None
 
+    # -- REPAIR S-10: SPAWN/EXIT enumeration ---------------------------------
+    def events_of_kind(self, kind: EventKind) -> tuple[dict[str, Any], ...]:
+        """Every raw record whose ``kind`` is ``kind``, in ledger order.
+
+        An ADDITIVE reader capability (contract §2.4 already documents
+        ``records()`` as an optional sixth ``LedgerView`` method probed with
+        ``getattr``; this follows the same pattern and changes no existing
+        signature). ``records()`` alone forces every consumer to re-implement
+        the kind filter and the ``EventKind`` value mapping.
+        """
+        if not isinstance(kind, EventKind):
+            raise ContractError(f"events_of_kind: kind must be an EventKind, got {kind!r}")
+        return tuple(r for r in self._records if r.get("kind") == kind.value)
+
+    def spawn_exit_accounting(self) -> "SpawnAccounting":
+        """REPAIR S-10: what the event ledger says was *spawned*, so a caller
+        can reconcile it against what the attempt ledger *recorded*.
+
+        ``AttemptLedger.conserve()`` and ``Denominators.assert_reconciles()``
+        are tautological against a ledger built by dropping rows before it
+        ever sees them -- both re-derive their comparison from the very list
+        they check, and the measurement lane's own T32 negative control
+        concedes it ("the leak is invisible locally"). The event ledger is the
+        one *external* witness in the framework: a SPAWN entry is written when
+        an attempt starts, by the host, hash-chained, before any attempt row
+        exists. An attempt that was spawned and then never recorded is
+        precisely the "retries collapsed into their parent" leak
+        (benchmark-spec §1.2), and it is invisible to every check that only
+        reads the attempt list.
+
+        Attribution is by ``attempt_id``; a SPAWN/EXIT entry carrying
+        ``attempt_id: null`` is counted in ``unattributed`` rather than
+        dropped, because an unattributable spawn is missing evidence, not
+        absent evidence.
+        """
+        spawned: list[str] = []
+        exited: list[str] = []
+        unattributed = 0
+        for record in self._records:
+            kind = record.get("kind")
+            if kind not in (EventKind.SPAWN.value, EventKind.EXIT.value):
+                continue
+            attempt_id = record.get("attempt_id")
+            if not isinstance(attempt_id, str) or not attempt_id:
+                unattributed += 1
+                continue
+            bucket = spawned if kind == EventKind.SPAWN.value else exited
+            if attempt_id not in bucket:
+                bucket.append(attempt_id)
+        spawned_set, exited_set = set(spawned), set(exited)
+        return SpawnAccounting(
+            spawned=tuple(spawned),
+            exited=tuple(exited),
+            spawned_without_exit=tuple(a for a in spawned if a not in exited_set),
+            exited_without_spawn=tuple(a for a in exited if a not in spawned_set),
+            unattributed=unattributed,
+        )
+
     def assert_chain(self) -> None:
         """Raise :class:`LedgerTampered` naming the first bad index."""
         chain = self.verify_chain()
@@ -1018,7 +1509,8 @@ class LedgerReader:
 def evidence_class_for(adapter_class: AdapterClass, chain: ChainVerification) -> EvidenceClass:
     """Derive an attempt's evidence class. There is no other branch.
 
-    * ``NATIVE`` + ``chain.ok`` + ``chain.caller_asserted == 0`` -> ``NATIVE_PROVEN``
+    * ``NATIVE`` + ``chain.ok`` + ``host_observed > 0`` + ``caller_asserted == 0``
+      -> ``NATIVE_PROVEN``
     * ``NATIVE`` + anything else                                 -> ``SIMULATED``
     * ``REPLAY``                                                 -> ``SIMULATED``
     * ``STUB``                                                   -> ``FRAMEWORK``
@@ -1028,9 +1520,14 @@ def evidence_class_for(adapter_class: AdapterClass, chain: ChainVerification) ->
     driver's own ledger, which contains only what the host witnessed); §5.4
     clause 2 is deliberately the per-attempt test instead, because a run-wide
     ledger that also holds replays can never reach zero.
+
+    ``host_observed > 0`` is the vacuity guard on the same clause: an *empty*
+    chain satisfies "ok and no caller-asserted entries" without the host having
+    witnessed anything, and a ledger nobody wrote to must not be the strongest
+    evidence class in the framework.
     """
     if adapter_class is AdapterClass.NATIVE:
-        if chain.ok and chain.caller_asserted == 0:
+        if chain.ok and chain.host_observed > 0 and chain.caller_asserted == 0:
             return EvidenceClass.NATIVE_PROVEN
         return EvidenceClass.SIMULATED
     if adapter_class is AdapterClass.REPLAY:
@@ -1139,6 +1636,19 @@ class HarnessSession:
     @property
     def ledger(self) -> HostLedger:
         return self._ledger
+
+    @property
+    def backed_by_real_process(self) -> bool:
+        """True iff this session is attached to a real spawned worker pool.
+
+        The distinction :func:`worker_evidence_class` draws (§10.5): a real
+        ``python3`` subprocess earns ``REAL_FIXTURE``; pure code earns
+        ``FRAMEWORK``. Neither is a harness, so neither can reach
+        ``NATIVE_PROVEN`` -- this property is read by
+        :func:`attempt_from_session` and can only ever move an attempt
+        *between the two weakest* evidence classes.
+        """
+        return self._pool is not None
 
     def turn_records(self) -> tuple[TurnRecord, ...]:
         return tuple(self._turn_records)
@@ -1422,6 +1932,168 @@ def _first_present(record: Mapping[str, Any], names: Sequence[str], fallback: st
         if value is not _MISSING:
             return value
     return fallback
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-12 — the production constructor: a live session -> a real Attempt
+# ---------------------------------------------------------------------------
+
+def _unknown_usage(model_id: str, reported_by: str) -> Usage:
+    return Usage(
+        model_id=model_id, reported_by=reported_by,
+        input_tokens=UNKNOWN, output_tokens=UNKNOWN,
+        cache_read_input_tokens=UNKNOWN, cache_creation_input_tokens=UNKNOWN,
+        reasoning_tokens=UNKNOWN, total_tokens=UNKNOWN, wall_clock_ms=UNKNOWN,
+        cost_usd=None,
+    )
+
+
+def _unevaluated_verdict(verifier_id: str) -> Verdict:
+    return Verdict(
+        passed=None, verifier_id=verifier_id,
+        reason="not evaluated: no verifier was run for this attempt",
+        hack_class=None, evidence_digest=None,
+    )
+
+
+def attempt_from_session(
+    session: HarnessSession,
+    *,
+    card_id: str,
+    arm_id: str,
+    role: ArmRole,
+    facts: "_classify.RunFacts",
+    requested: Stratum,
+    realized: Stratum,
+    run_id: str | None = None,
+    attempt_id: str | None = None,
+    control_kind: ControlKind | None = None,
+    parent_attempt_id: str | None = None,
+    fallback_flags: Sequence[str] = (),
+    usage: Usage | None = None,
+    outcome: Verdict | None = None,
+    adoption: Verdict | None = None,
+    started_at: str | None = None,
+    ended_at: str | None = None,
+    notes: str = "",
+) -> Attempt:
+    """REPAIR S-12: build a real :class:`~...contract.Attempt` from a live session.
+
+    This is the missing production seam. Before it, every ``Attempt`` in the
+    tree was hand-built by a test or a fixture builder, so nothing a driver
+    actually produced could reach ``accounting.AttemptLedger`` /
+    ``reporting.build_report`` -- the report layer had no input path at all,
+    and the classifier had no production caller.
+
+    What is *derived* here, and therefore cannot be handed in:
+
+    * ``terminal_state`` -- :func:`evals.agentic.framework.classify.classify`
+      over the observed ``facts``. There is no ``terminal_state=`` parameter;
+      an unclassifiable fact pattern raises ``UnclassifiableRun`` rather than
+      defaulting to anything.
+    * ``adapter_class`` -- the session's own, sealed at construction.
+    * ``evidence_class`` -- :func:`evidence_class_for` over
+      ``(session.adapter_class, chain)`` for harness-backed sessions, or
+      :func:`worker_evidence_class` for a session attached to a real worker
+      subprocess. Both are the lane's only producers and neither takes an
+      argument a caller could use to promote. **There is no
+      ``evidence_class=`` parameter**, so no call site can spell
+      ``NATIVE_PROVEN``.
+
+    Why ``session_id`` and ``event_ids`` are withheld unless the derived
+    evidence class is ``NATIVE_PROVEN``: ``Attempt.claims_native`` is true for
+    *any* non-``None`` session id or non-empty event id tuple, and
+    ``contract.assert_native_backed`` then demands a verified, host-observed
+    ledger. A replayed ``session-ack`` is a string read out of a *file*; a
+    caller-asserted TURN_ACK is the subject's own word. Copying either onto
+    the attempt would make a simulated row *claim* native provenance and be
+    refused downstream -- so the honest record is ``session_id=None``,
+    ``event_ids=()``, with the observed-but-unblessed values written into
+    ``notes`` where they are visible and weightless. A genuinely
+    host-observed native session (``CliDriver.spawn``, approval-gated) takes
+    the other branch and cites its real ids.
+
+    The last line of the function re-runs ``assert_native_backed`` against the
+    session's own ledger, so this constructor structurally cannot emit an
+    attempt that the native gate would reject.
+    """
+    if not isinstance(session, HarnessSession):
+        raise ContractError(
+            f"attempt_from_session: expected a HarnessSession, got {type(session)!r}"
+        )
+    ledger = session.ledger
+    reader = ledger.verifier()
+    chain = reader.verify_chain()
+
+    if session.backed_by_real_process and session.adapter_class is not AdapterClass.NATIVE:
+        evidence_class = worker_evidence_class(real_process=True)
+    else:
+        evidence_class = evidence_class_for(session.adapter_class, chain)
+
+    terminal_state = _classify.classify(facts)
+
+    observed_session_id = session.session_id
+    blessed = evidence_class is EvidenceClass.NATIVE_PROVEN
+    if blessed:
+        attempt_session_id = observed_session_id
+        cited_event_ids = tuple(
+            record["event_id"]
+            for record in reader.records()
+            if record.get("attempt_id") == attempt_id
+            and isinstance(record.get("event_id"), str)
+            and reader.signature_class(record["event_id"]) is SignatureClass.HOST_OBSERVED
+        )
+    else:
+        attempt_session_id = None
+        cited_event_ids = ()
+
+    provenance_note = (
+        f"adapter={session.adapter_class.value} evidence={evidence_class.value} "
+        f"ledger_witness={ledger.witness.value} chain_ok={chain.ok} "
+        f"host_observed={chain.host_observed} caller_asserted={chain.caller_asserted} "
+        f"observed_session_id={observed_session_id!r}"
+    )
+    if not blessed and (observed_session_id is not None or chain.events):
+        provenance_note += " (not cited on this attempt: unblessed provenance carries no weight)"
+    full_notes = f"{notes} | {provenance_note}".strip(" |") if notes else provenance_note
+
+    if usage is None:
+        turns = session.turn_records()
+        reported = [t.usage for t in turns if t.usage.model_id != "unknown"]
+        usage = reported[-1] if reported else _unknown_usage(
+            realized.model, f"{session.adapter_class.value}-session"
+        )
+
+    attempt = Attempt(
+        attempt_id=attempt_id if attempt_id is not None else new_id(),
+        run_id=run_id if run_id is not None else ledger.run_id,
+        card_id=card_id,
+        arm_id=arm_id,
+        role=role,
+        control_kind=control_kind,
+        parent_attempt_id=parent_attempt_id,
+        terminal_state=terminal_state,
+        evidence_class=evidence_class,
+        adapter_class=session.adapter_class,
+        requested=requested,
+        realized=realized,
+        fallback_flags=tuple(fallback_flags),
+        usage=usage,
+        outcome=outcome if outcome is not None else _unevaluated_verdict("none"),
+        adoption=adoption if adoption is not None else _unevaluated_verdict("none"),
+        started_at=started_at if started_at is not None else now_rfc3339(),
+        ended_at=ended_at if ended_at is not None else now_rfc3339(),
+        session_id=attempt_session_id,
+        event_ids=cited_event_ids,
+        arrived_after_terminal=session.arrived_after_terminal,
+        notes=full_notes,
+    )
+    # Self-check: whatever this constructor produced must survive the native
+    # gate against the very ledger it was built from. If it does not, the bug
+    # is here, and it must surface as ForgedProvenance now rather than as a
+    # trusted-looking row in a report later.
+    assert_native_backed(attempt, reader)
+    return attempt
 
 
 # ---------------------------------------------------------------------------

@@ -18,7 +18,10 @@ import unittest
 
 from evals.agentic.framework import io, registry, validate
 from evals.agentic.framework.contract import (
+    AdapterClass,
     ApprovalGate,
+    ArmRole,
+    Attempt,
     Card,
     CardKind,
     CatalogUnresolvable,
@@ -27,7 +30,12 @@ from evals.agentic.framework.contract import (
     EvidenceClass,
     LeakageDetected,
     Manifest,
+    Stratum,
+    TerminalState,
+    Usage,
     VacuousVerifier,
+    Verdict,
+    now_rfc3339,
 )
 
 REPO_ROOT = io.repo_root()
@@ -165,6 +173,53 @@ class CatalogMergeAndResolve(unittest.TestCase):
             root = _synthetic_catalog_root(pathlib.Path(tmp), duplicate=True)
             with self.assertRaises(CatalogUnresolvable):
                 registry.load_catalog(root)
+
+    def test_no_catalog_mapped_test_contains_a_constant_vs_constant_assertion(self):
+        """F2: run_entry's '>=1 assertion' floor cannot tell assertTrue(True)
+        from a real assertion -- it counts calls, not what they prove.
+        Sweeps every one of the real, live catalog's resolvable entries and
+        lints the mapped test method's own source for that specific shape."""
+        catalog = registry.load_catalog(REPO_ROOT)
+        checked = 0
+        for entry in catalog.entries.values():
+            try:
+                cls, method_name = registry.resolve_test(entry)
+            except CatalogUnresolvable:
+                continue  # a blocked/unresolvable entry has no source to lint
+            checked += 1
+            with self.subTest(entry=entry.id):
+                findings = registry.scan_vacuous_assertions(cls, method_name)
+                self.assertEqual(
+                    findings, (),
+                    f"{entry.id} ({cls.__name__}.{method_name}) contains a vacuous assertion: {findings}",
+                )
+        self.assertGreater(checked, 0, "no catalog entries were resolvable -- nothing was actually linted")
+
+    def test_no_catalog_mapped_test_contains_a_constant_vs_constant_assertion__negative(self):
+        """Negative control: the scanner must actually fire on the exact
+        vacuous shapes it claims to catch -- a scanner that always returns
+        () would let the positive sweep above pass vacuously too."""
+        class _DeliberatelyVacuous(unittest.TestCase):
+            def test_true_is_true(self):
+                self.assertTrue(True)
+
+            def test_one_equals_one(self):
+                self.assertEqual(1, 1)
+
+            def test_a_real_assertion(self):
+                x = 2 + 2
+                self.assertEqual(x, 4)  # one side is a variable, not a bare literal -- not this pattern
+
+        findings_true = registry.scan_vacuous_assertions(_DeliberatelyVacuous, "test_true_is_true")
+        self.assertEqual(len(findings_true), 1)
+        self.assertIn("assertTrue(True)", findings_true[0])
+
+        findings_eq = registry.scan_vacuous_assertions(_DeliberatelyVacuous, "test_one_equals_one")
+        self.assertEqual(len(findings_eq), 1)
+        self.assertIn("assertEqual(1, 1)", findings_eq[0])
+
+        findings_real = registry.scan_vacuous_assertions(_DeliberatelyVacuous, "test_a_real_assertion")
+        self.assertEqual(findings_real, (), "a variable-vs-literal comparison must not be flagged")
 
     def test_resolve_test_and_run_entry_execute_a_real_passing_entry(self):
         entry = registry.CatalogEntry(
@@ -352,6 +407,180 @@ class SamplingIntegrity(unittest.TestCase):
         overlaps = validate.scan_leakage([leaky_card], [surface], min_tokens=8)
         self.assertGreater(len(overlaps), 0)
         self.assertTrue(all(o.card_id == "leaktest-pos-01" for o in overlaps))
+
+
+class FixtureLeakageBinding(unittest.TestCase):
+    """CV-07: a card's real, task-specific oracle lives in its FIXTURES
+    (`fixtures/pass/guard.sh` and any sibling fixture file, not the two
+    shared card-independent verifier scripts), so a leakage scan that never
+    reads fixtures cannot notice a surface publishing the verbatim grading
+    command and a full copy of a passing artifact."""
+
+    def test_surface_publishing_the_real_guard_check_and_a_passing_artifact_is_caught(self):
+        """CV-07's exact reproduction, run against a temp copy of the real
+        surface (never mutating the committed plugin file): appending
+        stop-rule-pos-01's own fixtures/pass/guard.sh check line and its
+        fixtures/pass/stop-report.md verbatim to the plugin's real SKILL.md
+        must now be flagged."""
+        cards = validate.load_cards(REPO_ROOT)
+        card = next(c for c in cards if c.card_id == "stop-rule-pos-01")
+        guard = (REPO_ROOT / card.pass_fixture / "guard.sh").read_text()
+        report = (REPO_ROOT / card.pass_fixture / "stop-report.md").read_text()
+        real_skill = REPO_ROOT / "plugins" / "stop-rule" / "skills" / "stop-rule" / "SKILL.md"
+        with tempfile.TemporaryDirectory() as tmp:
+            leaked = pathlib.Path(tmp) / "SKILL.md"
+            leaked.write_text(
+                real_skill.read_text() + "\n\n## How you will be graded\n\n" + guard
+                + "\nExample of a passing stop-report.md:\n\n" + report
+            )
+            overlaps = validate.scan_leakage([card], [leaked])
+            self.assertGreater(len(overlaps), 0)
+            self.assertTrue(all(o.card_id == "stop-rule-pos-01" for o in overlaps))
+
+    def test_surface_publishing_the_real_guard_check_and_a_passing_artifact_is_caught__negative(self):
+        """Negative control: the REAL, unmodified SKILL.md (never leaked)
+        must report zero overlaps -- proving the positive case above is
+        about the appended secret content, not that this check now flags
+        every plugin's real, legitimate documentation."""
+        cards = validate.load_cards(REPO_ROOT)
+        card = next(c for c in cards if c.card_id == "stop-rule-pos-01")
+        real_skill = REPO_ROOT / "plugins" / "stop-rule" / "skills" / "stop-rule" / "SKILL.md"
+        overlaps = validate.scan_leakage([card], [real_skill])
+        self.assertEqual(overlaps, ())
+
+    def test_plugins_own_generated_scaffolding_is_not_a_false_positive(self):
+        """Negative control for the fixture-inclusive scan itself: redgate's
+        `scaffold-run.sh` generates the same exit-code-convention comment
+        into every `check.sh` it scaffolds, and redgate's own SKILL.md
+        legitimately documents that same real, public behavior. Since that
+        comment is independently already public via the plugin's own real
+        script (not fixture-exclusive), it must not be reported as a T18(b)
+        leak -- caught during this repair as a false positive introduced by
+        naively scanning every fixture byte with no exemption at all."""
+        cards = validate.load_cards(REPO_ROOT)
+        redgate_cards = [c for c in cards if c.plugin == "redgate"]
+        self.assertGreater(len(redgate_cards), 0)
+        real_skill = REPO_ROOT / "plugins" / "redgate" / "skills" / "criteria-contract" / "SKILL.md"
+        overlaps = validate.scan_leakage(redgate_cards, [real_skill])
+        self.assertEqual(overlaps, ())
+
+
+class ParaphraseCoverage(unittest.TestCase):
+    """CV-12: paraphrase variants and baseline-framing commentary must live
+    in card.json (registry-internal), not in the agent-visible
+    task/README.md -- and every holdout card needs at least two, so the
+    (not-yet-wired, integration-lane) runner has something to select
+    between per attempt."""
+
+    def test_every_holdout_card_carries_at_least_two_paraphrases(self):
+        cards = validate.load_cards(REPO_ROOT)
+        holdout = [c for c in cards if c.holdout]
+        self.assertGreater(len(holdout), 0)
+        for card in holdout:
+            with self.subTest(card=card.card_id):
+                paras = validate.card_paraphrases(card, REPO_ROOT)
+                self.assertGreaterEqual(
+                    len(paras), 2,
+                    f"{card.card_id}: holdout card must carry >=2 paraphrases in card.json",
+                )
+
+    def test_every_holdout_card_carries_at_least_two_paraphrases__negative(self):
+        """Negative control: a non-holdout card is not held to this bar --
+        proving the assertion above is specifically about holdout cards,
+        not a blanket 'every card needs paraphrases' rule this corpus does
+        not actually try to satisfy for its dev-loop-visible cards."""
+        cards = validate.load_cards(REPO_ROOT)
+        non_holdout_without_paraphrases = [
+            c for c in cards if not c.holdout and not validate.card_paraphrases(c, REPO_ROOT)
+        ]
+        self.assertGreater(
+            len(non_holdout_without_paraphrases), 0,
+            "sanity: at least one non-holdout card has no paraphrases and that is fine",
+        )
+
+    def test_no_task_readme_discloses_paraphrase_or_baseline_framing_sections(self):
+        """The concrete leak CV-12 named: 'Baseline framing' prose sitting
+        in the agent-visible task/README.md named the treatment's own skill
+        by what it withholds from the baseline. Neither section may appear
+        in any task/README.md again."""
+        tasks_dir = REPO_ROOT / "evals" / "agentic" / "tasks"
+        offenders = []
+        for readme in sorted(tasks_dir.rglob("task/README.md")):
+            text = readme.read_text()
+            if "Paraphrase variants" in text or "Baseline framing" in text:
+                offenders.append(str(readme.relative_to(REPO_ROOT)))
+        self.assertEqual(offenders, [])
+
+
+def _attempt_doc(*, model_id: str, stratum_model: str, adapter_class: AdapterClass = AdapterClass.NATIVE) -> dict:
+    strat = Stratum(provider="anthropic", model=stratum_model, revision="r1", effort="high", harness="claude-code/1.0")
+    usage = Usage(
+        model_id=model_id, reported_by="claude-cli/1.0",
+        input_tokens=1, output_tokens=1, cache_read_input_tokens=0,
+        cache_creation_input_tokens=0, reasoning_tokens=0, total_tokens=2,
+        wall_clock_ms=100, cost_usd=0.01,
+    )
+    verdict = Verdict(passed=True, verifier_id="v1", reason="ok", hack_class=None, evidence_digest=None)
+    attempt = Attempt(
+        attempt_id="at-1", run_id="run-1", card_id="c1", arm_id="arm-1",
+        role=ArmRole.TREATMENT, control_kind=None, parent_attempt_id=None,
+        terminal_state=TerminalState.DELIVERED,
+        evidence_class=EvidenceClass.FRAMEWORK, adapter_class=AdapterClass.STUB,
+        requested=strat, realized=strat, fallback_flags=(), usage=usage,
+        outcome=verdict, adoption=verdict,
+        started_at=now_rfc3339(), ended_at=now_rfc3339(),
+        session_id=None, event_ids=(), arrived_after_terminal=False,
+    )
+    doc = attempt.to_dict()
+    # to_dict() encodes enums as their .value strings (contract §2.3
+    # convention); override adapter_class's encoded value directly so this
+    # helper can exercise validate_attempt with either scoping.
+    doc["adapter_class"] = adapter_class.value
+    return doc
+
+
+class AttemptModelStratumCrossCheck(unittest.TestCase):
+    """S-08 residual: validate.validate_attempt schema-validates a
+    serialized attempt record and cross-checks usage.model_id against the
+    stratum it is realized on, for every AdapterClass (unlike
+    contract.Attempt.__post_init__'s NATIVE-only in-memory check -- see
+    that method's docstring comment for why it is scoped narrower)."""
+
+    def test_matching_model_id_and_stratum_passes(self):
+        doc = _attempt_doc(model_id="claude-sonnet-5", stratum_model="claude-sonnet-5")
+        attempt = validate.validate_attempt(doc)
+        self.assertEqual(attempt.usage.model_id, "claude-sonnet-5")
+
+    def test_mismatched_model_id_and_stratum_is_rejected(self):
+        """S-08's exact shape: usage says one model, realized says another."""
+        doc = _attempt_doc(model_id="claude-sonnet-5", stratum_model="claude-opus-5")
+        with self.assertRaises(ContractError):
+            validate.validate_attempt(doc)
+
+    def test_mismatched_model_id_and_stratum_is_rejected__negative(self):
+        """Sibling: the same mismatch, but wired through a STUB adapter_class
+        (where contract.Attempt's own in-memory constructor does NOT check
+        this) still gets caught at validate.validate_attempt -- proving this
+        is a real independent check, not a passthrough to the narrower one."""
+        doc = _attempt_doc(model_id="claude-sonnet-5", stratum_model="claude-opus-5", adapter_class=AdapterClass.STUB)
+        # contract.Attempt itself must accept this (STUB is out of scope for
+        # its own check) ...
+        attempt = Attempt.from_dict(doc)
+        self.assertEqual(attempt.usage.model_id, "claude-sonnet-5")
+        # ... but validate.validate_attempt must still refuse it.
+        with self.assertRaises(ContractError):
+            validate.validate_attempt(doc)
+
+    def test_native_adapter_mismatch_is_already_rejected_by_attempt_itself(self):
+        """contract.Attempt.__post_init__'s narrower, NATIVE-only check
+        fires first for a NATIVE-adapter attempt -- validate_attempt need
+        not do any extra work to catch this case, but must not let it
+        through either."""
+        doc = _attempt_doc(model_id="claude-sonnet-5", stratum_model="claude-opus-5", adapter_class=AdapterClass.NATIVE)
+        with self.assertRaises(ContractError):
+            Attempt.from_dict(doc)
+        with self.assertRaises(ContractError):
+            validate.validate_attempt(doc)
 
 
 if __name__ == "__main__":

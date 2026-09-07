@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "keep a flat todo list with no ticket types, no dependency graph, and no computed frontier",
       "kind": "skill",
-      "name": "ticket-map-and-frontier",
+      "name": "wayfinder",
       "source_plugin": "wayfinder"
     }
   ],
@@ -18,6 +18,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "T1 has no dependencies, is still open, and is nearly done (PR up, one approval away). T2 is open and depends on T3, which is also still open. What's the current frontier?",
+    "Compute the frontier: T1 is open with an empty dependency list and one approval from merging; T2 is open, blocked on T3, which is itself still open."
+  ],
   "pass_fixture": "evals/agentic/tasks/wayfinder/wayfinder-near-01/fixtures/pass",
   "plugin": "wayfinder",
   "task_path": "evals/agentic/tasks/wayfinder/wayfinder-near-01/task"

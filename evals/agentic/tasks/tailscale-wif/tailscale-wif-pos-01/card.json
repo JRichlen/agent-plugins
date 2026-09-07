@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline",
       "kind": "skill",
-      "name": "wif-setup-procedure",
+      "name": "tailscale-wif",
       "source_plugin": "tailscale-wif"
     }
   ],

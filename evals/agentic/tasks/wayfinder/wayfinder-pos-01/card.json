@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "keep a flat todo list with no ticket types, no dependency graph, and no computed frontier",
       "kind": "skill",
-      "name": "ticket-map-and-frontier",
+      "name": "wayfinder",
       "source_plugin": "wayfinder"
     }
   ],

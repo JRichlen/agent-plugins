@@ -37,6 +37,7 @@ __all__ = [
     "cost_of",
     "coordination_attempts",
     "denominators",
+    "assert_planned_reconciles",
 ]
 
 # The Usage fields that carry a TokenCount/Millis (i.e. `int | UNKNOWN`) value,
@@ -244,6 +245,44 @@ class Denominators:
 
     def to_dict(self) -> dict[str, Any]:
         return dataclasses.asdict(self)
+
+
+def assert_planned_reconciles(
+    denoms: Denominators,
+    planned_n: Mapping[str, int],
+    skipped: Iterable[Mapping[str, str]],
+) -> None:
+    """REPAIR S-10: `conserve()`/`Denominators.assert_reconciles` are
+    tautological against a ledger built by dropping rows before it ever sees
+    them -- both re-derive their own comparison from the very list they check
+    (T32's own negative control concedes this: "the leak is invisible
+    locally"). The only genuine, EXTERNAL check available inside this lane is
+    the run manifest's own `planned_n` (cells -> planned trials), declared
+    BEFORE the run per benchmark-spec §0/§1.2.
+
+    A no-op while `planned_n` is undeclared ({}), which is what
+    `evals/agentic/run.py` writes today (cross-lane -- see the REPAIR
+    handoff): this function cannot make dispatch-time population happen, only
+    make the comparison real once a caller supplies it. When declared, the
+    total must match the ledger's own accounting denominator, unless at least
+    one `Manifest.skipped` entry exists to acknowledge a shortfall --
+    `skippedEntry` (run-manifest.schema.json) carries no numeric count, so
+    this cannot reconcile an exact shortfall, only refuse an UNACKNOWLEDGED
+    one.
+    """
+    if not planned_n:
+        return
+    planned_total = sum(planned_n.values())
+    if planned_total == denoms.accounting:
+        return
+    skipped = list(skipped)
+    if not skipped:
+        raise AccountingLeak(
+            "assert_planned_reconciles: Manifest.planned_n totals "
+            f"{planned_total} but the ledger accounts for {denoms.accounting} "
+            "attempts, and Manifest.skipped is empty -- the shortfall is "
+            "unacknowledged"
+        )
 
 
 def denominators(attempts: Iterable[Attempt]) -> Denominators:

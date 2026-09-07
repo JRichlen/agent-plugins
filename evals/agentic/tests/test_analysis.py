@@ -9,6 +9,7 @@ the task brief's instruction.
 """
 from __future__ import annotations
 
+import dataclasses
 import importlib.util
 import math
 import pathlib
@@ -24,6 +25,7 @@ from evals.agentic.framework.analysis import (
     card_rate,
     cluster_bootstrap,
     cluster_t_interval,
+    derive_fallback_flags,
     design_effect,
     difference_interval,
     group_by_stratum,
@@ -39,6 +41,7 @@ from evals.agentic.framework.analysis import (
 from evals.agentic.framework.contract import (
     ArmRole,
     ContractError,
+    ControlKind,
     CrossModelPoolingRefused,
     MarginMissing,
     Stratum,
@@ -121,6 +124,38 @@ class NoCrossModelTokenAverage(unittest.TestCase):
         the T34 catalog entry to be considered non-vacuous."""
         return self.test_naive_pooled_mean_describes_neither_model()
 
+    # -- REPAIR S-08: a stratum's own declared model is verified, not trusted
+
+    def test_pool_by_stratum_refuses_when_usage_disagrees_with_the_stratum(self):
+        """S-08 repro: 8 attempts all realized on an OPUS stratum, but every
+        one's usage.model_id says 'claude-sonnet-5'. Because all 8 agree WITH
+        EACH OTHER, the old 'len(model_ids) != 1' guard never fired and 72,800
+        Sonnet output tokens were filed under the Opus stratum row with no
+        error."""
+        opus = Stratum(provider="anthropic", model="claude-opus-5", revision="6d5342c", effort="high", harness="claude-code/2.1.263")
+        attempts = [
+            builders.make_attempt(realized=opus, requested=opus,
+                                   usage=builders.make_usage(model_id="claude-sonnet-5", output_tokens=9100))
+            for _ in range(8)
+        ]
+        with self.assertRaises(CrossModelPoolingRefused):
+            pool_tokens(attempts, "output_tokens", by="stratum")
+
+    def test_pool_by_stratum_succeeds_when_usage_matches_the_stratum(self):
+        opus = Stratum(provider="anthropic", model="claude-opus-5", revision="6d5342c", effort="high", harness="claude-code/2.1.263")
+        attempts = [
+            builders.make_attempt(realized=opus, requested=opus,
+                                   usage=builders.make_usage(model_id="claude-opus-5", output_tokens=100))
+            for _ in range(3)
+        ]
+        result = pool_tokens(attempts, "output_tokens", by="stratum")
+        self.assertEqual(result[opus.key()].known, 300)
+
+    def test_pool_by_stratum_refuses_when_usage_disagrees_with_the_stratum__negative(self):
+        """Catalog sibling for the S-08 fix: the naive 'members agree with
+        each other' guard alone would accept this contaminated group."""
+        return self.test_pool_by_stratum_refuses_when_usage_disagrees_with_the_stratum()
+
 
 # ---------------------------------------------------------------------------
 # T35 -- matched strata and fallback flags
@@ -188,16 +223,21 @@ class MatchedStrataAndFallbacks(unittest.TestCase):
             self.assertIn(stratum_of(a), groups)
 
     def test_difference_interval_rejects_mixed_strata(self):
-        treatment, baseline, _ = self._build()
-        pairs, _ = matched_pairs(treatment, baseline)
-        # Deliberately corrupt one pair's stratum to a different value, as if
-        # two Pairs from different realized models were merged into one Delta.
-        import dataclasses as dc
-        bad_pairs = list(pairs)
+        # Two cards, each internally matched (treatment/baseline share a
+        # realized stratum), but the two cards were run on DIFFERENT realized
+        # strata -- as if two separate per-stratum runs were merged into one
+        # Delta without going through group_by_stratum first.
         other = Stratum(provider="openai", model="gpt-x", revision="z", effort="n/a", harness="codex-cli/0.153.4")
-        bad_pairs[0] = dc.replace(bad_pairs[0], stratum=other)
+        treatment = [
+            builders.make_attempt(card_id="card-a", role=ArmRole.TREATMENT),
+            builders.make_attempt(card_id="card-b", role=ArmRole.TREATMENT, requested=other, realized=other),
+        ]
+        baseline = [
+            builders.make_attempt(card_id="card-a", arm_id="baseline", role=ArmRole.BASELINE),
+            builders.make_attempt(card_id="card-b", arm_id="baseline", role=ArmRole.BASELINE, requested=other, realized=other),
+        ]
         with self.assertRaises(ContractError):
-            difference_interval(bad_pairs, seed=1, min_clusters=1)
+            difference_interval(treatment, baseline, seed=1, min_clusters=1)
 
     # -- negative control: silent fallback pooling -------------------------
 
@@ -222,6 +262,178 @@ class MatchedStrataAndFallbacks(unittest.TestCase):
         attempt (none of the fallback cards may appear matched) for the T35
         catalog entry to be considered non-vacuous."""
         return self.test_pooling_fallback_attempt_with_on_request_attempt_is_wrong()
+
+    # -- REPAIR S-07: fallback_flags is recomputed and verified, never trusted
+
+    def test_forged_fallback_flags_is_a_hard_contract_error(self):
+        """S-07 repro (review-wave4-statistics.md): requested=opus,
+        realized=sonnet, but the attempt declares fallback_flags=() -- a
+        silent fallback that used to pair cleanly ('a silent fallback turns a
+        plugin effect into a model effect', benchmark-spec §2). Recomputing
+        fallback_flags from requested/realized must catch it as a hard error,
+        not let it through."""
+        req = Stratum(provider="anthropic", model="claude-opus-5", revision="6d5342c", effort="high", harness="claude-code/2.1.263")
+        real = Stratum(provider="anthropic", model="claude-sonnet-5", revision="6d5342c", effort="high", harness="claude-code/2.1.263")
+        t = [builders.make_attempt(card_id="p-pos-01", requested=req, realized=real, fallback_flags=())]
+        b = [builders.make_attempt(card_id="p-pos-01", arm_id="baseline", role=ArmRole.BASELINE, requested=req, realized=real, fallback_flags=())]
+        with self.assertRaises(ContractError):
+            matched_pairs(t, b)
+
+    def test_derive_fallback_flags_matches_the_worked_field_order(self):
+        req = Stratum(provider="anthropic", model="claude-opus-5", revision="a", effort="high", harness="h")
+        real = Stratum(provider="anthropic", model="claude-sonnet-5", revision="a", effort="low", harness="h")
+        self.assertEqual(derive_fallback_flags(req, real), ("model", "effort"))
+        self.assertEqual(derive_fallback_flags(req, req), ())
+
+    def test_forged_fallback_flags_is_a_hard_contract_error__negative(self):
+        """Catalog sibling for the S-07 fix: a naive matched_pairs that trusts
+        the recorded fallback_flags at face value would pair this silent
+        fallback instead of refusing it."""
+        return self.test_forged_fallback_flags_is_a_hard_contract_error()
+
+    # -- REPAIR S-13: only role=TREATMENT/BASELINE may enter the matched set C
+
+    def test_control_role_as_baseline_is_rejected(self):
+        """S-13 repro: an oracle CONTROL or a COORDINATION row standing in for
+        the baseline arm used to pair silently. benchmark-spec §4.1: 'Nop,
+        inversion and oracle are controls, not the baseline, and are excluded
+        from C'."""
+        t = [builders.make_attempt(card_id="p-pos-01", role=ArmRole.TREATMENT)]
+        oracle = [builders.make_attempt(card_id="p-pos-01", arm_id="arm-oracle", role=ArmRole.CONTROL, control_kind=ControlKind.ORACLE)]
+        coordination = [builders.make_attempt(card_id="p-pos-01", role=ArmRole.COORDINATION)]
+        with self.assertRaises(ContractError):
+            matched_pairs(t, oracle)
+        with self.assertRaises(ContractError):
+            matched_pairs(t, coordination)
+
+    def test_control_role_as_baseline_is_rejected__negative(self):
+        """Catalog sibling for the S-13 fix: a naive matched_pairs that never
+        reads .role would pair a control or coordination row as if it were
+        the no-skill baseline."""
+        return self.test_control_role_as_baseline_is_rejected()
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-01 / S-03: scoring-invalid exclusion and the §4.1 estimand itself
+# ---------------------------------------------------------------------------
+
+class ScoringInvalidBaselineExcluded(unittest.TestCase):
+    def _build(self):
+        spec = io.load_json(FIXTURES / "negative" / "fault-baseline-8-cards.json")
+        treatment, baseline = [], []
+        for i in range(spec["n_cards"]):
+            cid = f"{spec['card_prefix']}-{i:02d}"
+            treatment.append(builders.make_attempt(card_id=cid, role=ArmRole.TREATMENT,
+                                                     terminal_state=TerminalState.DELIVERED, outcome=True, adoption=True))
+            baseline.append(builders.make_attempt(card_id=cid, arm_id="baseline", role=ArmRole.BASELINE,
+                                                    terminal_state=TerminalState.FAULT, outcome=None, adoption=None))
+        return treatment, baseline
+
+    def test_all_fault_baseline_produces_no_matched_pairs(self):
+        """S-01 repro (blocker): a baseline arm that FAULTed on every card
+        must never be treated as a comparison point."""
+        treatment, baseline = self._build()
+        pairs, unmatched = matched_pairs(treatment, baseline)
+        self.assertEqual(len(pairs), 0)
+        self.assertEqual(len(unmatched), 8)
+        for u in unmatched:
+            self.assertEqual(u.side, "baseline")
+            self.assertTrue(u.reason.startswith("scoring-invalid: fault"))
+
+    def test_all_fault_baseline_refuses_the_effect_rather_than_reporting_plus_one(self):
+        """S-01 repro (blocker): before the fix this reported Delta_full =
+        +1.0000 with a ZERO-WIDTH CI and ESTABLISHED noninferiority -- a
+        baseline that never produced a scoring-valid trial read as the
+        strongest possible evidence for the plugin. It must instead refuse."""
+        treatment, baseline = self._build()
+        with self.assertRaises(ContractError):
+            difference_interval(treatment, baseline, seed=1, min_clusters=1)
+
+    def test_all_fault_baseline_produces_no_matched_pairs__negative(self):
+        """Catalog sibling for the S-01 fix: a naive matched_pairs that never
+        checks terminal_state would pair the FAULT baseline attempts against
+        the treatment's real passes."""
+        return self.test_all_fault_baseline_produces_no_matched_pairs()
+
+
+class FullPackageEffect(unittest.TestCase):
+    """S-03 (blocker): benchmark-spec §4.1's own worked example, end to end.
+    Delta_full is the mean over cards of each arm's OWN card_rate, never a
+    per-trial 1:1 paired difference (which silently truncates the larger arm
+    to the smaller arm's trial count on any card where counts differ, and
+    folds a FAULT verdict into a 0.0 difference instead of excluding it)."""
+
+    def _build(self):
+        spec = io.load_json(FIXTURES / "estimands" / "full-package-4-cards.json")
+        treatment: list = []
+        baseline: list = []
+        for card_id, arms in spec["cards"].items():
+            treatment += builders.attempts_for_card(card_id, arms["treatment"])
+            # attempts_for_card defaults to role=TREATMENT/arm_id="treatment";
+            # relabel for the baseline side.
+            for a in builders.attempts_for_card(card_id, arms["baseline"]):
+                baseline.append(dataclasses.replace(a, role=ArmRole.BASELINE, arm_id="baseline"))
+        return treatment, baseline, spec
+
+    def test_delta_full_matches_the_spec_worked_example(self):
+        treatment, baseline, spec = self._build()
+        exp = spec["expected"]
+        interval = difference_interval(treatment, baseline, seed=1, min_clusters=1)
+        self.assertAlmostEqual(interval.point, exp["delta_full"], places=4)
+        self.assertEqual(interval.n_clusters, exp["n_clusters"])
+        self.assertEqual(interval.method, "cluster-t")
+        self.assertAlmostEqual(interval.lo, exp["lo"], places=3)
+        self.assertAlmostEqual(interval.hi, exp["hi"], places=3)
+
+    def test_c4s_fault_is_excluded_not_zero_filled(self):
+        """The card whose treatment side has 1 fault (3/4 valid) must
+        contribute p_T(c4)=0.75, not fold the fault into a 0.0 outcome."""
+        treatment, baseline, spec = self._build()
+        pairs, unmatched = matched_pairs(treatment, baseline)
+        c4_unmatched = [u for u in unmatched if u.card_id == "c4"]
+        self.assertEqual(len(c4_unmatched), 1)
+        self.assertEqual(c4_unmatched[0].side, "treatment")
+        self.assertTrue(c4_unmatched[0].reason.startswith("scoring-invalid: fault"))
+
+    def test_unequal_arm_sizes_are_never_truncated(self):
+        """S-03 repro: T=[pass,pass,pass,pass,fail], B=[fail,fail,pass] (no
+        faults at all) -- unequal counts alone used to truncate the larger
+        arm via 1:1 index pairing (min(5,3)=3), silently dropping 2 real
+        treatment trials. The correct figures (spec §4.1) are p_T=0.8,
+        p_B=0.3333, d=+0.4667 computed over each arm's FULL trial set."""
+        t = builders.attempts_for_card("c", ["pass", "pass", "pass", "pass", "fail"])
+        b = [dataclasses.replace(a, role=ArmRole.BASELINE, arm_id="baseline")
+             for a in builders.attempts_for_card("c", ["fail", "fail", "pass"])]
+        interval = difference_interval(t, b, seed=1, min_clusters=1)
+        self.assertAlmostEqual(interval.point, 0.8 - (1 / 3), places=4)
+
+    def test_delta_full_matches_the_spec_worked_example__negative(self):
+        """Catalog sibling for the S-03 fix: the previous per-pair-average
+        implementation (truncating to min(len) and folding FAULT into 0.0)
+        computed +0.1000 on this exact fixture, not the spec's +0.1375."""
+        treatment, baseline, spec = self._build()
+        # Reproduce the OLD (wrong) computation directly: pair 1:1 in
+        # encounter order within each card, truncate to the shorter list,
+        # read a FAULT verdict as 0.0, and average PER-PAIR differences.
+        t_by_card: dict[str, list] = {}
+        for a in treatment:
+            t_by_card.setdefault(a.card_id, []).append(a)
+        b_by_card: dict[str, list] = {}
+        for a in baseline:
+            b_by_card.setdefault(a.card_id, []).append(a)
+        per_card_means = []
+        for card_id in sorted(t_by_card):
+            t_list, b_list = t_by_card[card_id], b_by_card[card_id]
+            n = min(len(t_list), len(b_list))
+            diffs = []
+            for i in range(n):
+                t_val = 1.0 if t_list[i].outcome.passed else 0.0
+                b_val = 1.0 if b_list[i].outcome.passed else 0.0
+                diffs.append(t_val - b_val)
+            per_card_means.append(sum(diffs) / len(diffs))
+        naive_delta_full = sum(per_card_means) / len(per_card_means)
+        self.assertAlmostEqual(naive_delta_full, 0.10, places=4)
+        self.assertNotAlmostEqual(naive_delta_full, spec["expected"]["delta_full"], places=3)
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +500,55 @@ class AnyAllPass(unittest.TestCase):
         correct fault-excluded rate) for the T36 catalog entry to be
         considered non-vacuous."""
         return self.test_counting_faults_as_failures_corrupts_the_rate()
+
+    # -- REPAIR S-02: an unevaluated (None) verdict is a third value, never
+    #    coerced into a failure -----------------------------------------------
+
+    def test_all_unevaluated_verdicts_yield_none_not_false(self):
+        """S-02 repro: 5 DELIVERED trials whose verifier never ran (outcome is
+        None on every one) used to report any_pass=False, all_pass=False and
+        card_rate=0.0000 (0/5) -- reading a broken verifier as 'the plugin
+        failed every trial'. benchmark-spec §5: unevaluated is excluded from
+        N, never folded into n01/n00."""
+        trials = [builders.make_attempt(card_id="p-pos-00", terminal_state=TerminalState.DELIVERED,
+                                         outcome=None, adoption=None) for _ in range(5)]
+        self.assertIsNone(any_pass(trials))
+        self.assertIsNone(all_pass(trials))
+        rate = card_rate(trials)
+        self.assertIsNone(rate.value)
+        self.assertEqual(rate.unevaluated, 5)
+        self.assertIn("no evaluated verdicts", rate.unavailable_reason)
+
+    def test_partially_unevaluated_card_excludes_only_the_unevaluated_trials(self):
+        """3 valid trials, 1 with no verdict: the rate must be computed over
+        the 2 evaluated trials (1 pass, 1 fail -> 0.5), not 1/3."""
+        trials = [
+            builders.make_attempt(card_id="p-pos-00", outcome=True),
+            builders.make_attempt(card_id="p-pos-00", outcome=False),
+            builders.make_attempt(card_id="p-pos-00", outcome=None),
+        ]
+        rate = card_rate(trials)
+        self.assertEqual(rate.numerator, 1)
+        self.assertEqual(rate.denominator, 2)
+        self.assertAlmostEqual(rate.value, 0.5)
+        self.assertEqual(rate.unevaluated, 1)
+
+    def test_coercing_unevaluated_to_fail_reads_a_broken_verifier_as_zero(self):
+        """S-02 negative control: the naive denominator (all scoring-valid
+        trials, verdict or not) silently folds 'the verifier never ran' into
+        'failed', producing a confident 0% instead of refusing to score."""
+        trials = [builders.make_attempt(card_id="p-pos-00", terminal_state=TerminalState.DELIVERED,
+                                         outcome=None, adoption=None) for _ in range(5)]
+        naive_denominator = len(trials)  # every trial is scoring-valid
+        naive_numerator = sum(1 for t in trials if t.outcome.passed is True)  # 0
+        naive_rate = naive_numerator / naive_denominator
+        self.assertEqual(naive_rate, 0.0)
+        self.assertIsNone(card_rate(trials).value)  # the correct answer refuses to score at all
+
+    def test_all_unevaluated_verdicts_yield_none_not_false__negative(self):
+        """Catalog sibling for the S-02 fix: the naive coerce-to-fail
+        denominator must disagree with the correct refusal-to-score."""
+        return self.test_coercing_unevaluated_to_fail_reads_a_broken_verifier_as_zero()
 
 
 # ---------------------------------------------------------------------------
@@ -399,6 +660,58 @@ class ClusteredUncertainty(unittest.TestCase):
         narrower than the correct clustered one on the same data) for the
         T37 catalog entry to be considered non-vacuous."""
         return self.test_naive_iid_interval_is_narrower_than_clustered()
+
+    # -- REPAIR S-11: single-trial clusters and empty clusters must not read
+    #    as "no valid trials" ------------------------------------------------
+
+    def test_single_trial_clusters_report_a_real_wilson_interval(self):
+        """S-11 repro: 8 clusters of exactly one trial each (the normal shape
+        of a one-repeat-per-card run) used to report 'unavailable (no valid
+        trials)' because mean cluster size <= 1 makes icc_raw (and therefore
+        the old design_effect) None. DEFF == 1 exactly at m_bar == 1,
+        regardless of icc, so the plain Wilson interval must be reported."""
+        clusters = [[1.0] for _ in range(8)]
+        interval = wilson_with_cluster_inflation(clusters, min_clusters=8)
+        self.assertIsNone(interval.unavailable_reason)
+        self.assertIsNotNone(interval.lo)
+        self.assertIsNotNone(interval.hi)
+        self.assertEqual(interval.deff, 1.0)
+        self.assertEqual(interval.deff_method, "single-trial-clusters")
+        self.assertIsNone(interval.icc_raw)  # genuinely inestimable at m_bar == 1, not the same as n==0
+        naive_lo, naive_hi = wilson_interval(8, 8)
+        self.assertAlmostEqual(interval.lo, naive_lo, places=6)
+        self.assertAlmostEqual(interval.hi, naive_hi, places=6)
+
+    def test_empty_cluster_reduces_k_instead_of_killing_the_interval(self):
+        """S-11 repro (benchmark-spec §7's own worked example shape): one
+        empty cluster among 7 nonempty ones used to make icc_raw (and
+        design_effect) return None for the WHOLE set, reporting 'unavailable
+        (no valid trials)' even though 7 real clusters of real data exist.
+        The empty cluster must be dropped and k reduced, not the estimate
+        killed outright."""
+        clusters = [[1.0, 0.0] for _ in range(7)] + [[]]
+        interval = wilson_with_cluster_inflation(clusters, min_clusters=1)
+        self.assertEqual(interval.n_clusters, 7)  # the empty cluster does not count
+        self.assertIsNone(interval.unavailable_reason)
+        self.assertIsNotNone(interval.lo)
+        # at the real (unmutated) min_clusters=8 default, the correct refusal
+        # reason reflects the POST-exclusion count, not "no valid trials"
+        gated = wilson_with_cluster_inflation(clusters, min_clusters=8)
+        self.assertEqual(gated.unavailable_reason, "insufficient clusters: 7 < 8")
+
+    def test_treating_single_trial_clusters_as_no_valid_trials_hides_real_data(self):
+        """S-11 negative control: the naive rule ('mean cluster size <= 1 ->
+        no valid trials') would discard 8 real observations (all passing)
+        as if nothing had been measured at all."""
+        clusters = [[1.0] for _ in range(8)]
+        naive_reason = "no valid trials" if (sum(len(c) for c in clusters) / len(clusters)) <= 1 else None
+        self.assertEqual(naive_reason, "no valid trials")  # the banned reading
+        interval = wilson_with_cluster_inflation(clusters, min_clusters=8)
+        self.assertNotEqual(interval.unavailable_reason, "no valid trials")
+
+    def test_single_trial_clusters_report_a_real_wilson_interval__negative(self):
+        """Catalog sibling for the S-11 fix."""
+        return self.test_treating_single_trial_clusters_as_no_valid_trials_hides_real_data()
 
 
 # ---------------------------------------------------------------------------

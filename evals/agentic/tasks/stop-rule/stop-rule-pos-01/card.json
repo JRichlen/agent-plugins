@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "keep retrying on momentum with no declared bound and no stop-report",
       "kind": "skill",
-      "name": "bound-and-stop-report",
+      "name": "stop-rule",
       "source_plugin": "stop-rule"
     }
   ],

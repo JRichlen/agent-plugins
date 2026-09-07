@@ -23,7 +23,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-find-before-build-29e9814f994248dbbe61cc9aa5cc8835",
+    "arm_id": "arm-full-find-before-build-5a5ac417d996610a22c39943c921dc6e",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,7 +32,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "find-before-build search-then-cite gate",
+        "name": "find-before-build",
         "kind": "skill",
         "source_plugin": "find-before-build",
         "generic_equivalent": "write new code directly with no prior search or receipt of what was searched"
@@ -49,10 +49,12 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/find-before-build/SKILL.md": "f0e8ea49c0297c8cd61b1cd22248c1d01b79384904905132f4c8598d8ea02578"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-895d9f6f1b844c95bcc29d124cded5d6",
+    "arm_id": "arm-baseline-d30dd3e14c1923b889bda6b7334596a2",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -68,8 +70,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "write new code directly with no prior search or receipt of what was searched",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "441f01c06fea9ab4cd7ebf9215d21b6fbc6c011de73b3baf6b1797038616a738"
+    }
   },
   "arm_source_card": "find-before-build-pos-01"
 }

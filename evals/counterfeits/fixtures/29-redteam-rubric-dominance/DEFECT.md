@@ -15,10 +15,12 @@ correctly (`assertion weight map`) rather than folded into a generic
 "generated config drift" message that would say nothing about *which*
 invariant broke.
 
-**INERT UNTIL INTEGRATION.** See `26-redteam-npx/DEFECT.md` — same
-build_root staging dependency: `evals/counterfeits/run.sh`'s `build_root()`
-must stage `evals/redteam/**` and a "redteam suite (offline)" gate-coverage
-entry must run `evals/redteam/run.sh` against the synthetic root before this
-mutation has anything to fire against.
+**WIRED AND LIVE (verified 2026-09-07).** The staging dependency this
+paragraph used to be blocked on has landed: `evals/counterfeits/run.sh`'s
+`build_root()` copies `evals/redteam/**` into the synthetic root
+(`run.sh:67`) and the "redteam suite (offline)" gate-coverage entry
+(`run.sh:146`) asserts that gate actually fires there. Measured with
+`COUNTERFEIT_ONLY=29-redteam-rubric-dominance evals/counterfeits/run.sh`:
+`PASS 29-redteam-rubric-dominance rejected by the expected gate`, 8 passed / 0 failed.
 
 EXPECT_FAIL_SUBSTRING=redteam FAIL design: assertion weight map

@@ -280,6 +280,13 @@ class _FakeLedger:
     verified: bool
     events: dict  # event_id -> SignatureClass
     host_sessions: frozenset
+    # REVIEW FINDING N-06: raw ({"event_id", "run_id", "attempt_id", "kind",
+    # "session_id", "host_signature": {"value_class"}}) records, mirroring
+    # adapters.LedgerReader.records()'s shape. Defaults to () so every
+    # existing caller of _FakeLedger (none of which know about this field)
+    # is unaffected -- assert_native_backed's records()-based binding check
+    # only fires when there is something in it to bind against.
+    event_records: tuple = ()
 
     def has_event(self, event_id: str) -> bool:
         return event_id in self.events
@@ -296,8 +303,14 @@ class _FakeLedger:
     def signature_class(self, event_id: str):
         return self.events.get(event_id)
 
+    def records(self) -> tuple:
+        return self.event_records
 
-def _attempt_claiming(session_id, event_ids, evidence_class=EvidenceClass.SIMULATED, role=ArmRole.TREATMENT, control_kind=None) -> Attempt:
+
+def _attempt_claiming(
+    session_id, event_ids, evidence_class=EvidenceClass.SIMULATED,
+    role=ArmRole.TREATMENT, control_kind=None, adapter_class=AdapterClass.NATIVE,
+) -> Attempt:
     strat = Stratum("anthropic", "sonnet", "5.1", "medium", "claude-cli")
     usage = Usage(
         model_id="sonnet", reported_by="claude-cli/2.1.263",
@@ -310,7 +323,7 @@ def _attempt_claiming(session_id, event_ids, evidence_class=EvidenceClass.SIMULA
         attempt_id="at-1", run_id="run-1", card_id="c1", arm_id="arm-1",
         role=role, control_kind=control_kind, parent_attempt_id=None,
         terminal_state=TerminalState.DELIVERED,
-        evidence_class=evidence_class, adapter_class=AdapterClass.NATIVE,
+        evidence_class=evidence_class, adapter_class=adapter_class,
         requested=strat, realized=strat, fallback_flags=(), usage=usage,
         outcome=verdict, adoption=verdict,
         started_at=now_rfc3339(), ended_at=now_rfc3339(),
@@ -326,6 +339,34 @@ class ForgedHostProof(unittest.TestCase):
         attempt = _attempt_claiming(session_id=None, event_ids=(), evidence_class=EvidenceClass.FRAMEWORK)
         ledger = _FakeLedger(verified=False, events={}, host_sessions=frozenset())
         assert_native_backed(attempt, ledger)  # must not raise: nothing was claimed
+
+    def test_claims_native_via_event_ids_alone_is_a_claim(self):
+        """N-10: assert_native_backed's own docstring says a claim is 'a
+        non-None session_id, a non-empty event_ids tuple, or evidence_class
+        == NATIVE_PROVEN' -- Attempt.claims_native must agree. An attempt
+        with session_id=None, evidence_class=SIMULATED, but a non-empty
+        event_ids tuple must still be treated as claiming native provenance
+        (and rejected when the ledger does not back that claim)."""
+        attempt = _attempt_claiming(
+            session_id=None, event_ids=("ev-invented",), evidence_class=EvidenceClass.SIMULATED,
+        )
+        self.assertTrue(attempt.claims_native)
+        ledger = _FakeLedger(verified=True, events={}, host_sessions=frozenset())
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(attempt, ledger)
+
+    def test_claims_native_via_event_ids_alone_is_a_claim__negative(self):
+        """Sibling: the same shape but with the event actually host-observed
+        in the ledger must be ACCEPTED -- proving the assertion above can
+        fail (i.e. is not vacuously true for every ledger)."""
+        attempt = _attempt_claiming(
+            session_id=None, event_ids=("ev-1",), evidence_class=EvidenceClass.SIMULATED,
+        )
+        self.assertTrue(attempt.claims_native)
+        ledger = _FakeLedger(
+            verified=True, events={"ev-1": SignatureClass.HOST_OBSERVED}, host_sessions=frozenset(),
+        )
+        self.assertIsNone(assert_native_backed(attempt, ledger))
 
     def test_fully_backed_claim_is_accepted(self):
         ledger = _FakeLedger(
@@ -343,6 +384,25 @@ class ForgedHostProof(unittest.TestCase):
         # both keeps the "must not raise" property AND registers a real,
         # countable assertion. See the integration lane's final report.
         self.assertIsNone(assert_native_backed(attempt, ledger))
+
+        # REVIEW FINDING N-05: registry.run_entry (the ONLY thing --id T09
+        # and T52's --gate sweep ever execute for this catalog entry)
+        # invokes exactly this one method and nothing else -- the
+        # `__negative` sibling below is checked for mere *existence* by
+        # run.py/test_catalog.py, never executed by run_entry. A mutation
+        # that makes assert_native_backed an unconditional no-op (e.g.
+        # returning immediately after the `claims_native` early-out, before
+        # ever reaching a single `raise`) therefore left this one method
+        # green: it asserts only that a genuinely-backed claim is ACCEPTED,
+        # which such a mutation still satisfies vacuously. Closing that gap
+        # from inside the one method the catalog actually runs -- rather
+        # than relying on a sibling method nothing calls -- means this
+        # single assertion sequence now also proves the function still
+        # REJECTS what it must reject, reusing the same ledger fixture so a
+        # body-deleting mutation cannot pass by accident.
+        forged = _attempt_claiming(session_id="sess-1", event_ids=("ev-does-not-exist",))
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(forged, ledger)
 
     def test_unknown_event_id_is_forged(self):
         ledger = _FakeLedger(verified=True, events={}, host_sessions=frozenset({"sess-1"}))
@@ -404,6 +464,130 @@ class ForgedHostProof(unittest.TestCase):
         )
         with self.assertRaises(ForgedProvenance):
             assert_native_backed(attempt, ledger)
+
+    # -----------------------------------------------------------------
+    # REVIEW FINDING N-06: a genuine host-observed session id/event id
+    # (real, HOST_OBSERVED, chain-verified) does not by itself prove THIS
+    # attempt earned it -- it could have been copied from a different,
+    # genuinely-approved run. Reproduced against a real adapters.HostLedger
+    # in scratch/attack_splice.py; these are the fixture-level regression
+    # tests for the two independent gates that close it.
+    # -----------------------------------------------------------------
+
+    def test_native_proven_with_non_native_adapter_is_forged(self):
+        """A replay/stub adapter cannot become native-proven merely by
+        citing a real HOST_OBSERVED session id and event id -- evidence_class
+        NATIVE_PROVEN requires adapter_class NATIVE, checked independently of
+        what the ledger says about the cited ids."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={"ev-1": SignatureClass.HOST_OBSERVED},
+            host_sessions=frozenset({"sess-1"}),
+        )
+        attempt = _attempt_claiming(
+            session_id="sess-1", event_ids=("ev-1",),
+            evidence_class=EvidenceClass.NATIVE_PROVEN, adapter_class=AdapterClass.REPLAY,
+        )
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(attempt, ledger)
+
+    def test_native_proven_with_non_native_adapter_is_forged__negative(self):
+        """Same fully-backed claim, adapter_class genuinely NATIVE: accepted.
+        Demonstrates the check above discriminates on adapter_class alone,
+        not on some accidental property of the fixture."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={"ev-1": SignatureClass.HOST_OBSERVED},
+            host_sessions=frozenset({"sess-1"}),
+        )
+        attempt = _attempt_claiming(
+            session_id="sess-1", event_ids=("ev-1",),
+            evidence_class=EvidenceClass.NATIVE_PROVEN, adapter_class=AdapterClass.NATIVE,
+        )
+        self.assertIsNone(assert_native_backed(attempt, ledger))
+
+    def test_event_id_recorded_under_another_run_is_forged(self):
+        """has_event()/signature_class() alone cannot tell WHICH run/attempt
+        a genuinely HOST_OBSERVED event belongs to -- only records() can.
+        _attempt_claiming always builds run_id='run-1'/attempt_id='at-1'; the
+        record below is genuinely HOST_OBSERVED but was minted for a
+        different run entirely."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={"ev-1": SignatureClass.HOST_OBSERVED},
+            host_sessions=frozenset(),
+            event_records=(
+                {
+                    "event_id": "ev-1", "run_id": "run-REAL", "attempt_id": "attempt-REAL",
+                    "kind": "turn-ack", "session_id": None,
+                    "host_signature": {"value_class": "host-observed"},
+                },
+            ),
+        )
+        attempt = _attempt_claiming(
+            session_id=None, event_ids=("ev-1",), evidence_class=EvidenceClass.NATIVE_PROVEN,
+        )
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(attempt, ledger)
+
+    def test_event_id_recorded_under_another_run_is_forged__negative(self):
+        """Same event, but its record's run_id/attempt_id genuinely match
+        this attempt's own -- accepted."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={"ev-1": SignatureClass.HOST_OBSERVED},
+            host_sessions=frozenset(),
+            event_records=(
+                {
+                    "event_id": "ev-1", "run_id": "run-1", "attempt_id": "at-1",
+                    "kind": "turn-ack", "session_id": None,
+                    "host_signature": {"value_class": "host-observed"},
+                },
+            ),
+        )
+        attempt = _attempt_claiming(
+            session_id=None, event_ids=("ev-1",), evidence_class=EvidenceClass.NATIVE_PROVEN,
+        )
+        self.assertIsNone(assert_native_backed(attempt, ledger))
+
+    def test_session_ack_recorded_under_another_run_is_forged(self):
+        """host_observed_session_ids() proves SOME run's SESSION_ACK was
+        host-observed for this session id -- not that it was THIS attempt's
+        run. records() is what lets assert_native_backed tell the two
+        apart."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={},
+            host_sessions=frozenset({"sess-1"}),
+            event_records=(
+                {
+                    "event_id": "ev-ack", "run_id": "run-OTHER", "attempt_id": "attempt-OTHER",
+                    "kind": "session-ack", "session_id": "sess-1",
+                    "host_signature": {"value_class": "host-observed"},
+                },
+            ),
+        )
+        attempt = _attempt_claiming(session_id="sess-1", event_ids=())
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(attempt, ledger)
+
+    def test_session_ack_recorded_under_another_run_is_forged__negative(self):
+        """Same session id, its SESSION_ACK genuinely recorded under this
+        attempt's own run -- accepted."""
+        ledger = _FakeLedger(
+            verified=True,
+            events={},
+            host_sessions=frozenset({"sess-1"}),
+            event_records=(
+                {
+                    "event_id": "ev-ack", "run_id": "run-1", "attempt_id": "at-1",
+                    "kind": "session-ack", "session_id": "sess-1",
+                    "host_signature": {"value_class": "host-observed"},
+                },
+            ),
+        )
+        attempt = _attempt_claiming(session_id="sess-1", event_ids=())
+        self.assertIsNone(assert_native_backed(attempt, ledger))
 
 
 # ---------------------------------------------------------------------------

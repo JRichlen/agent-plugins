@@ -62,7 +62,17 @@
       "uniqueItems": true,
       "items": { "type": "string", "minLength": 1 }
     },
-    "holdout": { "type": "boolean" }
+    "holdout": { "type": "boolean" },
+    "paraphrases": {
+      "type": "array",
+      "description": "CV-12: alternate wordings of the same task, selected per-attempt by the runner instead of living in the agent-visible task/README.md (where they previously also disclosed the treatment's own skill name via 'Baseline framing' prose sitting right next to them). Optional; a holdout card should carry at least two.",
+      "minItems": 2,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "baseline_framing": {
+      "type": "string",
+      "description": "CV-12: registry-internal note on what the no-skill baseline arm receives, relocated out of task/README.md for the same reason as paraphrases -- it is arm-construction commentary, not part of the task prompt any arm should see."
+    }
   },
   "additionalProperties": false,
   "if": {

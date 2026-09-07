@@ -1,6 +1,106 @@
 {
-  "arm_source_card": "agent-compiler-pos-01",
+  "plugin": "agent-compiler",
+  "directory": "plugins/agent-compiler",
+  "version": "0.3.0",
+  "derived_capabilities": [
+    {
+      "name": "agent-compiler",
+      "kind": "skill",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": null
+    },
+    {
+      "name": "agent-compile",
+      "kind": "command",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": null
+    },
+    {
+      "name": "agent-inspect",
+      "kind": "command",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": null
+    },
+    {
+      "name": "hooks/PreToolUse",
+      "kind": "hook",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": null
+    },
+    {
+      "name": "hooks/UserPromptSubmit",
+      "kind": "hook",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": null
+    },
+    {
+      "name": "compile.py",
+      "kind": "script",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": "plain-bash-filesystem-git::compile.py"
+    },
+    {
+      "name": "mcp_server.py",
+      "kind": "script",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": "plain-bash-filesystem-git::mcp_server.py"
+    },
+    {
+      "name": "render_claude_agent.py",
+      "kind": "script",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": "plain-bash-filesystem-git::render_claude_agent.py"
+    },
+    {
+      "name": "kernel",
+      "kind": "mcp",
+      "source_plugin": "agent-compiler",
+      "generic_equivalent": "generic-read-only-tool-surface::kernel"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "guidance-only-inapplicable",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "available (ccd51df..20c8ce8)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-agent-compiler-b9db185e60753f70bea7be6aad9f0b52",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "agent-compiler"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "kernel",
+        "kind": "mcp",
+        "source_plugin": "agent-compiler",
+        "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob",
+      "kernel"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {}
+  },
   "baseline_arm": {
+    "arm_id": "arm-baseline-d5823284d57b76f65ffb29ed9d7b077e",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
     "allowed_tools": [
       "Read",
       "Write",
@@ -11,109 +111,9 @@
       "Glob",
       "hand-authored persona markdown with no provenance or effect-ceiling enforcement"
     ],
-    "arm_id": "arm-baseline-95bd3bdf14544a748b3432bbc840ca7d",
-    "capabilities": [],
-    "estimand": "baseline",
     "extra_dirs": [],
-    "plugins": [],
-    "realized_tree": {},
-    "revisions": {},
-    "role": "baseline",
-    "system_prompt_append": ""
+    "system_prompt_append": "",
+    "realized_tree": {}
   },
-  "derived_capabilities": [
-    {
-      "generic_equivalent": null,
-      "kind": "skill",
-      "name": "agent-compiler",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": null,
-      "kind": "command",
-      "name": "agent-compile",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": null,
-      "kind": "command",
-      "name": "agent-inspect",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": null,
-      "kind": "hook",
-      "name": "hooks/PreToolUse",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": null,
-      "kind": "hook",
-      "name": "hooks/UserPromptSubmit",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": "plain-bash-filesystem-git::compile.py",
-      "kind": "script",
-      "name": "compile.py",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": "plain-bash-filesystem-git::mcp_server.py",
-      "kind": "script",
-      "name": "mcp_server.py",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": "plain-bash-filesystem-git::render_claude_agent.py",
-      "kind": "script",
-      "name": "render_claude_agent.py",
-      "source_plugin": "agent-compiler"
-    },
-    {
-      "generic_equivalent": "generic-read-only-tool-surface::kernel",
-      "kind": "mcp",
-      "name": "kernel",
-      "source_plugin": "agent-compiler"
-    }
-  ],
-  "directory": "plugins/agent-compiler",
-  "estimand_availability": {
-    "composition": "n/a (needs a second plugin; see composition_arms)",
-    "full-package": "available",
-    "guidance-only": "guidance-only-inapplicable",
-    "version": "available (ccd51df..20c8ce8)"
-  },
-  "full_package_arm": {
-    "allowed_tools": [
-      "Read",
-      "Write",
-      "Edit",
-      "MultiEdit",
-      "Bash",
-      "Grep",
-      "Glob",
-      "agent-compiler kernel (compile.py / mcp_server.py) + hooks"
-    ],
-    "arm_id": "arm-full-agent-compiler-7fd0e941487747a0b5e4717ca06fa0d9",
-    "capabilities": [
-      {
-        "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement",
-        "kind": "mcp",
-        "name": "agent-compiler kernel (compile.py / mcp_server.py) + hooks",
-        "source_plugin": "agent-compiler"
-      }
-    ],
-    "estimand": "full-package",
-    "extra_dirs": [],
-    "plugins": [
-      "agent-compiler"
-    ],
-    "realized_tree": {},
-    "revisions": {},
-    "role": "treatment",
-    "system_prompt_append": ""
-  },
-  "plugin": "agent-compiler",
-  "version": "0.3.0"
+  "arm_source_card": "agent-compiler-pos-01"
 }

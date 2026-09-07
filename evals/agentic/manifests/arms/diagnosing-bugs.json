@@ -23,7 +23,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-diagnosing-bugs-7805c081aefb4e0da2fb088eba4217da",
+    "arm_id": "arm-full-diagnosing-bugs-2c4f79b5c1dd6554f81a8c484a9a99aa",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,7 +32,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "diagnosing-bugs hypothesis/tag/seam-gate procedure",
+        "name": "diagnosing-bugs",
         "kind": "skill",
         "source_plugin": "diagnosing-bugs",
         "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test"
@@ -49,10 +49,12 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/diagnosing-bugs/SKILL.md": "6774de7fcfb8e75ba392658af61d21c03a3db15ad3ae18b285c100c665bbd9e4"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-511dc9e707244bd3a47034b56387e480",
+    "arm_id": "arm-baseline-28dcb7ed99d8581049e636094d6cf619",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -68,8 +70,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "83ae96d37de93de343e8b8b091736759610ac25545b52405d2eb883f036667cd"
+    }
   },
   "arm_source_card": "diagnosing-bugs-pos-01"
 }

@@ -21,9 +21,12 @@ lane's test harness) still has a real assertion to make.
 """
 from __future__ import annotations
 
+import ast
 import dataclasses
 import importlib
+import inspect
 import pathlib
+import textwrap
 import types
 import unittest
 from collections.abc import Mapping, Sequence
@@ -49,6 +52,7 @@ __all__ = [
     "resolve_test",
     "run_entry",
     "EntryRun",
+    "scan_vacuous_assertions",
 ]
 
 CATALOG_DIR: str = "evals/agentic/manifests/catalog"
@@ -467,6 +471,65 @@ def run_entry(entry: CatalogEntry) -> EntryRun:
             detail=f"{entry.id} executed 0 assertions",
         )
     return EntryRun(entry=entry, executed=True, assertions=assertions, outcome="pass", detail="")
+
+
+# ---------------------------------------------------------------------------
+# F2: the >=1-assertion floor in run_entry is a floor, not a proof of
+# semantic coverage -- a single assertTrue(True) fully satisfies it. This
+# lints a catalog-mapped test method's own source for that specific
+# constant-vs-constant shape (never a substitute for run_entry's real
+# execution; a separate, additive check).
+# ---------------------------------------------------------------------------
+
+def _is_constant_node(node: Any) -> bool:
+    return isinstance(node, ast.Constant)
+
+
+def scan_vacuous_assertions(cls: type[unittest.TestCase], method_name: str) -> tuple[str, ...]:
+    """Returns a description string for every constant-vs-constant
+    assertion call found in ``method_name``'s own source -- ``assertTrue``/
+    ``assertFalse`` called on a literal, or ``assertEqual``/``assertIs``
+    called with two literal arguments of equal value. Such a call proves
+    nothing about the code under test: it evaluates to the same verdict no
+    matter what that code does. ``run_entry``'s ``assertions >= 1`` floor
+    cannot see this distinction (it counts calls, not what they assert);
+    this is the additive check the floor is documented not to be."""
+    method = getattr(cls, method_name, None)
+    if method is None:
+        return ()
+    try:
+        source = textwrap.dedent(inspect.getsource(method))
+    except (OSError, TypeError):
+        return ()
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return ()
+
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if not isinstance(func, ast.Attribute):
+            continue
+        attr = func.attr
+        args = node.args
+        if attr in ("assertTrue", "assertFalse") and len(args) >= 1 and _is_constant_node(args[0]):
+            findings.append(
+                f"{cls.__name__}.{method_name}:{node.lineno}: {attr}({ast.literal_eval(args[0])!r}) "
+                "-- constant, proves nothing about the code under test"
+            )
+        elif attr in ("assertEqual", "assertIs") and len(args) >= 2:
+            a, b = args[0], args[1]
+            if _is_constant_node(a) and _is_constant_node(b):
+                va, vb = ast.literal_eval(a), ast.literal_eval(b)
+                if va == vb:
+                    findings.append(
+                        f"{cls.__name__}.{method_name}:{node.lineno}: {attr}({va!r}, {vb!r}) "
+                        "-- both sides are the same literal, proves nothing about the code under test"
+                    )
+    return tuple(findings)
 
 
 # ---------------------------------------------------------------------------

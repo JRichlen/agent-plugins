@@ -38,19 +38,19 @@ Arm.from_dict(mutated_baseline_arm))`, which
 `__negative` method already exercises directly (not through this staged
 file) as part of T16's acceptance.
 
-**Status: INERT until the integration lane wires this in.** As of this
-change, `evals/agentic/run.sh` does not exist (it is an integration-owned
-deliverable, contract §1/§6), `evals/cheap/run.sh` section 22 has not been
-added, and `evals/counterfeits/run.sh`'s `build_root()` does not yet stage
-`evals/agentic/**` into the synthetic root. Until all three land, this
-fixture cannot actually run inside the counterfeit tier's gate-coverage
-loop -- the check below documents what a lane-local run of
-`pairing.assert_exposure_parity` against the mutated manifest reports (via
-`Arm.from_dict`), not a result from `evals/counterfeits/run.sh` itself.
-Once section 22 is wired, this fixture's `EXPECT_FAIL_SUBSTRING` is what
-`evals/agentic/run.sh`'s own exposure-parity check must echo (four-space
-indented, per contract §8.8) through `evals/cheap/run.sh`'s section 22 and
-`evals/counterfeits/run.sh`'s grep.
+**Status: WIRED and firing (CV-15).** `evals/agentic/run.sh` exists,
+`evals/cheap/run.sh` section 22 stages `evals/agentic/**` into the synthetic
+root, and `evals/counterfeits/run.sh`'s gate-coverage loop drives it.
+Verified live: `COUNTERFEIT_ONLY=25-agentic-exposure-parity bash
+evals/counterfeits/run.sh` reports `PASS 25-agentic-exposure-parity
+rejected by the expected gate ('agentic FAIL registry: exposure parity')`
+alongside the baseline-green calibration step and all six repo-level gates.
+The check below is what a lane-local run of `pairing.assert_exposure_parity`
+against the mutated manifest reports (via `Arm.from_dict`); the full
+`evals/counterfeits/run.sh` path exercises the same mutated file through
+`evals/agentic/run.sh`'s own exposure-parity check, which echoes this same
+substring (four-space indented, per contract §8.8) through
+`evals/cheap/run.sh`'s section 22 and `evals/counterfeits/run.sh`'s grep.
 
 **Verified lane-locally** (offline, no model call) with:
 

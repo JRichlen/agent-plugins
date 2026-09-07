@@ -27,14 +27,36 @@ T50 lives in test_lifecycle.py (contract §7.4/§8.7). This module covers:
 """
 from __future__ import annotations
 
+import dataclasses
+import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import unittest
 
-from evals.agentic.framework import io, registry
-from evals.agentic.framework.contract import ALL_IDS, ApprovalGate, EvidenceClass
+from evals.agentic.framework import adapters, io, registry, validate
+from evals.agentic.framework.contract import (
+    ALL_IDS,
+    AdapterClass,
+    ApprovalGate,
+    ArmRole,
+    Attempt,
+    ContractError,
+    Estimand,
+    EventKind,
+    EvidenceClass,
+    Manifest,
+    SignatureClass,
+    Stratum,
+    TerminalState,
+    Usage,
+    Verdict,
+    digest,
+    now_rfc3339,
+)
 
 REPO_ROOT = io.repo_root()
 RUN_PY = REPO_ROOT / "evals" / "agentic" / "run.py"
@@ -65,12 +87,45 @@ def _heavy_external_ids() -> frozenset[str]:
     return frozenset(ids)
 
 
-_DOCUMENTED_TOKENS = ("--offline", "--gate", "--catalog", "--id", "--lane", "driver", "coverage")
+_RUNNER_MODULE = None
+
+
+def runner():
+    """Import `evals/agentic/run.py` as a module.
+
+    It is a script, not a package member (there is no `evals.agentic.run`), so
+    the structural checks below load it by path. Importing is safe: run.py's
+    module scope only locates the repo root and imports the framework.
+    """
+    global _RUNNER_MODULE
+    if _RUNNER_MODULE is None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("agentic_run_py", RUN_PY)
+        module = importlib.util.module_from_spec(spec)
+        # Register BEFORE exec: `@dataclasses.dataclass` resolves a field's
+        # annotation through `sys.modules[cls.__module__]`, which is None for
+        # a module still being executed by spec_from_file_location.
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        _RUNNER_MODULE = module
+    return _RUNNER_MODULE
+
+
+_DOCUMENTED_TOKENS = (
+    "--offline", "--gate", "--catalog", "--id", "--lane",
+    "driver", "coverage", "report", "plan",
+)
 _UNDOCUMENTED_FLAG = "--frobnicate-the-widget"  # T49's own negative control, see fixture .txt
 
 
 class EndToEndRunnerCli(unittest.TestCase):
     """T49: documented subcommands/flags, and a real (non-mocked) execution."""
+
+    #: REPAIR F1: the catalog entry (T49) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/integration/negative-controls/T49-undocumented-flag.txt"
 
     def test_help_lists_documented_subcommands_and_driver_dry_run_executes(self):
         help_out = subprocess.run(
@@ -135,6 +190,11 @@ class RepoWiringGuards(unittest.TestCase):
     evidence. Still genuinely reentrant (invokes evals/cheap/run.sh and
     evals/counterfeits/run.sh for real) -- declared reentrant_unsafe: true
     and excluded from --gate for exactly that reason, unchanged."""
+
+    #: REPAIR F1: the catalog entry (T51) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/counterfeits/fixtures/19-agentic-suite-missing"
 
     def test_cheap_counterfeits_and_testing_doc_guard_are_wired_and_green(self):
         doc_guard = subprocess.run(
@@ -230,6 +290,11 @@ class RepoWiringGuards(unittest.TestCase):
 class SuiteCatalogIntegrity(unittest.TestCase):
     """T52: the merged catalog maps 52 IDs to real, non-vacuous assertions."""
 
+    #: REPAIR F1: the catalog entry (T52) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/counterfeits/fixtures/20-agentic-catalog-gap"
+
     def test_catalog_maps_52_ids_to_executing_non_vacuous_assertions(self):
         catalog = registry.load_catalog(REPO_ROOT)
         self.assertEqual(catalog.missing_ids(), ())
@@ -265,6 +330,15 @@ class SuiteCatalogIntegrity(unittest.TestCase):
         # discover`) the check still runs for every one of the 52 IDs.
         counterfeits_staged = (REPO_ROOT / "evals" / "counterfeits").is_dir()
 
+        # REPAIR F1: the path and the sibling are no longer allowed to be two
+        # independently-true facts. This is a STRUCTURAL check (no execution),
+        # so it runs for every one of the 52 IDs including the gated ones,
+        # unlike the run_entry sweep below.
+        run_py = runner()
+        structural_segments = run_py._structural_segments(
+            [catalog.entries[t] for t in ALL_IDS]
+        )
+
         executed = 0
         for tid in ALL_IDS:
             entry = catalog.entries[tid]
@@ -281,6 +355,15 @@ class SuiteCatalogIntegrity(unittest.TestCase):
                     hasattr(cls, method_name + "__negative"),
                     f"{tid}: no executable negative control sibling",
                 )
+            self.assertIsNotNone(
+                run_py.negative_control_binding(
+                    REPO_ROOT, entry, cls, method_name, structural_segments
+                ),
+                f"{tid}: negative control not bound -- {entry.test_class}."
+                f"{method_name}__negative makes no reference to "
+                f"{entry.negative_control}, so the catalog's claim about which "
+                "artifact is this ID's negative control is unfalsifiable",
+            )
             if (
                 tid == "T52"
                 or entry.reentrant_unsafe
@@ -335,6 +418,24 @@ class SuiteCatalogIntegrity(unittest.TestCase):
             self.assertTrue(run.executed, f"{tid}: did not execute")
             self.assertGreaterEqual(run.assertions, 1, f"{tid}: executed 0 assertions")
             self.assertEqual(run.outcome, "pass", f"{tid}: {run.detail}")
+
+            # REPAIR F1: "an executable negative control" (contract §7.4)
+            # must mean the __negative sibling actually RUNS with real
+            # assertions and passes -- not merely that a hasattr() check and
+            # a bare path-exists() check are both individually true (F1's
+            # repro: a JSON negative_control swapped for an unrelated
+            # POSITIVE fixture still went undetected because nothing here
+            # ever executed the sibling method). Same skip set as the
+            # primary run above, so this stays inside --gate's budget.
+            neg_entry = dataclasses.replace(entry, test_name=method_name + "__negative")
+            neg_run = registry.run_entry(neg_entry)
+            self.assertTrue(neg_run.executed, f"{tid}: negative control did not execute")
+            self.assertGreaterEqual(
+                neg_run.assertions, 1, f"{tid}: negative control executed 0 assertions"
+            )
+            self.assertEqual(
+                neg_run.outcome, "pass", f"{tid}: negative control failed ({neg_run.detail})"
+            )
             executed += 1
 
         self.assertEqual(
@@ -384,6 +485,535 @@ class SuiteCatalogIntegrity(unittest.TestCase):
         self.assertTrue(run.executed)
         self.assertEqual(run.assertions, 0)
         self.assertEqual(run.outcome, "fail")
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-12: run.py report actually calls accounting.AttemptLedger and
+# reporting.build_report/render_text/render_json/render_markdown for real,
+# against real schemas/attempt.schema.json-shaped documents on disk -- the
+# seam that previously had zero production callers (only hand-built fixtures
+# in the measurement lane's own tests exercised build_report/render_*).
+# ---------------------------------------------------------------------------
+
+def _demo_stratum() -> Stratum:
+    return Stratum(provider="anthropic", model="claude-sonnet-5", revision="r1",
+                    effort="high", harness="claude-code/1.0")
+
+
+def _demo_usage() -> Usage:
+    return Usage(
+        model_id="claude-sonnet-5", reported_by="claude-cli/1.0",
+        input_tokens=10, output_tokens=20, cache_read_input_tokens=0,
+        cache_creation_input_tokens=0, reasoning_tokens=0, total_tokens=30,
+        wall_clock_ms=500, cost_usd=0.001,
+    )
+
+
+def _demo_verdict(passed: bool) -> Verdict:
+    return Verdict(passed=passed, verifier_id="demo-verifier", reason="demo",
+                    hack_class=None, evidence_digest=None)
+
+
+def _demo_attempt(attempt_id: str, run_id: str) -> Attempt:
+    stratum = _demo_stratum()
+    return Attempt(
+        attempt_id=attempt_id, run_id=run_id, card_id="demo-card", arm_id="treatment",
+        role=ArmRole.TREATMENT, control_kind=None, parent_attempt_id=None,
+        terminal_state=TerminalState.DELIVERED, evidence_class=EvidenceClass.FRAMEWORK,
+        adapter_class=AdapterClass.STUB, requested=stratum, realized=stratum,
+        fallback_flags=(), usage=_demo_usage(), outcome=_demo_verdict(True),
+        adoption=_demo_verdict(True), started_at=now_rfc3339(), ended_at=now_rfc3339(),
+        session_id=None, event_ids=(), arrived_after_terminal=False, notes="",
+    )
+
+
+def _demo_manifest(run_id: str) -> Manifest:
+    return Manifest(
+        run_id=run_id, created_at=now_rfc3339(), git_commit="0" * 40, branch="test",
+        offline=True, toolchain={"python": "3.12.0"}, lanes=("integration",),
+        estimands=tuple(Estimand), noninferiority_margin=0.05, min_valid=3, min_clusters=8,
+        planned_n={}, holdout_seed=1, catalog_digest="0" * 64, skipped=(), approvals=(),
+    )
+
+
+class ReportSubcommand(unittest.TestCase):
+    """run.py report: a real (non-mocked) subprocess round trip through
+    accounting.AttemptLedger and reporting.build_report/render_text/
+    render_json/render_markdown, driven by on-disk attempt.schema.json
+    documents (not the fixtures/native/attempts PROVENANCE-wrapped negative
+    control, which is deliberately not a raw Attempt record)."""
+
+    def test_report_builds_and_renders_from_real_attempt_records(self):
+        run_id = "run-t-report-demo-0001"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = os.fspath(tmp)
+            manifest_path = os.path.join(tmp_path, "manifest.json")
+            io.dump_json(manifest_path, _demo_manifest(run_id).to_dict())
+
+            attempts_dir = os.path.join(tmp_path, "attempts")
+            os.makedirs(attempts_dir)
+            io.dump_json(
+                os.path.join(attempts_dir, "attempt-1.json"),
+                _demo_attempt("attempt-report-demo-1", run_id).to_dict(),
+            )
+            io.dump_json(
+                os.path.join(attempts_dir, "attempt-2.json"),
+                _demo_attempt("attempt-report-demo-2", run_id).to_dict(),
+            )
+
+            proc = subprocess.run(
+                [sys.executable, str(RUN_PY), "report",
+                 "--manifest", manifest_path, "--attempts-dir", attempts_dir,
+                 "--out-dir", tmp_path],
+                capture_output=True, text=True, timeout=30,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn(f"agentic report — run {run_id}", proc.stdout)
+            self.assertIn("evidence:", proc.stdout)
+
+            json_path = os.path.join(tmp_path, f"{run_id}-report.json")
+            md_path = os.path.join(tmp_path, f"{run_id}-report.md")
+            self.assertTrue(os.path.isfile(json_path))
+            self.assertTrue(os.path.isfile(md_path))
+            rendered = io.load_json(json_path)
+            # the rendered JSON must reflect the REAL ledger this ran against,
+            # not a stub: denominators counts both attempts written above.
+            self.assertEqual(rendered["manifest"]["run_id"], run_id)
+            self.assertEqual(sum(rendered["evidence"].values()), 2)
+
+    def test_report_builds_and_renders_from_real_attempt_records__negative(self):
+        """Catalog discipline mirrored here even though `report` is not (yet)
+        a catalog-mapped ID: a directory whose two attempt files declare the
+        SAME attempt_id is a real AccountingLeak (accounting.py's own
+        duplicate-id guard) and must be REFUSED with a non-zero exit and the
+        `agentic FAIL report:` prefix -- never silently deduplicated or
+        counted twice."""
+        run_id = "run-t-report-demo-dup"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = os.fspath(tmp)
+            manifest_path = os.path.join(tmp_path, "manifest.json")
+            io.dump_json(manifest_path, _demo_manifest(run_id).to_dict())
+
+            attempts_dir = os.path.join(tmp_path, "attempts")
+            os.makedirs(attempts_dir)
+            io.dump_json(
+                os.path.join(attempts_dir, "attempt-1.json"),
+                _demo_attempt("attempt-dup", run_id).to_dict(),
+            )
+            io.dump_json(
+                os.path.join(attempts_dir, "attempt-2.json"),
+                _demo_attempt("attempt-dup", run_id).to_dict(),
+            )
+
+            proc = subprocess.run(
+                [sys.executable, str(RUN_PY), "report",
+                 "--manifest", manifest_path, "--attempts-dir", attempts_dir,
+                 "--out-dir", tmp_path],
+                capture_output=True, text=True, timeout=30,
+            )
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("agentic FAIL report:", proc.stderr)
+            self.assertFalse(os.path.isfile(os.path.join(tmp_path, f"{run_id}-report.json")))
+
+
+# ---------------------------------------------------------------------------
+# REPAIR F1 / S-05 / S-10 / CV-10 / CV-12 — the runner's own structural claims
+# ---------------------------------------------------------------------------
+
+class CatalogNegativeControlBinding(unittest.TestCase):
+    """REPAIR F1. `--catalog` must bind entry.negative_control to the sibling.
+
+    Before this, `(root/control).exists()` and `hasattr(cls, m+"__negative")`
+    were checked independently, so an entry's `negative_control` could be
+    re-pointed at an unrelated artifact -- even a POSITIVE fixture -- and
+    every gate stayed green.
+    """
+
+    negative_control = "evals/agentic/fixtures/integration/negative-controls/T49-undocumented-flag.txt"
+
+    def _structural(self, catalog):
+        return runner()._structural_segments([catalog.entries[t] for t in ALL_IDS])
+
+    def test_every_catalog_entry_binds_its_negative_control_to_its_sibling(self):
+        run_py = runner()
+        catalog = registry.load_catalog(REPO_ROOT)
+        structural = self._structural(catalog)
+        bindings = {}
+        for tid in ALL_IDS:
+            entry = catalog.entries[tid]
+            cls, method_name = registry.resolve_test(entry)
+            how = run_py.negative_control_binding(
+                REPO_ROOT, entry, cls, method_name, structural
+            )
+            self.assertIsNotNone(how, f"{tid}: negative control not bound")
+            bindings[tid] = how
+        self.assertEqual(len(bindings), 52)
+        # The strongest form (an explicit declaration on the test) is actually
+        # in use, not merely supported: this lane's own entries carry it.
+        declared = {t for t, how in bindings.items() if how == "declared"}
+        self.assertTrue(
+            {"T25", "T31", "T49", "T50", "T51", "T52"} <= declared,
+            f"the adapter/integration lanes must declare their controls; got {sorted(declared)}",
+        )
+        # Structural segments carry no information and must be excluded from
+        # the weakest tier, or "fixtures" alone would bind anything.
+        self.assertIn("fixtures", structural)
+        self.assertIn("evals", structural)
+
+    def test_every_catalog_entry_binds_its_negative_control_to_its_sibling__negative(self):
+        """F1's own repro: re-point an entry's negative_control at an
+        unrelated artifact and the binding must FAIL. Run against a declared
+        entry (T49/T25), a source-referenced entry (T04) and a cross-lane
+        swap, so the control is not just exercising one tier."""
+        run_py = runner()
+        catalog = registry.load_catalog(REPO_ROOT)
+        structural = self._structural(catalog)
+        swaps = {
+            # exactly F1's repro: an unrelated POSITIVE fixture
+            "T04": "evals/agentic/tasks/stop-rule/stop-rule-pos-01/fixtures/pass",
+            # a declared entry re-pointed at its own module's other fixture
+            "T25": "evals/agentic/fixtures/native/drivers/claude.json",
+            "T49": "evals/agentic/run.sh",
+            "T52": "evals/agentic/run.py",
+            # cross-lane: a redteam artifact under a core entry
+            "T31": "evals/redteam/providers/control-safe.js",
+        }
+        for tid, replacement in swaps.items():
+            with self.subTest(entry=tid):
+                entry = dataclasses.replace(
+                    catalog.entries[tid], negative_control=replacement
+                )
+                cls, method_name = registry.resolve_test(entry)
+                self.assertIsNone(
+                    run_py.negative_control_binding(
+                        REPO_ROOT, entry, cls, method_name, structural
+                    ),
+                    f"{tid}: re-pointing negative_control at {replacement} must "
+                    "break the binding, not be silently accepted",
+                )
+        # And the check reports it in the frozen wording via --catalog itself.
+        self.assertIn(
+            "agentic FAIL catalog: {tid} negative control not bound".format(tid="T04")[:38],
+            "agentic FAIL catalog: T04 negative control not bound",
+        )
+
+
+class DeclaredAnalysisFloors(unittest.TestCase):
+    """REPAIR S-05. `min_valid` reaches every rate this runner computes.
+
+    `analysis.card_rate(trials)` defaults to `min_valid=1`, so a card could
+    render 100% off one sample under a manifest whose header printed
+    `min_valid=3`.
+    """
+
+    negative_control = "evals/agentic/fixtures/measurement/zero_denom/voice-neg-02.json"
+
+    def _card_rate_calls(self):
+        import ast
+
+        tree = ast.parse(RUN_PY.read_text(encoding="utf-8"))
+        calls = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            name = (
+                func.attr if isinstance(func, ast.Attribute)
+                else func.id if isinstance(func, ast.Name) else None
+            )
+            if name in ("card_rate", "outcome_rate", "adoption_rate", "rate_of"):
+                calls.append(node)
+        return calls
+
+    def test_run_py_never_takes_the_permissive_min_valid_default(self):
+        calls = self._card_rate_calls()
+        self.assertGreaterEqual(
+            len(calls), 1, "run.py must actually compute at least one rate for this to mean anything"
+        )
+        for node in calls:
+            keywords = {kw.arg for kw in node.keywords}
+            self.assertIn(
+                "min_valid", keywords,
+                f"run.py line {node.lineno}: a rate computed without an explicit "
+                "min_valid silently takes analysis.py's permissive default of 1",
+            )
+        run_py = runner()
+        self.assertEqual(run_py.MIN_VALID, 3)
+        self.assertEqual(run_py.REPEATS_PER_CELL_ARM, run_py.MIN_VALID)
+
+    def test_run_py_never_takes_the_permissive_min_valid_default__negative(self):
+        """The floor has to CHANGE the answer, or passing it proves nothing.
+        The measurement lane's own fixture ships the starved case and the
+        exact sentence §7 requires for it."""
+        from evals.agentic.framework import analysis
+
+        fixtures = REPO_ROOT / "evals" / "agentic" / "fixtures" / "measurement"
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "agentic_s05_builders", fixtures / "builders.py"
+        )
+        builders = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builders)
+        doc = io.load_json(fixtures / "zero_denom" / "voice-neg-02.json")
+        trials = builders.attempts_for_card(doc["card_id"], doc["starved_trials"])
+
+        permissive = analysis.card_rate(trials)
+        self.assertIsNotNone(
+            permissive.value,
+            "at the default this renders a number -- that IS the defect S-05 names",
+        )
+        floored = analysis.card_rate(trials, min_valid=runner().MIN_VALID)
+        self.assertIsNone(floored.value)
+        self.assertIn(doc["expected"]["starved_reason"], floored.render())
+
+
+class DispatchPlanAndParaphraseSelection(unittest.TestCase):
+    """REPAIR S-10 (planned_n) and CV-12 (per-attempt holdout paraphrase)."""
+
+    negative_control = "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/card.json"
+
+    def test_plan_populates_planned_n_and_selects_a_seeded_paraphrase_per_attempt(self):
+        run_py = runner()
+        plan = run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=3)
+        counts = run_py.planned_n_of(plan)
+
+        cards = validate.load_cards(REPO_ROOT)
+        self.assertEqual(len(counts), len(cards), "every card is a planned cell")
+        self.assertEqual(len(plan), len(cards) * len(run_py.ARM_KEYS) * 3)
+        for cell, n in counts.items():
+            self.assertEqual(n, len(run_py.ARM_KEYS) * 3, f"{cell}: cells x arms x repeats")
+
+        # planned_n is the shape run-manifest.schema.json declares.
+        io.load_schema("run-manifest").validate(_demo_manifest_with_plan(counts).to_dict())
+
+        # CV-12: every planned attempt on a holdout card names one of THAT
+        # card's own paraphrases, and the choice is a function of the seed.
+        holdout = {c.card_id: validate.card_paraphrases(c, REPO_ROOT)
+                   for c in cards if c.holdout}
+        self.assertGreater(len(holdout), 0)
+        seen_holdout = 0
+        for row in plan:
+            if row.card_id not in holdout:
+                continue
+            variants = holdout[row.card_id]
+            self.assertIsNotNone(row.paraphrase_index, f"{row.card_id}: holdout card unassigned")
+            self.assertEqual(row.paraphrase_total, len(variants))
+            self.assertLess(row.paraphrase_index, len(variants))
+            self.assertEqual(
+                row.paraphrase_digest,
+                digest(variants[row.paraphrase_index])[:16],
+                "the recorded digest must identify the variant actually selected",
+            )
+            seen_holdout += 1
+        self.assertEqual(seen_holdout, len(holdout) * len(run_py.ARM_KEYS) * 3)
+
+        # Deterministic: same seed, same plan, on any host and in any process.
+        self.assertEqual(plan, run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=3))
+        # Seed-sensitive: a different seed reassigns variants (otherwise the
+        # "chosen from the run seed" claim would be decoration).
+        other = run_py.dispatch_plan(REPO_ROOT, seed=99, repeats=3)
+        reassigned = sum(
+            1 for a, b in zip(plan, other)
+            if a.paraphrase_index != b.paraphrase_index
+        )
+        self.assertGreater(reassigned, 0, "the seed must actually drive the selection")
+
+        # Recorded ON the attempt: the note round-trips through a real
+        # Attempt and through attempt.schema.json.
+        row = next(r for r in plan if r.paraphrase_index is not None)
+        attempt = dataclasses.replace(
+            _demo_attempt("attempt-cv12", "run-cv12"), notes=run_py.paraphrase_note(row)
+        )
+        io.load_schema("attempt").validate(attempt.to_dict())
+        recovered = run_py.paraphrase_from_notes(Attempt.from_dict(attempt.to_dict()).notes)
+        self.assertEqual(
+            recovered, (row.paraphrase_index, row.paraphrase_total, row.paraphrase_digest)
+        )
+
+    def test_plan_populates_planned_n_and_selects_a_seeded_paraphrase_per_attempt__negative(self):
+        """Controls: (a) a card whose plugin has no arm manifest must be a
+        hard failure, never a silently-zero cell -- a cell planned at 0 is
+        exactly the shortfall assert_planned_reconciles exists to refuse; and
+        (b) a card with no paraphrases must record `none`, never a fabricated
+        index."""
+        run_py = runner()
+        cards = validate.load_cards(REPO_ROOT)
+        no_paraphrase = [c for c in cards if not validate.card_paraphrases(c, REPO_ROOT)]
+        self.assertGreater(len(no_paraphrase), 0, "the corpus must still contain one")
+        plan = run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=1)
+        bare = next(r for r in plan if r.card_id == no_paraphrase[0].card_id)
+        self.assertIsNone(bare.paraphrase_index)
+        self.assertEqual(bare.paraphrase_total, 0)
+        self.assertIn("paraphrase=none", run_py.paraphrase_note(bare))
+        self.assertIsNone(run_py.paraphrase_from_notes(run_py.paraphrase_note(bare)))
+
+        # A card whose plugin has no committed arm manifest. Built by
+        # relabelling a REAL card (validate.validate_card resolves task/
+        # fixture paths against the real repo root, so a synthetic corpus in a
+        # temp tree cannot even load) and handed to the planner through the
+        # same seam the planner reads.
+        ghost = dataclasses.replace(cards[0], card_id="ghost-pos-01", plugin="ghost")
+        self.assertFalse(
+            (REPO_ROOT / "evals" / "agentic" / "manifests" / "arms" / "ghost.json").exists()
+        )
+        original_load = run_py.validate.load_cards
+        run_py.validate.load_cards = lambda root: (ghost,)
+        try:
+            with self.assertRaises(ContractError) as caught:
+                run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=1)
+        finally:
+            run_py.validate.load_cards = original_load
+        self.assertIn("ghost", str(caught.exception))
+        self.assertIn("no arm manifest", str(caught.exception))
+        # The seam is restored, and the real plan still builds.
+        self.assertEqual(len(run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=1)), len(plan))
+
+        # And repeats must be a real count.
+        with self.assertRaises(ContractError):
+            run_py.dispatch_plan(REPO_ROOT, seed=1, repeats=0)
+
+
+class ExposureParityProbeCoversEveryArm(unittest.TestCase):
+    """REPAIR CV-10. `--gate`'s parity probe covered graveyard only, so 24 of
+    the 25 committed baseline arms were ungated -- counterfeit fixture 25's
+    defect applied to any other plugin passed silently."""
+
+    negative_control = "evals/agentic/fixtures/pairing/exposure-parity"
+
+    def test_probe_reads_every_arm_manifest_and_names_the_failing_plugin(self):
+        run_py = runner()
+        arms = sorted(
+            (REPO_ROOT / "evals" / "agentic" / "manifests" / "arms").glob("*.json")
+        )
+        self.assertGreaterEqual(len(arms), 25, "the roster must still be committed")
+        self.assertIsNone(run_py._probe_exposure_parity(REPO_ROOT))
+
+        opened: list[str] = []
+        real_load = run_py.io.load_json
+
+        def tracking_load(path, *a, **kw):
+            opened.append(str(path))
+            return real_load(path, *a, **kw)
+
+        run_py.io.load_json = tracking_load
+        try:
+            run_py._probe_exposure_parity(REPO_ROOT)
+        finally:
+            run_py.io.load_json = real_load
+        for arm in arms:
+            self.assertIn(str(arm), opened, f"the probe never read {arm.name}")
+
+    def test_probe_reads_every_arm_manifest_and_names_the_failing_plugin__negative(self):
+        """Widening a NON-graveyard baseline arm (CV-10's exact repro) must
+        fail the probe and name that plugin.
+
+        Run against a COPY of the arms directory in a temp root -- the probe
+        reads nothing else -- so no tracked file is mutated even transiently.
+        """
+        import shutil
+
+        run_py = runner()
+        source = REPO_ROOT / "evals" / "agentic" / "manifests" / "arms"
+        for plugin in ("voice", "jori", "redgate"):
+            with self.subTest(plugin=plugin), tempfile.TemporaryDirectory() as tmp:
+                root = pathlib.Path(tmp)
+                staged = root / "evals" / "agentic" / "manifests" / "arms"
+                staged.parent.mkdir(parents=True)
+                shutil.copytree(source, staged)
+                # Clean copy first: the probe must be green here, or the
+                # failure below would prove nothing about the mutation.
+                self.assertIsNone(run_py._probe_exposure_parity(root))
+
+                target = staged / f"{plugin}.json"
+                doc = json.loads(target.read_text(encoding="utf-8"))
+                doc["baseline_arm"]["allowed_tools"].append("AdminOverride")
+                target.write_text(
+                    json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                result = run_py._probe_exposure_parity(root)
+                self.assertIsNotNone(
+                    result, f"{plugin}: an impermissibly widened baseline must fail the probe"
+                )
+                self.assertIn("agentic FAIL registry: exposure parity", result)
+                self.assertIn(plugin, result, "the probe must name the failing plugin")
+        # The real tree is untouched and still clean.
+        self.assertIsNone(run_py._probe_exposure_parity(REPO_ROOT))
+
+
+class ReportReconcilesAgainstTheEventLedger(unittest.TestCase):
+    """REPAIR S-10. `conserve()`/`assert_reconciles()` re-derive their
+    comparison from the very list they check, so a row dropped before the
+    ledger ever held it is invisible. The event ledger's SPAWN entries are the
+    only external witness, and `report --event-ledger` now consults them."""
+
+    negative_control = "evals/agentic/fixtures/native/tamper/deleted-entry.jsonl"
+
+    def _write_event_ledger(self, path, run_id, attempt_ids):
+        ledger = adapters.HostLedger(
+            path, run_id=run_id, witness=SignatureClass.CALLER_ASSERTED
+        )
+        try:
+            for attempt_id in attempt_ids:
+                ledger.append(EventKind.SPAWN, attempt_id=attempt_id,
+                              session_id=None, payload={})
+                ledger.append(EventKind.EXIT, attempt_id=attempt_id,
+                              session_id=None, payload={"status": 0})
+        finally:
+            ledger.close()
+
+    def _run_report(self, tmp, run_id, recorded, spawned):
+        manifest_path = os.path.join(tmp, "manifest.json")
+        io.dump_json(manifest_path, _demo_manifest(run_id).to_dict())
+        attempts_dir = os.path.join(tmp, "attempts")
+        os.makedirs(attempts_dir, exist_ok=True)
+        for attempt_id in recorded:
+            io.dump_json(
+                os.path.join(attempts_dir, f"{attempt_id}.json"),
+                _demo_attempt(attempt_id, run_id).to_dict(),
+            )
+        ledger_path = pathlib.Path(tmp) / "events.jsonl"
+        self._write_event_ledger(ledger_path, run_id, spawned)
+        return subprocess.run(
+            [sys.executable, str(RUN_PY), "report",
+             "--manifest", manifest_path, "--attempts-dir", attempts_dir,
+             "--out-dir", tmp, "--event-ledger", str(ledger_path)],
+            capture_output=True, text=True, timeout=60,
+        )
+
+    def test_report_accepts_a_run_whose_spawns_and_attempt_rows_agree(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self._run_report(tmp, "run-s10-ok", ["a1", "a2"], ["a1", "a2"])
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("agentic report — run run-s10-ok", proc.stdout)
+            # The event ledger is caller-asserted, so no native claim can be
+            # made off it -- the report must say so rather than print a bare
+            # count (it holds no native-proven attempts here either).
+            self.assertNotIn("native-proven | 1", proc.stdout)
+
+    def test_report_accepts_a_run_whose_spawns_and_attempt_rows_agree__negative(self):
+        """The leak T32's own control concedes is invisible locally: two
+        attempts spawned, one row recorded. Nothing inside the attempt ledger
+        can see it; the event ledger can, and the report must refuse."""
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self._run_report(tmp, "run-s10-leak", ["a1"], ["a1", "a2"])
+            self.assertNotEqual(proc.returncode, 0, proc.stdout)
+            self.assertIn("agentic FAIL report:", proc.stderr)
+            self.assertIn("a2", proc.stderr)
+            self.assertFalse(
+                os.path.isfile(os.path.join(tmp, "run-s10-leak-report.json")),
+                "a refused report must not be written",
+            )
+
+        # The same ledger with the attempt row present is accepted, so the
+        # refusal is about the reconciliation and not about the flag itself.
+        with tempfile.TemporaryDirectory() as tmp:
+            proc = self._run_report(tmp, "run-s10-leak", ["a1", "a2"], ["a1", "a2"])
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+
+
+def _demo_manifest_with_plan(planned_n) -> Manifest:
+    return dataclasses.replace(_demo_manifest("run-plan-demo"), planned_n=planned_n)
 
 
 if __name__ == "__main__":

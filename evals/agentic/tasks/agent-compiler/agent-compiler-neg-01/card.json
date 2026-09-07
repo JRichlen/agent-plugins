@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same NOTES.md and a plain text-editing capability -- no registry, no kernel, no hooks -- since the correct behavior here never touches the agent-compiler surface at all.",
   "capabilities": [
     {
       "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement",
       "kind": "mcp",
-      "name": "agent-compiler kernel (compile.py / mcp_server.py) + hooks",
+      "name": "kernel",
       "source_plugin": "agent-compiler"
     }
   ],
@@ -18,6 +19,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "There's a typo in NOTES.md -- 'recieve' should be 'receive'. Fix it.",
+    "Correct the misspelling of 'receive' in NOTES.md, that's the whole task."
+  ],
   "pass_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-neg-01/fixtures/pass",
   "plugin": "agent-compiler",
   "task_path": "evals/agentic/tasks/agent-compiler/agent-compiler-neg-01/task"

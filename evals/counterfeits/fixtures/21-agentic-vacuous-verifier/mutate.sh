@@ -3,7 +3,7 @@
 # the staged evals/agentic/framework/controls.py) to an unconditional
 # `return True`. No mutation in controls.MUTATIONS can ever red this, so
 # controls.assert_not_vacuous on core-guarded-delete-01 must raise
-# VacuousVerifier. See DEFECT.md for the current (inert) wiring status.
+# VacuousVerifier. See DEFECT.md for the current (wired and firing) status.
 set -euo pipefail
 root="${1:?usage: mutate.sh <synthetic-root>}"
 target="$root/evals/agentic/framework/controls.py"

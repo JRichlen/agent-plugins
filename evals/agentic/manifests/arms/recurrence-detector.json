@@ -29,7 +29,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-recurrence-detector-cc378c45e73f4cc5b91c889969eb9a0e",
+    "arm_id": "arm-full-recurrence-detector-331f84488c40190988bceea339215e4e",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -38,7 +38,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "cluster-and-cite",
+        "name": "recurrence-detector",
         "kind": "skill",
         "source_plugin": "recurrence-detector",
         "generic_equivalent": "eyeball the exhaust once and guess at a pattern with no citation count or threshold"
@@ -55,10 +55,12 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/recurrence-detector/SKILL.md": "61f8fad7e4b8bb7e97400885ae6313ef66ba1c047edcb8155585717d64bbea86"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-fb3e1566823141eaadbab9a2d03d263d",
+    "arm_id": "arm-baseline-9500ac47f25ea1087609275aa0677ece",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -74,8 +76,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "eyeball the exhaust once and guess at a pattern with no citation count or threshold",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "2a92f4122b0052c199f1d041edd8dad295bb14978da39c4c28f68bea1c77b603"
+    }
   },
   "arm_source_card": "recurrence-detector-pos-01"
 }

@@ -38,10 +38,10 @@
     "full-package": "available",
     "guidance-only": "available",
     "composition": "n/a (needs a second plugin; see composition_arms)",
-    "version": "unavailable (no two-revision target identified)"
+    "version": "available (de039a6..d02c66c)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-plugin-factory-f12899b1a67140c59d5e7a47450b383e",
+    "arm_id": "arm-full-plugin-factory-d032a35a5642c166d6d56ea2a2697e29",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -51,7 +51,7 @@
     "capabilities": [
       {
         "name": "scaffold-plugin.sh",
-        "kind": "skill",
+        "kind": "script",
         "source_plugin": "plugin-factory",
         "generic_equivalent": "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel"
       }
@@ -63,14 +63,15 @@
       "MultiEdit",
       "Bash",
       "Grep",
-      "Glob"
+      "Glob",
+      "scaffold-plugin.sh"
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {}
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-f77815f312cf40ffb573aedc5157ecc7",
+    "arm_id": "arm-baseline-a35310f9ebcfffc097f52586ea012d9d",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -83,7 +84,8 @@
       "MultiEdit",
       "Bash",
       "Grep",
-      "Glob"
+      "Glob",
+      "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel"
     ],
     "extra_dirs": [],
     "system_prompt_append": "",

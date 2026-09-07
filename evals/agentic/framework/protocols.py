@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 import pathlib
+import selectors
 import signal
 import subprocess
 import time
@@ -189,7 +190,8 @@ class McpStdioClient:
         )
         return self
 
-    def __exit__(self, *exc: object) -> None:
+    def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None,
+                 exc_tb: object) -> None:
         proc = self._proc
         if proc is None:
             return
@@ -198,14 +200,26 @@ class McpStdioClient:
                 proc.stdin.close()
         except (BrokenPipeError, OSError):
             pass
-        try:
-            proc.wait(timeout=self._timeout_s)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        if exc_type is not None and issubclass(exc_type, TimeoutError):
+            # A per-call read deadline (see _read_response) already burned the
+            # full timeout_s budget waiting on this process. Do not wait a
+            # second full timeout_s here -- kill-and-reap immediately so a
+            # single stuck call never costs more than ~timeout_s total.
+            if proc.poll() is None:
+                proc.kill()
             try:
                 proc.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 pass
+        else:
+            try:
+                proc.wait(timeout=self._timeout_s)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
         for stream in (proc.stdout, proc.stderr):
             if stream is not None:
                 try:
@@ -228,7 +242,30 @@ class McpStdioClient:
         return msg_id
 
     def _read_response(self) -> Mapping[str, Any]:
+        """Read one newline-delimited JSON-RPC response, bounded by ``timeout_s``.
+
+        ``readline()`` on its own blocks forever against a server that never
+        writes a line (a hang, not a crash) -- ``timeout_s`` would then be a
+        documented-but-unenforced constructor parameter. Poll the underlying
+        fd against a wall-clock deadline instead, so every call through this
+        client (``initialize``/``tools_list``/``call_tool``) is bounded by
+        ``timeout_s`` even when the server never speaks at all.
+        """
         assert self._proc is not None and self._proc.stdout is not None
+        deadline = time.monotonic() + self._timeout_s
+        sel = selectors.DefaultSelector()
+        sel.register(self._proc.stdout, selectors.EVENT_READ)
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError(
+                        f"MCP server did not respond within timeout_s={self._timeout_s}s"
+                    )
+                if sel.select(timeout=remaining):
+                    break
+        finally:
+            sel.close()
         line = self._proc.stdout.readline()
         if not line:
             stderr = self._proc.stderr.read() if self._proc.stderr else ""

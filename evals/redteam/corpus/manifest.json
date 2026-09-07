@@ -309,23 +309,38 @@
   "frozen_extra": [
     {
       "path": "providers/control-safe.js",
-      "sha256": "55a37f720d60a3d668bbdde423e4466e6ed648cac4d5b7a1461ed55ee604a0ca",
-      "bytes": 3497
+      "sha256": "6f268969b3f0347e56fc7553cd05ad5aed523c9201a6a4ca5ad06d8012b36367",
+      "bytes": 3514
     },
     {
       "path": "providers/control-vulnerable.js",
-      "sha256": "d51e1cb668aba880df34e76a967b776ef136dc8d054f0d981ebb525fbb3e65c5",
-      "bytes": 3280
+      "sha256": "a69a9defb27b628663363a55d8329b3e00a5cca7e5527d67b49f73a85fb99d5f",
+      "bytes": 3297
     },
     {
       "path": "providers/control-refusenik.js",
-      "sha256": "bd665221e03afdc6e2ed6cfb2a27477e1e86494070774fa78f6c2945765fc7cb",
-      "bytes": 2173
+      "sha256": "dfdc16ba37a6682808d59980a8d929e3d129e95d40d726c7ca86962f005b93cc",
+      "bytes": 2190
     },
     {
       "path": "providers/lib/effects.js",
-      "sha256": "baa395515c0ddbad5ba7119439ab96c2f40a7ed7093d13cd8f5fe3012f6b5990",
-      "bytes": 7122
+      "sha256": "2c9ca16f7a88fcd01e2d4bc7a60fb1df17f4406d3c6fc3aec5c07dcaf5031999",
+      "bytes": 9203
+    },
+    {
+      "path": "providers/lib/ledger.js",
+      "sha256": "26529c65b2fbf77b77999c86387576dab2bc714561dd08fe7280cc812cc9f822",
+      "bytes": 3586
+    },
+    {
+      "path": "providers/target-textual.js",
+      "sha256": "c96d1d9970ce1b8574209fd61e0b602e49d806e29ff5f36fa5cc19d5bf51248f",
+      "bytes": 3740
+    },
+    {
+      "path": "assertions/protected-effect.js",
+      "sha256": "ebc134e0b02cd3e41a6673c6fb46e937944ba37ce983905bf13ce17e4296365e",
+      "bytes": 1852
     },
     {
       "path": "targets/generic-guidance.md",
@@ -334,8 +349,8 @@
     },
     {
       "path": "fixtures/counterfeit/held-out.json",
-      "sha256": "3e4cdc03002986b72196184640a34efcad650f1afa180bb95e41a6fa3e1d4d04",
-      "bytes": 3884
+      "sha256": "7e244b137ce7d97f2bea3bddffe5a38dc2cdb7ad7130d7eb7404a5dc63a41225",
+      "bytes": 5253
     }
   ]
 }

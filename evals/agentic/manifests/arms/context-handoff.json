@@ -29,7 +29,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-context-handoff-7eaae651ec1e4248a190d9b37fac2e61",
+    "arm_id": "arm-full-context-handoff-ec68009f5523b8ccd9a84d316416ab70",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -38,7 +38,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "context-handoff decision tree + portable-extraction reference",
+        "name": "context-handoff",
         "kind": "skill",
         "source_plugin": "context-handoff",
         "generic_equivalent": "ad hoc prose summary with inline-copied source content and no phase-boundary check"
@@ -55,10 +55,14 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/context-handoff/SKILL.md": "2648ea3671e441d230550becc88ec498a5c054bc61e07cfefa82f8e169710654",
+      "skills/context-handoff/references/portable-extraction.md": "c090676695096a271a3f4081dc41a279e86227ad2678c94c34f4260ce52676e3",
+      "skills/context-handoff/references/research-documenter.md": "528d3fab9de841684b5227dfd56d1d889e894e7ff7c1022b32bfa48935d4acda"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-89dd8420719a403a84d5dd96e23e92bd",
+    "arm_id": "arm-baseline-8ff793932efea36328493d770582fc46",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -74,8 +78,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "ad hoc prose summary with inline-copied source content and no phase-boundary check",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "ed20008967d5ce7921ffc4c4c13ffb04b67dd210cb971f03963c95ca4d8041aa"
+    }
   },
   "arm_source_card": "context-handoff-pos-01"
 }

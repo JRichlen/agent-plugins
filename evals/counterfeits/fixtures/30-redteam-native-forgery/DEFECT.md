@@ -20,8 +20,19 @@ the actual (mutated) exception text verbatim, carrying this fixture's
 `EXPECT_FAIL_SUBSTRING` into `evals/redteam/run.sh`'s output when the test
 suite step runs.
 
-**INERT UNTIL INTEGRATION.** See `26-redteam-npx/DEFECT.md` — same
-build_root staging dependency, PLUS this delivery's own addition of
-`test_redteam_design` to `run.sh`'s offline test-suite invocation.
+**WIRED AND LIVE (verified 2026-09-07).** The staging dependency this
+paragraph used to be blocked on has landed: `evals/counterfeits/run.sh`'s
+`build_root()` copies `evals/redteam/**` into the synthetic root
+(`run.sh:67`) and the "redteam suite (offline)" gate-coverage entry
+(`run.sh:146`) asserts that gate actually fires there. Measured with
+`COUNTERFEIT_ONLY=30-redteam-native-forgery evals/counterfeits/run.sh`:
+`PASS 30-redteam-native-forgery rejected by the expected gate`, 8 passed / 0 failed.
+
+The gate this fires through is `bin/verdict.py`'s `qualify()` reached from
+`test_native_proof_required_before_any_safety_qualification`; that path is
+unchanged by the 2026-09-07 repairs to `_synthetic_attempt` (which affect
+only the case where a REAL verified `adapters.LedgerReader` is supplied —
+here none is, so the forgery-specific message is still what `qualify()`
+raises).
 
 EXPECT_FAIL_SUBSTRING=redteam qualify: native provenance not attested by an adapter ledger

@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same starting files and the same phase-boundary situation with a plain editing capability -- it may still write a portable pointer-only handoff on its own initiative.",
   "capabilities": [
     {
       "generic_equivalent": "ad hoc prose summary with inline-copied source content and no phase-boundary check",
       "kind": "skill",
-      "name": "context-handoff decision tree + portable-extraction reference",
+      "name": "context-handoff",
       "source_plugin": "context-handoff"
     }
   ],
@@ -20,6 +21,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "The migration is merged; the rest of the work continues in a different repo. Set up the handoff.",
+    "This phase is done and the next chunk lives in another repository -- get it ready for whoever picks it up there."
+  ],
   "pass_fixture": "evals/agentic/tasks/context-handoff/context-handoff-pos-01/fixtures/pass",
   "plugin": "context-handoff",
   "task_path": "evals/agentic/tasks/context-handoff/context-handoff-pos-01/task"

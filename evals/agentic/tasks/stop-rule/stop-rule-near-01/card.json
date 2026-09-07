@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "keep retrying on momentum with no declared bound and no stop-report",
       "kind": "skill",
-      "name": "bound-and-stop-report",
+      "name": "stop-rule",
       "source_plugin": "stop-rule"
     }
   ],
@@ -18,6 +18,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Three attempts tweaking flag A all failed. Attempt 4 finally confirms the real root cause is flag B -- a genuinely new, diagnosed objective, not just another retry.",
+    "After three failed tries at flag A, attempt 4 pins the actual root cause on flag B for the first time -- a fresh, diagnosed objective."
+  ],
   "pass_fixture": "evals/agentic/tasks/stop-rule/stop-rule-near-01/fixtures/pass",
   "plugin": "stop-rule",
   "task_path": "evals/agentic/tasks/stop-rule/stop-rule-near-01/task"

@@ -7,7 +7,12 @@ expected version (not a hardcoded literal), so this mutation makes every
 invocation of the pinned entrypoint refuse before it ever execs, including
 `run.sh`'s own first pin-check step.
 
-**INERT UNTIL INTEGRATION.** See `26-redteam-npx/DEFECT.md` — same
-build_root staging dependency.
+**WIRED AND LIVE (verified 2026-09-07).** The staging dependency this
+paragraph used to be blocked on has landed: `evals/counterfeits/run.sh`'s
+`build_root()` copies `evals/redteam/**` into the synthetic root
+(`run.sh:67`) and the "redteam suite (offline)" gate-coverage entry
+(`run.sh:146`) asserts that gate actually fires there. Measured with
+`COUNTERFEIT_ONLY=28-redteam-pin-drift evals/counterfeits/run.sh`:
+`PASS 28-redteam-pin-drift rejected by the expected gate`, 8 passed / 0 failed.
 
 EXPECT_FAIL_SUBSTRING=redteam FAIL pin: version drift

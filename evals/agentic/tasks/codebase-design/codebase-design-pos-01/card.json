@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same starting files and task text with a plain editing capability and no access to the design-it-twice reference material -- it may still write and compare several designs on its own initiative if it chooses.",
   "capabilities": [
     {
       "generic_equivalent": "single-draft interface written directly with no recorded comparison of alternatives",
       "kind": "skill",
-      "name": "design-it-twice procedure + references",
+      "name": "codebase-design",
       "source_plugin": "codebase-design"
     }
   ],
@@ -20,6 +21,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "We need a RateLimiter that three different handlers (gateway, worker, webhook) will all call into -- add it.",
+    "Add outbound rate limiting shared across the gateway, the queue worker, and webhook ingest."
+  ],
   "pass_fixture": "evals/agentic/tasks/codebase-design/codebase-design-pos-01/fixtures/pass",
   "plugin": "codebase-design",
   "task_path": "evals/agentic/tasks/codebase-design/codebase-design-pos-01/task"

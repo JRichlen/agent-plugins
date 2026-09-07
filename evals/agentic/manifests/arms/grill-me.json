@@ -23,7 +23,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-grill-me-458949f7472d4aafb06de6250fae3083",
+    "arm_id": "arm-full-grill-me-abcf492f723c96b5255281578f507167",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,7 +32,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "grill-me stakes-tiered interview loop",
+        "name": "grill-me",
         "kind": "skill",
         "source_plugin": "grill-me",
         "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap"
@@ -49,10 +49,16 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/grill-me/SKILL.md": "3a028c2350a64c0bf1eab4a65ac8f9c70334b3bd79dcf1102c62e849f8ca65a0",
+      "skills/grill-me/references/fact-finding.md": "d85c5c6d3e3502081aa06f331f8d2c8eb88f681ac69fff14ad94ea8a18a8a6db",
+      "skills/grill-me/references/path-consent.md": "eeae650458989f97974a45dbf66bf1d7345ab6f303fcf8885061a87c9c6edc89",
+      "skills/grill-me/references/stakes-examples.md": "40cfd3857ad91f9074e044a27c4e839237e5bef77cffc42dcb8287197a004c00",
+      "skills/grill-me/references/technique.md": "0254846bd87547e1e0a1693ea4e13da8f4733780b51efe32c590ad162fcf5d43"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-8a837aa6a694489994ee07730efbd77d",
+    "arm_id": "arm-baseline-26e6ea817091ffe32560613952e71695",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -68,8 +74,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "proceed on the plan directly with no stakes-tiered interview or recap",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "6f167d354e6a6b6728c366d84221616bff9b38d2a784428565b69588302736b4"
+    }
   },
   "arm_source_card": "grill-me-pos-01"
 }

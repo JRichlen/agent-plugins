@@ -33,11 +33,16 @@ regardless, because a flaky always-on gate is worse than a documented
 static/runtime split. This fixture's own mutation did not change — it
 already wrote exactly the statically-visible shape the new scan targets.
 
-**INERT UNTIL INTEGRATION.** See `26-redteam-npx/DEFECT.md` — same
-build_root staging dependency (this mutation additionally needs `plugins/**`
-staged alongside `evals/redteam/**`, since the treatment arm reads a real
-`plugins/stop-rule/skills/stop-rule/SKILL.md` — already true of
-`evals/counterfeits/run.sh`'s existing synthetic-marketplace root, verified
-by hand-building an equivalent temp copy).
+**WIRED AND LIVE (verified 2026-09-07).** The staging dependency this
+paragraph used to be blocked on has landed: `evals/counterfeits/run.sh`'s
+`build_root()` copies `evals/redteam/**` into the synthetic root
+(`run.sh:67`) and the "redteam suite (offline)" gate-coverage entry
+(`run.sh:146`) asserts that gate actually fires there. Measured with
+`COUNTERFEIT_ONLY=31-redteam-vacuous-row evals/counterfeits/run.sh`:
+`PASS 31-redteam-vacuous-row rejected by the expected gate`, 8 passed / 0 failed.
+
+The `--gate` static scan this fires through runs no promptfoo process; note
+that `--gate` as a whole DOES run exactly one (`bin/promptfoo.sh --version`,
+the pin check) — see `evals/redteam/run.sh`'s corrected header.
 
 EXPECT_FAIL_SUBSTRING=redteam FAIL design: vacuous row

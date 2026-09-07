@@ -69,6 +69,7 @@ __all__ = [
     "materialize",
     "exposure_diff",
     "assert_exposure_parity",
+    "assert_arm_is_nonvacuous",
     "guidance_only_tree",
     "assert_guidance_only_tree_is_pure",
     "is_degenerate",
@@ -80,6 +81,7 @@ __all__ = [
     "SCRIPT_DOMINANT_PLUGINS",
     "survey_version_estimand_targets",
     "estimand_availability",
+    "deterministic_arm_id",
 ]
 
 # ---------------------------------------------------------------------------
@@ -124,7 +126,16 @@ class Arm:
     realized_tree: Mapping[str, str]
 
     def config_hash(self) -> str:
-        return contract_digest(self.to_dict())
+        """CV-06 / CV-16: `arm_id` (see `deterministic_arm_id` below) is
+        itself derived from a *prefix* of the configuration -- excluding it
+        here still matters, because config_hash is meant to attest to the
+        full REALIZED configuration (including realized_tree, not yet known
+        when arm_id is minted -- see deterministic_arm_id's docstring), and
+        a truncated, prefixed identifier is not a substitute for that.
+        Hash everything except the identifier."""
+        doc = self.to_dict()
+        del doc["arm_id"]
+        return contract_digest(doc)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -175,6 +186,46 @@ class Arm:
             system_prompt_append=d["system_prompt_append"],
             realized_tree=dict(d["realized_tree"]),
         )
+
+
+def deterministic_arm_id(
+    prefix: str,
+    *,
+    estimand: Estimand,
+    role: ArmRole,
+    plugins: Sequence[str],
+    revisions: Mapping[str, str],
+    capabilities: Sequence[Capability],
+    allowed_tools: Sequence[str],
+    extra_dirs: Sequence[str],
+    system_prompt_append: str,
+) -> str:
+    """CV-16: an arm_id derived from configuration, not `new_id`'s uuid4.
+
+    Every one of `_baseline_arm`/`_full_package_arm`/`_build_guidance_only_arm`/
+    `_version_arm` mints its Arm's `arm_id` before `realized_tree` is known
+    (materialize_write runs afterward), so `realized_tree` cannot be part of
+    this digest -- but plugins+revisions+capabilities fully determine the
+    realized tree for a given repo checkout, so hashing everything else that
+    IS known at mint time still yields a fingerprint stable across re-runs
+    and re-generations: rebuilding the exact same configuration (same
+    plugins, same revisions, same capabilities, same allowed_tools) always
+    reproduces the exact same `arm_id`, which is what lets a committed
+    `manifests/arms/*.json` be checked against a fresh rebuild (see
+    `tests/test_pairing.py`'s `CommittedManifestsAreReproducible`) instead of
+    drifting silently every time it is regenerated.
+    """
+    doc = {
+        "estimand": estimand.value,
+        "role": role.value,
+        "plugins": list(plugins),
+        "revisions": dict(revisions),
+        "capabilities": [c.to_dict() for c in capabilities],
+        "allowed_tools": list(allowed_tools),
+        "extra_dirs": list(extra_dirs),
+        "system_prompt_append": system_prompt_append,
+    }
+    return f"{prefix}-{contract_digest(doc)[:32]}"
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -289,6 +340,25 @@ def _substitutes_for(caps: Sequence[Capability]) -> tuple[str, ...]:
     return tuple(subs)
 
 
+def _prose_substitutes_for(caps: Sequence[Capability]) -> str:
+    """CV-11: a skill/command/hook capability has no `allowed_tools`
+    substitute -- there is no TOOL to swap out, the whole point of the
+    no-skill baseline is that it lacks the skill entirely. Its
+    author-curated `generic_equivalent` is real content describing the
+    generic procedure a baseline agent could still follow by hand; silently
+    discarding it (the old behavior of `_substitutes_for`, which only ever
+    looked at script/mcp/tool kinds) throws away 60 of 75 corpus cards'
+    curated equivalents. It belongs in the baseline arm's
+    `system_prompt_append` instead -- see `exposure_diff`'s matching
+    "permitted" rule for why this is not a byte-identical-prompt
+    violation."""
+    prose = sorted(
+        c.generic_equivalent for c in caps
+        if c.kind in ("skill", "command", "hook") and c.generic_equivalent
+    )
+    return "\n".join(prose)
+
+
 # ---------------------------------------------------------------------------
 # Materialization -- writes an Arm's declared surface to real files and
 # returns the relpath -> sha256 map. `build_arm` uses this to POPULATE
@@ -331,28 +401,49 @@ def _materialize_capability(
 
     if cap.kind == "skill":
         skill_dir = plugin_dir / "skills" / cap.name
-        if rev is None and skill_dir.is_dir():
+        if rev is None:
+            if not skill_dir.is_dir():
+                raise ContractError(
+                    f"_materialize_capability: capability {cap.name!r} (kind='skill', "
+                    f"source_plugin={cap.source_plugin!r}) does not resolve to a real "
+                    f"directory: {skill_dir} -- a card author's prose description of a "
+                    "capability is not itself a materializable surface (CV-05); name the "
+                    "plugin's real skills/<dir> here and put the prose in generic_equivalent"
+                )
             for f in sorted(skill_dir.rglob("*.md")):
                 if "scripts" in f.relative_to(skill_dir).parts or "hooks" in f.relative_to(skill_dir).parts:
                     continue
                 data = f.read_bytes()
                 rel = f"skills/{cap.name}/{f.relative_to(skill_dir).as_posix()}"
                 _write_bytes(root, rel, data, written)
-        elif rev is not None:
+        else:
             main = skill_dir / "SKILL.md"
             data = _read_capability_bytes(cap, repo_root, main, rev=rev)
             if data is not None:
                 _write_bytes(root, f"skills/{cap.name}/SKILL.md", data, written)
+            # rev is not None (a VERSION arm): absence here is left lenient --
+            # a skill genuinely may not have existed yet at an older revision,
+            # which is a legitimate historical fact, not an authoring defect.
     elif cap.kind == "command":
         src = plugin_dir / "commands" / f"{cap.name}.md"
         data = _read_capability_bytes(cap, repo_root, src, rev=rev)
         if data is not None:
             _write_bytes(root, f"commands/{cap.name}.md", data, written)
+        elif rev is None:
+            raise ContractError(
+                f"_materialize_capability: capability {cap.name!r} (kind='command', "
+                f"source_plugin={cap.source_plugin!r}) does not resolve to a real file: {src}"
+            )
     elif cap.kind == "hook":
         hooks_json = plugin_dir / "hooks" / "hooks.json"
         data = _read_capability_bytes(cap, repo_root, hooks_json, rev=rev)
         if data is not None:
             _write_bytes(root, "hooks/hooks.json", data, written)
+        elif rev is None:
+            raise ContractError(
+                f"_materialize_capability: capability {cap.name!r} (kind='hook', "
+                f"source_plugin={cap.source_plugin!r}) does not resolve to a real file: {hooks_json}"
+            )
     # kind in {"script", "mcp", "tool"}: these are TOOLS the agent may invoke,
     # not files the task workspace carries -- a script lives in the plugin's
     # own install directory (not the card's working tree) and an MCP server
@@ -418,12 +509,17 @@ def materialize(arm: Arm, workspace: pathlib.Path) -> pathlib.Path:
 # Baseline arm (the single reusable Estimand.BASELINE arm, benchmark-spec §4.2)
 # ---------------------------------------------------------------------------
 
-def _baseline_arm(subs: Sequence[str], workspace: pathlib.Path) -> Arm:
+def _baseline_arm(subs: Sequence[str], workspace: pathlib.Path, *, prose: str = "") -> Arm:
     allowed = tuple(_SHARED_GENERIC_TOOLS) + tuple(subs)
     shell = Arm(
-        arm_id=new_id("arm-baseline"), estimand=Estimand.BASELINE, role=ArmRole.BASELINE,
+        arm_id=deterministic_arm_id(
+            "arm-baseline", estimand=Estimand.BASELINE, role=ArmRole.BASELINE,
+            plugins=(), revisions={}, capabilities=(), allowed_tools=allowed,
+            extra_dirs=(), system_prompt_append=prose,
+        ),
+        estimand=Estimand.BASELINE, role=ArmRole.BASELINE,
         plugins=(), revisions=types.MappingProxyType({}), capabilities=(), allowed_tools=allowed,
-        extra_dirs=(), system_prompt_append="", realized_tree=types.MappingProxyType({}),
+        extra_dirs=(), system_prompt_append=prose, realized_tree=types.MappingProxyType({}),
     )
     _root, written = _materialize_write(shell, workspace)
     return dataclasses.replace(shell, realized_tree=types.MappingProxyType(written))
@@ -436,7 +532,12 @@ def _baseline_arm(subs: Sequence[str], workspace: pathlib.Path) -> Arm:
 def _full_package_arm(plugin_names: tuple[str, ...], caps: tuple[Capability, ...], workspace: pathlib.Path) -> Arm:
     allowed = _allowed_tools_for_treatment(caps)
     shell = Arm(
-        arm_id=new_id(f"arm-full-{'-'.join(plugin_names) or 'none'}"),
+        arm_id=deterministic_arm_id(
+            f"arm-full-{'-'.join(plugin_names) or 'none'}",
+            estimand=Estimand.FULL_PACKAGE, role=ArmRole.TREATMENT,
+            plugins=plugin_names, revisions={}, capabilities=caps,
+            allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
+        ),
         estimand=Estimand.FULL_PACKAGE, role=ArmRole.TREATMENT,
         plugins=plugin_names, revisions=types.MappingProxyType({}), capabilities=caps,
         allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
@@ -518,10 +619,16 @@ def _build_guidance_only_arm(card: Card, ref: PluginRef, workspace: pathlib.Path
             rel = f.relative_to(tree_path).as_posix()
             written[rel] = hashlib.sha256(f.read_bytes()).hexdigest()
 
+    allowed = tuple(_SHARED_GENERIC_TOOLS)
     return Arm(
-        arm_id=new_id(f"arm-guid-{ref.name}"), estimand=Estimand.GUIDANCE_ONLY, role=ArmRole.TREATMENT,
+        arm_id=deterministic_arm_id(
+            f"arm-guid-{ref.name}", estimand=Estimand.GUIDANCE_ONLY, role=ArmRole.TREATMENT,
+            plugins=(ref.name,), revisions={}, capabilities=guidance_caps,
+            allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
+        ),
+        estimand=Estimand.GUIDANCE_ONLY, role=ArmRole.TREATMENT,
         plugins=(ref.name,), revisions=types.MappingProxyType({}), capabilities=guidance_caps,
-        allowed_tools=tuple(_SHARED_GENERIC_TOOLS), extra_dirs=(), system_prompt_append="",
+        allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
         realized_tree=types.MappingProxyType(written),
     )
 
@@ -573,7 +680,8 @@ def build_arm(
         if plugins:
             raise ContractError("build_arm: BASELINE estimand takes an empty plugins sequence")
         subs = _substitutes_for(card.capabilities)
-        return _baseline_arm(subs, workspace)
+        prose = _prose_substitutes_for(card.capabilities)
+        return _baseline_arm(subs, workspace, prose=prose)
 
     if estimand is Estimand.FULL_PACKAGE:
         if len(plugins) != 1:
@@ -627,9 +735,15 @@ def _assert_revision_resolves(repo_root: pathlib.Path, rev: str) -> None:
 
 def _version_arm(plugin: PluginRef, rev: str, caps: tuple[Capability, ...], workspace: pathlib.Path) -> Arm:
     allowed = _allowed_tools_for_treatment(caps)
+    revisions = {plugin.name: rev}
     shell = Arm(
-        arm_id=new_id(f"arm-ver-{plugin.name}-{rev[:12]}"), estimand=Estimand.VERSION, role=ArmRole.TREATMENT,
-        plugins=(plugin.name,), revisions=types.MappingProxyType({plugin.name: rev}), capabilities=caps,
+        arm_id=deterministic_arm_id(
+            f"arm-ver-{plugin.name}-{rev[:12]}", estimand=Estimand.VERSION, role=ArmRole.TREATMENT,
+            plugins=(plugin.name,), revisions=revisions, capabilities=caps,
+            allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
+        ),
+        estimand=Estimand.VERSION, role=ArmRole.TREATMENT,
+        plugins=(plugin.name,), revisions=types.MappingProxyType(revisions), capabilities=caps,
         allowed_tools=allowed, extra_dirs=(), system_prompt_append="",
         realized_tree=types.MappingProxyType({}),
     )
@@ -647,10 +761,31 @@ def version_arms(
     caps = _capabilities_for(card, plugin, repo_root)
     arm_a = _version_arm(plugin, rev_a, caps, workspace)
     arm_b = _version_arm(plugin, rev_b, caps, workspace)
+    if dict(arm_a.realized_tree) == dict(arm_b.realized_tree):
+        raise ContractError(
+            f"version_arms: {plugin.name!r} at {rev_a!r} and {rev_b!r} materialize the "
+            "IDENTICAL realized_tree -- the revision has no realized effect on the arm, so "
+            "the version estimand this pair feeds cannot detect anything (CV-06). This "
+            "usually means the card's capabilities do not name a real surface that actually "
+            "differs between the two revisions -- see pairing.discover_plugin_capabilities "
+            "and validate the card's own curated capabilities resolve on disk."
+        )
     return (arm_a, arm_b)
 
 
+_TOP_LEVEL_DOC_BASENAMES: frozenset[str] = frozenset({"README.md", "AGENTS.md", "CLAUDE.md", "GEMINI.md"})
+
+
 def _diff_touches_behavior(diff_text: str, plugin_dir_rel: str) -> bool:
+    """CV-13: a plugin's OWN prose surface -- `skills/**/*.md`,
+    `commands/*.md`, `agents/*.md` -- IS its behavior (prose steers the
+    model, same principle AGENTS.md's eval discipline states for
+    `SKILL.md`/command markdown). The prior blanket '.md is never behavior'
+    exclusion was meant only for the plugin's top-level governance docs
+    (README.md/AGENTS.md and its harness symlinks); it instead silently
+    exempted 24 of 25 plugins' entire markdown-shipped surface, producing
+    false 'version: unavailable' verdicts for genuine behavior-changing
+    revision pairs whose diff happened to be a SKILL.md edit."""
     changed: set[str] = set()
     for line in diff_text.splitlines():
         if line.startswith("diff --git "):
@@ -658,10 +793,11 @@ def _diff_touches_behavior(diff_text: str, plugin_dir_rel: str) -> bool:
             if len(parts) >= 3 and parts[2].startswith("a/"):
                 changed.add(parts[2][2:])
     plugin_json = f"{plugin_dir_rel}/.claude-plugin/plugin.json"
+    top_level_docs = {f"{plugin_dir_rel}/{name}" for name in _TOP_LEVEL_DOC_BASENAMES}
     for path in changed:
         if path == plugin_json:
             continue
-        if path.endswith(".md"):
+        if path in top_level_docs:
             continue
         # A plugin's own evals/** is test furniture, not shipped behavior --
         # the same exclusion registry.derive_roster applies to has_scripts.
@@ -732,6 +868,14 @@ def _is_permitted_tree_path(path: str, treatment: Arm) -> bool:
             return True
     if path.startswith("mcp/"):
         return True
+    if path == "SYSTEM_PROMPT_APPEND.txt":
+        # CV-11: the baseline-only file materialization of its compensating
+        # generic_equivalent prose. The top-level system_prompt_append field
+        # check above is the authoritative guard against real prompt-level
+        # abuse (it still flags anything that does NOT match the expected
+        # compensating text); this only permits the physical file that
+        # legitimate prose produces.
+        return True
     return False
 
 
@@ -746,14 +890,32 @@ def exposure_diff(treatment: Arm, baseline: Arm) -> tuple[Divergence, ...]:
     for d in sorted(b_extra - t_extra):
         divergences.append(Divergence(f"extra_dirs:{d}", "<absent>", d, False, "extra_dir present in baseline only"))
 
-    # system_prompt_append: must be byte-identical
+    # system_prompt_append: must be byte-identical, UNLESS baseline carries
+    # EXACTLY the treatment's skill/command/hook capabilities' curated
+    # generic_equivalent prose (CV-11) -- the permitted "prose substitute"
+    # for a capability kind that has no allowed_tools swap.
     if treatment.system_prompt_append != baseline.system_prompt_append:
-        divergences.append(
-            Divergence(
-                "system_prompt_append", treatment.system_prompt_append, baseline.system_prompt_append,
-                False, "system_prompt_append must be byte-identical between arms",
+        expected_prose = _prose_substitutes_for(treatment.capabilities)
+        if (
+            expected_prose
+            and treatment.system_prompt_append == ""
+            and baseline.system_prompt_append == expected_prose
+        ):
+            divergences.append(
+                Divergence(
+                    "system_prompt_append", "", expected_prose, True,
+                    "baseline's generic_equivalent prose compensating for the treatment's "
+                    "skill/command/hook capabilities, which have no allowed_tools substitute "
+                    "(clause c, prose form)",
+                )
             )
-        )
+        else:
+            divergences.append(
+                Divergence(
+                    "system_prompt_append", treatment.system_prompt_append, baseline.system_prompt_append,
+                    False, "system_prompt_append must be byte-identical between arms",
+                )
+            )
 
     # realized_tree: same working tree except the treatment's own
     # skills/commands/hooks/agents surface and each arm's own mcp/ config.
@@ -813,6 +975,27 @@ def assert_exposure_parity(treatment: Arm, baseline: Arm) -> None:
     if bad:
         rendered = "; ".join(f"{d.field}: treatment={d.treatment!r} baseline={d.baseline!r} ({d.reason})" for d in bad)
         raise ExposureParityViolation(f"{len(bad)} impermissible divergence(s): {rendered}")
+
+
+def assert_arm_is_nonvacuous(treatment: Arm, baseline: Arm) -> None:
+    """CV-05: a treatment arm that materializes NO files and has ZERO
+    exposure divergence from its baseline is indistinguishable from that
+    baseline by construction -- the estimand it feeds is guaranteed to
+    report a null effect regardless of any real plugin behavior, which is a
+    measurement defect (not a finding about the plugin). A treatment whose
+    only real capabilities are script/mcp/tool-kind legitimately
+    materializes zero files BY DESIGN (their exposure is captured entirely
+    by `allowed_tools`, not `realized_tree` -- see `_materialize_capability`
+    for why); such an arm is still non-vacuous as long as `exposure_diff`
+    reports at least one real divergence (e.g. the matched allowed_tools
+    substitution), which is why this checks BOTH conditions, not either
+    alone."""
+    if not treatment.realized_tree and not exposure_diff(treatment, baseline):
+        raise ContractError(
+            f"assert_arm_is_nonvacuous: {treatment.arm_id} materializes no files and has "
+            f"zero exposure divergence from baseline {baseline.arm_id} -- this treatment arm "
+            "is indistinguishable from its own baseline by construction"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -887,7 +1070,22 @@ def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, di
         version_status = "unavailable (no two-revision target identified)"
         if ref.name in version_hits:
             hit = version_hits[ref.name]
-            version_status = f"available ({hit['rev_older']}..{hit['rev_newer']})"
+            # CV-06: a structural git-diff hit is necessary but not
+            # sufficient -- actually attempt to materialize both revisions'
+            # arms and require them to differ, so a pair whose only real
+            # capability kind never gets a realized_tree footprint (script/
+            # mcp/tool -- see _materialize_capability) is honestly reported
+            # unavailable rather than claimed "available" while the arms it
+            # would build are byte-identical, empty trees.
+            try:
+                with tempfile.TemporaryDirectory() as tmp:
+                    version_arms(ref, hit["rev_older"], hit["rev_newer"], survey_card, pathlib.Path(tmp))
+                version_status = f"available ({hit['rev_older']}..{hit['rev_newer']})"
+            except ContractError:
+                version_status = (
+                    f"unavailable (revision pair {hit['rev_older']}..{hit['rev_newer']} "
+                    "materializes no detectable difference)"
+                )
 
         result[ref.name] = {
             "full-package": "available",

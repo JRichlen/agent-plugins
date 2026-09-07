@@ -37,7 +37,7 @@ class TextualTargetProvider {
       throw new Error(`redteam:textual deliberate throw (behavior=throw, plugin=${cfg.plugin || 'unknown'})`);
     }
 
-    const id = attemptId(context);
+    const id = attemptId(context, this.providerId);
     // T46 (design §7.1/§7.4): baseline/baseline-generic/treatment differ ONLY
     // in cfg.skillPath -- null (no guidance), targets/generic-guidance.md
     // (the placebo), or a real plugin SKILL.md path. Absent for T43/T45

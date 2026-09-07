@@ -85,7 +85,38 @@ for shim in npx npm; do
   printf '#!/usr/bin/env bash\necho "counterfeit sandbox: %s invoked inside the synthetic root -- network package managers are forbidden here" >&2\nexit 99\n' "$shim" > "$NO_NET_BIN/$shim"
   chmod +x "$NO_NET_BIN/$shim"
 done
-trap 'rm -rf "$NO_NET_BIN"' EXIT
+
+# REPAIR F5: every build_root() copy (multi-megabyte: full ci/evals/plugins
+# trees) is tracked here the instant it exists, not just removed by the happy
+# path at the bottom of each loop iteration. Relying only on "reach the bottom
+# of the loop body" left temp dirs behind under an external SIGTERM (e.g. a
+# CI/harness `timeout` around this whole script): bash defers signal handling
+# until the currently running foreground command (a run_tier() subshell here)
+# returns, so a kill mid-run_tier skipped every per-iteration `rm -rf`. A
+# single top-level cleanup, run from EXIT and from explicit INT/TERM handlers
+# (which then re-raise so the script's own exit status still reflects the
+# signal), removes NO_NET_BIN and every root still in LIVE_ROOTS regardless of
+# how the script stops. `track_root`/`untrack_root` keep the array in sync;
+# cleanup tolerates already-removed paths (rm -rf on a missing dir is a no-op).
+LIVE_ROOTS=()
+track_root()   { LIVE_ROOTS+=("$1"); }
+untrack_root() {
+  local target="$1" kept=() r
+  for r in "${LIVE_ROOTS[@]}"; do
+    [ "$r" = "$target" ] || kept+=("$r")
+  done
+  LIVE_ROOTS=("${kept[@]}")
+}
+cleanup() {
+  rm -rf "$NO_NET_BIN"
+  local r
+  for r in "${LIVE_ROOTS[@]}"; do
+    [ -n "$r" ] && rm -rf "$r"
+  done
+}
+trap cleanup EXIT
+trap 'cleanup; trap - TERM; kill -TERM "$$"' TERM
+trap 'cleanup; trap - INT; kill -INT "$$"' INT
 
 run_tier() {  # <root> -> prints combined output, returns run.sh exit code
   PATH="$NO_NET_BIN:$PATH" "$1/evals/cheap/run.sh" 2>&1
@@ -96,6 +127,7 @@ run_tier() {  # <root> -> prints combined output, returns run.sh exit code
 # a rejection could just mean the baseline itself is broken. Assert green first.
 group "calibration — baseline plugin passes the cheap tier"
 cal_root="$(build_root)"
+track_root "$cal_root"
 if cal_out="$(run_tier "$cal_root")"; then
   ok "baseline plugin is green (gate discriminates from a known-good starting point)"
 else
@@ -103,6 +135,7 @@ else
   printf '%s\n' "$cal_out" | sed 's/^/    /'
 fi
 rm -rf "$cal_root"
+untrack_root "$cal_root"
 
 # --- coverage: the repo-level gates must FIRE in the synthetic root ----------
 # §11/§11b/§12 are inert unless build_root stages their inputs. If it ever stops,
@@ -146,8 +179,9 @@ for dir in "$FIXTURES"/*/; do
   fi
 
   root="$(build_root)"
+  track_root "$root"
   if ! bash "$mutate" "$root" >/dev/null 2>&1; then
-    bad "$name mutate.sh failed to apply"; rm -rf "$root"; continue
+    bad "$name mutate.sh failed to apply"; rm -rf "$root"; untrack_root "$root"; continue
   fi
 
   out="$(run_tier "$root")"; code=$?
@@ -160,6 +194,7 @@ for dir in "$FIXTURES"/*/; do
     ok "$name rejected by the expected gate ('$expect')"
   fi
   rm -rf "$root"
+  untrack_root "$root"
 done
 if [ -n "${COUNTERFEIT_ONLY:-}" ] && [ "$matched" -eq 0 ]; then
   bad "COUNTERFEIT_ONLY=$COUNTERFEIT_ONLY matched no fixture directory under $FIXTURES"

@@ -1,1 +1,1 @@
-This was effectively a prototype (a full rewrite is warranted) -- relabeling it as such rather than calling the rewrite a tracer-bullet cleanup.
+What we built only proved the concept could work; the real implementation needs a ground-up rewrite, not a widen-in-place extension. Since a from-scratch rewrite is genuinely warranted, I'm relabeling what we shipped as a prototype instead of dressing the upcoming rewrite up as ordinary cleanup work.

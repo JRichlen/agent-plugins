@@ -47,7 +47,7 @@
     "version": "available (de039a6..edd6db3)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-voice-dd299da67a024ff1817b74c51c80b1de",
+    "arm_id": "arm-full-voice-d0564eaebae015224c0298f3c911a36b",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -56,7 +56,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "human-voice checklist",
+        "name": "human-voice",
         "kind": "skill",
         "source_plugin": "voice",
         "generic_equivalent": "manual self-edit pass against a banned-AI-tell checklist"
@@ -73,10 +73,12 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/human-voice/SKILL.md": "7e71efc9a5d9da1fa6c7792bb5421725e6129f9e538d9c44fe89edbabe44dcce"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-79ed434de86b4d8ebb3c58878c081fa5",
+    "arm_id": "arm-baseline-1932a708e2665924b9c1d110531562ed",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -92,8 +94,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "manual self-edit pass against a banned-AI-tell checklist",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "39ec18bcf810407f9042883897a3ec4231cd3516cdcab09423bad9315799d588"
+    }
   },
   "arm_source_card": "voice-pos-01"
 }

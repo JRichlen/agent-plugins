@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand",
       "kind": "skill",
-      "name": "dashboard workflow",
+      "name": "jori",
       "source_plugin": "jori"
     }
   ],
@@ -20,6 +20,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "agent-b blocks on missing credentials at t=100, mid-way through a 4-card project -- the dashboard needs to reflect that blocker no earlier than when it actually happened.",
+    "Halfway through a 4-card project, agent-b hits a credentials blocker at t=100. Refresh the dashboard so the blocker shows up, timestamped at or after t=100."
+  ],
   "pass_fixture": "evals/agentic/tasks/jori/jori-near-01/fixtures/pass",
   "plugin": "jori",
   "task_path": "evals/agentic/tasks/jori/jori-near-01/task"

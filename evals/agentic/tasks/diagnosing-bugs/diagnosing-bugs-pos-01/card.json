@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same repro/failure description and a plain editing capability, no hypothesis-list template -- it may still write ranked hypotheses on its own initiative.",
   "capabilities": [
     {
       "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test",
       "kind": "skill",
-      "name": "diagnosing-bugs hypothesis/tag/seam-gate procedure",
+      "name": "diagnosing-bugs",
       "source_plugin": "diagnosing-bugs"
     }
   ],
@@ -20,6 +21,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "parse_duration('90s') is off by 1000x -- diagnose and fix.",
+    "There's a units bug in parse_duration: '90s' becomes 90000, should be 90."
+  ],
   "pass_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-pos-01/fixtures/pass",
   "plugin": "diagnosing-bugs",
   "task_path": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-pos-01/task"

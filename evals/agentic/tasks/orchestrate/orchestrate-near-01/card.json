@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output",
       "kind": "skill",
-      "name": "adversarial-verify-fanout",
+      "name": "orchestrate",
       "source_plugin": "orchestrate"
     }
   ],
@@ -18,6 +18,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Someone claims plugin-factory ships a hooks/ directory. Before that goes in a summary, check whether it's actually true.",
+    "Verify, don't assume: does plugin-factory really have a hooks/ directory, before you repeat that claim in a summary?"
+  ],
   "pass_fixture": "evals/agentic/tasks/orchestrate/orchestrate-near-01/fixtures/pass",
   "plugin": "orchestrate",
   "task_path": "evals/agentic/tasks/orchestrate/orchestrate-near-01/task"

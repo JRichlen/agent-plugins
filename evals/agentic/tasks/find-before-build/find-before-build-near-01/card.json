@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same repository and a plain search/editing capability, no receipt requirement -- it may still search and reuse an existing helper on its own initiative.",
   "capabilities": [
     {
       "generic_equivalent": "write new code directly with no prior search or receipt of what was searched",
       "kind": "skill",
-      "name": "find-before-build search-then-cite gate",
+      "name": "find-before-build",
       "source_plugin": "find-before-build"
     }
   ],
@@ -20,6 +21,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "There's an existing retry helper but it blocks, and the new call site is async -- what now?",
+    "legacy_retry.py sleeps synchronously; the code we're adding to is asyncio-based."
+  ],
   "pass_fixture": "evals/agentic/tasks/find-before-build/find-before-build-near-01/fixtures/pass",
   "plugin": "find-before-build",
   "task_path": "evals/agentic/tasks/find-before-build/find-before-build-near-01/task"

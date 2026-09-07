@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same CSS file and a plain editing capability -- a color-preference change needs no hypothesis procedure.",
   "capabilities": [
     {
       "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test",
       "kind": "skill",
-      "name": "diagnosing-bugs hypothesis/tag/seam-gate procedure",
+      "name": "diagnosing-bugs",
       "source_plugin": "diagnosing-bugs"
     }
   ],
@@ -18,6 +19,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Change the submit button's color from blue to green in style.css.",
+    "Designer asked for the submit button to be green instead of blue -- make it so."
+  ],
   "pass_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-neg-01/fixtures/pass",
   "plugin": "diagnosing-bugs",
   "task_path": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-neg-01/task"

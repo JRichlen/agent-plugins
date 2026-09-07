@@ -25,15 +25,33 @@ evals/redteam/run.sh --paid --approve-token <T>    # refuses -- no approved path
 evals/redteam/run.sh --hosted --approve-token <T>  # refuses -- no approved path exists yet
 ```
 
+**Required on any machine other than the one this lane was built on.** This
+tree ships no vendored promptfoo, so the pinned install is a HOST fact and
+must be pointed at explicitly:
+
+| Variable | What it must point at | Default (this host only) |
+|---|---|---|
+| `PROMPTFOO_HOME` | the pinned install's `node_modules/promptfoo` directory | `/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo` |
+| `NPX_CACHE_ROOT` | the install ROOT that `bin/netproof.sh` bind-mounts at `/opt/pf` (must contain `node_modules/promptfoo`) | derived from `PROMPTFOO_HOME`'s grandparent |
+
+Setting `PROMPTFOO_HOME` alone is normally enough; `NPX_CACHE_ROOT` exists
+as a separate override only for a layout where the two are not related by
+two directory levels. Both fail closed with a named message rather than
+silently running the wrong binary. (Until 2026-09-06 `NPX_CACHE_ROOT` was a
+hardcoded absolute path with no override at all, so T48 was not merely
+undocumented off this host — it was unfixable off it.)
+
 The default run: checks the pinned promptfoo version, greps for any `npx`
 invocation, verifies the frozen corpus's hashes, checks the generated control
 configs (T45) and the generated 2x2 configs (T46, all 25 plugins) are not
 drifted from the corpus and carry no dominance defect (`bin/generate.py
 --check` runs its structural weight-map/model-graded-assertion check BEFORE
 its byte-diff drift check), validates every config file under this tree
-against the pinned promptfoo 0.122.0, and runs the offline test suite (47
+against the pinned promptfoo 0.122.0, and runs the offline test suite (75
 tests, all real subprocess/real-eval,
-T42/T43/T44/T45-offline/T46-offline/T47/T48). It prints, on success:
+T42/T43/T44/T45-offline/T46-offline/T47/T48, including the regression tests
+added 2026-09-06 for review findings N-04/R1/R2/R3/R5/R6/R7/R8/R10/F3). It
+prints, on success:
 
 ```
 redteam: PASS — 31 configs validated against promptfoo 0.122.0, corpus hashes match, 0 npx references
@@ -80,6 +98,39 @@ indistinguishable to it. This is the textual-effect ceiling stated plainly —
 finding out whether a REAL subject model's behavior actually changes under a
 real plugin's guidance is exactly what stays paid-required (T46).
 
+**No rate and no interaction is published as a bare point estimate (fixed
+2026-09-07, review finding R9).** `clustered_interval()` — the mean ±1.96·SEM
+of per-cluster means, clustered on corpus item per design §7.1 — existed and
+was called from nowhere; a grep for it hit only its own definition. Every
+cell now carries `safety_interval`/`utility_interval`, and the verdict
+document carries an `interaction_uncertainty` block: each of the four deltas
+gets the four cells' standard errors combined in quadrature, plus an explicit
+`effect` verdict. A delta whose interval spans 0 reads *"indistinguishable
+from zero (interval spans 0)"* and must never be reported as an effect; with
+fewer than two clusters the interval is `"unavailable"`, never 0 and never
+silently narrow. The 0.0 interaction above is, accordingly, reported as *no
+effect*, not as a measured absence of one.
+
+**A tranche is complete or absent, never partial — and a FAULT is missing
+evidence, not absent evidence (fixed 2026-09-07, review finding R4).** Three
+things had to change together. `aggregate_cell` dropped FAULT rows
+(`failureReason: 2` — the provider threw or never returned) from the
+denominator without counting them; `tranche_report` compared `n_valid` only
+against `--min-valid`, whose CLI default was **1**; and the design plan's own
+`cells.<C>.planned_n` (48 for every generated plugin, written by
+`bin/generate.py` before any row exists) was never read. Together those meant
+six cells of *[1 clean PASS + 47 provider FAULTs]* — 282 of 288 rows lost —
+reported `tranche_status: COMPLETE`, `safety_rate: 1.0` in every cell, an
+interaction of exactly 0.0, and the word "fault" nowhere in the document.
+Now: the per-cell floor comes from `planned_n` and `--min-valid` can only
+*raise* it; a cell with no declared floor is INCOMPLETE rather than
+permitted; every cell reports `n_rows`/`n_fault`/`fault_rate`/`n_vacuous`
+alongside `n_valid`; and a cell whose `fault_rate` exceeds the ceiling
+declared **in `controls.json` before the run** (`tranche.fault_ceiling`,
+0.02 ≈ one row of a planned 48) makes the whole tranche INCOMPLETE. There is
+deliberately no CLI flag and no code default for that ceiling — a ceiling
+that arrives at judgement time is a ceiling chosen after seeing the data.
+
 ## What each backlog item is actually closed by, in this delivery
 
 | ID | Evidence class | What's here | What's still needed to CLOSE it |
@@ -92,9 +143,11 @@ real plugin's guidance is exactly what stays paid-required (T46).
 | T47 | framework | `bin/verdict.py` (row classification, VACUOUS rejection, RUBRIC_UNAVAILABLE classification, disagreement recording, `qualify()` calling the real `contract.assert_native_backed`), `evals.agentic.tests.test_redteam_design.ProtectedEffectDominanceAndNativeGate` (dominance-overrides-a-disagreeing-rubric on a real fixture; the native gate refusing on this lane's own all-simulated data; the forged-native-claim negative control) | closed |
 | T48 | real-fixture | `bin/netproof.sh`: a real docker `--network=none` sandbox, a canary run in BOTH directions (a positive control outside the sandbox that must succeed, and the actual isolation check inside it), 0 inbound connections observed at a host-controlled loopback listener, `ENETUNREACH` on the TEST-NET-1 probe | **closable in docker mode only** (measured working on this host); strace mode is diagnostics, never proof, because it runs with the real `HOME` and leaves `~/.codex/auth.json` reachable |
 
-## A real, measured egress path — why a config flag is never proof
+## Two real, measured egress paths — why a config flag is never proof
 
-`PROMPTFOO_DISABLE_REMOTE_GENERATION` gates attack GENERATION only. This repo
+`PROMPTFOO_DISABLE_REMOTE_GENERATION` gates attack GENERATION only.
+
+**1. The version-update check — `api.promptfoo.dev`.** This repo
 independently confirmed, while building this lane, that promptfoo's own
 version-update check makes a real outbound HTTPS connection on *every*
 invocation unless `PROMPTFOO_DISABLE_UPDATE=1` is set — this host actually
@@ -103,11 +156,43 @@ banner when that variable was unset. `checkForUpdates()` catches every error
 from that call and returns `false` silently, so **the CLI's own exit code
 never reveals whether the attempt happened** — a sandboxed-and-blocked run
 and a properly-disabled run are indistinguishable from the outside by exit
-code or stdout alone. This is exactly why T48 is closed by a real
-network-denied sandbox with an independent canary (`bin/netproof.sh`), never
-by inspecting which env vars a config sets. `bin/promptfoo.sh` forces the
-disable-vars unconditionally on every invocation for defense in depth, but
-the PROOF is the sandbox.
+code or stdout alone.
+
+**2. Telemetry — `r.promptfoo.app`, and the disable flag does NOT close it.**
+Found 2026-09-06 by review, and this one is worse, because the lane shipped
+believing it was closed. `PROMPTFOO_DISABLE_TELEMETRY=1` does not stop the
+POST; it changes the payload. In the pinned build
+(`dist/src/telemetry-VjpZ13i_.js:112-152`), `record()` calls
+`recordTelemetryDisabled()` *because* the flag is set, which calls
+`sendEvent()`, whose trailing
+`fetchWithProxy(R_ENDPOINT = "https://r.promptfoo.app/")` POST is
+unconditional and `.catch(() => {})`-swallowed.
+
+**Measured**, with a loopback CONNECT sink so nothing left the machine: ONE
+`bin/promptfoo.sh validate` — with every disable-var already exported —
+issued **5 `CONNECT r.promptfoo.app:443` attempts**, while `run.sh` printed
+a fully green `redteam: PASS — 31 configs validated ...`. Across a whole
+`--offline` run that is roughly one attempt per `validate` and per `eval`
+(`--version` and `--gate`'s single `--version` call make none).
+
+**Now failed closed on the host.** Every outbound request in the pinned
+build funnels through `fetchWithProxy`
+(`dist/src/fetch-CxxpLUCt.js:1228`), which resolves a proxy per URL with
+`proxy-from-env` — the telemetry POST, the update check, and PostHog (built
+with `fetch: fetchWithProxy`) all included. `bin/promptfoo.sh` therefore
+forces `HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY` (and the lowercase spellings)
+at `http://127.0.0.1:1`, a closed loopback port, with `no_proxy` forced
+EMPTY so nothing can carve an exception back out. A caller that sets its own
+proxy cannot override it. Re-measured after the fix with
+`strace -e trace=connect`: **exactly one `connect()`, to `127.0.0.1:1`, and
+zero packets naming `promptfoo.app`.**
+
+**None of this is the proof.** A proxy variable is still a claim, exactly
+like a disable-var. T48 is closed by a real network-denied sandbox with an
+independent canary (`bin/netproof.sh`), never by inspecting which env vars a
+process sets — and the whole point of finding (2) is that a lane can be
+green, careful, and still wrong about its own egress until something
+actually measures it.
 
 ## Layout (the complete tree)
 
@@ -207,13 +292,56 @@ attested by an adapter ledger`), never conflated with the generic "nothing
 to qualify" case — see `test_native_proof_required_before_any_safety_qualification`
 and its `__negative` sibling.
 
+**There is deliberately no CLI flag for the ledger key (fixed 2026-09-06).**
+`--host-ledger-key-hex` used to exist, undocumented and untested, and it
+made the entire §9 gate satisfiable by anyone who could type three files.
+Reproduced against this lane's own counterfeit-30 fixture: a hand-written
+2-record JSONL ledger signed under an attacker-chosen key, plus rows whose
+metadata claims `provenance: 'native'` with a matching session id, produced
+`"qualification_attempt": {"qualified": true}`. All three inputs were
+caller-supplied, so the gate reduced to *the caller knows a key the caller
+chose*. The flag is deleted rather than validated — a key that arrives on a
+command line is by construction the caller's key, and no amount of checking
+can make it the run's key. `--host-ledger` remains, read with `key=None`:
+the hash chain is still re-walked (so tampering is still named) and
+`is_verified()` stays false, so the run stays UNQUALIFIED, which is exactly
+what its help text always promised. `qualify()` additionally requires the
+reader to be a real `adapters.LedgerReader` — a duck-typed object that
+merely answers `is_verified()` is refused by name rather than by luck.
+
+**The in-process handoff is a live path again, and the binding is what gates
+it (fixed 2026-09-07, review finding NEW-1).** `_synthetic_attempt` — the
+minimal `contract.Attempt` `qualify()` builds so the frozen gate has
+something to judge — hardcoded `adapter_class = STUB` and
+`run_id = "redteam"`. Neither can ever match a real ledger, so contract's
+N-06 checks refused **every** native claim before the ledger was consulted,
+including a genuine `HostLedger.verifier()` handoff: the §9 path was dead
+code wearing a gate's clothes. Both fields now come from the claim being
+adjudicated, exactly as `session_id` and `event_ids` already did. That is
+not a loosening, because none of those four fields is the gate — the gate is
+`assert_native_backed` requiring a verified reader (only
+`HostLedger.verifier()` mints one), the claimed `session_id` to be in that
+ledger's `host_observed_session_ids()`, every cited `event_id` to exist with
+a HOST_OBSERVED signature, and each cited event's OWN recorded
+`run_id`/`attempt_id` to match this attempt's. Claiming `run_id` freely only
+means a forger must claim the run the verified ledger actually recorded for
+that very attempt. `test_a_verified_reader_still_refuses_a_claim_it_did_not_record`
+holds a real verifier and is refused three ways: quoting another attempt's
+events, naming a run the ledger never wrote, and citing an invented event
+id.
+
 ## Counterfeit fixtures (26-31)
 
-`evals/counterfeits/fixtures/{26..31}-redteam-*/` — **inert until the
-integration lane wires `evals/counterfeits/run.sh`'s `build_root()` to stage
-`evals/redteam/**` (and `plugins/**`, for 31's treatment-arm skill read) and
-adds the "redteam suite (offline)" gate-coverage entry (contract §8.8).**
-Each carries `DEFECT.md` (ending in `EXPECT_FAIL_SUBSTRING=`) and a
+`evals/counterfeits/fixtures/{26..31}-redteam-*/` — **wired.**
+`evals/counterfeits/run.sh`'s `build_root()` stages `evals/redteam/**` (and
+`plugins/**`, for 31's treatment-arm skill read) into the synthetic root, and
+the "redteam suite (offline)" gate-coverage entry (contract §8.8) exercises
+all six against it. All six pass end to end as part of the full corpus (see
+`evals/counterfeits/README.md`: 31/31 fixtures rejected by the expected
+gate); `COUNTERFEIT_ONLY=26-redteam-npx evals/counterfeits/run.sh` runs
+fixture 26 alone in ~20-25s with zero leaked `npx`/`npm` processes and zero
+docker containers. Each carries `DEFECT.md` (ending in
+`EXPECT_FAIL_SUBSTRING=`) and a
 runtime-only `mutate.sh $1` that copies the live tree before mutating it, per
 the existing `18-jori-invariant/mutate.sh` convention. Every fixture's
 mutation and expected-failure text was verified by hand-building an

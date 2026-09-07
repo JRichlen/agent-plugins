@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask",
       "kind": "skill",
-      "name": "classify-then-gate",
+      "name": "semver-gate",
       "source_plugin": "semver-gate"
     }
   ],

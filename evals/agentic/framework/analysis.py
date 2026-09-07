@@ -28,6 +28,32 @@ the task brief's instruction rather than silently:
 * A small `rate_of` helper is exported alongside the frozen names so
   `reporting.py` (same lane) can build zero-denominator-safe `Rate`s for the
   2x2 cells without a second implementation of the zero-denominator rule.
+  `rate_of` additionally gained an optional `min_valid: int = 1` keyword for
+  the same reason `card_rate` did.
+* `Rate` gained a fifth field, `unevaluated: int = 0` (defaulted, so every
+  4-positional-argument construction already in this module keeps working
+  unchanged). benchmark-spec §5: a trial whose verifier never ran is a third
+  value, counted separately, "never folded into n01/n00" -- `card_rate` must
+  be able to say how many trials it excluded for that reason, distinctly from
+  the FAULT/CANCELLED trials `_scoring_valid` already excludes.
+* `difference_interval` no longer takes `pairs: Sequence[Pair]`; it takes the
+  raw `treatment`/`baseline` attempt sequences directly (same shape as
+  `matched_pairs`'s own parameters). benchmark-spec §4.1 defines
+  `Delta_full(c) = p_T(c) - p_B(c)`, each side its OWN card_rate over its OWN
+  scoring-valid, non-fallback trials for that card -- a quantity `Pair`
+  (exactly one attempt per side) cannot carry once a card has more than one
+  trial per arm, which is the normal shape of a multi-repeat run and the
+  literal shape of the spec's own §4.1 worked example (card c4: 3/4 valid vs
+  3/5). `matched_pairs` is still called internally, but now only to decide
+  which cards belong to the matched set `C` (a card whose only attempts on
+  one side are excluded by role/fallback/scoring-validity is dropped from
+  `C`, never zero-filled) -- never to source the trials the rate is computed
+  over, which was the actual defect: index-position pairing silently
+  truncated the larger arm to the smaller arm's count. `seed` stays a
+  required keyword for signature stability even though it is unused: the
+  interval is now `cluster_t_interval` over the per-card deltas (matching
+  benchmark-spec §6.2/§6.4's own worked examples for this exact estimand),
+  which is deterministic, not a bootstrap.
 """
 from __future__ import annotations
 
@@ -39,6 +65,7 @@ from typing import Any
 
 from .accounting import Total, USAGE_FIELDS, sum_usage
 from .contract import (
+    ArmRole,
     Attempt,
     ContractError,
     CrossModelPoolingRefused,
@@ -57,6 +84,7 @@ __all__ = [
     "Unmatched",
     "stratum_of",
     "group_by_stratum",
+    "derive_fallback_flags",
     "matched_pairs",
     "any_pass",
     "all_pass",
@@ -85,6 +113,7 @@ class Rate:
     denominator: int
     value: float | None
     unavailable_reason: str | None
+    unevaluated: int = 0
 
     def render(self) -> str:
         if self.value is None:
@@ -95,9 +124,16 @@ class Rate:
         return dataclasses.asdict(self)
 
 
-def rate_of(numerator: int, denominator: int, *, unavailable_reason: str | None = None) -> Rate:
+def rate_of(
+    numerator: int, denominator: int, *, min_valid: int = 1, unavailable_reason: str | None = None
+) -> Rate:
     if denominator <= 0:
         return Rate(numerator, denominator, None, unavailable_reason or "no valid samples")
+    if denominator < min_valid:
+        return Rate(
+            numerator, denominator, None,
+            unavailable_reason or f"starved: {denominator} valid < min_valid {min_valid}",
+        )
     return Rate(numerator, denominator, numerator / denominator, None)
 
 
@@ -130,31 +166,51 @@ def _zero_denominator_reason(trials: Sequence[Attempt]) -> str:
 # §3 -- card-level any-pass / all-pass
 # ---------------------------------------------------------------------------
 
+def _evaluated(trials: Sequence[Attempt], score: str) -> list[Attempt]:
+    """benchmark-spec §5: an attempt whose SCORE verdict is None (the verifier
+    never ran) is a third value -- excluded from N, never folded into a
+    fail. Scoring-invalid (FAULT/CANCELLED) trials are excluded upstream by
+    `_scoring_valid`; this only removes the additionally-unevaluated ones."""
+    return [t for t in trials if _verdict_of(t, score) is not None]
+
+
 def card_rate(trials: Sequence[Attempt], score: str = "outcome", *, min_valid: int = 1) -> Rate:
     valid = _scoring_valid(trials)
     if not valid:
-        return Rate(0, 0, None, _zero_denominator_reason(trials))
-    if len(valid) < min_valid:
+        return Rate(0, 0, None, _zero_denominator_reason(trials), unevaluated=0)
+    evaluated = _evaluated(valid, score)
+    unevaluated_n = len(valid) - len(evaluated)
+    if not evaluated:
         return Rate(
             0, 0, None,
-            f"starved: {len(valid)} valid < min_valid {min_valid}",
+            f"no evaluated verdicts: {len(valid)} scoring-valid trial(s), the "
+            "verifier never ran",
+            unevaluated=unevaluated_n,
         )
-    passes = sum(1 for t in valid if _verdict_of(t, score) is True)
-    return Rate(passes, len(valid), passes / len(valid), None)
+    if len(evaluated) < min_valid:
+        return Rate(
+            0, 0, None,
+            f"starved: {len(evaluated)} valid < min_valid {min_valid}",
+            unevaluated=unevaluated_n,
+        )
+    passes = sum(1 for t in evaluated if _verdict_of(t, score) is True)
+    return Rate(passes, len(evaluated), passes / len(evaluated), None, unevaluated=unevaluated_n)
 
 
 def any_pass(trials: Sequence[Attempt], score: str = "outcome") -> bool | None:
     valid = _scoring_valid(trials)
-    if not valid:
+    evaluated = _evaluated(valid, score)
+    if not evaluated:
         return None
-    return any(_verdict_of(t, score) is True for t in valid)
+    return any(_verdict_of(t, score) is True for t in evaluated)
 
 
 def all_pass(trials: Sequence[Attempt], score: str = "outcome") -> bool | None:
     valid = _scoring_valid(trials)
-    if not valid:
+    evaluated = _evaluated(valid, score)
+    if not evaluated:
         return None
-    return all(_verdict_of(t, score) is True for t in valid)
+    return all(_verdict_of(t, score) is True for t in evaluated)
 
 
 def any_all_rates(
@@ -211,19 +267,59 @@ class Unmatched:
     reason: str
 
 
+_STRATUM_FIELDS: tuple[str, ...] = ("provider", "model", "revision", "effort", "harness")
+
+
+def derive_fallback_flags(requested: Stratum, realized: Stratum) -> tuple[str, ...]:
+    """benchmark-spec §2: fallback_flags is "the tuple of fields where they
+    [requested and realized] differ, in that fixed field order" -- Stratum's
+    own declared field order. Not a contract.py addition (out of this lane's
+    ownership); matched_pairs below recomputes and enforces it rather than
+    trusting the attempt's own recorded value, since a caller can currently
+    write fallback_flags=() while requested != realized and nothing catches
+    it (a forged/stale fallback -- benchmark-spec §2's silent-fallback
+    failure mode, exactly)."""
+    return tuple(f for f in _STRATUM_FIELDS if getattr(requested, f) != getattr(realized, f))
+
+
 def matched_pairs(
     treatment: Iterable[Attempt], baseline: Iterable[Attempt]
 ) -> tuple[tuple[Pair, ...], tuple[Unmatched, ...]]:
     """Group both sides by card_id, then pair attempts within a card in
-    encounter order. A pair is made only when both sides' realized strata are
-    equal AND both sides carry an empty fallback_flags tuple; everything else
-    -- a stratum mismatch, any fallback flag, or a count mismatch leaving one
-    side's attempt with no counterpart -- is recorded as Unmatched rather than
-    silently pooled (benchmark-spec §2: "a silent fallback turns a plugin
-    effect into a model effect").
+    encounter order. A pair is made only when: both attempts are scoring-valid
+    (benchmark-spec §1.1: FAULT/CANCELLED are "transport weather, not
+    evidence" and never enter a comparison); both sides' recorded
+    fallback_flags match what requested-vs-realized actually derives (a
+    mismatch is a hard ContractError -- forged or stale provenance, never a
+    silent exclusion); both sides carry an empty (derived) fallback_flags
+    tuple; and both sides' realized strata are equal. Everything else -- a
+    scoring-invalid trial, a fallback flag, a stratum mismatch, or a count
+    mismatch leaving one side's attempt with no counterpart -- is recorded as
+    Unmatched rather than silently pooled (benchmark-spec §2: "a silent
+    fallback turns a plugin effect into a model effect").
+
+    Every treatment-side attempt must carry role == ArmRole.TREATMENT and
+    every baseline-side attempt role == ArmRole.BASELINE, raised as a hard
+    ContractError otherwise: benchmark-spec §4.1 "Nop, inversion and oracle
+    are controls, not the baseline, and are excluded from C" -- controls and
+    coordination rows belong to controls.py's reward accounting, never here.
     """
     treatment = list(treatment)
     baseline = list(baseline)
+    for a in treatment:
+        if a.role is not ArmRole.TREATMENT:
+            raise ContractError(
+                f"matched_pairs: treatment-side attempt {a.attempt_id!r} has role "
+                f"{a.role!r}, expected ArmRole.TREATMENT -- controls and "
+                "coordination rows never belong in the matched set C"
+            )
+    for a in baseline:
+        if a.role is not ArmRole.BASELINE:
+            raise ContractError(
+                f"matched_pairs: baseline-side attempt {a.attempt_id!r} has role "
+                f"{a.role!r}, expected ArmRole.BASELINE -- controls and "
+                "coordination rows never belong in the matched set C"
+            )
 
     t_by_card: dict[str, list[Attempt]] = {}
     for a in treatment:
@@ -231,6 +327,15 @@ def matched_pairs(
     b_by_card: dict[str, list[Attempt]] = {}
     for a in baseline:
         b_by_card.setdefault(a.card_id, []).append(a)
+
+    def _check_fallback(a: Attempt, side: str) -> None:
+        derived = derive_fallback_flags(a.requested, a.realized)
+        if derived != a.fallback_flags:
+            raise ContractError(
+                f"matched_pairs: {side}-side attempt {a.attempt_id!r} recorded "
+                f"fallback_flags={a.fallback_flags!r} but requested vs realized "
+                f"strata derive {derived!r} -- forged or stale fallback provenance"
+            )
 
     pairs: list[Pair] = []
     unmatched: list[Unmatched] = []
@@ -240,10 +345,29 @@ def matched_pairs(
         n = min(len(t_list), len(b_list))
         for i in range(n):
             t_attempt, b_attempt = t_list[i], b_list[i]
-            # Check fallback_flags FIRST and attribute the exclusion only to
-            # the side(s) that actually carry a flag: a realized-stratum
-            # mismatch explained entirely by one side's own recorded fallback
-            # is not a second, separate defect on the other side.
+
+            # Scoring-validity first, same attribute-only-the-affected-side(s)
+            # pattern as the fallback check below (benchmark-spec §1.1).
+            t_invalid = t_attempt.terminal_state not in SCORING_VALID_STATES
+            b_invalid = b_attempt.terminal_state not in SCORING_VALID_STATES
+            if t_invalid or b_invalid:
+                if t_invalid:
+                    unmatched.append(
+                        Unmatched(card_id, "treatment", f"scoring-invalid: {t_attempt.terminal_state.value}")
+                    )
+                if b_invalid:
+                    unmatched.append(
+                        Unmatched(card_id, "baseline", f"scoring-invalid: {b_attempt.terminal_state.value}")
+                    )
+                continue
+
+            _check_fallback(t_attempt, "treatment")
+            _check_fallback(b_attempt, "baseline")
+
+            # Check fallback_flags and attribute the exclusion only to the
+            # side(s) that actually carry a flag: a realized-stratum mismatch
+            # explained entirely by one side's own recorded fallback is not a
+            # second, separate defect on the other side.
             if t_attempt.fallback_flags or b_attempt.fallback_flags:
                 if t_attempt.fallback_flags:
                     unmatched.append(
@@ -302,6 +426,20 @@ def pool_tokens(
         out: dict[str, Total] = {}
         for key, group in groups.items():
             model_ids = {a.usage.model_id for a in group}
+            # A stratum key "already includes model" is only true if nothing
+            # actually enforces usage.model_id == realized.model. Nothing does
+            # (that invariant belongs on contract.Attempt, outside this lane's
+            # ownership) -- so check it here rather than trust it: without
+            # this, every attempt in the group can unanimously carry the WRONG
+            # model_id and the len(model_ids) != 1 guard below never fires.
+            stratum_model = group[0].realized.model
+            if model_ids != {stratum_model}:
+                raise CrossModelPoolingRefused(
+                    f"pool_tokens: stratum {key!r} declares model {stratum_model!r} "
+                    f"but contributing usage.model_id values are {sorted(model_ids)!r} "
+                    "-- raw counts would be filed under a stratum they were not "
+                    "measured on"
+                )
             if len(model_ids) != 1:
                 raise CrossModelPoolingRefused(
                     f"pool_tokens: stratum {key!r} contains {len(model_ids)} "
@@ -389,11 +527,23 @@ def _mean_cluster_size(clusters: Sequence[Sequence[float]]) -> float:
 def design_effect(clusters: Sequence[Sequence[float]]) -> float | None:
     """1 + (m_bar - 1) * max(icc_raw, 0), floored at 1.0 (benchmark-spec §6.3:
     an unfloored negative ICC would give DEFF < 1 -- a "clustered" interval
-    narrower than the naive one, the exact direction this exists to prevent)."""
-    raw = icc_raw(clusters)
+    narrower than the naive one, the exact direction this exists to prevent).
+
+    Empty clusters carry no information and are dropped before computing
+    m_bar (they are not the caller's problem to pre-filter). When the
+    remaining clusters average one trial each (m_bar <= 1), DEFF is exactly
+    1.0 by the formula itself regardless of icc_raw -- which is genuinely
+    inestimable at m_bar <= 1 and returns None -- so that case is NOT the
+    same as "no valid trials" and must not propagate a None here."""
+    nonempty = [c for c in clusters if len(c) > 0]
+    if not nonempty:
+        return None
+    m_bar = _mean_cluster_size(nonempty)
+    if m_bar <= 1:
+        return 1.0
+    raw = icc_raw(nonempty)
     if raw is None:
         return None
-    m_bar = _mean_cluster_size(clusters)
     deff = 1 + (m_bar - 1) * max(raw, 0.0)
     return max(deff, 1.0)
 
@@ -412,23 +562,37 @@ def wilson_interval(k: float, n: float, z: float = 1.959963985) -> tuple[float, 
 def wilson_with_cluster_inflation(
     clusters: Sequence[Sequence[float]], *, z: float = 1.959963985, min_clusters: int = 8
 ) -> Interval:
-    k = len(clusters)
-    n = sum(len(c) for c in clusters)
-    raw = icc_raw(clusters)
-    deff = design_effect(clusters)
-    p_hat = (sum(sum(c) for c in clusters) / n) if n else None
+    """benchmark-spec §7's own worked example (voice-neg-02, 5/5 FAULT) is a
+    plugin whose every cluster is empty once the FAULT trials are excluded
+    upstream -- that must reduce k, not report a wrong "no valid trials" for
+    what may still be a perfectly good interval on the surviving clusters.
+    Likewise a normal one-repeat-per-card run (k clusters of size 1) has
+    DEFF == 1 exactly and a real Wilson interval to report, not a refusal."""
+    nonempty = [c for c in clusters if len(c) > 0]
+    k = len(nonempty)
+    n = sum(len(c) for c in nonempty)
+    raw = icc_raw(nonempty)
+    deff = design_effect(nonempty)
+    m_bar = (n / k) if k else 0.0
+    if deff is None:
+        deff_method = None
+    elif m_bar <= 1:
+        deff_method = "single-trial-clusters"
+    else:
+        deff_method = "floored-at-1"
+    p_hat = (sum(sum(c) for c in nonempty) / n) if n else None
 
     if k < min_clusters:
         return Interval(
             point=p_hat, lo=None, hi=None, method="wilson-deff",
             n_clusters=k, cluster_variable="card",
-            deff=deff, deff_method=("floored-at-1" if deff is not None else None),
+            deff=deff, deff_method=deff_method,
             icc_raw=raw, unavailable_reason=f"insufficient clusters: {k} < {min_clusters}",
         )
     if n == 0 or deff is None or p_hat is None:
         return Interval(
             point=p_hat, lo=None, hi=None, method="wilson-deff",
-            n_clusters=k, cluster_variable="card", deff=deff, deff_method=None,
+            n_clusters=k, cluster_variable="card", deff=deff, deff_method=deff_method,
             icc_raw=raw, unavailable_reason="no valid trials",
         )
     n_eff = n / deff
@@ -437,7 +601,7 @@ def wilson_with_cluster_inflation(
     return Interval(
         point=p_hat, lo=lo, hi=hi, method="wilson-deff",
         n_clusters=k, cluster_variable="card",
-        deff=deff, deff_method="floored-at-1", icc_raw=raw, unavailable_reason=None,
+        deff=deff, deff_method=deff_method, icc_raw=raw, unavailable_reason=None,
     )
 
 
@@ -590,32 +754,96 @@ def cluster_t_interval(
     )
 
 
+def _eligible_for_effect(attempts: Sequence[Attempt], expected_role: ArmRole, side: str) -> list[Attempt]:
+    """The population card_rate is computed over for one arm's side of
+    Delta_full: correct role, fallback_flags verified against
+    requested/realized (never merely trusted), non-fallback, scoring-valid.
+    Shares the same eligibility rules matched_pairs enforces per attempt-pair,
+    but is not itself pair-indexed -- see the difference_interval deviation
+    note at the top of this module."""
+    out: list[Attempt] = []
+    for a in attempts:
+        if a.role is not expected_role:
+            raise ContractError(
+                f"difference_interval: {side}-side attempt {a.attempt_id!r} has "
+                f"role {a.role!r}, expected {expected_role!r}"
+            )
+        derived = derive_fallback_flags(a.requested, a.realized)
+        if derived != a.fallback_flags:
+            raise ContractError(
+                f"difference_interval: {side}-side attempt {a.attempt_id!r} "
+                f"recorded fallback_flags={a.fallback_flags!r} but requested vs "
+                f"realized strata derive {derived!r} -- forged or stale fallback "
+                "provenance"
+            )
+        if a.fallback_flags:
+            continue
+        if a.terminal_state not in SCORING_VALID_STATES:
+            continue
+        out.append(a)
+    return out
+
+
 def difference_interval(
-    pairs: Sequence[Pair], *, score: str = "outcome", seed: int, min_clusters: int = 8
+    treatment: Iterable[Attempt],
+    baseline: Iterable[Attempt],
+    *,
+    score: str = "outcome",
+    seed: int,
+    min_clusters: int = 8,
 ) -> Interval:
+    """benchmark-spec §4.1: Delta_full = (1/|C|) * sum_c [p_T(c) - p_B(c)],
+    each p_a(c) being that arm's OWN card_rate over its OWN eligible trials
+    for card c -- never a per-trial paired difference. `seed` is accepted for
+    signature stability but unused; see the module-level deviation note."""
+    del seed
+    treatment = list(treatment)
+    baseline = list(baseline)
+
+    # matched_pairs decides which cards belong to C: a card with no surviving
+    # pair (every attempt on one side excluded by role/fallback/scoring
+    # validity) is excluded from C entirely, never zero-filled.
+    pairs, _ = matched_pairs(treatment, baseline)
     if not pairs:
-        raise ContractError("difference_interval: pairs must not be empty")
+        raise ContractError(
+            "difference_interval: no matched cards in C (benchmark-spec §4.1) "
+            "-- every card was excluded by role, fallback, or scoring-validity"
+        )
     strata = {p.stratum for p in pairs}
     if len(strata) != 1:
         raise ContractError(
-            f"difference_interval: pairs span {len(strata)} distinct realized "
-            "strata; call once per stratum via group_by_stratum instead "
-            "(benchmark-spec §2: a silent fallback turns a plugin effect into "
-            "a model effect)"
+            f"difference_interval: matched cards span {len(strata)} distinct "
+            "realized strata; call once per stratum via group_by_stratum "
+            "instead (benchmark-spec §2: a silent fallback turns a plugin "
+            "effect into a model effect)"
+        )
+    matched_cards = {p.card_id for p in pairs}
+
+    t_eligible = _eligible_for_effect(treatment, ArmRole.TREATMENT, "treatment")
+    b_eligible = _eligible_for_effect(baseline, ArmRole.BASELINE, "baseline")
+    t_by_card: dict[str, list[Attempt]] = {}
+    for a in t_eligible:
+        if a.card_id in matched_cards:
+            t_by_card.setdefault(a.card_id, []).append(a)
+    b_by_card: dict[str, list[Attempt]] = {}
+    for a in b_eligible:
+        if a.card_id in matched_cards:
+            b_by_card.setdefault(a.card_id, []).append(a)
+
+    cluster_means: list[float] = []
+    for card_id in sorted(matched_cards):
+        p_t = card_rate(t_by_card.get(card_id, ()), score).value
+        p_b = card_rate(b_by_card.get(card_id, ()), score).value
+        if p_t is None or p_b is None:
+            continue  # a zero-denominator arm on this card excludes it, never zero-fills it
+        cluster_means.append(p_t - p_b)
+
+    if not cluster_means:
+        raise ContractError(
+            "difference_interval: no card in C had a defined card_rate on both arms"
         )
 
-    by_card: dict[str, list[float]] = {}
-    for p in pairs:
-        t_val = 1.0 if _verdict_of(p.treatment, score) else 0.0
-        b_val = 1.0 if _verdict_of(p.baseline, score) else 0.0
-        by_card.setdefault(p.card_id, []).append(t_val - b_val)
-    clusters = list(by_card.values())
-
-    def statistic(cs: Sequence[Sequence[float]]) -> float:
-        means = [sum(c) / len(c) for c in cs if c]
-        return sum(means) / len(means) if means else 0.0
-
-    return cluster_bootstrap(clusters, statistic, seed=seed, min_clusters=min_clusters)
+    return cluster_t_interval(cluster_means, min_clusters=min_clusters)
 
 
 def noninferiority(interval: Interval, margin: float | None) -> NoninferiorityResult:

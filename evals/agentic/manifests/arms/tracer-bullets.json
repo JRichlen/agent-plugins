@@ -23,7 +23,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-tracer-bullets-b6f9d1a941d2492e9513c55f2a4442d0",
+    "arm_id": "arm-full-tracer-bullets-67c734d674fbfdff06436d27c1e54504",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,7 +32,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "thin-slice-first",
+        "name": "tracer-bullets",
         "kind": "skill",
         "source_plugin": "tracer-bullets",
         "generic_equivalent": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice"
@@ -49,10 +49,12 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/tracer-bullets/SKILL.md": "2e7dc3fe0df6cf6d6af5cd09addf6459e89a6540c3e17f89963fee2e5bce3a41"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-65fc52dc688c4bd29b4ec183e4dd385c",
+    "arm_id": "arm-baseline-50dccfb2623afa336575d4027736b996",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -68,8 +70,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "ef0b16e7df7a83656806f7930cab3dbb236b4b687801023132e8563dd3fb9f78"
+    }
   },
   "arm_source_card": "tracer-bullets-pos-01"
 }

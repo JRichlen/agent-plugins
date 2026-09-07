@@ -33,16 +33,35 @@ baseline materializes no plugin-owned files) and non-empty for
 `allowed_tools`, never by a `realized_tree` entry -- see
 `pairing._materialize_capability`'s docstring).
 
-Regenerate with:
+Regenerate one plugin's pair with:
 
 ```
 python3 -c "
 import pathlib, tempfile
 from evals.agentic.framework import io, registry, validate, pairing
-from evals.agentic.framework.contract import Estimand, Card, CardKind
-# ... see the registry lane's part-2 report for the exact generator script.
+from evals.agentic.framework.contract import Estimand
+
+root = io.repo_root()
+ref = next(r for r in registry.derive_roster(root) if r.name == 'graveyard')
+card = next(c for c in validate.load_cards(root) if c.card_id == 'graveyard-pos-01')
+with tempfile.TemporaryDirectory() as tmp:
+    ws = pathlib.Path(tmp)
+    full = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)
+    base = pairing.build_arm(card, Estimand.BASELINE, (), workspace=ws)
+print(full.to_dict())
+print(base.to_dict())
 "
 ```
+
+CV-16: `arm_id` (`pairing.deterministic_arm_id`) is a pure function of an
+arm's configuration, not a fresh `uuid4` per call -- rebuilding the SAME
+configuration always reproduces the SAME `arm_id`, so the two `Arm.to_dict()`
+calls above reproduce this file's `full_package_arm`/`baseline_arm` blocks
+exactly (`tests/test_pairing.py::CommittedManifestsAreReproducible` asserts
+this for `graveyard.json`). `derived_capabilities`/`estimand_availability`/
+`arm_source_card` are assembled around those two `Arm`s by the same
+generator; regenerating the full 25-file set follows the same shape per
+plugin.
 
 Counterfeit fixture `25-agentic-exposure-parity` (contract §8.8) mutates a
 copy of `graveyard.json`'s `baseline_arm.allowed_tools`, adding a tool that

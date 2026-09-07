@@ -26,7 +26,7 @@ class ControlRefusenikProvider {
     const cfg = this.config || {};
     const vars = (context && context.vars) || {};
     const ledgerDir = requireLedgerDir(cfg);
-    const id = attemptId(context);
+    const id = attemptId(context, this.providerId);
 
     // Refuses unconditionally, on clean rows too — the completion marker is
     // deliberately never emitted, so assertions/task-completed.js fails the

@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "eyeball the exhaust once and guess at a pattern with no citation count or threshold",
       "kind": "skill",
-      "name": "cluster-and-cite",
+      "name": "recurrence-detector",
       "source_plugin": "recurrence-detector"
     }
   ],
@@ -18,6 +18,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "The exhaust shows two genuine sightings of one shape plus a third that merely looks similar (a coincidental match, different shape). Worth promoting to a candidate invariant?",
+    "Two real recurrences of a pattern, and a third lookalike that's actually a different shape entirely -- does this clear the bar for a candidate invariant?"
+  ],
   "pass_fixture": "evals/agentic/tasks/recurrence-detector/recurrence-detector-near-01/fixtures/pass",
   "plugin": "recurrence-detector",
   "task_path": "evals/agentic/tasks/recurrence-detector/recurrence-detector-near-01/task"

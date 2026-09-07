@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same files and a plain editing capability -- adding a pure function needs no doc audit.",
   "capabilities": [
     {
       "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix",
-      "kind": "script",
-      "name": "docs-hygiene staleness heuristic + refactoring-workflow reference",
+      "kind": "skill",
+      "name": "docs-hygiene",
       "source_plugin": "docs-hygiene"
     }
   ],
@@ -18,6 +19,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "AGENTS.md is fine as-is -- just add an add(a, b) helper to math_utils.py.",
+    "No docs work needed here, just implement add(a, b) in math_utils.py."
+  ],
   "pass_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-neg-01/fixtures/pass",
   "plugin": "docs-hygiene",
   "task_path": "evals/agentic/tasks/docs-hygiene/docs-hygiene-neg-01/task"

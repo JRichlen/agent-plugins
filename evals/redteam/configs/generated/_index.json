@@ -1,5 +1,5 @@
 {
-  "corpus_manifest_sha256": "262b9d173d8bddc88f192c757b9fe2bd2d72cb2a2674a995360a916548d84eec",
+  "corpus_manifest_sha256": "7c6a7534b5f50f921d3d8684250b9dff9c836cb63f2ef6e64bd896b7ed3691e7",
   "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
   "generated_by": "evals/redteam/bin/generate.py",
   "plugins": {

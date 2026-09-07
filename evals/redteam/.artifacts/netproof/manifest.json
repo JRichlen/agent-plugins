@@ -1,6 +1,0 @@
-{
-  "mode": "docker",
-  "closes_t48": true,
-  "outside": {"loopback_ok": true},
-  "inside": {"loopback_ok": false, "dns_ok": false, "testnet_error": "ENETUNREACH", "listener_inbound_connections": 0}
-}

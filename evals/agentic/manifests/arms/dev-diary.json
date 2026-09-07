@@ -41,7 +41,7 @@
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-dev-diary-10f3a2deaa8b4176b1e6bb5b27a55e7d",
+    "arm_id": "arm-full-dev-diary-0058293e1754f6457d9f3baff5f3cbed",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -50,7 +50,7 @@
     "revisions": {},
     "capabilities": [
       {
-        "name": "dev-diary end-of-day loop + house style",
+        "name": "dev-diary",
         "kind": "skill",
         "source_plugin": "dev-diary",
         "generic_equivalent": "no journal; work summarized ad hoc if at all, with no redaction pass or house style"
@@ -67,10 +67,15 @@
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
-    "realized_tree": {}
+    "realized_tree": {
+      "skills/dev-diary/SKILL.md": "b5ce59f2c995e830b64129df4882b801bec105e889c494e301556f7dec43cd2d",
+      "skills/dev-diary/references/consolidate-delta.md": "bb580f3a4032649165fceb9f63bfdcb0ce99a3ac8ac520887e2c44484cc682d4",
+      "skills/dev-diary/references/format-guide.md": "3b9570f0d0cd275bcb407afc5c8b38fa985ec7c44e0447057020b24f39e9f724",
+      "skills/dev-diary/templates/entry.md": "351481ce41a32118919eed46d18c97c7efc2b201c325d3d202c7e9a5629cfa1c"
+    }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-4e49dcacd22245e99a47f11c96ece01b",
+    "arm_id": "arm-baseline-6524f7e743e9ff20431e63edd3acae22",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -86,8 +91,10 @@
       "Glob"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "",
-    "realized_tree": {}
+    "system_prompt_append": "no journal; work summarized ad hoc if at all, with no redaction pass or house style",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "1f87c3bef85cb31042ba0f4a03542024bf6c3f78fb723d8505bf1ca2b38d3af1"
+    }
   },
   "arm_source_card": "dev-diary-pos-01"
 }

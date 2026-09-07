@@ -26,6 +26,8 @@ __all__ = [
     "ApprovalGate",
     # UNKNOWN sentinel (§2.2)
     "_Unknown", "UNKNOWN", "TokenCount", "Millis",
+    # S-08 model-id normalization
+    "MODEL_ID_ALIASES", "normalize_model_id",
     # dataclasses (§2.3)
     "Stratum", "Capability", "Usage", "Verdict", "Judgement", "HostSignature",
     "Event", "Attempt", "Card", "Manifest",
@@ -434,6 +436,29 @@ class Stratum:
         return _generic_from_dict(cls, d)
 
 
+# ---------------------------------------------------------------------------
+# REPAIR S-08: usage.model_id vs Stratum.model normalization table.
+#
+# A harness release is occasionally observed to report its own usage
+# telemetry's model_id under a spelling that differs from the canonical
+# model name this framework's registry/pairing vocabulary uses for
+# Stratum.model (e.g. a build-tagged or endpoint-specific id vs. the
+# public model name). This table is where such a *documented, confirmed*
+# equivalence is recorded -- never a way to silence a genuine mismatch.
+# Empty today: no such alias is currently known. Attempt.__post_init__
+# below normalizes usage.model_id through this table before comparing it
+# against realized.model.
+# ---------------------------------------------------------------------------
+MODEL_ID_ALIASES: dict[str, str] = {}
+
+
+def normalize_model_id(model_id: str) -> str:
+    """Map a harness-reported usage.model_id through MODEL_ID_ALIASES to the
+    canonical Stratum.model spelling it names, or return it unchanged when
+    no alias is recorded."""
+    return MODEL_ID_ALIASES.get(model_id, model_id)
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class Capability:
     name: str
@@ -626,9 +651,39 @@ class Attempt:
                 f"got role={self.role!r} control_kind={self.control_kind!r}"
             )
 
+        # REPAIR S-08: usage.model_id must agree with the stratum an
+        # attempt is filed under -- analysis.pool_tokens(by="stratum")
+        # trusts that "a stratum key already includes model" without any
+        # invariant tying the two together (S-08's original finding: 8
+        # attempts realized on an Opus stratum whose usage.model_id said
+        # 'claude-sonnet-5' were pooled under the Opus row with no error).
+        # Checked (after normalize_model_id) whenever adapter_class is
+        # NATIVE: a native adapter's usage is billed telemetry from a real
+        # host-driven run, where this must never drift, and it is the one
+        # AdapterClass a genuine production Attempt is ever expected to
+        # carry. REPLAY/STUB attempts are test doubles constructed
+        # throughout every lane's fixtures to isolate one mechanism at a
+        # time, routinely with a usage.model_id chosen independently of
+        # realized -- blanket-enforcing this for every adapter class would
+        # require rewriting those fixtures across lanes this repair is not
+        # authorized to touch in this pass (see known-gaps.md).
+        if self.adapter_class is AdapterClass.NATIVE:
+            normalized = normalize_model_id(self.usage.model_id)
+            if normalized != self.realized.model:
+                raise ContractError(
+                    f"Attempt {self.attempt_id!r}: usage.model_id {self.usage.model_id!r} "
+                    f"(normalized {normalized!r}) does not match realized.model "
+                    f"{self.realized.model!r} -- raw usage must never be filed under a "
+                    "stratum it was not realized on (S-08)"
+                )
+
     @property
     def claims_native(self) -> bool:
-        return self.session_id is not None or self.evidence_class is EvidenceClass.NATIVE_PROVEN
+        return (
+            self.session_id is not None
+            or bool(self.event_ids)
+            or self.evidence_class is EvidenceClass.NATIVE_PROVEN
+        )
 
     @property
     def scoring_valid(self) -> bool:
@@ -744,6 +799,20 @@ class LedgerView(typing.Protocol):
 
     def signature_class(self, event_id: str) -> SignatureClass | None: ...
 
+    # NOT part of the frozen five above (kept exactly as documented in
+    # agent-plugins-implementation-contract.md §2.4) -- an OPTIONAL sixth
+    # capability. assert_native_backed below probes for it with getattr and
+    # only uses it when present, so every existing LedgerView implementation
+    # (including minimal test doubles that predate it) keeps working
+    # unchanged. adapters.LedgerReader already exposes this exact shape via
+    # its public `records()` method, so the real production ledger needs no
+    # code change to satisfy it -- see the review finding N-06 note below.
+    def records(self) -> typing.Sequence[Mapping[str, Any]]:
+        """Every raw event record the ledger holds, each carrying at least
+        event_id/run_id/attempt_id/session_id/kind/host_signature. Enables
+        assert_native_backed's run/attempt/session binding checks."""
+        ...
+
 
 def assert_native_backed(attempt: Attempt, ledger: LedgerView) -> None:
     """T09: refuse an attempt's claim of native provenance unless the ledger backs it.
@@ -752,8 +821,17 @@ def assert_native_backed(attempt: Attempt, ledger: LedgerView) -> None:
     session_id, a non-empty event_ids tuple, or evidence_class == NATIVE_PROVEN) that
     the ledger does not corroborate: an unverified chain, an event_id absent from the
     ledger, an event whose signature_class is CALLER_ASSERTED rather than
-    HOST_OBSERVED, a session_id absent from host_observed_session_ids(), or a
-    NATIVE_PROVEN evidence_class backed by neither a session id nor any event id.
+    HOST_OBSERVED, a session_id absent from host_observed_session_ids(), a
+    NATIVE_PROVEN evidence_class backed by neither a session id nor any event id, or
+    (review finding N-06) evidence_class NATIVE_PROVEN paired with an adapter_class
+    other than NATIVE -- a replay/stub adapter cannot become native-proven merely by
+    citing a genuine host-observed session id or event id that a DIFFERENT
+    attempt/run actually earned. When the ledger exposes ``records()`` (every
+    production LedgerReader does), each cited event's own recorded run_id and
+    attempt_id must match this attempt's, and a claimed session_id's
+    HOST_OBSERVED SESSION_ACK must belong to this attempt's run -- otherwise one
+    genuine native run could bless unlimited fabricated attempts that merely
+    quote its session id or event ids (N-06).
     """
     if not attempt.claims_native:
         return
@@ -761,6 +839,16 @@ def assert_native_backed(attempt: Attempt, ledger: LedgerView) -> None:
     if not ledger.is_verified():
         raise ForgedProvenance(
             f"{attempt.attempt_id}: claims native provenance but the ledger chain is not verified"
+        )
+
+    if (
+        attempt.evidence_class is EvidenceClass.NATIVE_PROVEN
+        and attempt.adapter_class is not AdapterClass.NATIVE
+    ):
+        raise ForgedProvenance(
+            f"{attempt.attempt_id}: evidence_class is NATIVE_PROVEN but adapter_class is "
+            f"{attempt.adapter_class!r}, not AdapterClass.NATIVE -- a simulated/recorded "
+            "adapter cannot become native-proven (N-06)"
         )
 
     if attempt.session_id is not None and attempt.session_id not in ledger.host_observed_session_ids():
@@ -780,6 +868,46 @@ def assert_native_backed(attempt: Attempt, ledger: LedgerView) -> None:
                 f"{attempt.attempt_id}: event_id {event_id!r} has signature_class "
                 f"{sig!r}, not HOST_OBSERVED"
             )
+
+    records_fn = getattr(ledger, "records", None)
+    if callable(records_fn):
+        by_event_id: dict[str, Mapping[str, Any]] = {}
+        for record in records_fn():
+            if isinstance(record, Mapping) and isinstance(record.get("event_id"), str):
+                by_event_id[record["event_id"]] = record
+
+        for event_id in attempt.event_ids:
+            record = by_event_id.get(event_id)
+            if record is None:
+                continue  # already refused above by has_event(); nothing more to bind
+            if record.get("run_id") != attempt.run_id:
+                raise ForgedProvenance(
+                    f"{attempt.attempt_id}: event_id {event_id!r} was recorded under run "
+                    f"{record.get('run_id')!r}, not this attempt's run {attempt.run_id!r} (N-06)"
+                )
+            record_attempt_id = record.get("attempt_id")
+            if record_attempt_id is not None and record_attempt_id != attempt.attempt_id:
+                raise ForgedProvenance(
+                    f"{attempt.attempt_id}: event_id {event_id!r} was recorded under attempt "
+                    f"{record_attempt_id!r}, not this attempt (N-06)"
+                )
+
+        if attempt.session_id is not None:
+            def _is_host_observed_ack(record: Mapping[str, Any]) -> bool:
+                sig = record.get("host_signature")
+                return (
+                    record.get("kind") == EventKind.SESSION_ACK.value
+                    and record.get("session_id") == attempt.session_id
+                    and isinstance(sig, Mapping)
+                    and sig.get("value_class") == SignatureClass.HOST_OBSERVED.value
+                )
+
+            acks = [r for r in by_event_id.values() if _is_host_observed_ack(r)]
+            if acks and not any(r.get("run_id") == attempt.run_id for r in acks):
+                raise ForgedProvenance(
+                    f"{attempt.attempt_id}: session_id {attempt.session_id!r} is host-observed "
+                    f"only under a different run than this attempt's run {attempt.run_id!r} (N-06)"
+                )
 
     if (
         attempt.evidence_class is EvidenceClass.NATIVE_PROVEN

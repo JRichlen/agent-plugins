@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output",
       "kind": "skill",
-      "name": "adversarial-verify-fanout",
+      "name": "orchestrate",
       "source_plugin": "orchestrate"
     }
   ],

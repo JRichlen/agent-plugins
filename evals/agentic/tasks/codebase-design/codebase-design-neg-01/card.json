@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same utils/time.py and a plain editing capability, no design-comparison references -- the rename needs none of that.",
   "capabilities": [
     {
       "generic_equivalent": "single-draft interface written directly with no recorded comparison of alternatives",
       "kind": "skill",
-      "name": "design-it-twice procedure + references",
+      "name": "codebase-design",
       "source_plugin": "codebase-design"
     }
   ],
@@ -18,6 +19,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Rename `_fmt_ts` to `_fmt_timestamp` inside utils/time.py -- it's private, no other file touches it.",
+    "utils/time.py has an internal helper `_fmt_ts`; give it the clearer name `_fmt_timestamp`."
+  ],
   "pass_fixture": "evals/agentic/tasks/codebase-design/codebase-design-neg-01/fixtures/pass",
   "plugin": "codebase-design",
   "task_path": "evals/agentic/tasks/codebase-design/codebase-design-neg-01/task"

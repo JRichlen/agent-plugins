@@ -1,10 +1,11 @@
 {
   "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same instruction file and repo tree and a plain read/edit capability, no staleness heuristic -- it may still catch and fix the stale path on its own initiative.",
   "capabilities": [
     {
       "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix",
-      "kind": "script",
-      "name": "docs-hygiene staleness heuristic + refactoring-workflow reference",
+      "kind": "skill",
+      "name": "docs-hygiene",
       "source_plugin": "docs-hygiene"
     }
   ],
@@ -20,6 +21,10 @@
     "reorder-backup-after-delete"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "AGENTS.md says API keys, the code mostly shows JWT with one legacy API-key path left -- which is right?",
+    "Auth docs and auth code disagree, but there's a real legacy path making it genuinely ambiguous which is current."
+  ],
   "pass_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-near-01/fixtures/pass",
   "plugin": "docs-hygiene",
   "task_path": "evals/agentic/tasks/docs-hygiene/docs-hygiene-near-01/task"

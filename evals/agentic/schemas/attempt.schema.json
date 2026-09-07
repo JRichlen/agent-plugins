@@ -80,18 +80,34 @@
     "arrived_after_terminal": { "type": "boolean" },
     "notes": { "type": "string" }
   },
-  "if": {
-    "properties": { "role": { "const": "control" } },
-    "required": ["role"]
-  },
-  "then": {
-    "properties": {
-      "control_kind": { "enum": ["nop", "inversion", "oracle", "mutation"] }
+  "allOf": [
+    {
+      "$comment": "role/control_kind cross-constraint: 'baseline' is not a control, and a nop arm cannot be labelled the baseline.",
+      "if": {
+        "properties": { "role": { "const": "control" } },
+        "required": ["role"]
+      },
+      "then": {
+        "properties": {
+          "control_kind": { "enum": ["nop", "inversion", "oracle", "mutation"] }
+        }
+      },
+      "else": {
+        "properties": { "control_kind": { "type": "null" } }
+      }
+    },
+    {
+      "$comment": "REPAIR N-13: evidence_class 'native-proven' requires adapter_class 'native'. adapters.evidence_class_for reaches NATIVE_PROVEN only on the NATIVE branch, so any record pairing it with 'replay' or 'stub' was assigned by a caller rather than derived -- exactly the splice contract.assert_native_backed's N-06 clause refuses at runtime. Encoding it here refuses it one layer earlier, at the wire, where a hand-authored attempt document enters the framework. This is a pairing check, NOT a provenance check: no schema can see a ledger, and a schema that pretended to would be a verifier in disguise.",
+      "if": {
+        "properties": { "evidence_class": { "const": "native-proven" } },
+        "required": ["evidence_class"]
+      },
+      "then": {
+        "properties": { "adapter_class": { "const": "native" } },
+        "required": ["adapter_class"]
+      }
     }
-  },
-  "else": {
-    "properties": { "control_kind": { "type": "null" } }
-  },
+  ],
   "$defs": {
     "token_count": {
       "oneOf": [

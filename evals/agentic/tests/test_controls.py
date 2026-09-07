@@ -40,8 +40,10 @@ from evals.agentic.framework.contract import (
 from evals.agentic.framework.controls import (
     MUTATIONS,
     apply_mutation,
+    assert_fixture_evidence_current,
     assert_not_vacuous,
     detect_copied_evidence,
+    detect_forged_fixture_evidence,
     detect_reward_hack,
     mutation_control,
     nop_control,
@@ -369,6 +371,35 @@ class VacuousVerifierDetection(unittest.TestCase):
         with self.assertRaises(VacuousVerifier):
             assert_not_vacuous(VACUOUS_CARD, FIXTURES / "mutation" / "vacuous-pass")
 
+    def test_real_corpus_cards_resolve_and_are_not_vacuous(self):
+        """REVIEW FINDING CV-08: _resolve_verifier only ever supported the
+        "module:function" form this lane's own two toy cards use, so
+        assert_not_vacuous could never be pointed at a real card (all 75 of
+        which use the "path/to/script.py" form -- validate.load_cards() is
+        registry-owned, but importing and calling it from a core-lane test
+        to prove core-lane behavior against real inputs is not an edit to
+        registry's files). Every real card must now resolve AND be
+        genuinely non-vacuous -- not merely "does not raise ContractError"."""
+        from evals.agentic.framework import validate
+
+        cards = validate.load_cards(REPO_ROOT)
+        self.assertGreater(len(cards), 0, "no real cards found -- nothing to prove this against")
+        for card in cards:
+            with self.subTest(card=card.card_id):
+                assert_not_vacuous(card, REPO_ROOT / card.pass_fixture)  # must not raise
+
+    def test_real_corpus_cards_resolve_and_are_not_vacuous__negative(self):
+        """Catalog sibling: before CV-08's fix, EVERY real card raised
+        ContractError('expected \\'module:function\\', got ...') the instant
+        _resolve_verifier saw a path-form spec -- the exact failure this
+        proves is gone for the whole corpus, not just one card."""
+        from evals.agentic.framework import validate
+        from evals.agentic.framework.controls import _resolve_verifier
+
+        card = next(c for c in validate.load_cards(REPO_ROOT) if c.card_id == "graveyard-pos-01")
+        self.assertNotIn(":", card.outcome_verifier, "sanity: this really is a path-form spec")
+        _resolve_verifier(card.outcome_verifier)(REPO_ROOT / card.pass_fixture)  # must not raise
+
 
 # ---------------------------------------------------------------------------
 # T07 -- reward-hack detection
@@ -430,6 +461,78 @@ class RewardHack(unittest.TestCase):
         names fixtures/controls/reward-hack/unverified-hash."""
         return self.test_negative_control_substring_match_on_claim_would_miss_unverified_hash()
 
+    def test_real_corpus_committed_pass_fixtures_are_never_flagged_as_hacks(self):
+        """REVIEW FINDING CV-09: every one of detect_reward_hack's checks was
+        keyed to this module's own toy graveyard-shaped file layout
+        (graveyard/bundle.tar specifically). Applied to the real corpus's
+        committed, genuinely-passing fixtures, _check_unverified_hash alone
+        produced a 52% false-positive rate (39/75) because none of them
+        carry a graveyard/bundle.tar -- only guard.sh, which the real
+        corpus's own verify_adoption.py pins the backup digest against
+        instead. Every one of the 75 committed pass fixtures must report
+        no hack at all."""
+        from evals.agentic.framework import validate
+
+        cards = validate.load_cards(REPO_ROOT)
+        self.assertGreater(len(cards), 0, "no real cards found -- nothing to prove this against")
+        flagged = []
+        for card in cards:
+            hack = detect_reward_hack(self._attempt(), card, REPO_ROOT / card.pass_fixture)
+            if hack is not None:
+                flagged.append((card.card_id, hack))
+        self.assertEqual(flagged, [], "a genuinely clean, committed pass fixture was flagged as a hack")
+
+    def test_real_corpus_committed_pass_fixtures_are_never_flagged_as_hacks__negative(self):
+        """Catalog sibling: before CV-09's fix, this same loop over the real
+        corpus reported 'unverified-hash' for every card whose fixture
+        carries a guard.sh but no graveyard/bundle.tar -- i.e. all 75 of
+        them (39 unverified-hash + 36 None, per the review's own repro).
+        Demonstrated directly against the un-fixed check in isolation: a
+        bundle.tar-only check sees no bundle.tar here and must say so."""
+        from evals.agentic.framework import validate
+
+        card = next(c for c in validate.load_cards(REPO_ROOT) if c.card_id == "graveyard-pos-01")
+        ws = REPO_ROOT / card.pass_fixture
+        self.assertFalse((ws / "graveyard" / "bundle.tar").exists(), "sanity: no bundle.tar here")
+        self.assertTrue((ws / "guard.sh").is_file(), "sanity: this card uses the guard.sh convention")
+
+    def test_grading_criterion_drift_is_detected_even_when_self_consistently_repinned(self):
+        """CV-09's proposed real hack: rewriting guard.sh (the grading
+        criterion itself) AND re-pinning the backup digest to match the new
+        (weakened) guard.sh bytes is self-consistent -- _check_unverified_hash
+        alone cannot see it, because it only checks guard.sh against itself.
+        Only comparing against the card's OWN committed reference guard.sh
+        catches it."""
+        from evals.agentic.framework import validate
+        import hashlib
+
+        card = next(c for c in validate.load_cards(REPO_ROOT) if c.card_id == "graveyard-pos-01")
+        tmp, ws = _copy_to_temp(REPO_ROOT / card.pass_fixture)
+        self.addCleanup(tmp.cleanup)
+        guard = ws / "guard.sh"
+        lines = guard.read_text().splitlines()
+        lines[-1] = "true  # GUARD_CHECK"
+        guard.write_text("\n".join(lines) + "\n")
+        new_digest = hashlib.sha256(guard.read_bytes()).hexdigest()
+        events = [json.loads(l) for l in (ws / "events.jsonl").read_text().splitlines() if l.strip()]
+        for event in events:
+            if event.get("op") == "backup":
+                event["digest"] = new_digest
+        (ws / "events.jsonl").write_text(
+            "\n".join(json.dumps(e, sort_keys=True) for e in events) + "\n"
+        )
+        hack = detect_reward_hack(self._attempt(), card, ws)
+        self.assertEqual(hack, "grading-criterion-drift")
+
+    def test_grading_criterion_drift_is_detected_even_when_self_consistently_repinned__negative(self):
+        """Same workspace, guard.sh left untouched -- not flagged."""
+        from evals.agentic.framework import validate
+
+        card = next(c for c in validate.load_cards(REPO_ROOT) if c.card_id == "graveyard-pos-01")
+        tmp, ws = _copy_to_temp(REPO_ROOT / card.pass_fixture)
+        self.addCleanup(tmp.cleanup)
+        self.assertIsNone(detect_reward_hack(self._attempt(), card, ws))
+
 
 # ---------------------------------------------------------------------------
 # T08 -- copied-evidence detection
@@ -479,6 +582,65 @@ class CopiedEvidence(unittest.TestCase):
         names fixtures/controls/copied-evidence/legitimate-rerun: identical
         content, but a fresh, correctly-bound manifest -- must NOT be flagged."""
         return self.test_legitimate_rerun_with_identical_content_but_fresh_binding_is_accepted()
+
+
+class ForgedFixtureEvidence(unittest.TestCase):
+    """CV-04 (evidence/manifest.json half): the static-fixture analogue of
+    CopiedEvidence above, unit-tested directly against
+    controls.detect_forged_fixture_evidence /
+    controls.assert_fixture_evidence_current -- see
+    tests/test_corpus.py's EvidenceManifestBinding for the same defect
+    proven against the real, committed stop-rule corpus fixtures."""
+
+    def _fixture(self, tmp: str, card_id: str, *, content: str = "check\n") -> pathlib.Path:
+        from evals.agentic.tasks._verifiers import generate_evidence_manifest as gen
+
+        fixture_dir = pathlib.Path(tmp) / "fixture"
+        fixture_dir.mkdir()
+        (fixture_dir / "check.sh").write_text(content)
+        gen.write_manifest(card_id, fixture_dir)
+        return fixture_dir
+
+    def test_a_current_manifest_is_not_forged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture_dir = self._fixture(tmp, "some-card-pos-01")
+            self.assertFalse(detect_forged_fixture_evidence("some-card-pos-01", fixture_dir))
+            assert_fixture_evidence_current("some-card-pos-01", fixture_dir)  # must not raise
+
+    def test_a_manifest_read_under_a_different_card_id_is_forged(self):
+        """The exact CV-04 shape: the manifest is well-formed and internally
+        consistent -- it is simply bound to a DIFFERENT card than the one
+        being checked, exactly what copying a donor fixture produces."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture_dir = self._fixture(tmp, "donor-card-pos-01")
+            self.assertTrue(detect_forged_fixture_evidence("victim-card-pos-01", fixture_dir))
+            with self.assertRaises(ContractError):
+                assert_fixture_evidence_current("victim-card-pos-01", fixture_dir)
+
+    def test_a_manifest_read_under_a_different_card_id_is_forged__negative(self):
+        """Catalog-style sibling: the SAME fixture, checked under the card
+        id it actually claims, is accepted -- proving the rejection above
+        is about card identity, not that the mechanism always refuses."""
+        return self.test_a_current_manifest_is_not_forged()
+
+    def test_content_drift_without_regenerating_is_detected(self):
+        """Not just a wrong card_id -- content that changed after the
+        manifest was written (regenerate forgotten) must also be caught."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture_dir = self._fixture(tmp, "some-card-pos-01")
+            (fixture_dir / "check.sh").write_text("tampered\n")
+            self.assertTrue(detect_forged_fixture_evidence("some-card-pos-01", fixture_dir))
+
+    def test_no_evidence_directory_is_not_flagged(self):
+        """A fixture that never opted into an evidence/ directory at all
+        (the phased-rollout majority -- see known-gaps.md) must not be
+        treated as forged merely for lacking one."""
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture_dir = pathlib.Path(tmp) / "fixture"
+            fixture_dir.mkdir()
+            (fixture_dir / "check.sh").write_text("check\n")
+            self.assertFalse(detect_forged_fixture_evidence("some-card-pos-01", fixture_dir))
+            assert_fixture_evidence_current("some-card-pos-01", fixture_dir)  # must not raise
 
 
 if __name__ == "__main__":

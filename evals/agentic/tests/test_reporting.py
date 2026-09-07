@@ -32,6 +32,12 @@ from evals.agentic.framework.reporting import (
     sample_hash,
 )
 
+_FORGED_NATIVE_ATTEMPT_KWARGS = dict(
+    evidence_class=EvidenceClass.NATIVE_PROVEN,
+    session_id="harness-sess-NEVER-ACKED",
+    event_ids=("11111111-1111-4111-8111-111111111111",),
+)
+
 FIXTURES = pathlib.Path(__file__).resolve().parents[1] / "fixtures" / "measurement"
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
@@ -339,6 +345,273 @@ class BuildReportAndNativeRefusal(unittest.TestCase):
         text = render_text(report)
         self.assertNotRegex(text, r"proven in a (?:real|live) harness")
         self.assertNotRegex(text, r"\b52\b[^\n]{0,40}\bproven\b")
+
+
+# ---------------------------------------------------------------------------
+# REPAIR N-01: render_* must gate a native-proven count behind
+# assert_native_claims, never print it as a bare trustworthy number.
+# ---------------------------------------------------------------------------
+
+class _VerifiedLedger:
+    def has_event(self, event_id):
+        return True
+
+    def session_ids(self):
+        return frozenset({"harness-sess-NEVER-ACKED"})
+
+    def host_observed_session_ids(self):
+        return frozenset({"harness-sess-NEVER-ACKED"})
+
+    def is_verified(self):
+        return True
+
+    def signature_class(self, event_id):
+        from evals.agentic.framework.contract import SignatureClass
+        return SignatureClass.HOST_OBSERVED
+
+
+class NativeEvidenceGating(unittest.TestCase):
+    """N-01 (blocker): reproduces the lane's own negative control -- an
+    attempt asserting evidence_class="native-proven" with a session_id no
+    SESSION_ACK ever carried and an event_id in no ledger -- through
+    build_report and every renderer with no event_ledger supplied."""
+
+    def _forged_report(self):
+        manifest = _make_manifest()
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        ledger.add(builders.make_attempt(card_id="redgate-pos-01", **_FORGED_NATIVE_ATTEMPT_KWARGS))
+        return build_report(manifest, ledger, event_ledger=None)
+
+    def test_render_markdown_never_prints_a_bare_forged_native_count(self):
+        report = self._forged_report()
+        md = render_markdown(report)
+        self.assertIn("native-proven", md)
+        self.assertNotIn("| native-proven | 1 |", md)  # the exact banned rendering
+        self.assertIn("UNVERIFIABLE", md)
+
+    def test_render_text_never_prints_a_bare_forged_native_count(self):
+        report = self._forged_report()
+        text = render_text(report)
+        self.assertNotIn("native-proven: 1\n", text)
+        self.assertIn("UNVERIFIABLE", text)
+
+    def test_render_json_carries_an_explicit_unverified_flag(self):
+        report = self._forged_report()
+        as_json = render_json(report)
+        self.assertEqual(as_json["evidence"]["native-proven"], 1)  # the raw count is still honest
+        self.assertFalse(as_json["evidence_native_proven_verified"])
+        self.assertIsNotNone(as_json["evidence_native_proven_unverifiable_reason"])
+
+    def test_a_verified_ledger_supplied_to_the_renderer_clears_the_flag(self):
+        report = self._forged_report()
+        as_json = render_json(report, event_ledger=_VerifiedLedger())
+        self.assertTrue(as_json["evidence_native_proven_verified"])
+        md = render_markdown(report, event_ledger=_VerifiedLedger())
+        self.assertIn("| native-proven | 1 |", md)
+        self.assertNotIn("UNVERIFIABLE", md)
+
+    def test_render_markdown_never_prints_a_bare_forged_native_count__negative(self):
+        """Catalog sibling for the N-01 fix: the pre-fix renderer printed
+        exactly '| native-proven | 1 |' for this forged attempt with no
+        assert_native_claims call anywhere."""
+        report = self._forged_report()
+        md = render_markdown(report)
+        self.assertNotEqual(
+            [l for l in md.splitlines() if "native-proven" in l],
+            ["| native-proven | 1 |"],
+        )
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-06: a plugin whose every attempt is scoring-invalid must still
+# appear, rendered "unavailable" with a reason -- never silently absent.
+# ---------------------------------------------------------------------------
+
+class AllFaultPluginStillAppears(unittest.TestCase):
+    def test_all_fault_plugin_appears_with_a_reason_not_absent(self):
+        attempts = builders.attempts_for_card("voice-neg-02", ["fault"] * 5) + \
+            builders.attempts_for_card("redgate-pos-01", ["pass"] * 3)
+        matrix = outcome_adoption_matrix(attempts)
+        self.assertIn("voice", matrix)  # S-06 repro: this used to be absent
+        cell = matrix["voice"]
+        self.assertEqual(cell.evaluated(), 0)
+        rate = cell.outcome_rate()
+        self.assertIsNone(rate.value)
+        self.assertEqual(rate.unavailable_reason, "no valid samples: 5/5 FAULT")
+
+    def test_scoring_valid_but_unevaluated_plugin_gets_a_distinct_reason(self):
+        """A plugin whose scoring-valid attempts are all unevaluated (the
+        verifier never ran) must not be told it had 'no valid samples' --
+        five valid samples existed; the verifier is what failed."""
+        attempts = [
+            builders.make_attempt(card_id="p-pos-01", outcome=None, adoption=None)
+            for _ in range(5)
+        ]
+        matrix = outcome_adoption_matrix(attempts)
+        cell = matrix["p"]
+        self.assertEqual(cell.scoring_valid_total, 5)
+        reason = cell.outcome_rate().unavailable_reason
+        self.assertIn("no evaluated verdicts", reason)
+        self.assertNotIn("FAULT", reason)
+
+    def test_all_fault_plugin_appears_with_a_reason_not_absent__negative(self):
+        """Catalog sibling for the S-06 fix: the pre-fix matrix builder never
+        created a bucket for an all-FAULT plugin at all."""
+        attempts = builders.attempts_for_card("voice-neg-02", ["fault"] * 5)
+        matrix = outcome_adoption_matrix(attempts)
+        naive_keys_before_fix: dict = {}
+        self.assertNotEqual(sorted(matrix), sorted(naive_keys_before_fix))
+        self.assertIn("voice", matrix)
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-05: min_valid, declared on the manifest, gates the 2x2 rates too
+# ---------------------------------------------------------------------------
+
+class MinValidGatesTheMatrixToo(unittest.TestCase):
+    def test_a_single_sample_cell_renders_starved_not_100_percent(self):
+        manifest = _make_manifest(min_valid=3)
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        ledger.add(builders.make_attempt(card_id="p-pos-01", outcome=True, adoption=True))
+        report = build_report(manifest, ledger, event_ledger=None)
+        cell = report.per_plugin["p"]
+        self.assertIsNone(cell.outcome_rate(min_valid=manifest.min_valid).value)
+        self.assertIn("starved", cell.outcome_rate(min_valid=manifest.min_valid).unavailable_reason)
+        text = render_text(report)
+        self.assertIn("starved", text)
+        self.assertNotIn("outcome=1.0000 (1/1)", text)
+
+    def test_a_single_sample_cell_renders_starved_not_100_percent__negative(self):
+        """Catalog sibling for the S-05 fix: Cell2x2.outcome_rate() with no
+        min_valid argument (the pre-fix call site) reads this exact one-trial
+        cell as a clean 100%."""
+        manifest = _make_manifest(min_valid=3)
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        ledger.add(builders.make_attempt(card_id="p-pos-01", outcome=True, adoption=True))
+        report = build_report(manifest, ledger, event_ledger=None)
+        cell = report.per_plugin["p"]
+        naive = cell.outcome_rate()  # no min_valid -- the pre-fix call shape
+        self.assertIsNotNone(naive.value)
+        self.assertNotEqual(naive.render(), cell.outcome_rate(min_valid=manifest.min_valid).render())
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-09: a genuine cross-model token contamination must be visible as
+# a warning, never swallowed into an empty, unremarkable section.
+# ---------------------------------------------------------------------------
+
+class CrossModelContaminationIsVisible(unittest.TestCase):
+    def test_build_report_surfaces_the_contamination_as_a_warning(self):
+        attempts = [
+            builders.make_attempt(card_id="p-pos-01", usage=builders.make_usage(model_id="claude-opus-5")),
+            builders.make_attempt(card_id="p-pos-01", usage=builders.make_usage(model_id="claude-sonnet-5")),
+        ]
+        manifest = _make_manifest()
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        for a in attempts:
+            ledger.add(a)
+        report = build_report(manifest, ledger, event_ledger=None)
+        self.assertEqual(report.per_stratum_tokens, {})  # still refused, never pooled
+        self.assertTrue(any("pool_tokens" in w and "model_id" in w for w in report.warnings))
+        text = render_text(report)
+        self.assertIn("WARNING", text)
+        md = render_markdown(report)
+        self.assertIn("Warnings", md)
+
+    def test_build_report_surfaces_the_contamination_as_a_warning__negative(self):
+        """Catalog sibling for the S-09 fix: the pre-fix build_report caught
+        CrossModelPoolingRefused and discarded it with `per_field = {}`,
+        leaving `report.warnings == ()` on this exact contaminated ledger."""
+        attempts = [
+            builders.make_attempt(card_id="p-pos-01", usage=builders.make_usage(model_id="claude-opus-5")),
+            builders.make_attempt(card_id="p-pos-01", usage=builders.make_usage(model_id="claude-sonnet-5")),
+        ]
+        manifest = _make_manifest()
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        for a in attempts:
+            ledger.add(a)
+        report = build_report(manifest, ledger, event_ledger=None)
+        naive_warnings_before_fix: tuple = ()
+        self.assertNotEqual(report.warnings, naive_warnings_before_fix)
+
+
+# ---------------------------------------------------------------------------
+# REPAIR S-04: renderer parity -- every count/reason string in render_json
+# must also appear in render_text and render_markdown.
+# ---------------------------------------------------------------------------
+
+class RendererParity(unittest.TestCase):
+    def _rich_report(self):
+        import dataclasses as dc
+        from evals.agentic.framework.analysis import Interval, NoninferiorityResult
+
+        manifest = _make_manifest()
+        ledger = AttemptLedger(run_id=manifest.run_id)
+        ledger.add(builders.make_attempt(card_id="voice-pos-01", outcome=True, adoption=True))
+        for _ in range(9):
+            ledger.add(builders.make_attempt(card_id="voice-pos-01", outcome=None, adoption=None))
+        report = build_report(manifest, ledger, event_ledger=None)
+        interval = Interval(point=0.1375, lo=-0.2596, hi=0.5346, method="cluster-t", n_clusters=4,
+                             cluster_variable="card", deff=None, deff_method=None, icc_raw=None,
+                             unavailable_reason=None)
+        noninf = NoninferiorityResult(established=False, margin=0.05, lower_bound=-0.2596, reason="not established")
+        return dc.replace(
+            report,
+            effects={"full-package": interval},
+            noninferiority={"full-package": noninf},
+            warnings=("no native evidence in this run",),
+        )
+
+    def test_unevaluated_counts_appear_in_every_renderer(self):
+        report = self._rich_report()
+        text = render_text(report)
+        md = render_markdown(report)
+        self.assertIn("unevaluated: outcome=9 adoption=9", text)
+        self.assertIn("outcome=9 adoption=9", md)
+
+    def test_header_fields_appear_in_both_text_and_markdown(self):
+        report = self._rich_report()
+        text = render_text(report)
+        md = render_markdown(report)
+        for token in ("min_valid=3", "min_clusters=8", "noninferiority_margin=0.05", "holdout_seed=1"):
+            self.assertIn(token, text)
+            self.assertIn(token, md)
+
+    def test_noninferiority_appears_in_markdown_not_just_text_and_json(self):
+        report = self._rich_report()
+        md = render_markdown(report)
+        as_json = render_json(report)
+        self.assertIn("not established", md)
+        self.assertEqual(as_json["noninferiority"]["full-package"]["reason"], "not established")
+
+    def test_warnings_appear_in_markdown_not_just_text(self):
+        report = self._rich_report()
+        md = render_markdown(report)
+        self.assertIn("no native evidence in this run", md)
+
+    def test_effects_appear_in_markdown(self):
+        report = self._rich_report()
+        md = render_markdown(report)
+        self.assertIn("full-package", md)
+        self.assertIn("cluster-t", md)
+
+    def test_unevaluated_counts_appear_in_every_renderer__negative(self):
+        """Catalog sibling for the S-04 fix: the pre-fix render_markdown
+        table had exactly 4 columns (plugin/outcome/adoption/ritual columns)
+        with no unevaluated column at all -- reproduced literally here as the
+        naive table row -- which must disagree with the real, fixed one."""
+        report = self._rich_report()
+        cell = report.per_plugin["voice"]
+        naive_row = (
+            f"| voice | {cell.outcome_rate(min_valid=report.manifest.min_valid).render()} | "
+            f"{cell.adoption_rate(min_valid=report.manifest.min_valid).render()} | "
+            f"{cell.ritual_without_outcome().render()} | {cell.outcome_without_ritual().render()} |"
+        )
+        self.assertNotIn("unevaluated", naive_row)
+        md = render_markdown(report)
+        real_row = [l for l in md.splitlines() if l.startswith("| voice |")][0]
+        self.assertNotEqual(real_row, naive_row)
+        self.assertIn("unevaluated", md)
 
 
 if __name__ == "__main__":

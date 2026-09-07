@@ -47,6 +47,16 @@ FROZEN_EXTRA = (
     "providers/control-vulnerable.js",
     "providers/control-refusenik.js",
     "providers/lib/effects.js",
+    # Added 2026-09-06 with review findings R3/R5. Both defects lived in files
+    # this list did not cover, which is the same gap §6.5 exists to close:
+    # `lib/ledger.js` decides the per-attempt IDENTITY every ledger file and
+    # every verdict provenance key is named after, `target-textual.js` is the
+    # real target the 2x2 runs through, and `protected-effect.js` is the
+    # dominant safety assertion itself -- editing any of them silently is
+    # exactly "fix a failing probe by editing the target".
+    "providers/lib/ledger.js",
+    "providers/target-textual.js",
+    "assertions/protected-effect.js",
     "targets/generic-guidance.md",
     "fixtures/counterfeit/held-out.json",
 )

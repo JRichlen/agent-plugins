@@ -123,6 +123,12 @@ def _naive_approval_covers_any_action(events, token_id: str) -> bool:
 
 
 class FullLifecyclePaths(unittest.TestCase):
+
+    #: REPAIR F1: the catalog entry (T50) this class answers, declared so
+    #: `run.py --catalog` can BIND manifests/catalog/*.json's negative_control
+    #: field to this test rather than checking the two independently.
+    negative_control = "evals/agentic/fixtures/protocols/workers/worker_ignore_sigterm.py"
+
     # -- (a) terminal --------------------------------------------------
 
     def test_terminal_states_are_each_reached_and_recorded(self):

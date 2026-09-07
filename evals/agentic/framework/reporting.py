@@ -24,11 +24,12 @@ from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
 from . import io
-from .accounting import AttemptLedger, Denominators, Total, USAGE_FIELDS, denominators
+from .accounting import AttemptLedger, Denominators, Total, USAGE_FIELDS, assert_planned_reconciles, denominators
 from .analysis import Interval, NoninferiorityResult, Rate, pool_tokens, rate_of
 from .contract import (
     Attempt,
     ContractError,
+    CrossModelPoolingRefused,
     EvidenceClass,
     LedgerView,
     Manifest,
@@ -66,6 +67,15 @@ class Cell2x2:
     outcome_fail_adoption_fail: int
     outcome_unevaluated: int
     adoption_unevaluated: int
+    # REPAIR S-06: a plugin whose attempts are ALL scoring-invalid (FAULT/
+    # CANCELLED) used to get no bucket at all -- silently absent from the
+    # report rather than rendered "unavailable" with a reason (benchmark-spec
+    # §7's own worked example, voice-neg-02, 5/5 FAULT). Defaulted so every
+    # existing positional/keyword construction in this module and in tests
+    # keeps working unchanged.
+    scoring_valid_total: int = 0
+    scoring_invalid_fault: int = 0
+    scoring_invalid_cancel: int = 0
 
     def evaluated(self) -> int:
         return (
@@ -75,27 +85,53 @@ class Cell2x2:
             + self.outcome_fail_adoption_fail
         )
 
-    def outcome_rate(self) -> Rate:
+    def _reason(self) -> str:
+        """Only meaningful when evaluated() == 0 -- see rate_of's
+        denominator<=0 branch. Distinguishes 'no scoring-valid samples at
+        all' (FAULT/CANCELLED) from 'samples existed but the verifier never
+        ran on any of them' (S-06): the two are different failures and read
+        very differently in a report."""
+        total = self.scoring_valid_total + self.scoring_invalid_fault + self.scoring_invalid_cancel
+        if self.scoring_valid_total == 0:
+            if total == 0:
+                return "no trials"
+            if self.scoring_invalid_fault == total:
+                return f"no valid samples: {self.scoring_invalid_fault}/{total} FAULT"
+            if self.scoring_invalid_cancel == total:
+                return f"no valid samples: {self.scoring_invalid_cancel}/{total} CANCELLED"
+            return f"no valid samples: {total}/{total} invalid"
+        return (
+            f"no evaluated verdicts: {self.scoring_valid_total} scoring-valid "
+            "sample(s), the verifier never ran"
+        )
+
+    def outcome_rate(self, *, min_valid: int = 1) -> Rate:
         n = self.evaluated()
         num = self.outcome_pass_adoption_pass + self.outcome_pass_adoption_fail
-        return rate_of(num, n)
+        return rate_of(num, n, min_valid=min_valid, unavailable_reason=self._reason() if n == 0 else None)
 
-    def adoption_rate(self) -> Rate:
+    def adoption_rate(self, *, min_valid: int = 1) -> Rate:
         n = self.evaluated()
         num = self.outcome_pass_adoption_pass + self.outcome_fail_adoption_pass
-        return rate_of(num, n)
+        return rate_of(num, n, min_valid=min_valid, unavailable_reason=self._reason() if n == 0 else None)
 
     def ritual_without_outcome(self) -> Rate:
         # n01 / (n11 + n01) -- of the runs that performed the ritual, how many
         # did not accomplish the user's task. The central vacuity cell.
         denom = self.outcome_pass_adoption_pass + self.outcome_fail_adoption_pass
-        return rate_of(self.outcome_fail_adoption_pass, denom)
+        return rate_of(
+            self.outcome_fail_adoption_pass, denom,
+            unavailable_reason=self._reason() if denom == 0 and self.evaluated() == 0 else None,
+        )
 
     def outcome_without_ritual(self) -> Rate:
         # n10 / (n11 + n10) -- of the successful runs, how many skipped the
         # ritual. Where a correct direct baseline is supposed to show up.
         denom = self.outcome_pass_adoption_pass + self.outcome_pass_adoption_fail
-        return rate_of(self.outcome_pass_adoption_fail, denom)
+        return rate_of(
+            self.outcome_pass_adoption_fail, denom,
+            unavailable_reason=self._reason() if denom == 0 and self.evaluated() == 0 else None,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return dataclasses.asdict(self)
@@ -104,18 +140,34 @@ class Cell2x2:
 def outcome_adoption_matrix(
     attempts: Iterable[Attempt], *, card_plugin: Callable[[str], str] | None = None
 ) -> Mapping[str, Cell2x2]:
-    from .contract import SCORING_VALID_STATES  # local: avoid widening module import surface
+    from .contract import SCORING_VALID_STATES, TerminalState  # local: avoid widening module import surface
 
     plugin_of = card_plugin or _plugin_of_card
     buckets: dict[str, dict[str, int]] = {}
-    for a in attempts:
-        if a.terminal_state not in SCORING_VALID_STATES:
-            continue
-        plugin = plugin_of(a.card_id)
-        b = buckets.setdefault(
+
+    def bucket(plugin: str) -> dict[str, int]:
+        return buckets.setdefault(
             plugin,
-            {"n11": 0, "n10": 0, "n01": 0, "n00": 0, "outcome_unevaluated": 0, "adoption_unevaluated": 0},
+            {
+                "n11": 0, "n10": 0, "n01": 0, "n00": 0,
+                "outcome_unevaluated": 0, "adoption_unevaluated": 0,
+                "scoring_valid_total": 0, "scoring_invalid_fault": 0, "scoring_invalid_cancel": 0,
+            },
         )
+
+    for a in attempts:
+        # Create the bucket for every plugin SEEN, before the scoring-valid
+        # filter (S-06) -- a plugin whose every attempt faulted or was
+        # cancelled must still appear in the report, rendered "unavailable"
+        # with a reason, not be silently absent.
+        b = bucket(plugin_of(a.card_id))
+        if a.terminal_state not in SCORING_VALID_STATES:
+            if a.terminal_state is TerminalState.FAULT:
+                b["scoring_invalid_fault"] += 1
+            elif a.terminal_state is TerminalState.CANCELLED:
+                b["scoring_invalid_cancel"] += 1
+            continue
+        b["scoring_valid_total"] += 1
         o = a.outcome.passed
         r = a.adoption.passed
         if o is None:
@@ -140,6 +192,9 @@ def outcome_adoption_matrix(
             outcome_fail_adoption_fail=b["n00"],
             outcome_unevaluated=b["outcome_unevaluated"],
             adoption_unevaluated=b["adoption_unevaluated"],
+            scoring_valid_total=b["scoring_valid_total"],
+            scoring_invalid_fault=b["scoring_invalid_fault"],
+            scoring_invalid_cancel=b["scoring_invalid_cancel"],
         )
         for plugin, b in buckets.items()
     }
@@ -251,21 +306,45 @@ def build_report(
     populates those two maps via `dataclasses.replace(report, effects=..., ...)`
     before rendering. This is a lane-boundary decision, not an omission --
     reported explicitly per the task brief's instruction.
+
+    REPAIR S-10: `event_ledger` is threaded through unchanged to the render
+    layer (`render_text`/`render_json`/`render_markdown` now take it too, so
+    `assert_native_claims` is actually consulted before a native-proven count
+    is printed as trustworthy -- see N-01). `Manifest.planned_n`, when
+    declared, is checked against the ledger's own accounting denominator via
+    `assert_planned_reconciles` -- a real external check, unlike
+    `conserve()`/`assert_reconciles()`, which are tautological against
+    whatever ledger they are handed. `planned_n` is `{}` in every run today
+    (a cross-lane gap in `run.py`, outside this lane's ownership), so this is
+    a no-op until a caller populates it.
     """
     ledger.conserve()
     attempts = ledger.attempts()
     denoms = denominators(attempts)
     denoms.assert_reconciles()
+    assert_planned_reconciles(denoms, manifest.planned_n, manifest.skipped)
 
     per_plugin = outcome_adoption_matrix(attempts)
     evidence = evidence_summary(attempts)
 
+    warnings: list[str] = []
+    seen_warnings: set[str] = set()
     per_stratum_tokens: dict[str, dict[str, Total]] = {}
     for field in USAGE_FIELDS:
         try:
             per_field = pool_tokens(attempts, field, by="stratum")
-        except ContractError:
-            per_field = {}
+        except CrossModelPoolingRefused as exc:
+            # REPAIR S-09: this used to be swallowed as `per_field = {}` with
+            # no trace -- a genuine cross-model token contamination rendered
+            # as an empty, unremarkable "token totals per stratum:" section.
+            # Surface it instead of erasing it. The same contamination is
+            # normally detected on every USAGE_FIELDS pass; dedupe rather
+            # than repeat the identical sentence once per field.
+            msg = str(exc)
+            if msg not in seen_warnings:
+                seen_warnings.add(msg)
+                warnings.append(msg)
+            continue
         for stratum_key, total in per_field.items():
             per_stratum_tokens.setdefault(stratum_key, {})[field] = total
 
@@ -279,7 +358,7 @@ def build_report(
         evidence=evidence,
         agreement=None,
         blocked=(),
-        warnings=(),
+        warnings=tuple(warnings),
     )
 
 
@@ -298,37 +377,120 @@ def assert_native_claims(report: Report, event_ledger: LedgerView | None) -> Non
             "assert_native_claims: the event ledger is absent or its hash "
             "chain is not verified"
         )
+    # REPAIR FOLLOWUP-2 (adapter lane, belt and braces). The clause above is
+    # load-bearing on its own today: adapters.LedgerReader.verification_reason
+    # refuses a ledger with zero host-observed entries, so is_verified() is
+    # already False for one. But `event_ledger` is typed as the LedgerView
+    # PROTOCOL, and any object with the five (now six) methods satisfies it --
+    # including a duck-typed reader whose is_verified() returns True for a
+    # ledger the host witnessed nothing in. That is the exact shape review
+    # finding N-02 walked in through. Ask the ledger directly how many
+    # host-observed entries it holds and refuse zero, so the native sentence
+    # never rests on one implementation's internal policy.
+    #
+    # Probed with getattr rather than called outright: contract.LedgerView
+    # (core-owned, frozen) declares five methods plus an OPTIONAL sixth
+    # (`records()`), and this lane cannot add `verify_chain` to that Protocol.
+    # Probing is the same pattern contract.assert_native_backed already uses
+    # for records(), and it keeps every existing LedgerView test double --
+    # which predate this check -- working unchanged.
+    verify_chain = getattr(event_ledger, "verify_chain", None)
+    if callable(verify_chain):
+        chain = verify_chain()
+        host_observed = getattr(chain, "host_observed", None)
+        if isinstance(host_observed, int) and host_observed <= 0:
+            raise NativeProofRequired(
+                "assert_native_claims: the event ledger's chain reports "
+                f"host_observed={host_observed} -- the host witnessed nothing in "
+                "it, so there is no native behaviour here to report"
+            )
 
 
-def render_text(report: Report) -> str:
+def _native_proven_status(report: Report, event_ledger: LedgerView | None) -> tuple[bool, str | None]:
+    """REPAIR N-01: render_text/render_json/render_markdown used to print
+    `evidence[NATIVE_PROVEN]` as a bare, trustworthy-looking count with no
+    call to `assert_native_claims` anywhere -- the lane's own negative-control
+    fixture (a forged evidence_class="native-proven" attempt with a session_id
+    no SESSION_ACK ever carried) rendered "native-proven | 1" in every format.
+    Every renderer now calls this first and annotates the count instead of
+    printing it bare. Returns (verified, reason); reason is None iff verified
+    or the count is 0 (nothing to verify)."""
+    if report.evidence[EvidenceClass.NATIVE_PROVEN] == 0:
+        return True, None
+    try:
+        assert_native_claims(report, event_ledger)
+    except NativeProofRequired as exc:
+        return False, str(exc)
+    return True, None
+
+
+def _header_lines(m: Manifest, denominators_rendered: str) -> list[str]:
+    """REPAIR S-04: the header (toolchain, delta, min_valid, min_clusters,
+    seed) that benchmark-spec §11.1 requires "first, always" -- shared by
+    render_text and render_markdown so the two cannot drift (render_markdown
+    used to omit every line here but the git/branch/catalog/offline one)."""
+    return [
+        f"git={m.git_commit} branch={m.branch} catalog_digest={m.catalog_digest} offline={m.offline}",
+        f"toolchain={dict(m.toolchain)}",
+        f"min_valid={m.min_valid} min_clusters={m.min_clusters} "
+        f"noninferiority_margin={m.noninferiority_margin} holdout_seed={m.holdout_seed}",
+        denominators_rendered,
+    ]
+
+
+def _evidence_rows(report: Report, event_ledger: LedgerView | None) -> list[tuple[str, str]]:
+    """REPAIR N-01: (label, value) pairs for the evidence table, shared by all
+    three renderers. NATIVE_PROVEN is never printed as a bare count -- it is
+    gated behind `_native_proven_status` (which calls `assert_native_claims`)
+    first."""
+    verified, reason = _native_proven_status(report, event_ledger)
+    rows: list[tuple[str, str]] = []
+    for ec in EvidenceClass:
+        count = report.evidence[ec]
+        if ec is EvidenceClass.NATIVE_PROVEN and count > 0 and not verified:
+            rows.append((ec.value, f"{count} (UNVERIFIABLE IN THIS RENDER: {reason})"))
+        else:
+            rows.append((ec.value, str(count)))
+    return rows
+
+
+def _cell_row_strings(cell: Cell2x2, *, min_valid: int) -> dict[str, str]:
+    """REPAIR S-04/S-05: one 2x2-row formatter shared by render_text and
+    render_markdown, so a count or reason string present in one can never be
+    silently absent from the other. `min_valid` is threaded from
+    `Manifest.min_valid` (benchmark-spec §7's starved-card floor) rather than
+    the permissive code default."""
+    return {
+        "outcome": cell.outcome_rate(min_valid=min_valid).render(),
+        "adoption": cell.adoption_rate(min_valid=min_valid).render(),
+        "ritual_without_outcome": cell.ritual_without_outcome().render(),
+        "outcome_without_ritual": cell.outcome_without_ritual().render(),
+        "unevaluated": f"outcome={cell.outcome_unevaluated} adoption={cell.adoption_unevaluated}",
+    }
+
+
+def render_text(report: Report, event_ledger: LedgerView | None = None) -> str:
     m = report.manifest
     lines: list[str] = []
     lines.append(f"agentic report — run {m.run_id}")
-    lines.append(
-        f"git={m.git_commit} branch={m.branch} catalog_digest={m.catalog_digest} "
-        f"offline={m.offline}"
-    )
-    lines.append(
-        f"min_valid={m.min_valid} min_clusters={m.min_clusters} "
-        f"noninferiority_margin={m.noninferiority_margin} holdout_seed={m.holdout_seed}"
-    )
-    lines.append(report.denominators.render())
+    lines.extend(_header_lines(m, report.denominators.render()))
     lines.append("")
 
     lines.append("evidence:")
-    for ec in EvidenceClass:
-        lines.append(f"  {ec.value}: {report.evidence[ec]}")
+    for label, value in _evidence_rows(report, event_ledger):
+        lines.append(f"  {label}: {value}")
     lines.append("")
 
     lines.append("per-plugin outcome / adoption (2x2, scoring-valid attempts only):")
     for plugin in sorted(report.per_plugin):
         cell = report.per_plugin[plugin]
+        row = _cell_row_strings(cell, min_valid=m.min_valid)
         lines.append(
-            f"  {plugin}: outcome={cell.outcome_rate().render()} "
-            f"adoption={cell.adoption_rate().render()} "
-            f"ritual_without_outcome={cell.ritual_without_outcome().render()} "
-            f"outcome_without_ritual={cell.outcome_without_ritual().render()} "
-            f"(unevaluated: outcome={cell.outcome_unevaluated} adoption={cell.adoption_unevaluated})"
+            f"  {plugin}: outcome={row['outcome']} "
+            f"adoption={row['adoption']} "
+            f"ritual_without_outcome={row['ritual_without_outcome']} "
+            f"outcome_without_ritual={row['outcome_without_ritual']} "
+            f"(unevaluated: {row['unevaluated']})"
         )
     lines.append("")
 
@@ -376,12 +538,23 @@ def render_text(report: Report) -> str:
     return "\n".join(lines)
 
 
-def render_json(report: Report) -> dict[str, Any]:
+def render_json(report: Report, event_ledger: LedgerView | None = None) -> dict[str, Any]:
+    m = report.manifest
+    verified, native_reason = _native_proven_status(report, event_ledger)
     return {
         "manifest": report.manifest.to_dict(),
         "denominators": report.denominators.to_dict(),
         "denominators_rendered": report.denominators.render(),
-        "per_plugin": {k: v.to_dict() for k, v in report.per_plugin.items()},
+        "per_plugin": {
+            k: {
+                **v.to_dict(),
+                "outcome_rate": v.outcome_rate(min_valid=m.min_valid).render(),
+                "adoption_rate": v.adoption_rate(min_valid=m.min_valid).render(),
+                "ritual_without_outcome": v.ritual_without_outcome().render(),
+                "outcome_without_ritual": v.outcome_without_ritual().render(),
+            }
+            for k, v in report.per_plugin.items()
+        },
         "per_stratum_tokens": {
             sk: {f: t.to_dict() for f, t in fields.items()}
             for sk, fields in report.per_stratum_tokens.items()
@@ -390,40 +563,57 @@ def render_json(report: Report) -> dict[str, Any]:
         "effects_rendered": {k: v.render() for k, v in report.effects.items()},
         "noninferiority": {k: dataclasses.asdict(v) for k, v in report.noninferiority.items()},
         "evidence": {k.value: v for k, v in report.evidence.items()},
+        "evidence_native_proven_verified": verified,
+        "evidence_native_proven_unverifiable_reason": native_reason,
         "agreement": report.agreement.to_dict() if report.agreement is not None else None,
         "blocked": [dict(b) for b in report.blocked],
         "warnings": list(report.warnings),
     }
 
 
-def render_markdown(report: Report) -> str:
+def render_markdown(report: Report, event_ledger: LedgerView | None = None) -> str:
+    """REPAIR S-04: parity with render_text/render_json -- the header (git,
+    toolchain, min_valid/min_clusters/margin/seed), the unevaluated counts on
+    each 2x2 row, the token-totals-per-stratum section, the noninferiority
+    section, the grader-agreement section, and every warning used to be
+    present in text/json and silently absent here."""
     m = report.manifest
     lines: list[str] = []
     lines.append(f"# agentic report — run `{m.run_id}`")
     lines.append("")
-    lines.append(
-        f"- git `{m.git_commit}` branch `{m.branch}` catalog_digest `{m.catalog_digest}` "
-        f"offline={m.offline}"
-    )
-    lines.append(f"- {report.denominators.render()}")
+    for line in _header_lines(m, report.denominators.render()):
+        lines.append(f"- {line}")
     lines.append("")
     lines.append("## Evidence")
     lines.append("")
     lines.append("| class | count |")
     lines.append("|---|---:|")
-    for ec in EvidenceClass:
-        lines.append(f"| {ec.value} | {report.evidence[ec]} |")
+    for label, value in _evidence_rows(report, event_ledger):
+        lines.append(f"| {label} | {value} |")
     lines.append("")
-    lines.append("## Outcome vs adoption (per plugin)")
+    lines.append("## Outcome vs adoption (per plugin, scoring-valid attempts only)")
     lines.append("")
-    lines.append("| plugin | outcome | adoption | ritual_without_outcome | outcome_without_ritual |")
-    lines.append("|---|---|---|---|---|")
+    lines.append("| plugin | outcome | adoption | ritual_without_outcome | outcome_without_ritual | unevaluated |")
+    lines.append("|---|---|---|---|---|---|")
     for plugin in sorted(report.per_plugin):
         cell = report.per_plugin[plugin]
+        row = _cell_row_strings(cell, min_valid=m.min_valid)
         lines.append(
-            f"| {plugin} | {cell.outcome_rate().render()} | {cell.adoption_rate().render()} | "
-            f"{cell.ritual_without_outcome().render()} | {cell.outcome_without_ritual().render()} |"
+            f"| {plugin} | {row['outcome']} | {row['adoption']} | "
+            f"{row['ritual_without_outcome']} | {row['outcome_without_ritual']} | {row['unevaluated']} |"
         )
+    lines.append("")
+    lines.append("## Token totals per stratum")
+    lines.append("")
+    if report.per_stratum_tokens:
+        lines.append("| stratum | field | total |")
+        lines.append("|---|---|---:|")
+        for stratum_key in sorted(report.per_stratum_tokens):
+            fields = report.per_stratum_tokens[stratum_key]
+            for field in sorted(fields):
+                lines.append(f"| {stratum_key} | {field} | {fields[field].render()} |")
+    else:
+        lines.append("_none_")
     if report.effects:
         lines.append("")
         lines.append("## Effects")
@@ -432,10 +622,39 @@ def render_markdown(report: Report) -> str:
         lines.append("|---|---|")
         for name in sorted(report.effects):
             lines.append(f"| {name} | {report.effects[name].render()} |")
+    if report.noninferiority:
+        lines.append("")
+        lines.append("## Noninferiority")
+        lines.append("")
+        lines.append("| estimand | established | margin | lower_bound | reason |")
+        lines.append("|---|---|---:|---:|---|")
+        for name in sorted(report.noninferiority):
+            res = report.noninferiority[name]
+            lines.append(f"| {name} | {res.established} | {res.margin} | {res.lower_bound} | {res.reason} |")
+    if report.agreement is not None:
+        lines.append("")
+        lines.append("## Grader agreement")
+        lines.append("")
+        a = report.agreement
+        if a.unavailable_reason is not None:
+            lines.append(f"unavailable ({a.unavailable_reason})")
+        else:
+            kappa_str = (
+                "undefined (both graders used one label)" if a.kappa is None else f"{a.kappa:.3f}"
+            )
+            lines.append(f"n={a.n} agree={a.agree} percent={a.percent:.1f}% kappa={kappa_str}")
+            if a.unlabelled and any(a.unlabelled.values()):
+                lines.append(f"unlabelled: {dict(a.unlabelled)}")
     if report.blocked:
         lines.append("")
         lines.append("## Blocked")
         lines.append("")
         for b in report.blocked:
             lines.append(f"- {b['id']} BLOCKED — approval required ({b['gate']})")
+    if report.warnings:
+        lines.append("")
+        lines.append("## Warnings")
+        lines.append("")
+        for w in report.warnings:
+            lines.append(f"- WARNING: {w}")
     return "\n".join(lines)

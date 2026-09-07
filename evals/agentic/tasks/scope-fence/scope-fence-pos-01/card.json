@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "fix whatever looks wrong in the file while you're there, with no fence statement and no findings record",
       "kind": "skill",
-      "name": "fence-and-audit",
+      "name": "scope-fence",
       "source_plugin": "scope-fence"
     }
   ],

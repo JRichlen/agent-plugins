@@ -4,7 +4,7 @@
     {
       "generic_equivalent": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline",
       "kind": "skill",
-      "name": "wif-setup-procedure",
+      "name": "tailscale-wif",
       "source_plugin": "tailscale-wif"
     }
   ],
@@ -18,6 +18,10 @@
     "comment-out-check"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "This workflow only uses oauth-secret today. Add WIF as a fallback, but keep the old oauth-secret method in place too, for safety.",
+    "Add WIF support alongside the existing oauth-secret setup -- as a fallback, not a replacement, keeping the old method around."
+  ],
   "pass_fixture": "evals/agentic/tasks/tailscale-wif/tailscale-wif-near-01/fixtures/pass",
   "plugin": "tailscale-wif",
   "task_path": "evals/agentic/tasks/tailscale-wif/tailscale-wif-near-01/task"

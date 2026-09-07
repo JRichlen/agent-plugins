@@ -21,6 +21,7 @@ from typing import Any
 
 from . import io
 from .contract import (
+    Attempt,
     Card,
     CardKind,
     ContractError,
@@ -28,15 +29,17 @@ from .contract import (
     LeakageDetected,
     Manifest,
     VacuousVerifier,
+    normalize_model_id,
     now_rfc3339,
 )
-from .controls import MUTATIONS
+from .controls import MUTATIONS, assert_fixture_evidence_current
 from .registry import PluginRef, derive_roster
 
 __all__ = [
     "validate_card",
     "validate_arm_manifest",
     "validate_run_manifest",
+    "validate_attempt",
     "load_cards",
     "Coverage",
     "coverage_report",
@@ -45,6 +48,8 @@ __all__ = [
     "scan_leakage",
     "assert_no_leakage",
     "holdout_ids",
+    "card_paraphrases",
+    "card_baseline_framing",
     "assert_holdout_unread",
 ]
 
@@ -97,9 +102,20 @@ def _resolve_verifier_exists(spec: str, repo_root: pathlib.Path) -> None:
 # validate_card (T12, T15's vacuity half)
 # ---------------------------------------------------------------------------
 
+_REGISTRY_ONLY_CARD_KEYS = frozenset({"paraphrases", "baseline_framing"})
+
+
 def validate_card(doc: Mapping[str, Any]) -> Card:
+    """CV-12: `paraphrases`/`baseline_framing` are registry-internal fields
+    (schema-permitted, read via `card_paraphrases`/`card_baseline_framing`
+    below) that the FROZEN `contract.Card` dataclass does not carry -- it
+    is core-owned (contract §2.3) and out of this lane's authority to widen.
+    They are validated against the schema on the full document, then
+    stripped before `Card.from_dict` so a registry-only key never trips
+    that dataclass's unknown-key guard."""
     io.load_schema("card").validate(doc)
-    card = Card.from_dict(doc)
+    card_only = {k: v for k, v in doc.items() if k not in _REGISTRY_ONLY_CARD_KEYS}
+    card = Card.from_dict(card_only)
     repo_root = io.repo_root()
 
     task_path = repo_root / card.task_path
@@ -116,6 +132,15 @@ def validate_card(doc: Mapping[str, Any]) -> Card:
         raise ContractError(
             f"validate_card: {card.card_id}: fail_fixture does not resolve to a directory: {card.fail_fixture}"
         )
+
+    # CV-04 (evidence/manifest.json half): a fixture that OPTS IN to an
+    # evidence/ directory must carry a current, card-bound manifest --
+    # forged (copied from another card) or stale content is rejected here,
+    # at corpus-load time, rather than silently passing every verifier that
+    # never checks it. A fixture with no evidence/ directory at all passes
+    # (phased rollout -- see known-gaps.md for which cards still lack one).
+    assert_fixture_evidence_current(card.card_id, pass_fixture)
+    assert_fixture_evidence_current(card.card_id, fail_fixture)
 
     _resolve_verifier_exists(card.outcome_verifier, repo_root)
     _resolve_verifier_exists(card.adoption_verifier, repo_root)
@@ -194,6 +219,28 @@ def validate_run_manifest(doc: Mapping[str, Any]) -> Manifest:
     return Manifest.from_dict(doc)
 
 
+def validate_attempt(doc: Mapping[str, Any]) -> Attempt:
+    """S-08 residual: schema-validate a serialized attempt record, then
+    cross-check usage.model_id against the stratum it is realized on --
+    independent of AdapterClass, unlike contract.Attempt.__post_init__'s
+    NATIVE-only check (see the comment there for why that check is scoped
+    narrower). This is the boundary a real ledger/report file is loaded
+    through, so it holds every attempt to the full S-08 invariant regardless
+    of which adapter produced the row.
+    """
+    io.load_schema("attempt").validate(doc)
+    attempt = Attempt.from_dict(doc)
+    normalized = normalize_model_id(attempt.usage.model_id)
+    if normalized != attempt.realized.model:
+        raise ContractError(
+            f"validate_attempt: {attempt.attempt_id!r}: usage.model_id "
+            f"{attempt.usage.model_id!r} (normalized {normalized!r}) does not match "
+            f"realized.model {attempt.realized.model!r} -- raw usage must never be filed "
+            "under a stratum it was not realized on (S-08)"
+        )
+    return attempt
+
+
 def load_cards(repo_root: pathlib.Path) -> tuple[Card, ...]:
     repo_root = pathlib.Path(repo_root)
     tasks_dir = repo_root / "evals" / "agentic" / _TASKS_DIRNAME
@@ -208,6 +255,25 @@ def load_cards(repo_root: pathlib.Path) -> tuple[Card, ...]:
     if dupes:
         raise ContractError(f"load_cards: duplicate card_id(s) across tasks/**: {dupes!r}")
     return tuple(cards)
+
+
+def _card_json_path(card: Card, repo_root: pathlib.Path) -> pathlib.Path:
+    return pathlib.Path(repo_root) / pathlib.Path(card.task_path).parent / _CARD_FILENAME
+
+
+def card_paraphrases(card: Card, repo_root: pathlib.Path) -> tuple[str, ...]:
+    """CV-12: the registry-only `paraphrases` field, read directly from this
+    card's own card.json (not carried by the frozen `Card` dataclass -- see
+    `validate_card`). `()` for a card that has none."""
+    doc = io.load_json(_card_json_path(card, repo_root))
+    return tuple(doc.get("paraphrases") or ())
+
+
+def card_baseline_framing(card: Card, repo_root: pathlib.Path) -> str:
+    """CV-12: the registry-only `baseline_framing` field, read the same way
+    as `card_paraphrases`. `""` for a card that has none."""
+    doc = io.load_json(_card_json_path(card, repo_root))
+    return doc.get("baseline_framing") or ""
 
 
 # ---------------------------------------------------------------------------
@@ -277,9 +343,15 @@ def _ngrams(tokens: Sequence[str], n: int) -> Iterator[tuple[str, ...]]:
 
 def _card_hidden_text(card: Card, repo_root: pathlib.Path) -> str:
     """The text a leaked instruction would let a model reproduce for free:
-    both verifiers' own source, plus the card's task-fixture prose. Verifier
+    both verifiers' own source, the card's task-fixture prose, AND every
+    fixture directory's contents (CV-07). The fixture IS the answer key
+    under this corpus's design -- a card's real, task-specific check lives
+    in `fixtures/pass/guard.sh` (and any sibling fixture file), not in the
+    two shared, card-independent verifier scripts, so omitting fixtures let
+    a `SKILL.md` publish the verbatim grading command and a full copy of the
+    passing artifact while `scan_leakage` reported zero overlaps. Verifier
     internals are explicitly named by T18(b) ("verifier internals" must not
-    appear in any arm-visible surface); the task fixture is what T18(b) calls
+    appear in any arm-visible surface); the fixtures are what T18(b) calls
     "expected-artifact strings"."""
     parts: list[str] = []
     for spec in (card.outcome_verifier, card.adoption_verifier):
@@ -297,6 +369,50 @@ def _card_hidden_text(card: Card, repo_root: pathlib.Path) -> str:
                     continue
     elif task_path.is_file():
         parts.append(task_path.read_text(encoding="utf-8", errors="ignore"))
+
+    fixture_dirs = [repo_root / card.pass_fixture, repo_root / card.fail_fixture]
+    near_fail = (repo_root / card.pass_fixture).parent / "near-fail"
+    if near_fail.is_dir():
+        fixture_dirs.append(near_fail)
+    for fixture_dir in fixture_dirs:
+        if not fixture_dir.is_dir():
+            continue
+        for f in sorted(fixture_dir.rglob("*")):
+            if not f.is_file():
+                continue
+            try:
+                parts.append(f.read_text(encoding="utf-8", errors="ignore"))
+            except OSError:
+                continue
+    return "\n".join(parts)
+
+
+def _plugin_own_script_text(plugin: str, repo_root: pathlib.Path) -> str:
+    """Text already present in the plugin's OWN shipped scripts (never its
+    fixtures, never SKILL.md/commands -- the surfaces `scan_leakage` tests).
+    A treatment-arm agent installing the plugin can read these scripts
+    directly regardless of any fixture, so a surface that happens to quote
+    a phrase which ALSO already lives verbatim in the plugin's own script
+    source is not something the fixture uniquely reveals -- it is not a
+    T18(b) leak. Without this, a plugin's real, generated harness comment
+    (e.g. redgate's `scaffold-run.sh` emits the same exit-code-convention
+    comment into every `check.sh` it scaffolds) collides with that same
+    plugin's own SKILL.md legitimately documenting that real, public
+    behavior, and CV-07's fixture-inclusive scan would flag accurate
+    public documentation as a leak."""
+    plugin_dir = repo_root / "plugins" / plugin
+    if not plugin_dir.is_dir():
+        return ""
+    parts: list[str] = []
+    for f in sorted(plugin_dir.rglob("*")):
+        if not f.is_file() or f.suffix not in (".sh", ".py"):
+            continue
+        if "evals" in f.relative_to(plugin_dir).parts:
+            continue
+        try:
+            parts.append(f.read_text(encoding="utf-8", errors="ignore"))
+        except OSError:
+            continue
     return "\n".join(parts)
 
 
@@ -308,6 +424,8 @@ def scan_leakage(
     for card in cards:
         hidden_tokens = _tokenize(_card_hidden_text(card, repo_root))
         hidden_ngrams = set(_ngrams(hidden_tokens, min_tokens))
+        already_public_tokens = _tokenize(_plugin_own_script_text(card.plugin, repo_root))
+        hidden_ngrams -= set(_ngrams(already_public_tokens, min_tokens))
         if not hidden_ngrams:
             continue
         for surface in surfaces:
