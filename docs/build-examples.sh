@@ -120,10 +120,6 @@ def short(text, n):
     t = " ".join((text or "").split())
     return t if len(t) <= n else t[:n].rsplit(" ", 1)[0] + " …"
 
-def words(n):
-    W = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve"]
-    return W[n] if n < len(W) else str(n)
-
 # ── cards ───────────────────────────────────────────────────────────────────
 cards, side_items = [], []
 for s in snaps:
@@ -162,7 +158,6 @@ for s in snaps:
     with_out = (s.get("with_skill") or {}).get("output", "")
     without_out = (s.get("without_skill") or {}).get("output", "")
     prompt = s.get("prompt") or ""
-    verdict_src = "grades" if kind != "seed" else ("reader" if "independent reader" in str(prov.get("judge_model")) else "seeding session")
     cards.append(f'''
 <article class="card" id="{esc(plugin)}" data-div="{esc(div)}" data-src="{esc(kind)}">
   <header class="card-head">
@@ -320,7 +315,7 @@ CSS = BASE_CSS + """
   .promptbody { white-space:pre-wrap; word-wrap:break-word; padding:.2rem 1rem .9rem 2rem;
     font:13.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
   .compare { display:grid; grid-template-columns:1fr 1fr; gap:.9rem; position:relative; margin:0 0 .9rem; }
-  .compare.stacked, .compare.stacked { grid-template-columns:1fr; }
+  .compare.stacked { grid-template-columns:1fr; }
   @media (max-width:760px) { .compare { grid-template-columns:1fr; } }
   .col { border:1px solid var(--line); border-radius:10px; padding:0 1rem .8rem; min-width:0; }
   .col.with { border-color:var(--with); background:var(--with-bg); } .col.without { border-color:var(--without); background:var(--without-bg); }

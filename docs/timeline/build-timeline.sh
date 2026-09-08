@@ -28,7 +28,7 @@ import html, json, os, sys
 root = sys.argv[1]
 sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
 sys.path.insert(0, os.path.join(root, "docs", "_shared"))
-from sitenav import nav as site_nav, BASE_CSS as SITE_CSS
+from sitenav import nav as site_nav, NAV_CSS as SITE_NAV_CSS
 data = json.load(open(os.path.join(root, "docs", "timeline", "data", "decisions.json")))
 
 REPO = "https://github.com/JRichlen/agent-plugins"
@@ -202,7 +202,6 @@ if hz.get("items"):
     <div class="hz-grid">{"".join(cards)}</div>
   </section>'''
 
-SITE_NAV_CSS = "\n".join(l for l in SITE_CSS.splitlines() if l.strip().startswith("nav.site"))
 print(f'''<!doctype html>
 <html lang="en">
 <head>

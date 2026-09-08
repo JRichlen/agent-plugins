@@ -34,6 +34,19 @@ def nav(current, prefix):
             '<div class="site-links">' + "".join(items) + '</div></nav>')
 
 
+# The top bar's own rules, as one self-contained block: pages that keep their
+# own palette (the timeline, the two hand-written deep dives) embed exactly
+# this, so the nav can never be split from its closing brace again.
+NAV_CSS = """
+  nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
+  nav.site .brand { font-weight:800; letter-spacing:-.01em; color:var(--fg); text-decoration:none; }
+  nav.site .site-links { display:flex; gap:.15rem; flex-wrap:wrap; margin-left:auto; }
+  nav.site .site-links a { color:var(--muted); text-decoration:none; padding:.25rem .6rem; border-radius:6px; }
+  nav.site .site-links a:hover { background:var(--code-bg); color:var(--fg); }
+  nav.site .site-links a.cur { color:var(--fg); font-weight:700; background:var(--code-bg); }
+  nav.site .site-links a.ext { color:var(--link); }
+""".strip("\n")
+
 # Colour tokens + base typography, shared by every page. Light palette on
 # :root; dark palette under prefers-color-scheme so the site follows the
 # reader's OS setting the way the existing pages already do.
@@ -64,17 +77,10 @@ BASE_CSS = """
   pre { background:var(--code-bg); border-radius:8px; padding:.7rem .9rem; overflow-x:auto;
     font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
   pre code { background:none; padding:0; font-size:inherit; }
-  nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line);
-    display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
-  nav.site .brand { font-weight:800; letter-spacing:-.01em; color:var(--fg); text-decoration:none; }
-  nav.site .site-links { display:flex; gap:.15rem; flex-wrap:wrap; margin-left:auto; }
-  nav.site .site-links a { color:var(--muted); text-decoration:none; padding:.25rem .6rem; border-radius:6px; }
-  nav.site .site-links a:hover { background:var(--code-bg); color:var(--fg); }
-  nav.site .site-links a.cur { color:var(--fg); font-weight:700; background:var(--code-bg); }
-  nav.site .site-links a.ext { color:var(--link); }
+  %(NAV_CSS)s
   .lbl { display:inline-block; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em;
     color:var(--muted); font-weight:700; margin-right:.5rem; }
   .badge { display:inline-block; font-size:.68rem; font-weight:700; padding:.12rem .5rem; border-radius:999px;
     text-transform:uppercase; letter-spacing:.04em; border:1px solid transparent; white-space:nowrap; }
   footer.site { color:var(--muted); font-size:.85rem; margin-top:3rem; border-top:1px solid var(--line); padding-top:1rem; }
-"""
+""" % {"NAV_CSS": NAV_CSS}
