@@ -92,7 +92,9 @@
   .skilldesc { color:var(--muted); margin:.6rem 0 .9rem; font-size:.9rem; max-width:90ch; }
   .badge.div { border-color:currentColor; background:transparent; }
   .badge.div.stark { color:var(--stark); } .badge.div.strong { color:var(--strong); } .badge.div.moderate { color:var(--moderate); }
-  .badge.div.subtle { color:var(--subtle); } .badge.div.untagged { color:var(--muted); text-transform:none; letter-spacing:0; }
+  .badge.div.subtle { color:var(--subtle); }
+  .badge.div.untagged, .badge.div.unjudged { color:var(--muted); text-transform:none; letter-spacing:0; }
+  .verdict.derived { border-left-color:var(--line-strong); background:var(--code-bg); }
   .badge.src { background:var(--code-bg); color:var(--muted); }
   .badge.src.attested { background:var(--with-bg); color:var(--with); } .badge.src.graded { background:var(--with-bg); color:var(--with); }
   .badge.warnb { background:var(--warn-bg); color:var(--warn); }
@@ -232,7 +234,7 @@
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#agent-compiler">agent-compiler</a></h2>
-      <span class="badge div strong" title="how far the two transcripts diverge, in the judge's own word">strong</span>
+      <span class="badge div strong" title="how far the two transcripts diverge, in the judge&#x27;s own word">strong</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -360,7 +362,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/agent-compiler.jso
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#codebase-design">codebase-design</a></h2>
-      <span class="badge div subtle" title="how far the two transcripts diverge, in the judge's own word">subtle</span>
+      <span class="badge div subtle" title="how far the two transcripts diverge, in the judge&#x27;s own word">subtle</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -419,7 +421,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/codebase-design.js
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#context-handoff">context-handoff</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -478,7 +480,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/context-handoff.js
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#dev-diary">dev-diary</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -533,7 +535,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/dev-diary.json   #
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#diagnosing-bugs">diagnosing-bugs</a></h2>
-      <span class="badge div untagged" title="how far the two transcripts diverge, in the judge's own word">described, not graded</span>
+      <span class="badge div untagged" title="a verdict was written for this pair, but without a one-word grade">described, not graded</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -588,7 +590,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/diagnosing-bugs.js
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#docs-hygiene">docs-hygiene</a></h2>
-      <span class="badge div subtle" title="how far the two transcripts diverge, in the judge's own word">subtle</span>
+      <span class="badge div subtle" title="how far the two transcripts diverge, in the judge&#x27;s own word">subtle</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -643,7 +645,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/docs-hygiene.json 
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#egress-gate">egress-gate</a></h2>
-      <span class="badge div untagged" title="how far the two transcripts diverge, in the judge's own word">described, not graded</span>
+      <span class="badge div untagged" title="a verdict was written for this pair, but without a one-word grade">described, not graded</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -706,7 +708,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/egress-gate.json  
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#grill-me">grill-me</a></h2>
-      <span class="badge div stark" title="how far the two transcripts diverge, in the judge's own word">stark</span>
+      <span class="badge div stark" title="how far the two transcripts diverge, in the judge&#x27;s own word">stark</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -773,7 +775,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/grill-me.json   # 
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#orchestrate">orchestrate</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -828,7 +830,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/orchestrate.json  
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#plugin-factory">plugin-factory</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -883,7 +885,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/plugin-factory.jso
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#prove-the-undo">prove-the-undo</a></h2>
-      <span class="badge div untagged" title="how far the two transcripts diverge, in the judge's own word">described, not graded</span>
+      <span class="badge div untagged" title="a verdict was written for this pair, but without a one-word grade">described, not graded</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -945,7 +947,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/prove-the-undo.jso
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#recurrence-detector">recurrence-detector</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -1000,7 +1002,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/recurrence-detecto
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#redgate">redgate</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -1059,7 +1061,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/redgate.json   # w
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#scope-fence">scope-fence</a></h2>
-      <span class="badge div untagged" title="how far the two transcripts diverge, in the judge's own word">described, not graded</span>
+      <span class="badge div untagged" title="a verdict was written for this pair, but without a one-word grade">described, not graded</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>
@@ -1125,7 +1127,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/scope-fence.json  
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#tracer-bullets">tracer-bullets</a></h2>
-      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge's own word">moderate</span>
+      <span class="badge div moderate" title="how far the two transcripts diverge, in the judge&#x27;s own word">moderate</span>
       <span class="badge src seed" title="produced by a Claude Code session outside CI; no rubric grade, no attestation">seed · ungraded</span>
       <span class="badge warnb" title="the divergence verdict was written by a model of the same family as the one being tested — read it as a description, not an independent grade">same-family judge</span>
     </div>

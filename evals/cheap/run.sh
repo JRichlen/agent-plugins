@@ -1226,9 +1226,26 @@ def roles(cfg_path):
         grader = gp.get("id") if isinstance(gp, dict) else gp
         return subj, grader
     except Exception:
-        subj = re.search(r"^providers:\s*\n\s*-\s*id:\s*(\S+)", txt, re.M)
-        grader = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
-        return (subj.group(1) if subj else None), (grader.group(1) if grader else None)
+        # PyYAML absent: scan by hand. The first provider entry may be several
+        # comment or blank lines below "providers:" (seven packs write a note
+        # there), so skip those rather than requiring the entry on the next
+        # line — otherwise this gate would fail closed on a valid pack.
+        subj = grader = None
+        lines = txt.splitlines()
+        for i, line in enumerate(lines):
+            if line.rstrip() != "providers:":
+                continue
+            for nxt in lines[i + 1:]:
+                bare = nxt.strip()
+                if not bare or bare.startswith("#"):
+                    continue
+                m = re.match(r"-\s*(?:id:\s*)?[\"\']?([^\"\'\s]+)", bare)
+                subj = m.group(1) if m else None
+                break
+            break
+        g = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
+        grader = g.group(1) if g else None
+        return subj, grader
 fail = 0; seen = 0
 for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
     seen += 1

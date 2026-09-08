@@ -97,10 +97,60 @@ def grade_badge(g):
 
 DIV_ORDER = ["stark", "strong", "moderate", "subtle"]
 def divergence_of(s):
-    m = re.search(r"\[divergence: ([a-z]+)\]", s.get("notice") or "")
+    """The judge's one-word grade, or an honest stand-in. Three states, never
+    conflated: a tagged verdict; a verdict written without a one-word grade;
+    and no verdict at all (what capture-example.sh emits — it copies the run
+    verbatim and invents no prose)."""
+    notice = (s.get("notice") or "").strip()
+    if not notice:
+        return "unjudged"
+    m = re.search(r"\[divergence: ([a-z]+)\]", notice)
     return m.group(1) if m else "untagged"
+
+DIV_LABEL = {"untagged": "described, not graded", "unjudged": "divergence not judged"}
+
 def notice_body(s):
     return re.sub(r"^\s*\[divergence: [a-z]+\]\s*", "", s.get("notice") or "").strip()
+
+def derived_verdict(s):
+    """When no one has written a divergence verdict, say so and state only what
+    the grades themselves establish — never a summary of the transcripts, which
+    would be prose no model actually produced."""
+    w = ((s.get("with_skill") or {}).get("graded") or {}).get("pass")
+    o = ((s.get("without_skill") or {}).get("graded") or {}).get("pass")
+    lead = "No divergence verdict has been written for this pair yet."
+    if w is None or o is None:
+        return (lead + " No pass/fail rubric was applied to either side either, so nothing here "
+                "grades the difference. Read both transcripts below and judge it yourself.")
+    if w and o:
+        facts = ("the rubric passed the with-skill answer against the skill's rule, and passed the "
+                 "negative control for behaving like a generic assistant — the shape the pack expects")
+    elif w and not o:
+        facts = ("the rubric passed the with-skill answer, and failed the negative control, which means "
+                 "the stub-skill run did the skill's job unaided — this scenario may not be measuring "
+                 "the skill")
+    elif o and not w:
+        facts = ("the rubric failed the with-skill answer against the skill's rule, and passed the "
+                 "negative control")
+    else:
+        facts = "the rubric failed both sides"
+    return (lead + " What the grades below establish: " + facts +
+            ". That is a grade on each side separately, not a measure of how far the two diverge — "
+            "read both transcripts and judge that yourself.")
+
+DIV_TITLE = {
+    "untagged": "a verdict was written for this pair, but without a one-word grade",
+    "unjudged": "no divergence verdict has been written for this pair; the card states only what the grades establish",
+}
+
+def verdict_source(s, kind, div):
+    prov = s.get("provenance") or {}
+    if div == "unjudged":
+        return ("derived mechanically from the grades below — no model wrote a verdict for this pair; "
+                "grader: " + str(prov.get("grader_model")))
+    if kind == "seed":
+        return str(prov.get("judge_model"))
+    return "the pass/fail grades below, from " + str(prov.get("grader_model"))
 
 def source_kind(s):
     prov = s.get("provenance") or {}
@@ -163,17 +213,17 @@ for s in snaps:
   <header class="card-head">
     <div class="title-row">
       <h2><a href="#{esc(plugin)}">{esc(plugin)}</a></h2>
-      <span class="badge div {esc(div)}" title="how far the two transcripts diverge, in the judge's own word">{esc(div) if div != "untagged" else "described, not graded"}</span>
+      <span class="badge div {esc(div)}" title="{esc(DIV_TITLE.get(div, "how far the two transcripts diverge, in the judge's own word"))}">{esc(DIV_LABEL.get(div, div))}</span>
       <span class="badge src {esc(kind)}" title="{esc(src_title)}">{esc(src_label)}</span>
       {judge_flag}
     </div>
     <p class="card-links"><a href="{REPO}/tree/main/plugins/{esc(plugin)}">plugin docs</a>{deep} · <a href="{json_url}">raw JSON</a></p>
   </header>
   <p class="skilldesc">{esc(desc_of(plugin))}</p>
-  <div class="verdict">
-    <span class="lbl">What to notice</span>
-    <p>{esc(notice_body(s))}</p>
-    <p class="who">Verdict source: {esc(prov.get("judge_model") if kind == "seed" else "the pass/fail grades below, from " + str(prov.get("grader_model")))}</p>
+  <div class="verdict{" derived" if div == "unjudged" else ""}">
+    <span class="lbl">{"What to notice" if div != "unjudged" else "Not yet judged"}</span>
+    <p>{esc(notice_body(s) if div != "unjudged" else derived_verdict(s))}</p>
+    <p class="who">Verdict source: {esc(verdict_source(s, kind, div))}</p>
   </div>
   <p class="scenario"><span class="lbl">Scenario</span>{esc(s.get("scenario", ""))}</p>
   <details class="prompt">
@@ -211,7 +261,7 @@ for s in snaps:
     <pre class="verify">{esc(verify)}</pre>
   </details>
 </article>''')
-    side_items.append(f'<li data-div="{esc(div)}" data-src="{esc(kind)}"><a href="#{esc(plugin)}"><span class="dot {esc(div)}" aria-hidden="true"></span>{esc(plugin)}<span class="mini">{esc(div if div != "untagged" else "—")}</span></a></li>')
+    side_items.append(f'<li data-div="{esc(div)}" data-src="{esc(kind)}"><a href="#{esc(plugin)}"><span class="dot {esc(div)}" aria-hidden="true"></span>{esc(plugin)}<span class="mini">{esc(div if div in DIV_ORDER else "—")}</span></a></li>')
 
 # ── page-level numbers, all computed from the data ──────────────────────────
 count = len(snaps)
@@ -219,6 +269,7 @@ kinds = collections.Counter(source_kind(s) for s in snaps)
 tags = collections.Counter(divergence_of(s) for s in snaps)
 spread_parts = [f"{tags[k]} {k}" for k in DIV_ORDER if tags[k]]
 if tags["untagged"]: spread_parts.append(f"{tags['untagged']} described without a grade")
+if tags["unjudged"]: spread_parts.append(f"{tags['unjudged']} not yet judged")
 spread = ", ".join(spread_parts) if spread_parts else "none yet"
 
 # models disclosure — one row per distinct (source kind, subject, grader, judge)
@@ -235,12 +286,29 @@ for (kind, subj, grader, judge, same), plugins in roles.items():
                       f"<td>{esc(subj)}</td><td>{esc(grader)}</td><td>{esc(judge)}{flag}</td></tr>")
 
 # the pack policy, read from the packs themselves so the page cannot overstate it
+def first_provider(txt):
+    """The pack's subject provider id. The entry may sit several comment or
+    blank lines below "providers:", so skip those instead of requiring it on
+    the very next line."""
+    lines = txt.splitlines()
+    for i, line in enumerate(lines):
+        if line.rstrip() != "providers:":
+            continue
+        for nxt in lines[i + 1:]:
+            bare = nxt.strip()
+            if not bare or bare.startswith("#"):
+                continue
+            m = re.match(r"-\s*(?:id:\s*)?[\"\']?([^\"\'\s]+)", bare)
+            return m.group(1) if m else None
+        return None
+    return None
+
 pack_subjects, pack_graders = set(), set()
 for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
     txt = open(cfg).read()
-    m = re.search(r"^providers:\s*\n\s*-\s*id:\s*(\S+)", txt, re.M)
+    subj = first_provider(txt)
     g = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
-    if m: pack_subjects.add(m.group(1))
+    if subj: pack_subjects.add(subj)
     if g: pack_graders.add(g.group(1))
 packs_n = len(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml")))
 
@@ -294,7 +362,9 @@ CSS = BASE_CSS + """
   .skilldesc { color:var(--muted); margin:.6rem 0 .9rem; font-size:.9rem; max-width:90ch; }
   .badge.div { border-color:currentColor; background:transparent; }
   .badge.div.stark { color:var(--stark); } .badge.div.strong { color:var(--strong); } .badge.div.moderate { color:var(--moderate); }
-  .badge.div.subtle { color:var(--subtle); } .badge.div.untagged { color:var(--muted); text-transform:none; letter-spacing:0; }
+  .badge.div.subtle { color:var(--subtle); }
+  .badge.div.untagged, .badge.div.unjudged { color:var(--muted); text-transform:none; letter-spacing:0; }
+  .verdict.derived { border-left-color:var(--line-strong); background:var(--code-bg); }
   .badge.src { background:var(--code-bg); color:var(--muted); }
   .badge.src.attested { background:var(--with-bg); color:var(--with); } .badge.src.graded { background:var(--with-bg); color:var(--with); }
   .badge.warnb { background:var(--warn-bg); color:var(--warn); }

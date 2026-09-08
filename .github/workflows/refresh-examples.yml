@@ -109,6 +109,12 @@ jobs:
           subject-path: ${{ steps.capture.outputs.written }}
       - name: regenerate the gallery page
         run: docs/build-examples.sh
+      - name: regenerate the landing page
+        # The hub shows each plugin's seed/graded status and judged divergence,
+        # all derived from the snapshots this run just rewrote — so a refresh
+        # changes it too. Without this the cheap tier's landing --check goes red
+        # in the very next step and the workflow dies before opening its PR.
+        run: docs/build-index.sh
       - name: cheap tier must stay green with the new snapshots
         # A captured snapshot that failed the provenance/sync guard must never
         # reach a PR — run the same offline tier the branch would run.
@@ -119,6 +125,7 @@ jobs:
           add-paths: |
             docs/examples/data/*.json
             docs/examples/index.html
+            docs/index.html
           branch: examples/refresh
           delete-branch: true
           title: 'examples: refresh gallery from behavioral eval runs'
@@ -126,8 +133,9 @@ jobs:
             examples: refresh gallery snapshots from behavioral eval runs
 
             Automated biweekly capture — real with-skill/without-skill pairs from
-            the promptfoo packs, regenerated into docs/examples/index.html. Review
-            the transcripts below before merging; merge publishes them to Pages.
+            the promptfoo packs, regenerated into docs/examples/index.html and the
+            landing page. Review the transcripts below before merging; merge
+            publishes them to Pages.
           body: |
             ## Biweekly example refresh
 

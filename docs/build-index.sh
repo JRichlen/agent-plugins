@@ -38,9 +38,12 @@ snaps = {}
 for f in glob.glob(os.path.join(root, "docs", "examples", "data", "*.json")):
     try:
         s = json.load(open(f))
-        m = re.search(r"\[divergence: ([a-z]+)\]", s.get("notice") or "")
+        notice = (s.get("notice") or "").strip()
+        m = re.search(r"\[divergence: ([a-z]+)\]", notice)
         src = str((s.get("provenance") or {}).get("source") or "")
-        snaps[s["plugin"]] = {"div": m.group(1) if m else "untagged",
+        # Same three states the gallery distinguishes: a tagged verdict, a
+        # verdict with no one-word grade, and no verdict written at all.
+        snaps[s["plugin"]] = {"div": m.group(1) if m else ("untagged" if notice else "unjudged"),
                               "kind": "graded" if src.startswith("promptfoo") else "seed"}
     except Exception:
         pass
@@ -60,8 +63,12 @@ for p in plugins:
     name = p["name"]
     ex = snaps.get(name)
     if ex:
-        label = ex["div"] if ex["div"] != "untagged" else "example"
-        ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(name)}" title="before/after example — judged divergence: {esc(ex["div"])}; {esc(ex["kind"])}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
+        tiers = ("stark", "strong", "moderate", "subtle")
+        label = ex["div"] if ex["div"] in tiers else "example"
+        title = (f'before/after example — judged divergence: {ex["div"]}; {ex["kind"]}'
+                 if ex["div"] in tiers else
+                 f'before/after example — {"described without a one-word grade" if ex["div"] == "untagged" else "divergence not judged"}; {ex["kind"]}')
+        ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(name)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
     else:
         ex_html = '<span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span>'
     pack_html = ('<span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span>'

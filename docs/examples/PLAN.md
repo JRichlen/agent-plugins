@@ -140,6 +140,14 @@ output and not typed by hand — and which model did what?
 - **Re-seed the 12 unpacked plugins with a different judge family** — or,
   better, give them packs so the grade is a real rubric rather than a
   same-family reader.
+- **A real divergence verdict on captured pairs.** `capture-example.sh` copies
+  the run verbatim and invents no prose, so a CI-captured snapshot has no
+  `notice` — the gallery is honest about that (the card reads *divergence not
+  judged* and states only what the grades establish), but a mechanically
+  derived line is weaker than a reader's paragraph. The durable fix is a judge
+  step in the refresh workflow: a model of a **third** family reads both
+  transcripts and writes the verdict, recorded as `judge_model` with
+  `same_family_judge: false`. Until then a refreshed card is honest but thin.
 
 ## Invariant this feature keeps
 
