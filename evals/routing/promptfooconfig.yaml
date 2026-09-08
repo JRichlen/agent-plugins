@@ -62,7 +62,10 @@ providers:
       passthrough:
         reasoning:
           effort: max
-      max_tokens: 4096
+      # The roster plus the model's reasoning can exceed 4096 tokens before it
+      # reaches the required final ROUTE line. Keep enough completion budget for
+      # the typed answer instead of turning a valid decision into a truncation.
+      max_tokens: 8192
       # Grade the REPLY, not the reasoning trace. promptfoo's OpenRouter
       # provider otherwise prepends `Thinking: <reasoning>\n\n` to the graded
       # output when the model returns reasoning tokens, so a ROUTE: line the

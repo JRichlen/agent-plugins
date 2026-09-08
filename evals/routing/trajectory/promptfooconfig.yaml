@@ -44,11 +44,10 @@ providers:
       passthrough:
         reasoning:
           effort: max
-      # 8192, not the routing pack's 4096: this prompt injects the whole
-      # redgate SKILL.md and the model reasons at length over it — PR #93 run
-      # 33592810851 had a T2 row whose reply was empty because the reasoning
-      # alone consumed the 4096-token budget (`<no STEP: line in output>`).
-      max_tokens: 8192
+      # This prompt injects the whole redgate SKILL.md and the model reasons at
+      # length over it. Leave enough completion budget for the required final
+      # STEP line; otherwise a valid decision can be truncated before it.
+      max_tokens: 16384
       # Grade the REPLY, not the reasoning trace (live-run finding, PR #93
       # runs 33592255060 / 33592810851): promptfoo's OpenRouter provider
       # prepends `Thinking: <reasoning>\n\n` to the graded output by default,
