@@ -46,12 +46,34 @@ hasE "$SKILL" 'bounded by that judge.s measured TPR/TNR' "SKILL.md bounds judge 
 group "eval-ladder — every rung declares what it cannot prove"
 hasE "$SKILL" 'Structurally cannot' "the ladder table has a 'structurally cannot' column" "the ladder table lost its 'structurally cannot' column"
 # The table is the load-bearing artifact: eight rungs, each with a non-empty
-# cannot-prove cell. Count the rows so deleting one goes red here.
-RUNGS="$(grep -cE '^\| [0-7] \| \*\*' "$SKILL" || true)"
-if [ "$RUNGS" -eq 8 ]; then
-  ok "all 8 rungs (0-7) present in the ladder table"
-else
-  bad "ladder table has $RUNGS rungs, expected 8 (0-7) — a rung was added or dropped without updating this check"
+# cannot-prove cell. Counting rows was not enough — a row count stays 8 when a
+# blind-spot cell is emptied, or when one rung number is duplicated and another
+# deleted, so the check claimed more than it verified (Codex review, PR #127).
+# Parse all four cells: rungs must be exactly 0-7, each once, and every rung's
+# final cell must carry a real limitation (not blank, not "nothing"/"n/a").
+if python3 - "$SKILL" <<'PYCHK'
+import re, sys
+rows = {}
+for line in open(sys.argv[1], encoding="utf-8"):
+    m = re.match(r'^\|\s*([0-7])\s*\|(.+?)\|(.+?)\|(.+?)\|\s*$', line)
+    if m:
+        n = int(m.group(1))
+        if n in rows:
+            print(f"  duplicate rung {n} in the ladder table"); sys.exit(1)
+        rows[n] = [c.strip() for c in m.groups()[1:]]
+missing = sorted(set(range(8)) - set(rows))
+if missing:
+    print(f"  ladder table is missing rung(s) {missing} — expected exactly 0-7"); sys.exit(1)
+for n, (name, catches, cannot) in sorted(rows.items()):
+    if not name or not catches:
+        print(f"  rung {n} has an empty name or catches cell"); sys.exit(1)
+    bare = re.sub(r'[^a-z]', '', cannot.lower())
+    if len(cannot) < 12 or bare in ("nothing", "na", "none", "tbd", ""):
+        print(f"  rung {n}'s 'structurally cannot' cell is empty or vacuous: {cannot!r}"); sys.exit(1)
+print(f"  all 8 rungs (0-7) present, unique, each with a non-vacuous blind spot")
+PYCHK
+then ok "ladder table: 8 unique rungs, every blind-spot cell non-vacuous"
+else bad "ladder table failed structural validation (see above) — every rung must be present once with a real 'structurally cannot' cell"
 fi
 hasE "$SKILL" 'A tier that cannot answer #2 or #5 is decoration' "the audit procedure refuses tiers with no stated blind spot" "the audit procedure no longer refuses tiers with no stated blind spot"
 

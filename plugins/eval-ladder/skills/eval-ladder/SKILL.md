@@ -72,7 +72,7 @@ structurally cannot — that "cannot" is what earns the rung its cost.
 | 4 | **Trajectory / decision point** — the path, or the next move at a frozen prefix | Wrong route, wrong tool, wrong order | That the chosen path then *worked* |
 | 5 | **Outcome / environment state** — diff the world before vs after | "It said done but nothing happened" | Intent, and anything outside the diffed scope |
 | 6 | **Sandboxed cross-harness end-to-end** | Harness-dependent behavior; the real loop | Non-safety qualities; costs real money |
-| 7 | **Human demonstration** — the thing run on real material, misses included | Whether the change is worth having | Nothing — and nothing can machine-enforce it |
+| 7 | **Human demonstration** — the thing run on real material, misses included | Whether the change is worth having | That one run generalizes — no repeatability, no unseen inputs |
 
 Two rules govern movement on the ladder:
 

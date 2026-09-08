@@ -1,14 +1,21 @@
 {
   "name": "eval-ladder",
   "version": "0.0.1",
-  "description": "Design and audit the eval ladder for an agent system: pick the cheapest tier that can catch a given regression, name what each tier structurally cannot prove, validate every LLM judge against human labels (TPR and TNR separately), and score irreversible-action scenarios pass^k rather than by majority.",
+  "description": "Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing, auditing, or defending a test/eval strategy for an agent, skill, or prompt; when adding an eval tier or LLM judge; or when a suite is all-green and you cannot say what it would catch.",
   "author": {
     "name": "Jordan Richlen"
   },
   "repository": "https://github.com/JRichlen/agent-plugins",
   "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/eval-ladder",
   "license": "MIT",
-  "keywords": [],
+  "keywords": [
+    "evals",
+    "testing-strategy",
+    "llm-as-judge",
+    "coverage-audit",
+    "pass-at-k",
+    "test-tiers"
+  ],
   "skills": "./skills/",
   "commands": "./commands/"
 }

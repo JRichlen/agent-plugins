@@ -28,7 +28,7 @@ tier's specific probe did not fire." Stating the difference is the whole skill.
 | 4 | Trajectory / frozen decision point | That the chosen path then worked |
 | 5 | Outcome / environment state | Anything outside the diffed scope |
 | 6 | Sandboxed cross-harness end-to-end | Non-safety qualities |
-| 7 | Human demonstration | Nothing — and nothing can machine-enforce it |
+| 7 | Human demonstration | That one run generalizes — no repeatability, no unseen inputs |
 
 Two rules: **descend before you ascend** (never buy a judge for what a predicate
 can decide) and **grade the surface closest to the harm** (an agent can say

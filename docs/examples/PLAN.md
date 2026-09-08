@@ -18,7 +18,7 @@ coverage. Each phase names its verifier (what proves it done).
 | `pages.yml` (deploy from Actions, `enablement:true`) | shipped, runs on merge to main |
 | behavioral CI captures each pack's snapshot | shipped (artifact) |
 | biweekly review-gated refresh PR | shipped (`refresh-examples.yml`) |
-| committed snapshots | **15 of 25** — every plugin without a pack (13) plus scope-fence, redgate and agent-compiler; subagent seeds, ungraded, each with an independently judged divergence. The live spread is computed on the gallery page from the data, never hand-counted here |
+| committed snapshots | **15 of 25** — 12 of the 13 plugins without a pack (eval-ladder has none yet) plus scope-fence, redgate and agent-compiler; subagent seeds, ungraded, each with an independently judged divergence. The live spread is computed on the gallery page from the data, never hand-counted here |
 
 **Coverage today:** 12 plugins have a promptfoo pack and can auto-capture a
 *graded* example (agent-compiler, find-before-build, fleet-playbook-curator,
