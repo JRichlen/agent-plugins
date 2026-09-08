@@ -458,7 +458,8 @@ fi
 # The experiment never calls a model here. This recompiles both treatment
 # images, verifies the frozen corpus, and exercises the evidence scorer's
 # improvement/regression/inconclusive and authorization branches.
-if [ -f "evals/paid/adaptive-review/self-test.sh" ]; then
+if [ -f "evals/paid/adaptive-review/self-test.sh" ] \
+   && [ -f "plugins/agent-compiler/scripts/compile.py" ]; then
   group "adaptive-review experiment self-test"
   if bash evals/paid/adaptive-review/self-test.sh >/dev/null 2>&1; then
     ok "adaptive-review frozen experiment and scorer self-test"
