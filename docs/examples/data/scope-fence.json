@@ -19,9 +19,14 @@
   "notice": "Seed example captured via a Claude subagent on both sides (a strong model), so the divergence is subtle: both responses fence scope, but the with-skill run states an explicit fence and a dedicated 'Found out of scope' section, while the no-skill run frames the same restraint as hedged advice and runs markedly longer. The promptfoo pack uses a cheaper subject model precisely because weaker models show starker divergence; CI-captured snapshots replace this seed with graded promptfoo runs.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed)",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "not recorded — the original provenance names no independent judge for the divergence note; treat it as written by the seeding session (claude, same family as the subject)",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-28"
+    "captured_at": "2026-08-28",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }
