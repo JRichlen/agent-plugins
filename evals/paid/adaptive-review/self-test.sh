@@ -18,7 +18,7 @@ for arm in baseline candidate; do
   diff -u "$HERE/compiled/$arm.md" "$tmp/$arm.md"
 done
 
-(cd "$HERE" && sha256sum -c corpus.sha256)
+(cd "$HERE" && sha256sum -c corpus.sha256 experiment.sha256)
 python3 "$HERE/evaluate.py" --self-test
 python3 - "$HERE/status.json" <<'PY'
 import json, sys

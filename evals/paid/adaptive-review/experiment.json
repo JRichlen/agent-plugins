@@ -48,9 +48,13 @@
     "baseline_wins_max": 1,
     "mean_comprehension_lift": 0.75,
     "median_edit_reduction": 1.0,
+    "candidate_acceptable_rate": 1.0,
     "candidate_missing_required_max": 0,
+    "judge_candidate_missing_required_max": 0,
     "judge_human_agreement": 0.8,
-    "judge_human_kappa": 0.6
+    "judge_human_kappa": 0.6,
+    "judge_winner_agreement": 0.8,
+    "judge_candidate_wins": 4
   },
   "advancement": {
     "automatic_install": false,

@@ -16,7 +16,7 @@ qualified run supplies complete evidence.
   `agent-compiler`; `self-test.sh` recompiles and compares them byte for byte.
 - `experiment.json`: the feedback source, scoped inspectable preference,
   qualified actor route, thresholds, approval boundary, monitoring rule, and
-  rollback.
+  rollback. `experiment.sha256` makes threshold changes explicit.
 
 The recurrence record is intentionally honest: #117 explicitly selected this
 experiment, but no three cited sightings exist, so it makes no
@@ -29,14 +29,20 @@ Only the six held-out pairs count. **Improvement** requires all of:
 - at least 4 candidate wins and at most 1 baseline win under blind human review;
 - mean comprehension lift at least `+0.75` on a 1–5 scale;
 - median reduction of at least 1 substantive edit before posting;
-- zero required facts or actions missing from candidate outputs;
+- every candidate output judged acceptable by the human;
+- zero required facts or actions missing from candidate outputs according to
+  either human or judge;
 - no truncated/non-stop actor response;
 - independent frontier-judge agreement with human acceptability labels of at
-  least `0.80` and Cohen's kappa of at least `0.60`.
+  least `0.80`, Cohen's kappa of at least `0.60` when label variance makes it
+  defined, at least `0.80` winner agreement, and at least 4 judge candidate
+  wins.
 
 A lost candidate requirement, more baseline than candidate wins, or negative
-comprehension/edit delta is a **regression**. Everything else is
-**inconclusive**. Even improvement produces only
+comprehension/edit delta is a **regression** and may reject the candidate
+without paying for a judge. Missing judge evidence blocks an improvement but
+does not erase a human-observed regression. Everything else is **inconclusive**.
+Even improvement produces only
 `eligible-for-scoped-human-approval`; the scorer never installs anything.
 
 ## Run contract
@@ -47,10 +53,13 @@ comprehension/edit delta is a **regression**. Everything else is
    `agent-request/v1` capability when it becomes available; do not duplicate
    its transport or authority semantics here.
 2. Retain a private `run.json` with schema `adaptive-review-run/v1`: exact git,
-   corpus, prompt, and image hashes; actor model digest; every raw output;
-   finish reason; and numeric input tokens, output tokens, and cost for every
-   call. Generated run directories are git-ignored because detailed lab
-   evidence stays private.
+   experiment, corpus, prompt, and image hashes; actor model digest; a private
+   random blinding salt; every raw output; finish reason; and numeric input
+   tokens, output tokens, and cost for every call. Generated run directories
+   are git-ignored because detailed lab evidence stays private. Keep `run.json`
+   hidden from the human labeler because it contains the arm mapping.
+   Run from a clean committed checkout: the evaluator resolves the recorded
+   commit and verifies its experiment, corpus, prompt, and compiled images.
 3. Create the human sheet:
 
    ```sh
@@ -58,13 +67,17 @@ comprehension/edit delta is a **regression**. Everything else is
      --out runs/<id>/human-labels.json
    ```
 
-   The sheet contains output hashes and texts but no arm names. For each output,
-   label comprehension (1–5), minimum substantive edits before posting,
-   acceptability, and missing required IDs; then choose a winner or tie.
+   The sheet contains the source task, required facts/actions, frozen rubric,
+   and output hashes/texts, but no arm names. Output order is randomized with
+   system entropy and IDs are salted, so the mapping cannot be reconstructed
+   from the public experiment. For each output, label comprehension (1–5),
+   minimum substantive edits before posting, acceptability, and missing
+   required IDs; then choose a winner or tie.
 4. Give the exact same output set and task requirements to an independent
-   frontier judge. If grading is external, its record must bind a separate
-   authorization to the exact input digest and a positive spending limit.
-   Preserve its labels and total usage as
+   frontier judge from another model family. Its record must include pinned
+   model identity and a separate authorization receipt bound to the exact
+   canonical review-input digest and a finite positive spending limit. Preserve
+   the receipt, labels, and total usage as
    `adaptive-review-judge-labels/v1`.
 5. Evaluate without rerunning either model:
 
@@ -76,9 +89,14 @@ comprehension/edit delta is a **regression**. Everything else is
      --out runs/<id>/report.json
    ```
 
-The evaluator rejects contaminated hashes, missing pairs, unknown requirement
-IDs, unqualified actors, same-family judges, unbound external inputs, unknown
-usage, and overspend. Missing labels or judge evidence stays inconclusive.
+The evaluator rejects contaminated hashes, missing pairs, changed review
+inputs, unknown requirement IDs, unqualified actors, missing or same-family
+judge identity, unbound external inputs, non-finite/unknown usage, and
+overspend. Missing judge evidence cannot advance the candidate.
+
+The authorization receipt is inspectable provenance, not cryptographic
+attestation. “Held-out” means excluded from development runs; these public
+repository excerpts were not hidden from the experiment author.
 
 ## Lifecycle and rollback
 
