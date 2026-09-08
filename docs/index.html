@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent-plugins — a cross-harness agent plugin marketplace</title>
-<meta name="description" content="24 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
+<meta name="description" content="25 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
 <style>
   :root {
     --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5f5e5a; --card:#ffffff; --line:#e3e1dc; --line-strong:#cfccc4;
@@ -93,7 +93,7 @@
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A marketplace of 24 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
+  <p class="sub">A marketplace of 25 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
   (Codex, Cursor, Gemini, …) through standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points. Every plugin is gated by evals;
   15 of them have a published before/after example with the models disclosed; 12 are graded by a model in CI on every change.</p>
 </header>
@@ -175,6 +175,14 @@
     </div>
     <p>Before any call that transmits repo or user content off-machine (posting a comment, pushing a branch, calling an external API with file contents in the payload), state what is being sent and to whom — permission modes gate the call, this gates the content. Use whenever output leaves the machine to a destination the user didn&#x27;t name in this task.</p>
     <p class="p-links"><code>/plugin install egress-gate@jrichlen</code></p>
+  </li>
+  <li class="plugin" data-q="eval-ladder design and audit the eval ladder for an agent system: pick the cheapest tier that can catch a given regression, name what each tier structurally cannot prove, validate every llm judge against human labels (tpr and tnr separately), and score irreversible-action scenarios pass^k rather than by majority. ">
+    <div class="p-head">
+      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/eval-ladder">eval-ladder</a> <span class="ver">v0.0.1</span></h3>
+      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span></div>
+    </div>
+    <p>Design and audit the eval ladder for an agent system: pick the cheapest tier that can catch a given regression, name what each tier structurally cannot prove, validate every LLM judge against human labels (TPR and TNR separately), and score irreversible-action scenarios pass^k rather than by majority.</p>
+    <p class="p-links"><code>/plugin install eval-ladder@jrichlen</code></p>
   </li>
   <li class="plugin" data-q="find-before-build search for the existing implementation before writing a new one: name the searches you ran for an existing helper, abstraction, or pattern and what they returned, before introducing anything new. use before adding a utility, wrapper, config knob, or dependency to a codebase you did not write end-to-end. reuse duplication search-first abstraction dependencies dry">
     <div class="p-head">
