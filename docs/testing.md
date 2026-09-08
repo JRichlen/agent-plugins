@@ -390,6 +390,15 @@ that it is green because it did not run, never silently.
   (accepted owner decision); pages is free.
 - **Local run.** `docs/build-examples.sh --check` (sync only; the capture
   itself needs the behavioral tier's keys).
+- **Why the refresh deletes its own `results.json`.** `promptfoo eval --output
+  results.json` writes into each pack directory. Those files are gitignored,
+  but the cheap tier scans the *working tree*, and a `results.json` embeds the
+  pack's prompt template — so its `{{question}}` trips the "no unfilled
+  `{{placeholder}}` tokens" gate for every packed plugin. The 2026-09-01
+  refresh died exactly there: 24 failures at the last step, no PR opened, and
+  the whole run's API spend lost. The workflow now removes them after
+  uploading the artifact and before running the tier, and a cheap-tier guard
+  fails if that step is dropped or reordered after the tier.
 
 ## demonstration discipline
 
