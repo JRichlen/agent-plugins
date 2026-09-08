@@ -101,7 +101,26 @@ def expected_image_hash(experiment, arm):
     return image["hash"]
 
 
+def expected_agent_sha256(experiment, arm):
+    return file_sha256(HERE / experiment["arms"][arm]["agent"])
+
+
+def canonical_image_hash(image):
+    body = {
+        key: value
+        for key, value in image.items()
+        if key not in ("hash", "registryRevision")
+    }
+    encoded = json.dumps(
+        body, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    )
+    return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def validate_usage(usage, where):
+    require_exact_keys(
+        usage, {"input_tokens", "output_tokens", "cost_usd"}, f"{where}:usage"
+    )
     if not isinstance(usage, dict):
         raise EvidenceError(f"{where}: missing usage")
     for key in ("input_tokens", "output_tokens"):
@@ -145,8 +164,14 @@ def validate_git_provenance(commit, provenance, experiment):
             image = json.loads(committed_bytes(commit, relative_path))
         except json.JSONDecodeError as error:
             raise EvidenceError(f"git_commit has invalid {arm} image JSON") from error
+        if canonical_image_hash(image) != image.get("hash"):
+            raise EvidenceError(f"git_commit {arm} image has an invalid canonical hash")
         if image.get("hash") != provenance[f"{arm}_image_hash"]:
             raise EvidenceError(f"git_commit {arm} image does not match its recorded hash")
+        agent_path = f"evals/paid/adaptive-review/compiled/{arm}.md"
+        agent_digest = hashlib.sha256(committed_bytes(commit, agent_path)).hexdigest()
+        if agent_digest != provenance[f"{arm}_agent_sha256"]:
+            raise EvidenceError(f"git_commit {arm} agent does not match its recorded hash")
     committed_template = committed_bytes(
         commit, "evals/paid/adaptive-review/prompt.template.txt"
     )
@@ -156,12 +181,31 @@ def validate_git_provenance(commit, provenance, experiment):
 
 def validate_run(run, verify_git=True):
     experiment, corpus, template, tasks, held_out = load_contract()
+    require_exact_keys(
+        run,
+        {"schema_version", "experiment_id", "provenance", "actor", "outputs"},
+        "run",
+    )
     if run.get("schema_version") != "adaptive-review-run/v1":
         raise EvidenceError("run schema_version must be adaptive-review-run/v1")
     if run.get("experiment_id") != experiment["experiment_id"]:
         raise EvidenceError("run experiment_id does not match the frozen experiment")
 
     provenance = run.get("provenance", {})
+    require_exact_keys(
+        provenance,
+        {
+            "git_commit",
+            "blinding_salt",
+            "corpus_sha256",
+            "experiment_sha256",
+            "baseline_image_hash",
+            "candidate_image_hash",
+            "baseline_agent_sha256",
+            "candidate_agent_sha256",
+        },
+        "run provenance",
+    )
     blinding_salt = provenance.get("blinding_salt", "")
     if (
         len(blinding_salt) != 64
@@ -176,6 +220,9 @@ def validate_run(run, verify_git=True):
         key = f"{arm}_image_hash"
         if provenance.get(key) != expected_image_hash(experiment, arm):
             raise EvidenceError(f"run {key} does not match the compiled image")
+        agent_key = f"{arm}_agent_sha256"
+        if provenance.get(agent_key) != expected_agent_sha256(experiment, arm):
+            raise EvidenceError(f"run {agent_key} does not match the rendered agent")
     commit = provenance.get("git_commit", "")
     if len(commit) != 40 or any(c not in "0123456789abcdef" for c in commit):
         raise EvidenceError("run git_commit must be a lowercase 40-hex commit")
@@ -183,6 +230,19 @@ def validate_run(run, verify_git=True):
         validate_git_provenance(commit, provenance, experiment)
 
     actor = run.get("actor", {})
+    require_exact_keys(
+        actor,
+        {
+            "provider",
+            "model_family",
+            "model",
+            "model_digest",
+            "context_window",
+            "sequences",
+            "external_fallback",
+        },
+        "actor",
+    )
     required = experiment["actor_qualification"]
     checks = {
         "provider": "local",
@@ -201,7 +261,23 @@ def validate_run(run, verify_git=True):
 
     expected_pairs = {(task_id, arm) for task_id in tasks for arm in ("baseline", "candidate")}
     rows = {}
-    for row in run.get("outputs", []):
+    if not isinstance(run["outputs"], list):
+        raise EvidenceError("run outputs must be a list")
+    for row in run["outputs"]:
+        require_exact_keys(
+            row,
+            {
+                "task_id",
+                "arm",
+                "output",
+                "output_id",
+                "prompt_sha256",
+                "agent_image_hash",
+                "finish_reason",
+                "usage",
+            },
+            "run output",
+        )
         pair = (row.get("task_id"), row.get("arm"))
         if pair in rows:
             raise EvidenceError(f"duplicate output for {pair}")
@@ -761,6 +837,8 @@ def synthetic_run(experiment, corpus, template):
             "experiment_sha256": file_sha256(HERE / "experiment.json"),
             "baseline_image_hash": images["baseline"],
             "candidate_image_hash": images["candidate"],
+            "baseline_agent_sha256": expected_agent_sha256(experiment, "baseline"),
+            "candidate_agent_sha256": expected_agent_sha256(experiment, "candidate"),
         },
         "actor": {
             "provider": "local",
@@ -954,6 +1032,23 @@ def self_test():
         checks.append(("nonexistent git provenance fails closed", False))
     except EvidenceError:
         checks.append(("nonexistent git provenance fails closed", True))
+    open_run = deepcopy(run)
+    open_run["unbound"] = "field"
+    try:
+        validate_run(open_run, verify_git=False)
+        checks.append(("unknown run fields fail closed", False))
+    except EvidenceError:
+        checks.append(("unknown run fields fail closed", True))
+    image = read_json(HERE / experiment["arms"]["candidate"]["image"])
+    valid_image_hash = canonical_image_hash(image) == image["hash"]
+    tampered_image = deepcopy(image)
+    tampered_image["behavior"][0]["content"] += " changed"
+    checks.append(
+        (
+            "canonical image hash detects behavior mutation",
+            valid_image_hash and canonical_image_hash(tampered_image) != image["hash"],
+        )
+    )
     salt = run["provenance"]["blinding_salt"]
     checks.append(
         (
