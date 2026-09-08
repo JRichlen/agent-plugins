@@ -91,6 +91,23 @@ jobs:
           path: plugins/*/evals/promptfoo/results.json
           if-no-files-found: warn
           retention-days: 90
+      - name: drop the generated results.json files
+        # `promptfoo eval --output results.json` writes into each pack directory.
+        # Those files are gitignored, but the cheap tier scans the WORKING TREE:
+        # a results.json embeds the pack's prompt template, so its `{{question}}`
+        # trips the "no unfilled {{placeholder}} tokens" gate for every packed
+        # plugin. That is what failed the 2026-09-01 refresh (24 failures, no PR
+        # opened) — the run's whole API spend was lost at the last step. They are
+        # already preserved as the artifact uploaded above, so remove them here,
+        # before anything reads the tree.
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -fv plugins/*/evals/promptfoo/results.json || true
+          # Nothing may remain that would trip the placeholder gate.
+          if ls plugins/*/evals/promptfoo/results.json >/dev/null 2>&1; then
+            echo "::error::results.json still present after cleanup"; exit 1
+          fi
       - name: attest the captured snapshots (Sigstore provenance)
         # Binds each snapshot's exact digest to THIS workflow run. A reader
         # verifies a published snapshot with

@@ -1198,6 +1198,37 @@ else
   bad "landing: docs/index.html is STALE — run docs/build-index.sh"
 fi
 
+# --- 19a2. The refresh workflow cleans its own eval output before the tier ----
+# `promptfoo eval --output results.json` writes into each pack directory. Those
+# files are gitignored, but THIS tier scans the working tree, and a results.json
+# carries the pack's prompt template — so its `{{question}}` trips check 6's
+# "no unfilled {{placeholder}} tokens" gate for every packed plugin. That is
+# exactly how the 2026-09-01 refresh died: 24 failures at the last step, no PR,
+# and a full run of API spend lost. The workflow must therefore delete them
+# BEFORE it runs this tier. Coupled: drop that cleanup step, or move it after
+# the cheap-tier step, and this goes red.
+group "refresh workflow — removes its eval output before running this tier"
+python3 - "$REPO_ROOT" <<'PYR'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "refresh-examples.yml")
+if not os.path.exists(wf):
+    print("  PASS refresh-examples.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+# Position of the cleanup (an rm of the packs' results.json) and of the step
+# that runs this tier. Compared by offset, so ordering is what is enforced.
+clean = re.search(r"rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+[^\n]*plugins/\*/evals/promptfoo/results\.json", txt)
+tier  = re.search(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M)
+if not clean:
+    print("  FAIL refresh-examples.yml never removes plugins/*/evals/promptfoo/results.json — the cheap tier will fail on every packed plugin and the refresh will open no PR"); sys.exit(1)
+if not tier:
+    print("  FAIL refresh-examples.yml no longer runs evals/cheap/run.sh — the capture would reach a PR ungated"); sys.exit(1)
+if clean.start() > tier.start():
+    print("  FAIL refresh-examples.yml removes results.json AFTER running the cheap tier — too late; the tier already saw them"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier"); sys.exit(0)
+PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19b. Behavioral packs never grade with the model family they test -------
 # The gallery's "graded" badge is only worth something if the grader is not the
 # subject. Every promptfoo pack pins one subject provider (providers[0]) and one
