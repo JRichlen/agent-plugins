@@ -1,49 +1,49 @@
-# `fixtures/native/streams/` — deliberately empty of stream captures
+# `fixtures/native/streams/` — real captures, one file per CLI that was driven
 
-There is **no** `*.jsonl` capture and **no** `*.grammar.json` in this directory,
-and `adapters.load_grammar()` raises rather than returning a grammar. That is the
-designed state, not an unfinished one (implementation contract §10.2, §11.1;
-backlog T30 "Depends on an UNKNOWN, and says so").
+A file here is a **transcript of a live, approval-gated run** of an installed
+agent CLI. Nothing here is hand-authored, and nothing here is synthetic. The
+grammars in `../grammars/` are written **from** these files, never the other way
+round (implementation contract §10.2, §11.1).
 
-## Why nothing is here
+## What is here
 
-The exact JSON field names emitted by
+| file | CLI | captured | how |
+|---|---|---|---|
+| `claude-2026-09-07.jsonl` | Claude Code 2.1.263 (`/home/SCRUBBED-USER/.local/bin/claude`) | 2026-09-07 | `CliDriver.spawn` under approval token `user-approved-2026-09-07-native`, one turn, prompt "Reply with exactly the word OK and nothing else." |
 
-```
-claude --print --output-format stream-json
-codex exec --json
-```
+11 records, which is the whole of that session's stream — the contract asks for
+"the first ~20 records" and a one-turn session produced fewer than that.
 
-are **not established**. No transcript of either exists anywhere in this
-repository (`find . -iname '*.jsonl'` and stream-json greps return nothing), and
-producing one drives a real model — the approval-gated action of §10.6.
-
-## Why a guess would be worse than nothing
-
-A guessed grammar is not "approximately right". It is silently, totally wrong in
-a way that is indistinguishable from a well-behaved harness that happened to
-report nothing:
-
-* every `session_ack` match misses, so `HarnessSession.session_id` stays `None`;
-* an attempt with `session_id is None` can never be `NATIVE_PROVEN` (§10.2),
-  so the run quietly downgrades to `SIMULATED` with no error;
-* every usage field parses as `UNKNOWN`, which reads as "the CLI does not report
-  tokens" rather than "the driver is looking in the wrong place".
-
-The single signal that tells those two stories apart is the **absence of this
-file**. `load_grammar` raising is that signal made loud.
-
-## What removes this
-
-One approved capture per CLI on a trivial prompt, committed here as
-`{claude,codex}-<date>.jsonl` (first ~20 records is enough), with the grammar
-written **from** the capture — never the other way round. The capture itself is
-an approval-gated native run.
+**Scrubbing.** Three substitutions were applied and nothing else: the capture's
+temporary workspace path → `/tmp/SCRUBBED-WORKSPACE`, `/home/<user>` →
+`/home/SCRUBBED-USER`, and the messaging socket path → `/tmp/SCRUBBED-SOCKET`.
+Session ids, message ids, request ids, model ids, token counts and costs are
+**as recorded** — they are the evidence. No key, token or credential appears in
+the stream at all; the capture was checked for the home path and the socket path
+before it was committed.
 
 ## What is NOT here
 
+`codex-*.jsonl`. `codex exec --json` has never been driven in this repository,
+so `load_grammar("codex-exec-json")` still raises and
+`fixtures/native/grammars/` holds no codex document. That refusal is the signal
+that the UNKNOWN is still open for codex: a guessed grammar parses a real stream
+into silence (every `session_ack` misses, `session_id` stays `None`, every usage
+field reads `UNKNOWN`) and the run then looks like *a harness that reported
+nothing* rather than *a driver that was wrong*.
+
 `../replay/` holds **synthetic** streams in a vocabulary this lane invented for
 the offline forms of T26–T29. They are labelled synthetic in their own README,
-they are not a claim about either CLI, and the sessions that replay them are
-`AdapterClass.REPLAY` writing to a `witness=CALLER_ASSERTED` ledger, so nothing
+they are not a claim about any CLI, they are deliberately kept off
+`load_grammar`'s search path, and the sessions that replay them are
+`AdapterClass.REPLAY` writing to a `witness=CALLER_ASSERTED` ledger. Nothing
 they produce can be promoted.
+
+## Replaying a capture is REPLAY evidence
+
+Reading `claude-2026-09-07.jsonl` back through `ReplaySession` produces
+`EvidenceClass.SIMULATED`, exactly as replaying a synthetic stream does. The
+capture is a record of a native run; it is not itself a native run, and no
+amount of re-reading it makes it one. Only `CliDriver.spawn`, under an approval
+token in the run `Manifest`, over a `HostLedger` constructed
+`witness=HOST_OBSERVED`, produces `NATIVE_PROVEN`.

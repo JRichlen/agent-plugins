@@ -38,10 +38,23 @@ evals/agentic/run.py report --manifest <m.json> --attempts-dir <dir> \
 python3 -m unittest discover -s evals/agentic/tests -t .   # everything, every lane
 ```
 
-No flag anywhere spawns a model. `driver --spawn --approval-token <tok>`
-exists and always raises `ApprovalRequired` today (contract §10.6) — no
-approved native-harness capture has landed, so there is no wired path from
-`--spawn` to an actual process.
+No flag spawns a model **unless you supply an approval token**, and the two
+that can are named:
+
+* `--id T26|T27|T28|T29 --approval-token <tok>` runs that card's **live**
+  form, which drives the real installed `claude` CLI. Without the token those
+  four print `BLOCKED — approval required (native-required)` exactly as before,
+  and `--catalog`'s summary line is unchanged. Evidence from the 2026-09-07
+  approved run — ledgers, run manifests, the `native-proven` attempt, and a
+  `PROVENANCE.md` — is committed under
+  `fixtures/native/evidence/2026-09-07/`.
+* `driver --spawn --approval-token <tok>` still raises `ApprovalRequired`: the
+  subcommand builds a `CliDriver` with **no manifest**, so no token can be in
+  `Manifest.approvals`. It is a demonstration of the gate, not a way through
+  it.
+
+There is no environment-variable fallback and no default token anywhere
+(contract §10.6).
 
 `driver --dry-run` validates the driver's flags against the **installed**
 binary's own `--help` before it renders anything, and refuses (non-zero, with

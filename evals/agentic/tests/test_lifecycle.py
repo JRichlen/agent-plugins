@@ -236,9 +236,40 @@ class FullLifecyclePaths(unittest.TestCase):
             host_ledger = HostLedger(
                 pathlib.Path(td) / "host.jsonl", run_id="run-t50-approval", witness=SignatureClass.HOST_OBSERVED,
             )
-            with self.assertRaises(ApprovalRequired) as cm4:
-                gated_driver.spawn(approval_token="tok-1", ledger=host_ledger)
-            self.assertIn("not wired", str(cm4.exception))
+            # UPDATED 2026-09-07: this gate is no longer merely "cleared but
+            # unwired". With the approved token AND a host-observed ledger,
+            # `spawn` now opens a real `NativeSession` -- the §10.2 grammar
+            # UNKNOWN was settled for `claude` by an approved capture on
+            # 2026-09-07, so there is a driver to open one with. What this
+            # assertion checks is unchanged in spirit and stronger in fact:
+            # the approval gate is passed only with the right token, and the
+            # grant is recorded by `spawn` itself against the specific action
+            # it authorised. Constructing the session spawns no child process
+            # -- a turn does, and no turn is sent here.
+            wired_ledger = HostLedger(
+                pathlib.Path(td) / "wired.jsonl", run_id="run-t50-approval",
+                witness=SignatureClass.HOST_OBSERVED,
+            )
+            session = gated_driver.spawn(
+                approval_token="tok-1", ledger=wired_ledger, attempt_id="action-A",
+            )
+            self.assertEqual(session.adapter_class.value, "native")
+            self.assertIsNone(
+                session.session_id,
+                "no turn has run, so the harness has acked nothing yet (§10.2)",
+            )
+            self.assertEqual(session.pids(), frozenset(), "spawn() alone starts no process")
+            session.close()
+            wired_ledger.close()
+            wired_events = LedgerReader(wired_ledger.path, key=wired_ledger.key).events()
+            self.assertTrue(
+                _approval_covers_action(wired_events, "action-A", "tok-1"),
+                "spawn must record the grant against the action it authorised (§10.6)",
+            )
+            self.assertFalse(
+                _approval_covers_action(wired_events, "action-B", "tok-1"),
+                "an approval granted for action A must not be honored for action B",
+            )
 
             # The grant is recorded against the SPECIFIC action id, never its
             # value -- host-side, since CliDriver.spawn does not itself

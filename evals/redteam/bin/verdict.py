@@ -344,6 +344,105 @@ def declared_fault_ceiling(controls_path: Path = DEFAULT_CONTROLS_JSON) -> float
     return float(ceiling)
 
 
+CELL_IDS = ("C1", "C2", "C3", "C4", "C5", "C6")
+
+
+def load_tranche_declaration(path: Path,
+                             controls_path: Path = DEFAULT_CONTROLS_JSON) -> dict:
+    """Read and validate a tranche DECLARATION (design 7.3, and the tranche
+    key `controls.json` already carries).
+
+    Why this exists at all: `cell_floor` reads `planned_n` out of
+    `configs/generated/_index.json`, which `bin/generate.py` writes for the
+    FULL 288-attempt design (48 per cell). A real, approved run is a
+    *tranche* of that design and its per-cell n is smaller, so judging it
+    against the generator's number would report every cell INCOMPLETE while
+    judging it against an ad-hoc CLI number would let the floor be chosen
+    after the data arrived -- the exact failure R4's fault ceiling exists to
+    prevent, one level up. The floor therefore comes from a committed file
+    written before the first attempt, exactly as the ceiling does.
+
+    Validated, not merely parsed. A declaration that does not name all six
+    cells, or names a non-integer `planned_n`, or disagrees with
+    `controls.json` about the fault ceiling, is refused here rather than
+    silently defaulted -- an unreadable declaration must never soften into a
+    permissive floor.
+    """
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise VerdictError(
+            f"redteam FAIL verdict: cannot read the tranche declaration at {path} ({exc})"
+        ) from exc
+    except ValueError as exc:
+        raise VerdictError(
+            f"redteam FAIL verdict: tranche declaration at {path} is not valid JSON ({exc})"
+        ) from exc
+    if not isinstance(doc, Mapping):
+        raise VerdictError(f"redteam FAIL verdict: tranche declaration at {path} is not an object")
+
+    cells = doc.get("cells")
+    if not isinstance(cells, Mapping) or set(cells) != set(CELL_IDS):
+        raise VerdictError(
+            f"redteam FAIL verdict: tranche declaration at {path} must declare exactly the six "
+            f"cells {list(CELL_IDS)}, got {sorted(cells) if isinstance(cells, Mapping) else cells!r} "
+            "-- a tranche is complete or absent, never partial (design 7.3)"
+        )
+    for cell_id in CELL_IDS:
+        planned = (cells.get(cell_id) or {}).get("planned_n")
+        if not isinstance(planned, int) or isinstance(planned, bool) or planned < 1:
+            raise VerdictError(
+                f"redteam FAIL verdict: tranche declaration at {path} gives cell {cell_id} "
+                f"planned_n {planned!r}, which is not a positive integer"
+            )
+
+    declared_ceiling = doc.get("fault_ceiling")
+    committed_ceiling = declared_fault_ceiling(controls_path)
+    if not isinstance(declared_ceiling, (int, float)) or isinstance(declared_ceiling, bool):
+        raise VerdictError(
+            f"redteam FAIL verdict: tranche declaration at {path} declares no numeric "
+            "fault_ceiling; a tranche is never judged against an undeclared ceiling"
+        )
+    if float(declared_ceiling) != committed_ceiling:
+        raise VerdictError(
+            f"redteam FAIL verdict: tranche declaration at {path} declares fault_ceiling "
+            f"{declared_ceiling!r} but {controls_path} declares {committed_ceiling!r}; the "
+            "declaration may restate the committed ceiling, never replace it"
+        )
+    return dict(doc)
+
+
+def tranche_plan(declaration: Mapping[str, Any], plugin: str,
+                 design_plan: Mapping[str, Any] | None = None) -> dict:
+    """The `plan` mapping `tranche_report` consumes, with `planned_n` taken
+    from the DECLARATION rather than from the generator's full-design index.
+
+    Everything else in the design plan (parity digests, skill paths,
+    prompt_chars) is carried through untouched, so a verdict still reports
+    the design it was generated from; only the per-cell floor is replaced,
+    and the declaration's own path/digest is recorded beside it.
+    """
+    declared_plugins = declaration.get("plugins")
+    if isinstance(declared_plugins, Sequence) and not isinstance(declared_plugins, (str, bytes)):
+        if plugin not in declared_plugins:
+            raise VerdictError(
+                f"redteam FAIL verdict: plugin {plugin!r} is not one of the tranche "
+                f"declaration's plugins {list(declared_plugins)!r}"
+            )
+    plan = dict(design_plan or {})
+    plan["plugin"] = plugin
+    plan["cells"] = {
+        cell_id: {
+            **dict((design_plan or {}).get("cells", {}).get(cell_id) or {}),
+            "planned_n": int(declaration["cells"][cell_id]["planned_n"]),
+        }
+        for cell_id in CELL_IDS
+    }
+    plan["planned_n_source"] = "tranche-declaration"
+    plan["tranche_id"] = declaration.get("tranche_id")
+    return plan
+
+
 def cell_floor(plan: Mapping[str, Any], cell_id: str, min_valid: int | None) -> int | None:
     """The declared minimum valid rows for one cell (review finding R4).
 
@@ -759,6 +858,12 @@ def main(argv: list[str] | None = None) -> int:
                               "finding R4 -- the old default of 1 let a 288-row tranche that lost "
                               "282 rows to provider FAULTs still report COMPLETE off the six "
                               "survivors).")
+    parser.add_argument("--tranche", type=Path, default=None,
+                         help="a committed tranche declaration (evals/redteam/tranches/<id>.json). "
+                              "When given, the per-cell floor is that file's cells.<C>.planned_n "
+                              "instead of the generator's full-design planned_n, and its "
+                              "fault_ceiling must restate controls.json's. Declared before the "
+                              "first attempt; --min-valid can still only RAISE it.")
     parser.add_argument("-o", "--output", type=Path)
     parser.add_argument("--host-ledger", type=Path, default=None,
                          help="an agentic-lane HostLedger JSONL path, read WITHOUT a key: the chain "
@@ -774,6 +879,13 @@ def main(argv: list[str] | None = None) -> int:
     plan = design["plugins"][args.plugin]
     plan = dict(plan)
     plan["plugin"] = args.plugin
+    if args.tranche is not None:
+        try:
+            declaration = load_tranche_declaration(args.tranche)
+            plan = tranche_plan(declaration, args.plugin, plan)
+        except VerdictError as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
     try:
         rows = load_rows(args.results)
     except VerdictError as exc:

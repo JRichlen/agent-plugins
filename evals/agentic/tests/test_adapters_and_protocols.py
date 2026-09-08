@@ -22,14 +22,17 @@ What IS closed here, and closed against real artifacts:
 """
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import hmac
 import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 import uuid
 
@@ -1406,17 +1409,67 @@ class TelemetryUnknowns(_TempMixin):
         self.assertIs(absent.output_tokens, UNKNOWN)
         self.assertIn("output_tokens", absent.unknown_fields())
 
-    def test_no_grammar_is_shipped_so_load_grammar_raises(self):
-        """§10.2's UNKNOWN, asserted so it cannot be filled in with a guess."""
-        for name in ("claude-stream-json", "codex-exec-json"):
+    def test_a_grammar_exists_only_for_a_cli_whose_stream_was_captured(self):
+        """§10.2's UNKNOWN, settled PER DRIVER by capture and by nothing else.
+
+        `claude` was driven live on 2026-09-07 under approval token
+        `user-approved-2026-09-07-native`, so its grammar exists and every path
+        in it was read off `streams/claude-2026-09-07.jsonl`. `codex` was not
+        driven, so `load_grammar` still raises for it -- which is the whole
+        point: the presence of a grammar is evidence that a capture happened,
+        not a convention someone can satisfy by typing field names.
+        """
+        grammar = load_grammar("claude-stream-json")
+        self.assertEqual(grammar.captured_from, "claude-2026-09-07.jsonl")
+        capture = adapters.STREAMS_DIR() / grammar.captured_from
+        self.assertTrue(capture.is_file())
+
+        # Every match/extract path must actually fire on the capture it claims
+        # to come from. A grammar that parses its own capture into silence is
+        # exactly the silent-degradation failure §10.2 warns about.
+        records = list(io.read_jsonl(capture))
+        self.assertGreaterEqual(len(records), 5)
+        acks = [r for r in records if grammar.session_ack.matches(r)]
+        turns = [r for r in records if grammar.turn_ack.matches(r)]
+        usages = [r for r in records if grammar.usage.matches(r)]
+        self.assertEqual(len(acks), 1, "exactly one session ack in a one-turn capture")
+        self.assertGreaterEqual(len(turns), 1)
+        self.assertEqual(len(usages), 1)
+        sid = grammar.session_ack.extracted(acks[0]).get(grammar.session_id_field)
+        self.assertIsInstance(sid, str)
+        self.assertTrue(sid)
+
+        # An absent field stays absent. The capture shows the CLI reporting no
+        # total token count at all, so it must read UNKNOWN, never 0 (§10.4).
+        usage = parse_usage(usages[0], grammar, model_id="m", reported_by="capture")
+        self.assertIs(usage.total_tokens, UNKNOWN)
+        self.assertIsNot(usage.input_tokens, UNKNOWN)
+
+        # codex: no capture, therefore no grammar, therefore a refusal.
+        with self.assertRaises(ContractError) as caught:
+            load_grammar("codex-exec-json")
+        self.assertIn("no captured harness stream exists", str(caught.exception))
+        self.assertFalse((adapters.GRAMMARS_DIR() / "codex-exec-json.json").exists())
+
+    def test_a_grammar_whose_capture_is_missing_is_refused(self):
+        """The binding is checked, not declared: delete the capture and the
+        grammar stops loading. Without this, `captured_from` is a comment."""
+        import shutil as _shutil
+        real = adapters.GRAMMARS_DIR() / "claude-stream-json.json"
+        doc = json.loads(real.read_text(encoding="utf-8"))
+        doc["captured_from"] = "claude-1999-01-01-does-not-exist.jsonl"
+        alt = self.tmp / "grammars"
+        alt.mkdir()
+        (alt / "claude-stream-json.json").write_text(json.dumps(doc), encoding="utf-8")
+        saved = adapters.GRAMMARS_DIR
+        try:
+            adapters.GRAMMARS_DIR = lambda: alt
             with self.assertRaises(ContractError) as caught:
-                load_grammar(name)
-            self.assertIn("no captured harness stream exists", str(caught.exception))
-        streams = adapters.STREAMS_DIR()
-        self.assertEqual(
-            sorted(p.name for p in streams.iterdir()), ["README.md"],
-            "a *.grammar.json or a *.jsonl here would be a guessed field name",
-        )
+                load_grammar("claude-stream-json")
+        finally:
+            adapters.GRAMMARS_DIR = saved
+        self.assertIn("does not exist", str(caught.exception))
+        del _shutil
 
 
 # ===========================================================================
@@ -1941,3 +1994,653 @@ class NativeClaimsRefuseAnEmptyHostWitness(_TempMixin):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+# ===========================================================================
+# Replaying the REAL capture is still REPLAY evidence.
+#
+# This is the claim `fixtures/native/evidence/2026-09-07/PROVENANCE.md` makes,
+# asserted rather than asserted-in-prose. It is the one thing a reader is most
+# likely to get wrong once a genuine capture exists in the tree: a file
+# recorded from a real CLI *looks* like native evidence, and reading it back
+# must not be.
+# ===========================================================================
+
+class CaptureReplayStaysSimulated(_TempMixin):
+    """A real capture, replayed, is SIMULATED. There is no path to promotion."""
+
+    def test_replaying_the_real_capture_is_simulated_and_cannot_be_host_witnessed(self):
+        capture = adapters.STREAMS_DIR() / "claude-2026-09-07.jsonl"
+        self.assertTrue(capture.is_file(), "the committed capture is missing")
+        grammar = load_grammar("claude-stream-json")
+
+        ledger = self.caller_ledger("replayed-capture.jsonl")
+        session = ReplaySession(str(capture), grammar, ledger, attempt_id="attempt-replay")
+        turn = session.send("this text is not sent anywhere; the stream is a file")
+
+        # The replay DOES parse the real stream -- that is what makes the point
+        # sharp. It finds the real session id and the real turn ack...
+        self.assertIsNotNone(session.session_id)
+        self.assertTrue(turn.acked)
+        self.assertIsNot(turn.usage.input_tokens, UNKNOWN)
+
+        # ...and none of it is worth anything, because the host witnessed a
+        # FILE, not a harness.
+        reader = LedgerReader(ledger.path, key=None)
+        chain = reader.verify_chain()
+        self.assertTrue(chain.ok)
+        self.assertEqual(chain.host_observed, 0)
+        self.assertGreater(chain.caller_asserted, 0)
+        self.assertEqual(reader.host_observed_session_ids(), frozenset())
+        self.assertIs(session.adapter_class, AdapterClass.REPLAY)
+        self.assertIs(
+            evidence_class_for(session.adapter_class, chain), EvidenceClass.SIMULATED
+        )
+
+        # And the attempt built from it makes no native claim at all: the real
+        # session id it just read is recorded in `notes`, never on the record.
+        attempt = adapters.attempt_from_session(
+            session, card_id="replayed-capture", arm_id="arm-replay",
+            role=ArmRole.TREATMENT, facts=_delivered_facts(),
+            requested=_stratum(), realized=_stratum(),
+            attempt_id="attempt-replay",
+        )
+        self.assertIs(attempt.evidence_class, EvidenceClass.SIMULATED)
+        self.assertIsNone(attempt.session_id)
+        self.assertEqual(attempt.event_ids, ())
+        self.assertFalse(attempt.claims_native)
+        self.assertIn(session.session_id, attempt.notes)
+
+    def test_a_host_observed_ledger_is_refused_for_the_capture_replay(self):
+        """The only way a replay of the capture could be promoted is by handing
+        it a host-observed ledger. `ReplaySession` refuses one outright."""
+        capture = adapters.STREAMS_DIR() / "claude-2026-09-07.jsonl"
+        with self.assertRaises(EvidencePromotionRefused):
+            ReplaySession(str(capture), load_grammar("claude-stream-json"), self.host_ledger())
+
+# ===========================================================================
+# T26-T29 — the LIVE native forms.
+#
+# These four drive the REAL installed `claude` CLI through
+# `CliDriver.spawn`, over a `HostLedger` the host itself minted
+# (`witness=HOST_OBSERVED`). They are the only tests in this repository that
+# can produce `NATIVE_PROVEN`, and they are unreachable unless a human passes
+# an approval token on the command line:
+#
+#     python3 evals/agentic/run.py --id T26 --approval-token <tok>
+#
+# `run.py` sets `LIVE_APPROVAL_TOKEN` on this module and nothing else does.
+# There is no environment-variable fallback, no default and no `--yes`
+# (contract §10.6); under plain `unittest discover` the token is None and all
+# four skip. The offline `*__offline_form` siblings above stay exactly as they
+# were -- they remain what the catalog runs with no token, and they remain
+# SIMULATED.
+# ===========================================================================
+
+#: Set ONLY by `run.py --id <TID> --approval-token <tok>`, in-process, on this
+#: module object. Deliberately not read from `os.environ`: the token is a human
+#: decision that must appear on the command line of the run it authorises.
+LIVE_APPROVAL_TOKEN: "str | None" = None
+
+#: Filled by whichever live form ran, so `run.py` can PRINT the harness-reported
+#: session id rather than asserting one existed. Keyed by catalog ID.
+LIVE_NATIVE_RESULTS: "dict[str, dict[str, object]]" = {}
+
+#: Where an approved run's ledger / manifest / attempt records are persisted.
+LIVE_EVIDENCE_DIR = NATIVE / "evidence" / "2026-09-07"
+
+
+class _LiveNative(_TempMixin):
+    """Shared plumbing for the four live forms. Drives nothing on its own."""
+
+    #: The CLI whose stream grammar was captured (2026-09-07). `codex` has no
+    #: capture, so `load_grammar` still raises for it and `spawn` refuses.
+    driver_name = "claude"
+
+    def require_live(self) -> str:
+        token = LIVE_APPROVAL_TOKEN
+        if not isinstance(token, str) or not token:
+            self.skipTest(
+                "native-required: no approval token on this run. This form drives the real "
+                "installed claude CLI and is reachable only through "
+                "`run.py --id <TID> --approval-token <tok>`; there is no environment "
+                "fallback and no default (contract §10.6)."
+            )
+        return token
+
+    def live_root(self):
+        """A FRESH mkdtemp per card (§10.3). Nothing is ever reused."""
+        root = pathlib.Path(tempfile.mkdtemp(prefix="agentic-live-native-"))
+        self.addCleanup(shutil.rmtree, root, True)
+        paths = {}
+        for name in ("ws", "home", "plugins", "runs"):
+            paths[name] = root / name
+            paths[name].mkdir(parents=True)
+        paths["root"] = root
+        paths["mcp"] = root / "mcp.json"
+        # §10.1's strict MCP config: an EMPTY server set, so --strict-mcp-config
+        # means "no MCP servers at all" rather than "whichever ones this host
+        # happens to have configured".
+        paths["mcp"].write_text(json.dumps({"mcpServers": {}}), encoding="utf-8")
+        return paths
+
+    def live_manifest(self, token: str, run_id: str) -> Manifest:
+        return Manifest(
+            run_id=run_id, created_at=adapters.now_rfc3339(), git_commit="0" * 40,
+            branch="feat/agentic-test-framework", offline=False,
+            toolchain={"python": "3.12", "claude": self.cli_version()},
+            lanes=("adapter",), estimands=(), noninferiority_margin=0.05,
+            min_valid=5, min_clusters=8, planned_n={}, holdout_seed=1,
+            catalog_digest="0" * 64, skipped=(), approvals=(token,),
+        )
+
+    def cli_version(self) -> str:
+        config = load_driver_config(self.driver_name)
+        proc = subprocess.run(
+            [config.binary, "--version"], capture_output=True, text=True, timeout=60,
+            stdin=subprocess.DEVNULL,
+            env={"PATH": "/usr/bin:/bin", "HOME": str(self.tmp), "LANG": "en_US.UTF-8"},
+        )
+        return (proc.stdout or "").strip() or "unknown"
+
+    def live_ledger(self, paths, run_id: str, name: str = "events.jsonl") -> HostLedger:
+        ledger = HostLedger(
+            paths["runs"] / name, run_id=run_id,
+            witness=SignatureClass.HOST_OBSERVED,
+        )
+        self.addCleanup(ledger.close)
+        return ledger
+
+    def live_slots(self, paths, session_id: str) -> dict:
+        """The §10.1 slot set for one live session.
+
+        `model` and `effort` are None on purpose: `build_argv` drops a None slot
+        AND the flag in front of it, so the session runs on the account's own
+        default model at the CLI's default effort. Naming a model here would be
+        this test choosing a stratum; letting the CLI choose it means the
+        stratum is OBSERVED, which is what `realized` has to be.
+        """
+        return dict(
+            model=None, effort=None, session_id=session_id,
+            permission_mode="plan", allowed_tools="",
+            workspace=str(paths["ws"]),
+            system_append="Answer with a single short line and no preamble.",
+            mcp_config=str(paths["mcp"]),
+            home=str(paths["home"]), plugin_root=str(paths["plugins"]),
+            config_dir=str(pathlib.Path.home() / ".claude"),
+        )
+
+    def live_driver(self, manifest: Manifest) -> CliDriver:
+        return CliDriver(load_driver_config(self.driver_name), manifest=manifest)
+
+    def assert_acked_on_the_stream(self, session, caller_minted: str) -> str:
+        """The id came off a record on the HARNESS's own stream (§10.2).
+
+        OBSERVED 2026-09-07, and it matters: `claude --session-id <uuid>` echoes
+        that uuid back on its `system/init` record, so the acked id EQUALS the
+        one the caller minted. §10.2 item 2 anticipates exactly this and settles
+        it -- "if the harness echoes it back on the stream, that echo is the
+        ack; if nothing is echoed, there is no ack". So the check that carries
+        weight is not "the id is different" (it is not), it is "a record the
+        host read off the child's stdout carried it". The offline negative
+        control (`replay/no-session-ack.jsonl`) and T27's fork -- whose id the
+        caller never chose -- are the two directions that make that distinction
+        observable rather than asserted.
+        """
+        self.assertIsNotNone(
+            session.session_id,
+            "the harness announced no session id; §10.2 forbids promoting the "
+            "caller-minted uuid into an ack",
+        )
+        self.assertIn(session.session_id, session.acked_session_ids)
+        grammar = load_grammar(load_driver_config(self.driver_name).grammar)
+        carried = [
+            record for record in session.stream_records
+            if grammar.session_ack.matches(record)
+            and grammar.session_ack.extracted(record).get(grammar.session_id_field)
+            == session.session_id
+        ]
+        self.assertTrue(
+            carried,
+            "no record on the harness's own stream carried this id, so it is a variable "
+            "this test set rather than an acknowledgment (§10.2)",
+        )
+        del caller_minted
+        return session.session_id
+
+    def publish(self, tid: str, *, ledger: HostLedger, manifest: Manifest,
+                summary: dict, attempt=None) -> None:
+        """Persist the run's evidence and hand `run.py` something to print."""
+        LIVE_EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        stem = tid.lower()
+        (LIVE_EVIDENCE_DIR / f"{stem}-ledger.jsonl").write_text(
+            ledger.path.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        (LIVE_EVIDENCE_DIR / f"{stem}-run-manifest.json").write_text(
+            json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        if attempt is not None:
+            (LIVE_EVIDENCE_DIR / f"{stem}-attempt.json").write_text(
+                json.dumps(attempt.to_dict(), indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        (LIVE_EVIDENCE_DIR / "cli-version.txt").write_text(
+            f"{load_driver_config(self.driver_name).binary}\n{self.cli_version()}\n",
+            encoding="utf-8",
+        )
+        summary = dict(summary)
+        summary.setdefault("evidence_dir", str(LIVE_EVIDENCE_DIR))
+        LIVE_NATIVE_RESULTS[tid] = summary
+
+
+class SessionTurnAcksLive(_LiveNative):
+    """T26 LIVE. Two real turns against the installed claude CLI."""
+
+    def test_session_and_turn_acks_bind_to_harness_reported_ids__live_native(self):
+        token = self.require_live()
+        paths = self.live_root()
+        run_id = "run-live-T26-2026-09-07"
+        manifest = self.live_manifest(token, run_id)
+        ledger = self.live_ledger(paths, run_id)
+        caller_minted = str(uuid.uuid4())
+        session = self.live_driver(manifest).spawn(
+            approval_token=token, mode="fresh", ledger=ledger, run_id=run_id,
+            attempt_id="attempt-live-T26", **self.live_slots(paths, caller_minted),
+        )
+        self.addCleanup(session.close)
+
+        first = session.send("Reply with exactly the word OK and nothing else.")
+        sid = self.assert_acked_on_the_stream(session, caller_minted)
+        self.assertEqual(
+            sid, caller_minted,
+            "OBSERVED 2026-09-07: this CLI echoes --session-id back on its init record, "
+            "which §10.2 item 2 says IS the ack. Pinned as an assertion so a release that "
+            "stops echoing reds this test instead of silently changing what "
+            "host_observed_session_ids() contains.",
+        )
+        second = session.send("Reply with exactly the word AGAIN and nothing else.")
+
+        self.assertTrue(first.acked, "turn 0 was never acknowledged on the harness stream")
+        self.assertTrue(second.acked, "turn 1 was never acknowledged on the harness stream")
+        self.assertEqual((first.index, second.index), (0, 1))
+        self.assertEqual(session.turns, 2)
+        self.assertEqual(
+            session.invocations, 2,
+            "claude --print is one-shot: turn 1 must be a second real invocation",
+        )
+        self.assertIsNotNone(first.ack_event_id)
+        self.assertNotEqual(first.ack_event_id, second.ack_event_id)
+
+        reader = ledger.verifier()
+        acks = [e for e in reader.events() if e.kind is EventKind.TURN_ACK]
+        self.assertEqual(len(acks), 2, "one ledger TURN_ACK per stream ack, not per write")
+        self.assertEqual({e.session_id for e in acks}, {sid})
+        for event in acks:
+            self.assertIs(
+                reader.signature_class(event.event_id), SignatureClass.HOST_OBSERVED,
+                "the host read this ack off the child's stdout; it is not the subject's word",
+            )
+        self.assertIn(sid, reader.host_observed_session_ids())
+        opens = [e for e in reader.events() if e.kind is EventKind.SESSION_OPEN]
+        self.assertEqual(len(opens), 1)
+        self.assertIsNone(
+            opens[0].session_id,
+            "SESSION_OPEN is written BEFORE any ack, so it can carry no session id (§10.2)",
+        )
+        self.assertEqual(opens[0].payload["caller_minted_session_id"], caller_minted)
+
+        chain = reader.verify_chain()
+        self.assertTrue(chain.ok, chain.reason)
+        self.assertEqual(chain.caller_asserted, 0)
+        self.assertGreater(chain.host_observed, 0)
+        self.assertEqual(
+            evidence_class_for(session.adapter_class, chain), EvidenceClass.NATIVE_PROVEN
+        )
+        self.publish("T26", ledger=ledger, manifest=manifest, summary={
+            "session_id": sid, "caller_minted_session_id": caller_minted,
+            "turns": session.turns, "invocations": session.invocations,
+            "turn_acks": len(acks), "evidence_class": "native-proven",
+            "cli": self.cli_version(),
+            "usage": second.usage.to_dict(),
+        })
+
+
+class ResumeAndIsolationLive(_LiveNative):
+    """T27 LIVE. Resume, fork, and two fresh sessions in ONE workspace."""
+
+    CODEWORD = "ZEPHYR-NINE"
+
+    def test_resume_continues_the_same_session_and_fork_records_its_parent__live_native(self):
+        token = self.require_live()
+        paths = self.live_root()
+        run_id = "run-live-T27-2026-09-07"
+        manifest = self.live_manifest(token, run_id)
+        driver = self.live_driver(manifest)
+        ledger = self.live_ledger(paths, run_id)
+        before = protocols.snapshot_tree(paths["ws"])
+
+        minted_a = str(uuid.uuid4())
+        first = driver.spawn(
+            approval_token=token, mode="fresh", ledger=ledger, run_id=run_id,
+            attempt_id="attempt-live-T27-a", **self.live_slots(paths, minted_a),
+        )
+        self.addCleanup(first.close)
+        first.send(
+            f"Remember this codeword for later in our conversation: {self.CODEWORD}. "
+            "Reply with exactly the word STORED."
+        )
+        sid_a = self.assert_acked_on_the_stream(first, minted_a)
+
+        # -- resume: SAME session id, turns continue monotonically (§10.3) ----
+        resumed = first.send(
+            "What codeword did I ask you to remember? Reply with the codeword only."
+        )
+        self.assertEqual(
+            first.session_id, sid_a,
+            "§10.3: a resume that reports a DIFFERENT harness session id is a failure, "
+            "not a rename",
+        )
+        self.assertEqual(set(first.acked_session_ids), {sid_a})
+        self.assertEqual(first.turns, 2, "turns must continue from the prior high-water mark")
+        self.assertIn(
+            self.CODEWORD.split("-")[0].lower(), resumed.text.lower(),
+            "the resumed session did not carry the earlier turn's context, so it is not "
+            "the same conversation",
+        )
+
+        # -- fork: a NEW id whose SESSION_OPEN names its parent (§10.3) --------
+        forked = driver.spawn(
+            approval_token=token, mode="fork", ledger=ledger, run_id=run_id,
+            attempt_id="attempt-live-T27-fork", parent_session_id=sid_a,
+            **self.live_slots(paths, sid_a),
+        )
+        self.addCleanup(forked.close)
+        fork_turn = forked.send(
+            "What codeword did I ask you to remember? Reply with the codeword only."
+        )
+        sid_fork = forked.session_id
+        self.assertIsNotNone(sid_fork)
+        self.assertNotEqual(sid_fork, sid_a, "a fork must mint a new session id")
+        self.assertNotIn(
+            sid_fork, (minted_a, sid_a),
+            "the fork's id is one the caller never chose -- the one place in this suite "
+            "where a harness-minted id is observable independently of the --session-id echo",
+        )
+        self.assertIn(
+            self.CODEWORD.split("-")[0].lower(), fork_turn.text.lower(),
+            "a fork inherits the parent's context; this one did not",
+        )
+        opens = [
+            e for e in ledger.verifier().events()
+            if e.kind is EventKind.SESSION_OPEN and e.payload.get("mode") == "fork"
+        ]
+        self.assertEqual(len(opens), 1)
+        self.assertEqual(opens[0].payload["parent_session_id"], sid_a)
+
+        # -- a second FRESH session in the SAME workspace (§10.3, all three) ---
+        minted_b = str(uuid.uuid4())
+        fresh = driver.spawn(
+            approval_token=token, mode="fresh", ledger=ledger, run_id=run_id,
+            attempt_id="attempt-live-T27-b", **self.live_slots(paths, minted_b),
+        )
+        self.addCleanup(fresh.close)
+        probe = fresh.send(
+            "What codeword did I ask you to remember earlier in this conversation? "
+            "If you have no earlier conversation with me, reply with exactly the word "
+            "UNKNOWN and nothing else."
+        )
+        sid_b = self.assert_acked_on_the_stream(fresh, minted_b)
+        self.assertNotEqual(sid_b, sid_a)
+        after = protocols.snapshot_tree(paths["ws"])
+
+        lowered = probe.text.lower()
+        leaked = self.CODEWORD.split("-")[0].lower() in lowered
+        disclaimed = any(
+            marker in lowered for marker in (
+                "unknown", "no earlier", "no prior", "not aware", "no codeword",
+                "don't have", "do not have", "haven't", "have not",
+            )
+        )
+        self.assertFalse(
+            leaked,
+            f"the fresh session knew the prior session's codeword: {probe.text!r} -- this "
+            "is context carry-over, which is the failure §10.3 exists to detect",
+        )
+        self.assertTrue(
+            disclaimed,
+            f"the probe was neither answered as unknown nor disclaimed: {probe.text!r}",
+        )
+        answered_unknown = disclaimed and not leaked
+        report = check_fresh_isolation(
+            prior_session_id=sid_a, fresh_session_id=sid_b,
+            before=before, after=after, probe_answered_as_unknown=answered_unknown,
+        )
+        self.assertEqual(
+            protocols.diff_tree(before, after), (),
+            "a live session must leave no artifact in the shared workspace",
+        )
+        self.assertTrue(
+            report.isolated,
+            f"fresh isolation failed: {report.why_not()}; probe answered {probe.text!r}",
+        )
+
+        reader = ledger.verifier()
+        self.assertEqual(
+            reader.host_observed_session_ids(), frozenset({sid_a, sid_fork, sid_b}),
+            "exactly three harness-announced sessions, all host-observed",
+        )
+        chain = reader.verify_chain()
+        self.assertTrue(chain.ok, chain.reason)
+        self.assertEqual(chain.caller_asserted, 0)
+        self.publish("T27", ledger=ledger, manifest=manifest, summary={
+            "session_id": sid_a, "resumed_session_id": first.session_id,
+            "fork_session_id": sid_fork, "fresh_session_id": sid_b,
+            "turns_after_resume": first.turns,
+            "workspace_diff": list(protocols.diff_tree(before, after)),
+            "probe_answer": probe.text.strip()[:120],
+            "evidence_class": "native-proven", "cli": self.cli_version(),
+        })
+
+
+class CancellationPathLive(_LiveNative):
+    """T28 LIVE. A real mid-turn cancel of a real agent process GROUP."""
+
+    def test_cancel_kills_the_process_group_and_tags_late_output__live_native(self):
+        token = self.require_live()
+        paths = self.live_root()
+        run_id = "run-live-T28-2026-09-07"
+        manifest = self.live_manifest(token, run_id)
+        ledger = self.live_ledger(paths, run_id)
+        minted = str(uuid.uuid4())
+        session = self.live_driver(manifest).spawn(
+            approval_token=token, mode="fresh", ledger=ledger, run_id=run_id,
+            attempt_id="attempt-live-T28", **self.live_slots(paths, minted),
+        )
+        self.addCleanup(session.close)
+
+        before_pids = protocols._live_descendant_pids(os.getpid())
+        session.begin_turn(
+            "Write a detailed 600-word history of the metric system, one paragraph per "
+            "century, in plain prose."
+        )
+        pgid = session.pgid
+        self.assertIsNotNone(pgid, "the child must be in its own process group")
+        # Let the harness actually get going. The stream is deliberately NOT
+        # drained here: whatever it emits in this window is output the host has
+        # not consumed when the cancel is issued, which is exactly what §10.3
+        # calls late output.
+        deadline = time.monotonic() + 20.0
+        while time.monotonic() < deadline and not live_group_members(pgid):
+            time.sleep(0.05)
+        self.assertTrue(live_group_members(pgid), "the harness process never appeared")
+        time.sleep(4.0)
+        self.assertTrue(session.pids(), "the turn must still be open when cancel lands")
+
+        started = time.monotonic()
+        session.cancel(grace_s=1.0)
+        elapsed = time.monotonic() - started
+        session.close()
+        after_pids = protocols._live_descendant_pids(os.getpid())
+
+        self.assertLess(
+            elapsed, 10.0,
+            "cancel must return promptly; a long pause means something else reaped the "
+            "group and the group-signal property was never observed",
+        )
+        self.assertEqual(
+            protocols.leaked_pids(before_pids, after_pids), frozenset(),
+            "cancel must leave no orphan in the process tree",
+        )
+        self.assertEqual(session.pids(), frozenset(), "pids() after close() must be empty")
+        self.assertEqual(live_group_members(pgid), frozenset(), "the process group survived")
+
+        reader = ledger.verifier()
+        events = list(reader.events())
+        kinds = [e.kind for e in events]
+        self.assertIn(EventKind.CANCEL_ISSUED, kinds)
+        self.assertIn(EventKind.CANCEL_OBSERVED, kinds)
+        self.assertLess(
+            kinds.index(EventKind.CANCEL_ISSUED), kinds.index(EventKind.CANCEL_OBSERVED),
+            "the issue is recorded BEFORE the signal, the observation after",
+        )
+        observed = events[kinds.index(EventKind.CANCEL_OBSERVED)]
+        self.assertGreaterEqual(
+            observed.payload["group_members_before"], 1,
+            "the group had to be non-empty for a group cancel to mean anything",
+        )
+        self.assertEqual(
+            observed.payload["group_survivors"], 0,
+            "witnessed BEFORE the reap: a pid-only cancel leaves survivors here",
+        )
+        self.assertIn(EventKind.LATE_OUTPUT, kinds)
+        late = [e for e in events if e.kind is EventKind.LATE_OUTPUT]
+        self.assertGreater(late[0].payload["bytes"], 0)
+        self.assertFalse(late[0].payload["credited"], "late output is recorded, not credited")
+        self.assertTrue(session.arrived_after_terminal)
+        for event in events:
+            self.assertIs(
+                reader.signature_class(event.event_id), SignatureClass.HOST_OBSERVED
+            )
+        chain = reader.verify_chain()
+        self.assertTrue(chain.ok, chain.reason)
+        self.assertEqual(chain.caller_asserted, 0)
+        self.publish("T28", ledger=ledger, manifest=manifest, summary={
+            "session_id": session.session_id,
+            "cancel_seconds": round(elapsed, 3),
+            "group_members_before": observed.payload["group_members_before"],
+            "group_survivors": observed.payload["group_survivors"],
+            "late_bytes": late[0].payload["bytes"],
+            "arrived_after_terminal": session.arrived_after_terminal,
+            "evidence_class": "native-proven", "cli": self.cli_version(),
+        })
+
+
+class EventLedgerIntegrityLive(_LiveNative):
+    """T29 LIVE. A real host ledger, verified in-process, backing a real Attempt."""
+
+    def test_chain_verifies_and_names_the_first_bad_index_per_tamper__live_native(self):
+        token = self.require_live()
+        paths = self.live_root()
+        run_id = "run-live-T29-2026-09-07"
+        attempt_id = "attempt-live-T29"
+        manifest = self.live_manifest(token, run_id)
+        ledger = self.live_ledger(paths, run_id)
+        minted = str(uuid.uuid4())
+        session = self.live_driver(manifest).spawn(
+            approval_token=token, mode="fresh", ledger=ledger, run_id=run_id,
+            attempt_id=attempt_id, **self.live_slots(paths, minted),
+        )
+        self.addCleanup(session.close)
+        turn = session.send("Reply with exactly the word OK and nothing else.")
+        sid = self.assert_acked_on_the_stream(session, minted)
+
+        reader = ledger.verifier()
+        chain = reader.verify_chain()
+        self.assertTrue(chain.ok, chain.reason)
+        self.assertIsNone(chain.first_bad_index)
+        self.assertEqual(chain.caller_asserted, 0)
+        self.assertGreater(chain.host_observed, 0)
+        self.assertTrue(
+            reader.is_verified(),
+            f"the minting process must be able to bless its own ledger: "
+            f"{reader.verification_reason()}",
+        )
+        self.assertNotIn(
+            adapters._run_key_bytes(ledger.key).hex(),
+            ledger.path.read_text(encoding="utf-8"),
+            "the run key must never reach the ledger file",
+        )
+
+        realized = Stratum(
+            provider="anthropic", model=turn.usage.model_id, revision="unknown",
+            effort="default", harness=f"claude-code/{self.cli_version()}",
+        )
+        attempt = adapters.attempt_from_session(
+            session, card_id="live-native-smoke", arm_id="arm-live-native",
+            role=ArmRole.TREATMENT, facts=_delivered_facts(),
+            requested=realized, realized=realized,
+            run_id=run_id, attempt_id=attempt_id,
+        )
+        self.assertIs(attempt.evidence_class, EvidenceClass.NATIVE_PROVEN)
+        self.assertIs(attempt.adapter_class, AdapterClass.NATIVE)
+        self.assertEqual(attempt.session_id, sid)
+        self.assertTrue(
+            attempt.event_ids,
+            "a NATIVE_PROVEN attempt must cite the host-observed events behind it",
+        )
+        self.assertTrue(attempt.claims_native)
+        assert_native_backed(attempt, reader)   # raises ForgedProvenance if it does not
+
+        # The same attempt is refused by a reader with no run key -- §5.3's
+        # "cannot forge, and cannot bless" holds in this direction too.
+        keyless = LedgerReader(ledger.path, key=None)
+        self.assertFalse(keyless.is_verified())
+        self.assertEqual(
+            keyless.verification_reason(), LedgerReader.UNVERIFIABLE_IN_THIS_PROCESS
+        )
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(attempt, keyless)
+
+        # And an invented event id is refused against the REAL verified ledger.
+        forged = dataclasses.replace(attempt, event_ids=(str(uuid.uuid4()),))
+        with self.assertRaises(ForgedProvenance):
+            assert_native_backed(forged, reader)
+
+        self.publish("T29", ledger=ledger, manifest=manifest, attempt=attempt, summary={
+            "session_id": sid, "attempt_id": attempt.attempt_id,
+            "evidence_class": attempt.evidence_class.value,
+            "event_ids": len(attempt.event_ids),
+            "chain_events": chain.events, "host_observed": chain.host_observed,
+            "caller_asserted": chain.caller_asserted,
+            "is_verified": reader.is_verified(),
+            "cli": self.cli_version(),
+        })
+
+
+#: The approval-gated LIVE form for each `native-required` catalog ID.
+#:
+#: The catalog entry itself is UNCHANGED and still names the `__offline_form`
+#: method, so `run.py --catalog` with no token prints exactly the same four
+#: `BLOCKED — approval required (native-required)` lines and exactly the same
+#: frozen summary as before. This table is the *only* way the live form becomes
+#: reachable, and `run.py` reaches it only when a human supplied
+#: `--approval-token` on the command line (contract §10.6).
+LIVE_FORMS: "dict[str, tuple[str, str]]" = {
+    "T26": (
+        "SessionTurnAcksLive",
+        "test_session_and_turn_acks_bind_to_harness_reported_ids__live_native",
+    ),
+    "T27": (
+        "ResumeAndIsolationLive",
+        "test_resume_continues_the_same_session_and_fork_records_its_parent__live_native",
+    ),
+    "T28": (
+        "CancellationPathLive",
+        "test_cancel_kills_the_process_group_and_tags_late_output__live_native",
+    ),
+    "T29": (
+        "EventLedgerIntegrityLive",
+        "test_chain_verifies_and_names_the_first_bad_index_per_tamper__live_native",
+    ),
+}

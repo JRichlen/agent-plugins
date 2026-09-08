@@ -36,11 +36,15 @@ future edit can quietly drop without a test going red:
    ``--sandbox`` take their dangerous settings as ordinary values that no
    flag-name scan can see.
 
-§10.2's UNKNOWN is honoured rather than guessed: no capture of either installed
-CLI's event stream exists, so ``fixtures/native/streams/`` holds no grammar and
-:func:`load_grammar` raises. Guessed field names would be indistinguishable from
-real ones once written down, which is exactly the failure this lane exists to
-prevent.
+§10.2's UNKNOWN is settled **per driver, by capture, never by guess**. A grammar
+loads only from ``fixtures/native/grammars/<name>.json``, and only when that
+document names a capture in ``fixtures/native/streams/`` that is actually on
+disk — so a grammar can exist for a CLI whose stream was recorded and cannot
+exist for one whose stream was not. As of 2026-09-07 that is true of ``claude``
+(captured live under approval token ``user-approved-2026-09-07-native``) and
+false of ``codex``, for which :func:`load_grammar` still raises. Guessed field
+names would be indistinguishable from real ones once written down, which is
+exactly the failure this lane exists to prevent.
 """
 from __future__ import annotations
 
@@ -49,11 +53,13 @@ import hmac
 import json
 import os
 import pathlib
+import queue
 import re
 import secrets
 import shutil
 import signal
 import subprocess
+import threading
 import time
 import uuid
 from collections.abc import Mapping, Sequence
@@ -93,7 +99,7 @@ from evals.agentic.framework.contract import (
 __all__ = [
     # §3.12 driver config and grammar
     "DriverConfig", "StreamGrammar", "JsonPathSpec",
-    "DRIVERS_DIR", "NATIVE_FIXTURES_DIR", "STREAMS_DIR",
+    "DRIVERS_DIR", "NATIVE_FIXTURES_DIR", "STREAMS_DIR", "GRAMMARS_DIR", "EVIDENCE_DIR",
     "load_driver_config", "load_grammar",
     "installed_help", "declared_flags", "assert_flags_supported",
     "BANNED_FLAG_PATTERNS", "BANNED_ARGV_VALUES", "SAFE_ARGV_VALUES",
@@ -101,7 +107,7 @@ __all__ = [
     # §3.12 driver
     "CliDriver", "PlannedInvocation", "dry_run",
     # §3.12 sessions
-    "HarnessSession", "TurnRecord", "ReplaySession", "attach_session",
+    "HarnessSession", "TurnRecord", "NativeSession", "ReplaySession", "attach_session",
     "IsolationReport", "check_fresh_isolation",
     # REPAIR S-12: the production session -> Attempt constructor
     "attempt_from_session",
@@ -132,8 +138,27 @@ def DRIVERS_DIR() -> pathlib.Path:
 
 
 def STREAMS_DIR() -> pathlib.Path:
-    """Where a real captured harness stream would live. Deliberately empty (§10.2)."""
+    """Where a real captured harness stream lives (§10.2).
+
+    One file per CLI that has actually been driven under approval. A driver with
+    no file here has no grammar, and :func:`load_grammar` says so.
+    """
     return NATIVE_FIXTURES_DIR() / "streams"
+
+
+def GRAMMARS_DIR() -> pathlib.Path:
+    """Where a grammar DERIVED FROM a capture in :func:`STREAMS_DIR` lives (§10.2).
+
+    Deliberately a different directory from the captures themselves: the capture
+    is the evidence and the grammar is the reading of it, and a reader must be
+    able to see at a glance which CLIs have one and which do not.
+    """
+    return NATIVE_FIXTURES_DIR() / "grammars"
+
+
+def EVIDENCE_DIR() -> pathlib.Path:
+    """Where an approved native run's ledger/manifest/attempt records are kept."""
+    return NATIVE_FIXTURES_DIR() / "evidence"
 
 
 # ---------------------------------------------------------------------------
@@ -274,34 +299,97 @@ class StreamGrammar:
     usage: JsonPathSpec
     session_id_field: str
     turn_index_field: str | None
+    #: Dotted path to the turn's delivered text on the terminal record, when the
+    #: capture showed one. Defaulted so the synthetic offline grammars, which
+    #: predate any capture, construct unchanged.
+    result_text_field: str | None = None
+    #: The capture this grammar was read off. ``None`` for the hand-authored
+    #: synthetic grammars in ``fixtures/native/replay/``, which are not a claim
+    #: about any CLI; a real one is refused by :func:`load_grammar` without it.
+    captured_from: str | None = None
+
+
+def _spec_from(document: Mapping[str, Any], key: str, source: pathlib.Path) -> JsonPathSpec:
+    block = document.get(key)
+    if not isinstance(block, Mapping):
+        raise ContractError(f"load_grammar: {source} has no {key!r} object")
+    match = block.get("match")
+    extract = block.get("extract")
+    if not isinstance(match, Mapping) or not isinstance(extract, Mapping):
+        raise ContractError(
+            f"load_grammar: {source} {key!r} needs both a 'match' and an 'extract' object"
+        )
+    return JsonPathSpec(
+        match={str(k): v for k, v in match.items()},
+        extract={str(k): str(v) for k, v in extract.items()},
+    )
 
 
 def load_grammar(name: str) -> StreamGrammar:
-    """Load a `StreamGrammar` from `fixtures/native/streams/<name>.grammar.json`.
+    """Load the grammar DERIVED FROM a real capture of driver ``name``'s stream.
 
-    **This raises today, by design (contract §10.2, §11.1).** The exact JSON
-    field names emitted by ``claude --print --output-format stream-json`` and by
-    ``codex exec --json`` are not established: no transcript of either exists in
-    this repository, and producing one drives a real model, which is the
-    approval-gated action of §10.6.
+    §10.2's UNKNOWN is settled per driver and only by capture. Two structural
+    rules keep "derived from a capture" a fact rather than a claim:
 
-    Shipping guessed field names would be strictly worse than shipping nothing.
-    A guessed grammar parses a real stream into silence — every ``session_ack``
-    misses, every attempt's ``session_id`` stays ``None``, every usage field
-    reads ``UNKNOWN`` — and the resulting run looks like a *harness that reported
-    nothing* rather than like *a driver that was wrong*. The one signal that
-    distinguishes the two is the absence of this file.
+    * the document lives in :func:`GRAMMARS_DIR`, which holds nothing else;
+    * it must name a ``captured_from`` file under :func:`STREAMS_DIR`, and that
+      file must exist. A grammar whose capture has been deleted is refused,
+      because at that point nobody can check the field names against anything.
 
-    *What removes this:* one approved capture per CLI on a trivial prompt,
-    committed as ``fixtures/native/streams/{claude,codex}-<date>.jsonl``, with
-    the grammar written **from** the capture.
+    A driver with no such document still raises, which is the honest state for
+    ``codex`` as of 2026-09-07: no approved capture of ``codex exec --json``
+    exists in this repository, and guessed field names would be strictly worse
+    than none — they parse a real stream into silence (every ``session_ack``
+    misses, every ``session_id`` stays ``None``, every usage field reads
+    ``UNKNOWN``) and the run then looks like a harness that reported nothing
+    rather than a driver that was wrong.
     """
-    raise ContractError(
-        f"load_grammar({name!r}): no captured harness stream exists, so no grammar is "
-        f"shipped (contract §10.2 / §11.1). {STREAMS_DIR()} deliberately contains no "
-        "*.grammar.json. Settle by committing one approved capture per CLI and writing "
-        "the grammar from it; a guessed grammar would be indistinguishable from a real "
-        "one and would silently degrade every native run to 'harness reported nothing'."
+    path = GRAMMARS_DIR() / f"{name}.json"
+    if not path.is_file():
+        raise ContractError(
+            f"load_grammar({name!r}): no captured harness stream exists for this driver, so "
+            f"no grammar is shipped (contract §10.2 / §11.1). {path} is absent. Settle by "
+            f"driving the CLI once under an approval token (§10.6), committing the capture "
+            f"to {STREAMS_DIR()}, and writing the grammar FROM it; a guessed grammar would "
+            "be indistinguishable from a real one and would silently degrade every native "
+            "run to 'harness reported nothing'."
+        )
+    raw = _io.load_json(path)
+    if not isinstance(raw, Mapping):
+        raise ContractError(f"load_grammar: {path} is not a JSON object")
+    if raw.get("name") != name:
+        raise ContractError(
+            f"load_grammar: {path} declares name {raw.get('name')!r}, expected {name!r}"
+        )
+    captured_from = raw.get("captured_from")
+    if not isinstance(captured_from, str) or not captured_from:
+        raise ContractError(
+            f"load_grammar: {path} does not name the capture it was derived from. A grammar "
+            "with no capture behind it is a guess with a file name (contract §10.2)."
+        )
+    capture = STREAMS_DIR() / captured_from
+    if not capture.is_file():
+        raise ContractError(
+            f"load_grammar: {path} says it was derived from {capture}, which does not exist. "
+            "The capture is the evidence; without it the field names cannot be checked "
+            "against anything (contract §10.2)."
+        )
+    session_id_field = raw.get("session_id_field")
+    if not isinstance(session_id_field, str) or not session_id_field:
+        raise ContractError(f"load_grammar: {path} has no session_id_field")
+    turn_index_field = raw.get("turn_index_field")
+    result_text_field = raw.get("result_text_field")
+    return StreamGrammar(
+        name=name,
+        session_ack=_spec_from(raw, "session_ack", path),
+        turn_ack=_spec_from(raw, "turn_ack", path),
+        usage=_spec_from(raw, "usage", path),
+        session_id_field=session_id_field,
+        turn_index_field=str(turn_index_field) if isinstance(turn_index_field, str) else None,
+        result_text_field=(
+            str(result_text_field) if isinstance(result_text_field, str) else None
+        ),
+        captured_from=captured_from,
     )
 
 
@@ -508,7 +596,7 @@ def installed_help(config: DriverConfig) -> str:
     with tempfile.TemporaryDirectory(prefix="agentic-help-") as scratch:
         slots = {
             "home": scratch, "workspace": scratch, "plugin_root": scratch,
-            "extra_dir": scratch, "codex_home": scratch,
+            "extra_dir": scratch, "codex_home": scratch, "config_dir": scratch,
         }
         env = _resolve_env(config, slots)
         try:
@@ -723,14 +811,41 @@ class CliDriver:
         approval_token: str | None = None,
         mode: str = "fresh",
         ledger: "HostLedger | None" = None,
+        grammar: "StreamGrammar | None" = None,
+        run_id: str | None = None,
+        attempt_id: str | None = None,
+        parent_session_id: str | None = None,
+        capture_path: "pathlib.Path | str | None" = None,
+        allow_uncaptured_grammar: bool = False,
         **slots: str | None,
-    ) -> "HarnessSession":
+    ) -> "NativeSession":
         """Drive a real harness. §10.6: refuses without an approved token.
 
         The approval check runs **first**, before argv is built and before
         anything in :mod:`subprocess` is touched, so an unapproved call cannot
         leave a process behind even transiently. There is no default token, no
         environment-variable fallback and no ``--yes``.
+
+        Then, and only then, three more refusals in order:
+
+        * the ledger must be a :class:`HostLedger` constructed
+          ``witness=HOST_OBSERVED`` — nothing else can produce native
+          provenance (§10.5);
+        * the driver's flags must conform to the **installed** binary's own
+          ``--help`` (:func:`assert_flags_supported`), so a real session is
+          never opened with argv the CLI would silently ignore;
+        * the driver must have a grammar derived from a real capture, unless
+          the caller explicitly passes ``allow_uncaptured_grammar=True``. That
+          flag exists for exactly one purpose — the very first capture of a CLI
+          whose stream nobody has recorded yet — and it is loud rather than
+          silent: a session opened that way cannot ack a session id, so it can
+          never be ``NATIVE_PROVEN``. A quiet fallback to "no grammar" is the
+          precise failure §10.2 forbids.
+
+        Returns a :class:`NativeSession`. Nothing about that object can promote
+        anything: its adapter class is fixed, its ledger is the one handed in,
+        and its ``session_id`` stays ``None`` until the harness's own stream
+        announces one.
         """
         token = approval_token
         if not isinstance(token, str) or not token:
@@ -752,11 +867,30 @@ class CliDriver:
                 "witness=HOST_OBSERVED; nothing else can produce native provenance "
                 "(contract §10.5)"
             )
-        raise ApprovalRequired(  # pragma: no cover - unreachable without an approved run
-            f"{self._config.name}: an approved native spawn path is not wired in this "
-            "change. §10.2's stream grammar is UNKNOWN, so a spawned session could not be "
-            "parsed into acks and would produce an attempt with session_id=None that can "
-            "never be NATIVE_PROVEN anyway. Land one approved capture first."
+        if mode not in self._config.optional_argv:
+            raise ContractError(
+                f"{self._config.name}: unknown mode {mode!r}; "
+                f"declared modes are {self._config.modes()!r}"
+            )
+        assert_flags_supported(self._config)
+        if grammar is None:
+            try:
+                grammar = load_grammar(self._config.grammar)
+            except ContractError:
+                if not allow_uncaptured_grammar:
+                    raise
+                grammar = None
+        return NativeSession(
+            driver=self,
+            ledger=ledger,
+            grammar=grammar,
+            mode=mode,
+            slots=slots,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            parent_session_id=parent_session_id,
+            approval_token=token,
+            capture_path=capture_path,
         )
 
 
@@ -808,7 +942,7 @@ _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
             "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
-            "plugin_root": "<plugin-root>",
+            "plugin_root": "<plugin-root>", "config_dir": "<config-dir>",
         },
         "resume": {
             "model": "<model-id>", "effort": "<effort>",
@@ -816,7 +950,7 @@ _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
             "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
-            "plugin_root": "<plugin-root>",
+            "plugin_root": "<plugin-root>", "config_dir": "<config-dir>",
         },
         "fork": {
             "model": "<model-id>", "effort": "<effort>",
@@ -824,7 +958,7 @@ _DEFAULT_SLOTS: Mapping[str, Mapping[str, dict[str, str | None]]] = {
             "permission_mode": "plan", "allowed_tools": "<allowed-tools>",
             "workspace": "<workspace>", "system_append": "<system-append>",
             "mcp_config": "<mcp-config.json>", "home": "<home>",
-            "plugin_root": "<plugin-root>",
+            "plugin_root": "<plugin-root>", "config_dir": "<config-dir>",
         },
     },
     "codex": {
@@ -1792,6 +1926,539 @@ def attach_session(
     )
 
 
+class NativeSession(HarnessSession):
+    """A REAL installed agent CLI, driven by the host (§10.2, §10.3, §10.6).
+
+    Constructed only by :meth:`CliDriver.spawn`, which is approval-gated, and
+    only over a :class:`HostLedger` the host itself minted. Everything this
+    class writes to that ledger is therefore ``host-observed`` — not because it
+    says so, but because the ledger's witness is sealed and this object never
+    gets to choose it.
+
+    **What makes an event host-observed here, concretely.** The host owns the
+    child's stdout pipe. Every record this class turns into a ``SESSION_ACK`` /
+    ``TURN_ACK`` / ``USAGE`` entry was read by the host out of that pipe, from a
+    process the host spawned, in the host's own address space. Nothing the
+    subject writes into a *file* reaches this path, and the caller-minted uuid
+    handed to ``--session-id`` is never an ack: it is recorded in the
+    ``SESSION_OPEN`` payload and nowhere else (§10.2 item 2).
+
+    **One CLI invocation per turn.** ``claude --print`` is one-shot, so turn 0
+    runs the ``mode`` the caller asked for and every later turn runs ``resume``
+    against the session id the *harness* announced. This is what makes the T27
+    resume claim a property of the driver rather than of a test: the second
+    turn cannot happen at all unless the first turn produced a real ack.
+    """
+
+    def __init__(
+        self,
+        *,
+        driver: "CliDriver",
+        ledger: HostLedger,
+        grammar: StreamGrammar | None,
+        mode: str,
+        slots: Mapping[str, str | None],
+        run_id: str | None = None,
+        attempt_id: str | None = None,
+        parent_session_id: str | None = None,
+        approval_token: str = "",
+        capture_path: "pathlib.Path | str | None" = None,
+    ) -> None:
+        if ledger.witness is not SignatureClass.HOST_OBSERVED:
+            raise EvidencePromotionRefused(
+                "NativeSession: refuses a ledger that is not witness=HOST_OBSERVED. A native "
+                "session the host did not witness is a contradiction (contract §10.5)."
+            )
+        super().__init__(
+            ledger=ledger, adapter_class=AdapterClass.NATIVE, run_id=run_id,
+            attempt_id=attempt_id, grammar=grammar,
+        )
+        self._driver = driver
+        self._slots = dict(slots)
+        self._mode = mode
+        self._invocations = 0
+        self._parent_session_id = parent_session_id
+        self._caller_minted_session_id = self._slots.get("session_id")
+        self._capture_path = pathlib.Path(capture_path) if capture_path else None
+        self._stream_records: list[dict[str, Any]] = []
+        self._acked_session_ids: list[str] = []
+        self._proc: "subprocess.Popen[str] | None" = None
+        self._pgid: int | None = None
+        self._reader: threading.Thread | None = None
+        self._lines: "queue.Queue[str | None]" = queue.Queue()
+        self._open_index: int | None = None
+        self._open_acked = False
+        self._open_ack_event_id: str | None = None
+        self._open_usage: Usage = _NO_USAGE
+        self._open_text: list[str] = []
+        self._late_records: list[str] = []
+        self._reported_model: str | None = None
+        self._stderr_parts: list[str] = []
+        self._stderr_reader: threading.Thread | None = None
+        self._exit_status: int | None = None
+
+        ledger.append(
+            EventKind.APPROVAL_GRANTED,
+            attempt_id=self._attempt_id, session_id=None,
+            payload={
+                "token_id": approval_token,
+                "gate": "native-required",
+                "driver": driver.config.name,
+                "binary": driver.config.binary,
+            },
+        )
+        payload: dict[str, Any] = {
+            "driver": driver.config.name,
+            "mode": mode,
+            "grammar": grammar.name if grammar is not None else None,
+            "captured_from": grammar.captured_from if grammar is not None else None,
+        }
+        if self._caller_minted_session_id is not None:
+            payload["caller_minted_session_id"] = self._caller_minted_session_id
+        if parent_session_id is not None:
+            payload["parent_session_id"] = parent_session_id
+        ledger.append(
+            EventKind.SESSION_OPEN,
+            attempt_id=self._attempt_id, session_id=None, payload=payload,
+        )
+
+    # -- identity -----------------------------------------------------------
+    @property
+    def reported_model(self) -> str | None:
+        """The model id the harness announced on its own session record."""
+        return self._reported_model
+
+    @property
+    def acked_session_ids(self) -> tuple[str, ...]:
+        """Every id the HARNESS announced, in arrival order. Never the caller's."""
+        return tuple(self._acked_session_ids)
+
+    @property
+    def caller_minted_session_id(self) -> str | None:
+        return self._caller_minted_session_id
+
+    @property
+    def stream_records(self) -> tuple[dict[str, Any], ...]:
+        return tuple(self._stream_records)
+
+    @property
+    def invocations(self) -> int:
+        return self._invocations
+
+    @property
+    def exit_status(self) -> int | None:
+        return self._exit_status
+
+    def pids(self) -> frozenset[int]:
+        proc = self._proc
+        if proc is None or self._closed or proc.poll() is not None:
+            return frozenset()
+        return frozenset({proc.pid})
+
+    @property
+    def pgid(self) -> int | None:
+        return self._pgid
+
+    # -- turns --------------------------------------------------------------
+    def begin_turn(self, text: str) -> int:
+        """Spawn the CLI for one turn and return without draining it.
+
+        Split out of :meth:`send` so a cancel can land *mid-turn* (§10.3, T28)
+        rather than after the turn already finished, which would prove nothing.
+        """
+        if self._closed:
+            raise ContractError("NativeSession: the session is closed")
+        if self._proc is not None:
+            raise ContractError("NativeSession: a turn is already open")
+        index = self.turns
+        if self._invocations == 0:
+            mode = self._mode
+            slots = dict(self._slots)
+        else:
+            if self.session_id is None:
+                raise ContractError(
+                    "NativeSession: cannot open a second turn, because the harness never "
+                    "announced a session id on the first one. §10.2: a caller-minted uuid "
+                    "is not an acknowledgment, so there is nothing to resume."
+                )
+            mode = "resume"
+            slots = dict(self._slots)
+            slots["session_id"] = self.session_id
+
+        config = self._driver.config
+        argv = self._driver.build_argv(mode=mode, **slots)
+        env_slots = {k: str(v) for k, v in slots.items() if v is not None}
+        env = _resolve_env(config, env_slots)
+        cwd = config.cwd
+        for name in _PLACEHOLDER.findall(cwd):
+            if name not in env_slots:
+                raise ContractError(f"{config.name}: cwd needs slot {name!r}")
+            cwd = cwd.replace("{" + name + "}", env_slots[name])
+
+        self._ledger.append(
+            EventKind.TURN_START,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={"index": index, "chars": len(text), "mode": mode},
+        )
+        proc = subprocess.Popen(
+            argv, cwd=cwd, env=env,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            text=True, bufsize=1, start_new_session=True,
+        )
+        self._proc = proc
+        try:
+            self._pgid = os.getpgid(proc.pid)
+        except OSError:
+            self._pgid = None
+        self._ledger.append(
+            EventKind.SPAWN,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={
+                "pid": proc.pid, "pgid": self._pgid, "mode": mode,
+                "argv_tokens": len(argv), "binary": config.binary,
+            },
+        )
+        self._lines = queue.Queue()
+        self._stderr_parts = []
+        self._reader = self._start_reader(proc)
+        self._stderr_reader = self._start_stderr_reader(proc)
+        try:
+            assert proc.stdin is not None
+            proc.stdin.write(text)
+            proc.stdin.close()
+        except (BrokenPipeError, OSError):
+            pass
+        self._invocations += 1
+        self._open_index = index
+        self._open_acked = False
+        self._open_ack_event_id = None
+        self._open_usage = _NO_USAGE
+        self._open_text = []
+        self._late_records = []
+        return index
+
+    def _start_reader(self, proc: "subprocess.Popen[str]") -> threading.Thread:
+        lines = self._lines
+
+        def pump() -> None:
+            try:
+                assert proc.stdout is not None
+                for line in proc.stdout:
+                    lines.put(line)
+            except (OSError, ValueError):
+                pass
+            finally:
+                lines.put(None)
+
+        thread = threading.Thread(target=pump, name="native-stream-reader", daemon=True)
+        thread.start()
+        return thread
+
+    def _start_stderr_reader(self, proc: "subprocess.Popen[str]") -> threading.Thread:
+        """Drain stderr in its own thread.
+
+        Not diagnostics theatre: a 64 KiB pipe nobody reads is a deadlock, and a
+        harness that dies with a message on stderr while the host blocks on
+        stdout is exactly the failure that looks like a hung model call.
+        """
+        parts = self._stderr_parts
+
+        def pump() -> None:
+            try:
+                assert proc.stderr is not None
+                for line in proc.stderr:
+                    parts.append(line)
+            except (OSError, ValueError):
+                pass
+
+        thread = threading.Thread(target=pump, name="native-stderr-reader", daemon=True)
+        thread.start()
+        return thread
+
+    @property
+    def stderr_text(self) -> str:
+        return "".join(self._stderr_parts)
+
+    def _record_line(self, raw: str) -> None:
+        """Turn ONE line the host read off the child's stdout into ledger events."""
+        line = raw.strip()
+        if not line:
+            return
+        try:
+            record = json.loads(line)
+        except ValueError:
+            return
+        if not isinstance(record, Mapping):
+            return
+        self._stream_records.append(dict(record))
+        if self._capture_path is not None:
+            with self._capture_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, sort_keys=True, ensure_ascii=False) + "\n")
+        grammar = self._grammar
+        if grammar is None:
+            return
+        index = self._open_index if self._open_index is not None else self.turns
+
+        if grammar.session_ack.matches(record):
+            announced_model = _dig(record, "model")
+            if isinstance(announced_model, str) and announced_model:
+                self._reported_model = announced_model
+            sid = grammar.session_ack.extracted(record).get(grammar.session_id_field)
+            if isinstance(sid, str) and sid:
+                # Read BEFORE the assignment below, so a resume that reports a
+                # different id records `False` here instead of comparing the
+                # value with itself. §10.3 calls that case a failure, not a
+                # rename, and this payload is where a reader sees it.
+                first_ack = self._acked_session_ids[0] if self._acked_session_ids else None
+                self._acked_session_ids.append(sid)
+                if self.session_id is None:
+                    self.session_id = sid
+                self._ledger.append(
+                    EventKind.SESSION_ACK,
+                    attempt_id=self._attempt_id, session_id=sid,
+                    payload={
+                        "source": "harness-stream",
+                        "record_index": len(self._stream_records) - 1,
+                        "invocation": self._invocations,
+                        "first_ack_of_session": first_ack is None,
+                        "matches_first_ack": first_ack is None or sid == first_ack,
+                    },
+                )
+            return
+        if grammar.turn_ack.matches(record):
+            if not self._open_acked:
+                self._open_acked = True
+                event = self._ledger.append(
+                    EventKind.TURN_ACK,
+                    attempt_id=self._attempt_id, session_id=self.session_id,
+                    payload={
+                        "index": index, "source": "harness-stream",
+                        "record_index": len(self._stream_records) - 1,
+                    },
+                )
+                self._open_ack_event_id = event.event_id
+            return
+        if grammar.usage.matches(record):
+            # The model the HARNESS announced on its own session record, not
+            # one this driver asked for: `model`/`effort` are deliberately
+            # unset, so the stratum an attempt is filed under has to be read
+            # back off the stream like everything else.
+            self._open_usage = parse_usage(
+                record, grammar,
+                model_id=str(
+                    self._reported_model
+                    if self._reported_model is not None
+                    else _first_present(record, ("model", "model_id"), "unknown")
+                ),
+                reported_by=f"native/{grammar.name}",
+            )
+            self._ledger.append(
+                EventKind.USAGE,
+                attempt_id=self._attempt_id, session_id=self.session_id,
+                payload={
+                    "index": index,
+                    "unknown_fields": list(self._open_usage.unknown_fields()),
+                },
+            )
+            if grammar.result_text_field is not None:
+                delivered = _dig(record, grammar.result_text_field)
+                if isinstance(delivered, str):
+                    self._open_text.append(delivered)
+
+    def drain_turn(self, *, timeout_s: float | None = None) -> None:
+        """Consume the open turn's stream until the child closes stdout."""
+        if self._proc is None:
+            raise ContractError("NativeSession: no turn is open")
+        budget = self._driver.config.timeout_s if timeout_s is None else timeout_s
+        deadline = time.monotonic() + max(1.0, budget)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ContractError(
+                    f"NativeSession: the turn did not finish within {budget}s"
+                )
+            try:
+                item = self._lines.get(timeout=min(1.0, remaining))
+            except queue.Empty:
+                continue
+            if item is None:
+                return
+            self._record_line(item)
+
+    def finish_turn(self) -> TurnRecord:
+        proc = self._proc
+        if proc is None or self._open_index is None:
+            raise ContractError("NativeSession: no turn is open")
+        index = self._open_index
+        try:
+            status = proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            status = None
+        self._exit_status = status
+        if self._stderr_reader is not None:
+            self._stderr_reader.join(timeout=5)
+        stderr_text = "".join(self._stderr_parts)
+        self._ledger.append(
+            EventKind.EXIT,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={
+                "pid": proc.pid, "returncode": status,
+                "stderr_bytes": len(stderr_text.encode("utf-8")),
+            },
+        )
+        self._close_streams(proc)
+        self._proc = None
+        self.turns += 1
+        self._ledger.append(
+            EventKind.TURN_END,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={"index": index, "acked": self._open_acked, "exit_status": status},
+        )
+        turn = TurnRecord(
+            index=index, acked=self._open_acked, ack_event_id=self._open_ack_event_id,
+            usage=self._open_usage, text="".join(self._open_text), late=self.cancelled,
+        )
+        self._turn_records.append(turn)
+        self._open_index = None
+        return turn
+
+    def send(self, text: str) -> TurnRecord:
+        self.begin_turn(text)
+        self.drain_turn()
+        return self.finish_turn()
+
+    # -- §10.3 cancel -------------------------------------------------------
+    def cancel(self, *, grace_s: float = 2.0) -> None:
+        """SIGTERM the process GROUP, wait, SIGKILL the GROUP, then witness it.
+
+        The survivor count is taken *before* the process is reaped and after the
+        escalation, because that is the only moment at which "the group, not the
+        pid, was signalled" is observable: reaping first lets an ordinary
+        wait/cleanup rescue a pid-only cancel and hide the leak.
+        """
+        self._ledger.append(
+            EventKind.CANCEL_ISSUED,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={"signal": "SIGTERM", "grace_s": grace_s, "turns_so_far": self.turns},
+        )
+        self.cancelled = True
+        proc = self._proc
+        pgid = self._pgid
+        members_before = len(live_group_members(pgid)) if pgid is not None else 0
+        survivors: int | None = None
+        if pgid is not None:
+            try:
+                os.killpg(pgid, signal.SIGTERM)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
+            time.sleep(max(0.0, min(grace_s, 30.0)))
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+            except (ProcessLookupError, PermissionError, OSError):
+                pass
+            deadline = time.monotonic() + 5.0
+            survivors = len(live_group_members(pgid))
+            while survivors and time.monotonic() < deadline:
+                time.sleep(0.02)
+                survivors = len(live_group_members(pgid))
+
+        late_text = self._drain_after_cancel()
+        self._ledger.append(
+            EventKind.CANCEL_OBSERVED,
+            attempt_id=self._attempt_id, session_id=self.session_id,
+            payload={
+                "reaped": True,
+                "late_bytes": len(late_text.encode("utf-8")),
+                "group_survivors": survivors,
+                "group_members_before": members_before,
+                "late_records": len(self._late_records),
+            },
+        )
+        if late_text:
+            self.arrived_after_terminal = True
+            self._ledger.append(
+                EventKind.LATE_OUTPUT,
+                attempt_id=self._attempt_id, session_id=self.session_id,
+                payload={"bytes": len(late_text.encode("utf-8")), "credited": False},
+            )
+        if proc is not None:
+            try:
+                status = proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                status = None
+            self._exit_status = status
+            self._ledger.append(
+                EventKind.EXIT,
+                attempt_id=self._attempt_id, session_id=self.session_id,
+                payload={"pid": proc.pid, "returncode": status, "after_cancel": True},
+            )
+            self._close_streams(proc)
+            self._proc = None
+        if self._open_index is not None:
+            index = self._open_index
+            self.turns += 1
+            self._ledger.append(
+                EventKind.TURN_END,
+                attempt_id=self._attempt_id, session_id=self.session_id,
+                payload={"index": index, "acked": self._open_acked, "cancelled": True},
+            )
+            self._turn_records.append(TurnRecord(
+                index=index, acked=self._open_acked, ack_event_id=self._open_ack_event_id,
+                usage=self._open_usage, text="".join(self._open_text), late=True,
+            ))
+            self._open_index = None
+
+    def _drain_after_cancel(self) -> str:
+        """Everything the child had already written that the host had not read.
+
+        Recorded, never credited: these records are tagged ``LATE_OUTPUT`` and
+        the turn they belong to keeps whatever terminal state it already had.
+        """
+        parts: list[str] = []
+        deadline = time.monotonic() + 3.0
+        while time.monotonic() < deadline:
+            try:
+                item = self._lines.get(timeout=0.2)
+            except queue.Empty:
+                if self._reader is None or not self._reader.is_alive():
+                    break
+                continue
+            if item is None:
+                break
+            self._late_records.append(item)
+            parts.append(item)
+            self._record_line(item)
+        return "".join(parts)
+
+    # -- lifecycle ----------------------------------------------------------
+    def _close_streams(self, proc: "subprocess.Popen[str]") -> None:
+        for stream in (proc.stdin, proc.stdout, proc.stderr):
+            if stream is None:
+                continue
+            try:
+                stream.close()
+            except (OSError, ValueError):
+                pass
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        proc = self._proc
+        if proc is not None:
+            if proc.poll() is None and self._pgid is not None:
+                try:
+                    os.killpg(self._pgid, signal.SIGKILL)
+                except (ProcessLookupError, PermissionError, OSError):
+                    pass
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                pass
+            self._close_streams(proc)
+            self._proc = None
+        self._closed = True
+
+
 class ReplaySession(HarnessSession):
     """Replays a recorded JSONL stream. ``adapter_class`` is ``REPLAY``, always.
 
@@ -2071,7 +2738,7 @@ def attempt_from_session(
         )
 
     attempt = Attempt(
-        attempt_id=attempt_id if attempt_id is not None else new_id(),
+        attempt_id=attempt_id if attempt_id is not None else new_id("attempt"),
         run_id=run_id if run_id is not None else ledger.run_id,
         card_id=card_id,
         arm_id=arm_id,

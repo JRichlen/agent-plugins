@@ -5,9 +5,9 @@
   "argv_template": [
     "--print",
     "--output-format", "stream-json",
+    "--verbose",
     "--model", "{model}",
     "--effort", "{effort}",
-    "--session-id", "{session_id}",
     "--permission-mode", "{permission_mode}",
     "--allowedTools", "{allowed_tools}",
     "--add-dir", "{workspace}",
@@ -16,15 +16,16 @@
     "--mcp-config", "{mcp_config}"
   ],
   "optional_argv": {
-    "fresh": [],
+    "fresh": ["--session-id", "{session_id}"],
     "resume": ["--resume", "{session_id}"],
-    "fork": ["--fork-session"]
+    "fork": ["--resume", "{session_id}", "--fork-session"]
   },
   "env": {
     "PATH": "/usr/bin:/bin",
     "HOME": "{home}",
     "LANG": "en_US.UTF-8",
-    "CLAUDE_PLUGIN_ROOT": "{plugin_root}"
+    "CLAUDE_PLUGIN_ROOT": "{plugin_root}",
+    "CLAUDE_CONFIG_DIR": "{config_dir}"
   },
   "cwd": "{workspace}",
   "timeout_s": 600,

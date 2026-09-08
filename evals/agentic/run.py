@@ -14,6 +14,12 @@ Subcommands / flags (contract §9.2), exactly:
   (no flag) / --offline   full offline suite + catalog + run manifest
   --gate                  root-portable subset (§9.3), terse, no manifest
   --id T07                run one catalog entry
+  --id T26 --approval-token <tok>
+                          run an approval-gated card's LIVE form, which drives
+                          a real agent CLI (contract §10.6). Without the token
+                          the four native-required IDs print
+                          "BLOCKED — approval required" and nothing runs. No
+                          default, no environment fallback.
   --lane <lane>           run one lane's catalog entries
   --catalog               the §7.4 fail-closed catalog walk
   coverage [--json]       delegates to registry.coverage_document
@@ -42,8 +48,12 @@ Subcommands / flags (contract §9.2), exactly:
                           --gate/--catalog/--offline path and no flag here
                           ever spawns a model either.
 
-No flag anywhere enables a model call. ``driver --spawn`` always raises
-ApprovalRequired (contract §10.6) — it is not on the --gate or --offline path.
+The ONLY way any flag here reaches a model is
+``--id <native-required ID> --approval-token <tok>``, and the token must also
+appear in the run Manifest the test builds before ``CliDriver.spawn`` will
+accept it. ``driver --spawn`` still always raises ApprovalRequired: it builds a
+driver with no manifest, so no token can be approved for it. Neither is on the
+--gate, --catalog or --offline path (contract §10.6).
 """
 from __future__ import annotations
 
@@ -1026,7 +1036,67 @@ def cmd_offline(repo_root: pathlib.Path) -> int:
 # --id / --lane
 # ---------------------------------------------------------------------------
 
-def cmd_id(repo_root: pathlib.Path, entry_id: str) -> int:
+def cmd_id_live(entry, approval_token: str) -> int:
+    """Run an approval-gated entry's LIVE form (contract §10.6).
+
+    Reachable only from `--id <TID> --approval-token <tok>`. Everything about
+    the gate stays where it was: the catalog entry is untouched and still names
+    the `__offline_form` method, `--catalog` still prints
+    `BLOCKED — approval required` for these IDs and still prints the same frozen
+    summary line, and the token is handed to the test module IN PROCESS -- never
+    through the environment, never defaulted, never inferred. The framework's
+    own refusal (`CliDriver.spawn`) is unchanged and still requires the same
+    token to appear in the run `Manifest.approvals`; this flag only decides
+    which test method runs.
+    """
+    module = importlib.import_module(entry.module)
+    forms = getattr(module, "LIVE_FORMS", None)
+    if not isinstance(forms, dict) or entry.id not in forms:
+        print(
+            f"agentic FAIL catalog: {entry.id} is approval-gated but its module declares "
+            f"no LIVE_FORMS entry, so there is nothing an approval token could unlock"
+        )
+        return 1
+    class_name, method_name = forms[entry.id]
+    if not hasattr(module, class_name):
+        print(f"agentic FAIL catalog: {entry.id} live form {class_name} does not exist")
+        return 1
+    live_entry = dataclasses.replace(entry, test_class=class_name, test_name=method_name)
+    setattr(module, "LIVE_APPROVAL_TOKEN", approval_token)
+    try:
+        run = registry.run_entry(live_entry)
+    finally:
+        setattr(module, "LIVE_APPROVAL_TOKEN", None)
+    summary = dict(getattr(module, "LIVE_NATIVE_RESULTS", {}).get(entry.id, {}))
+    session_id = summary.get("session_id")
+    head = (
+        f"{entry.id} [{entry.lane}] {class_name}.{method_name}: "
+        f"{run.outcome} ({run.assertions} assertions)"
+    )
+    if run.outcome != "pass":
+        detail = (run.detail or "").strip().splitlines()
+        print(head)
+        print(f"agentic FAIL adapter: {entry.id} live form failed "
+              f"({detail[-1] if detail else run.outcome})")
+        return 1
+    if not isinstance(session_id, str) or not session_id:
+        # A pass that recorded no harness-reported session id would be a native
+        # claim with nothing behind it -- refuse rather than print one.
+        print(head)
+        print(f"agentic FAIL adapter: {entry.id} passed but reported no harness session id")
+        return 1
+    print(
+        f"{head} EXECUTED native-proven "
+        f"(approval-token {approval_token}) harness session_id={session_id}"
+    )
+    for key in sorted(summary):
+        if key == "session_id":
+            continue
+        print(f"  {key}: {summary[key]}")
+    return 0
+
+
+def cmd_id(repo_root: pathlib.Path, entry_id: str, approval_token: str | None = None) -> int:
     entries, load_failures = _load_catalog_safely(repo_root)
     if entry_id in load_failures:
         print(f"agentic FAIL catalog: {entry_id} does not resolve ({load_failures[entry_id]})")
@@ -1036,8 +1106,17 @@ def cmd_id(repo_root: pathlib.Path, entry_id: str) -> int:
         return 2
     entry = entries[entry_id]
     if entry.approval_gate is not ApprovalGate.NONE:
-        print(f"{entry_id} BLOCKED — approval required ({entry.approval_gate.value})")
-        return 0
+        if not approval_token:
+            print(f"{entry_id} BLOCKED — approval required ({entry.approval_gate.value})")
+            return 0
+        return cmd_id_live(entry, approval_token)
+    if approval_token:
+        print(
+            f"run.py: --approval-token is meaningless for {entry_id}, whose approval_gate "
+            f"is 'none'; refusing rather than silently ignoring it",
+            file=sys.stderr,
+        )
+        return 2
     run = registry.run_entry(entry)
     print(f"{entry_id} [{entry.lane}] {entry.test_class}.{entry.test_name}: "
           f"{run.outcome} ({run.assertions} assertions)")
@@ -1259,6 +1338,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--catalog", action="store_true", help="the §7.4 fail-closed catalog walk")
     parser.add_argument("--id", metavar="TID", help="run one catalog entry, e.g. --id T07")
     parser.add_argument("--lane", metavar="LANE", help="run one lane's catalog entries")
+    parser.add_argument(
+        "--approval-token", default=None, metavar="TOK",
+        help="the human-supplied approval token id (contract §10.6). With --id <TID> for "
+             "an approval-gated entry, runs that entry's LIVE form, which drives a real "
+             "agent CLI. Without it those IDs stay BLOCKED. No default, no environment "
+             "fallback.",
+    )
 
     sub = parser.add_subparsers(dest="subcommand")
 
@@ -1319,7 +1405,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.catalog:
         return cmd_catalog(REPO_ROOT)
     if args.id:
-        return cmd_id(REPO_ROOT, args.id)
+        return cmd_id(REPO_ROOT, args.id, args.approval_token)
     if args.lane:
         return cmd_lane(REPO_ROOT, args.lane)
     # (no flag) / --offline are identical (contract §9.2)

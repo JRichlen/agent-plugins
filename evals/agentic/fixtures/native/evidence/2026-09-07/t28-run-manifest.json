@@ -1,0 +1,25 @@
+{
+  "approvals": [
+    "user-approved-2026-09-07-native"
+  ],
+  "branch": "feat/agentic-test-framework",
+  "catalog_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+  "created_at": "2026-09-08T00:07:19.573Z",
+  "estimands": [],
+  "git_commit": "0000000000000000000000000000000000000000",
+  "holdout_seed": 1,
+  "lanes": [
+    "adapter"
+  ],
+  "min_clusters": 8,
+  "min_valid": 5,
+  "noninferiority_margin": 0.05,
+  "offline": false,
+  "planned_n": {},
+  "run_id": "run-live-T28-2026-09-07",
+  "skipped": [],
+  "toolchain": {
+    "claude": "2.1.263 (Claude Code)",
+    "python": "3.12"
+  }
+}
