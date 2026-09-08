@@ -1,0 +1,11 @@
+Review this GitHub issue draft for a maintainer who needs to decide what happens next.
+
+Return:
+1. a ready-to-paste issue body; and
+2. one short `Preservation note:` naming any required fact or action you could not keep.
+
+Do not invent facts, decisions, owners, dates, or evidence.
+
+<issue>
+{{input}}
+</issue>

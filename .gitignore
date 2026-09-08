@@ -39,3 +39,5 @@ plugins/*/evals/promptfoo/results.matrix.json
 plugins/*/evals/promptfoo/promptfooconfig.regrade.*.yaml
 plugins/*/evals/promptfoo/replay.*.json
 plugins/*/evals/promptfoo/results.regrade.*.json
+# Adaptive-review raw outputs, human labels, and judge evidence stay private.
+/evals/paid/adaptive-review/runs/
