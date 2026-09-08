@@ -102,6 +102,13 @@ A tier that cannot answer #2 or #5 is decoration.
    cannot, it is not a gate. Then check the twin: is there a must-not-fire
    control proving the green is not what the bare system does anyway?
 
+**Run the harness; do not read it.** Question #5 is answered by executing the
+tier and counting what it reported, not by reading its source or its comments.
+A runner's description of itself is a claim like any other, and the gap between
+"defines the same helpers" and *defining the same helpers* is invisible on the
+page and obvious in one run. Compare the count of checks a tier reports against
+the count it contains, and treat any silent difference as the finding.
+
 Then sweep the whole suite for the failure modes that live between tiers rather
 than inside one — saturation, tuning on the gate, criteria drift, the harness
 confound, contamination. See
