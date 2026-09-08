@@ -23,12 +23,13 @@ coverage. Each phase names its verifier (what proves it done).
 **Coverage today:** 12 plugins have a promptfoo pack and can auto-capture a
 *graded* example (agent-compiler, find-before-build, fleet-playbook-curator,
 graveyard, redgate, scope-fence, semver-gate, stop-rule, tailscale-wif,
-verify-before-claim, voice, wayfinder). 12 have no pack, so they have no
+verify-before-claim, voice, wayfinder). 13 have no pack, so they have no
 eval-derived example yet (codebase-design, context-handoff, dev-diary,
-diagnosing-bugs, docs-hygiene, egress-gate, grill-me, orchestrate,
+diagnosing-bugs, docs-hygiene, egress-gate, eval-ladder, grill-me, orchestrate,
 plugin-factory, prove-the-undo, recurrence-detector, tracer-bullets). The
-cheap tier checks the snapshot row above against the data directory and the
-marketplace, so these counts cannot silently go stale.
+cheap tier checks the snapshot **row** above against the data directory and the
+marketplace, so that count cannot silently go stale; this prose paragraph is
+not machine-checked, so it is on the author to keep the split in step with it.
 
 ## The gap that blocks everything else
 
