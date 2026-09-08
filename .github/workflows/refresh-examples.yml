@@ -25,6 +25,8 @@ on:
 permissions:
   contents: write        # create-pull-request commits to a branch
   pull-requests: write   # ...and opens the PR
+  id-token: write        # actions/attest-build-provenance signs via Sigstore (OIDC)
+  attestations: write    # ...and stores the attestation on the repo
 
 concurrency:
   group: refresh-examples
@@ -39,6 +41,7 @@ jobs:
         with:
           node-version: 22
       - name: run packs, capture real example snapshots
+        id: capture
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -54,6 +57,9 @@ jobs:
           fi
           echo "refreshing: $plugins"
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Only snapshots THIS run writes get attested below — a stamp file
+          # separates them from previous snapshots that merely stood.
+          stamp="$(mktemp)"; touch "$stamp"
           for p in $plugins; do
             cfg="plugins/$p/evals/promptfoo/promptfooconfig.yaml"
             [ -f "$cfg" ] || { echo "::warning::$p has no promptfoo pack — skipping"; continue; }
@@ -61,12 +67,54 @@ jobs:
             # One eval per pack is enough to capture a representative pair. A pack
             # that errors does not abort the run — its previous snapshot stands.
             ( cd "plugins/$p/evals/promptfoo" && npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json ) || echo "::warning::$p eval failed — keeping previous snapshot"
+            # Provenance the reader can follow back: the run URL (this log), the
+            # grader read from the pack itself, and a promise of attestation that
+            # the step below keeps — the job fails, and no PR opens, if it doesn't.
             evals/paid/capture-example.sh "plugins/$p/evals/promptfoo/results.json" "$p" \
-              --commit "${{ github.sha }}" --captured-at "$ts" || true
+              --commit "${{ github.sha }}" --captured-at "$ts" \
+              --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --attestation github || true
             echo "::endgroup::"
           done
+          {
+            echo "written<<EOF"
+            find docs/examples/data -name '*.json' -newer "$stamp" | sort
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+      - name: keep the raw promptfoo results next to the run
+        # The results.json files are the primary evidence the snapshots are
+        # cut from; the snapshot's run_url points at this run, and this artifact
+        # is what a reader downloads to check the pair against its source.
+        uses: actions/upload-artifact@v4
+        with:
+          name: promptfoo-results
+          path: plugins/*/evals/promptfoo/results.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: attest the captured snapshots (Sigstore provenance)
+        # Binds each snapshot's exact digest to THIS workflow run. A reader
+        # verifies a published snapshot with
+        #   gh attestation verify docs/examples/data/<plugin>.json \
+        #     --repo JRichlen/agent-plugins \
+        #     --signer-workflow JRichlen/agent-plugins/.github/workflows/refresh-examples.yml
+        # A hand-edited or hand-written snapshot has no attestation and fails
+        # that command; a regenerated one gets a new attestation from its own
+        # run. Only the JSON is signed — the HTML page is derived from it by a
+        # deterministic build the cheap tier re-checks.
+        # Attests ONLY the files this run wrote: a seed or an unchanged snapshot
+        # that merely stood must never carry this run's signature.
+        if: steps.capture.outputs.written != ''
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ${{ steps.capture.outputs.written }}
       - name: regenerate the gallery page
         run: docs/build-examples.sh
+      - name: regenerate the landing page
+        # The hub shows each plugin's seed/graded status and judged divergence,
+        # all derived from the snapshots this run just rewrote — so a refresh
+        # changes it too. Without this the cheap tier's landing --check goes red
+        # in the very next step and the workflow dies before opening its PR.
+        run: docs/build-index.sh
       - name: cheap tier must stay green with the new snapshots
         # A captured snapshot that failed the provenance/sync guard must never
         # reach a PR — run the same offline tier the branch would run.
@@ -77,6 +125,7 @@ jobs:
           add-paths: |
             docs/examples/data/*.json
             docs/examples/index.html
+            docs/index.html
           branch: examples/refresh
           delete-branch: true
           title: 'examples: refresh gallery from behavioral eval runs'
@@ -84,8 +133,9 @@ jobs:
             examples: refresh gallery snapshots from behavioral eval runs
 
             Automated biweekly capture — real with-skill/without-skill pairs from
-            the promptfoo packs, regenerated into docs/examples/index.html. Review
-            the transcripts below before merging; merge publishes them to Pages.
+            the promptfoo packs, regenerated into docs/examples/index.html and the
+            landing page. Review the transcripts below before merging; merge
+            publishes them to Pages.
           body: |
             ## Biweekly example refresh
 
@@ -93,6 +143,10 @@ jobs:
             behavioral eval tier and regenerated into the gallery. **Review the
             transcript diffs before merging** — merging to `main` publishes them
             to GitHub Pages. Nothing here is hand-written; every pair is model
-            output with provenance. The cheap tier's sync + provenance guard has
-            already passed on this branch.
+            output with provenance: each snapshot names its subject model, its
+            grader model (a different model family, enforced), and the Actions
+            run it was cut from, and is Sigstore-attested to that run
+            (`gh attestation verify docs/examples/data/<plugin>.json --repo
+            ${{ github.repository }}`). The cheap tier's sync + provenance guard
+            has already passed on this branch.
           labels: examples, automated

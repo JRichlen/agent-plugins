@@ -378,7 +378,9 @@ jobs:
             "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" \
             "${{ matrix.plugin }}" \
             --commit "${{ github.sha }}" \
-            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --attestation none || true
       - name: upload captured example snapshot
         if: always() && steps.touched.outputs.paid == 'true'
         uses: actions/upload-artifact@v4

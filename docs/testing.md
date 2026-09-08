@@ -362,16 +362,28 @@ that it is green because it did not run, never silently.
 
 - **What it proves.** The published before/after gallery is a *verification
   surface*: every card is a real, provenanced with-skill/without-skill pair
-  captured from a graded behavioral run — never hand-written.
-  `refresh-examples.yml` re-runs the packs on a biweekly schedule and opens a
-  **review-gated PR** (never pushes to main); `pages.yml` publishes `docs/`
-  only after merge, re-verifying `docs/build-examples.sh --check` and
-  `docs/timeline/build-timeline.sh --check` first — the gallery and the
-  design-trajectory timeline are both generated surfaces. The cheap tier's
-  gallery gate enforces sync + provenance offline; its timeline gate enforces
-  sync + receipts.
+  captured from a graded behavioral run — never hand-written — with the
+  subject, grader and judge models disclosed by role, and no model grading
+  its own family. `refresh-examples.yml` re-runs the packs on a biweekly
+  schedule, records each snapshot's Actions `run_url`, keeps the raw
+  `results.json` as a 90-day artifact, **Sigstore-attests every snapshot it
+  wrote** (`actions/attest-build-provenance`, verifiable with
+  `gh attestation verify … --signer-workflow`), and opens a **review-gated
+  PR** (never pushes to main); `pages.yml` publishes `docs/` only after
+  merge, re-verifying `docs/build-index.sh --check`,
+  `docs/build-examples.sh --check` and `docs/timeline/build-timeline.sh
+  --check` first — the landing page, the gallery and the design-trajectory
+  timeline are all generated surfaces. The cheap tier's gallery gate enforces
+  sync + role-by-role provenance offline (a graded snapshot whose subject and
+  grader share a model family fails; so does a seed claiming an attestation),
+  its pack gate refuses any promptfoo pack whose subject and grader share a
+  family, and its timeline gate enforces sync + receipts.
 - **What it cannot prove.** That the captured pair is *representative* — a
-  human reviews the transcript diffs before merge.
+  human reviews the transcript diffs before merge. And an attestation proves
+  GitHub-hosted infrastructure produced the bytes in a run of the public
+  workflow, not that a model rather than the workflow wrote the text — which
+  is why the workflow file is short and pinned by commit in the run. Seeds
+  (produced outside CI) carry no attestation and are labelled as such.
 - **Fires.** Refresh: scheduled (1st and 15th, 06:00 UTC) + manual dispatch.
   Pages: push to main touching `docs/**`.
 - **Cost.** Refresh spends real API budget on every packed plugin per run

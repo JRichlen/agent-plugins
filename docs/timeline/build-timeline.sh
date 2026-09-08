@@ -26,6 +26,9 @@ render() {
 python3 - "$ROOT" <<'PY'
 import html, json, os, sys
 root = sys.argv[1]
+sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
+sys.path.insert(0, os.path.join(root, "docs", "_shared"))
+from sitenav import nav as site_nav, NAV_CSS as SITE_NAV_CSS
 data = json.load(open(os.path.join(root, "docs", "timeline", "data", "decisions.json")))
 
 REPO = "https://github.com/JRichlen/agent-plugins"
@@ -223,8 +226,7 @@ print(f'''<!doctype html>
     font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }}
   .wrap {{ max-width:880px; margin:0 auto; padding:2.4rem 1.2rem 5rem; }}
   a {{ color:var(--link); }}
-  .crumb {{ font-size:.85rem; margin:0 0 1.4rem; }}
-  .crumb a {{ text-decoration:none; }}
+  {SITE_NAV_CSS}
   header.top h1 {{ font-size:1.9rem; margin:0 0 .3rem; letter-spacing:-.02em; }}
   header.top .sub {{ color:var(--muted); margin:0 0 1.2rem; max-width:72ch; }}
   .wip {{ border-left:3px solid var(--brg); background:var(--card); border-radius:0 10px 10px 0;
@@ -300,8 +302,8 @@ print(f'''<!doctype html>
 </style>
 </head>
 <body>
+{site_nav("timeline", "../")}
 <div class="wrap">
-<p class="crumb"><a href="../">← agent-plugins docs</a></p>
 <header class="top">
   <h1>Design trajectory — a decision timeline</h1>
   <p class="sub">How this marketplace became what it is, told as the decisions that shaped it:

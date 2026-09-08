@@ -29,6 +29,13 @@
   pre { background:var(--code-bg); border-radius:8px; padding:.8rem 1rem; overflow-x:auto;
     font-size:12.5px; line-height:1.55; }
   pre code { background:none; padding:0; font-size:inherit; }
+  nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
+  nav.site .brand { font-weight:800; letter-spacing:-.01em; color:var(--fg); text-decoration:none; }
+  nav.site .site-links { display:flex; gap:.15rem; flex-wrap:wrap; margin-left:auto; }
+  nav.site .site-links a { color:var(--muted); text-decoration:none; padding:.25rem .6rem; border-radius:6px; }
+  nav.site .site-links a:hover { background:var(--code-bg); color:var(--fg); }
+  nav.site .site-links a.cur { color:var(--fg); font-weight:700; background:var(--code-bg); }
+  nav.site .site-links a.ext { color:var(--link); }
   .crumbs { font-size:.85rem; color:var(--muted); margin-bottom:1.6rem; }
   .crumbs a { text-decoration:none; }
   header h1 { font-size:2.1rem; margin:0 0 .3rem; letter-spacing:-.02em; }
@@ -69,10 +76,10 @@
 </style>
 </head>
 <body>
+<nav class="site" aria-label="Site"><a class="brand" href="../">agent-plugins</a><div class="site-links"><a href="../">Home</a><a href="../examples/">Examples</a><a href="../timeline/">Timeline</a><a href="../redgate/">redgate</a><a href="../agent-compiler/" class="cur" aria-current="page">agent-compiler</a><a href="https://github.com/JRichlen/agent-plugins" class="ext" rel="noopener">GitHub ↗</a></div></nav>
 <div class="wrap">
 
 <nav class="crumbs">
-  <a href="../">agent-plugins docs</a> ·
   <a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler">source on GitHub</a>
 </nav>
 

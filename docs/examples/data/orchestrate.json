@@ -19,9 +19,14 @@
   "notice": "[divergence: moderate] Both responses refuse the symmetric four-way fan-out and both correctly spot that \"no Redis, self-hosted, 4GB\" already eliminates most of the field — the unaided B is not the naive stub the setup implies. The real split is what they hand back: A commits to a named orchestration shape (constraints frozen verbatim into every agent, an added \"fit against the hard constraints\" axis the user never listed, adversarial skeptics, verdict-wins precedence so a refuted claim can't reach the recommendation) but runs nothing and ends on two clarifying questions; B skips the machinery and ships the actual writeup, adds a fifth option the user didn't name (Graphile Worker), and self-tags its weakest claim — Inngest self-hosting — as the thing to verify before repeating it. Judged against the request (\"this has to be quick, ship me the writeup\"), B is the more useful deliverable; A's advantage is structural, a run design whose verification benefit is promised rather than demonstrated, since A's own claims are explicitly unverified priors too.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }
