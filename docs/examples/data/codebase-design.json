@@ -19,9 +19,14 @@
   "notice": "[divergence: subtle] Both responses refuse to write the diff, both diagnose the 40-line fixture as the real pain, and both land on the same two alternatives — a Cart builder and a seam at the tax-rate HTTP client — so the headline behavior is nearly identical; the skill is not what produces the good judgment here. The difference is auditability and stance: A names the criteria it applies (deletion test, only-implementation-is-a-stub, the test-swapping-an-owned-dependency failure mode) and files the user's interface as rejected, while B argues from one angle — the coverage loss when checkout tests assert against totals they supplied — then re-lists the interface as menu option \"go\" first, leaving it a live equal choice. B also asks a sharper practical question A misses (whether the Promise<Totals> signature ripples past the three constructors). Read this as a difference in how the reasoning is exposed and how firmly the ask is declined, not in the recommendation reached.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

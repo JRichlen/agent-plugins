@@ -19,9 +19,14 @@
   "notice": "[divergence: moderate] Both responses catch the two most obvious problems unaided: both refuse to compact first (B's reasoning is arguably sharper, and only B notes that /compact is the user's to type, not the assistant's), and both replace the literal sk_test bearer with an env-var placeholder. The divergence is on the other two axes. B accepts the user's framing and still plans to inline the spec section and the whole #412 diff — hedged with an \"as of commit\" stamp and a worry that a big diff won't be read — while A refuses inlining on the grounds that a copy taken tonight silently drifts, and offers pointers plus enough orientation to know when to follow them. B also does exactly what was asked with the 429 finding, folding it into HANDOFF.md as a Gotcha block; A treats two hours of undocumented sandbox behavior as expensive-to-rederive, routes it to a durable research.md that outlives a disposable handoff, and adds a pre-travel secret-gate check. So: B is a careful assistant doing the user's plan safely; A is disputing the plan itself on durability grounds — which is the real value here if you buy that stale inlined context is worse than a pointer, and overhead if you don't.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

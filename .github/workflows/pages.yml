@@ -1,10 +1,11 @@
-# Publish docs/ — the skill example gallery (docs/examples/) and the design-
-# trajectory timeline (docs/timeline/) — to GitHub Pages.
+# Publish docs/ — the landing hub (docs/index.html), the skill example gallery
+# (docs/examples/) and the design-trajectory timeline (docs/timeline/) — to
+# GitHub Pages.
 #
-# Both surfaces are generated deterministically from committed data by
-# docs/build-examples.sh and docs/timeline/build-timeline.sh, so this workflow
-# just regenerates each (to prove the committed index.html is in sync), then
-# deploys docs/ as the Pages site. No
+# All three surfaces are generated deterministically from committed data by
+# docs/build-index.sh, docs/build-examples.sh and docs/timeline/build-timeline.sh,
+# so this workflow just regenerates each (to prove the committed index.html is
+# in sync), then deploys docs/ as the Pages site. No
 # API keys, no model calls — the real transcripts are already captured into
 # docs/examples/data/ by the behavioral tier's capture step and committed.
 #
@@ -46,6 +47,8 @@ jobs:
         run: docs/build-examples.sh --check
       - name: regenerate and verify the timeline is in sync
         run: docs/timeline/build-timeline.sh --check
+      - name: regenerate and verify the landing page is in sync
+        run: docs/build-index.sh --check
       - uses: actions/configure-pages@v5
         with:
           # Set the repo's Pages source to GitHub Actions via the API on first

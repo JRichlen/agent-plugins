@@ -10,7 +10,10 @@ coverage. Each phase names its verifier (what proves it done).
 | Piece | State |
 |---|---|
 | `capture-example.sh` (results.json → snapshot) | shipped, unit-tested |
-| `build-examples.sh` (snapshots → static `index.html`) | shipped, deterministic, cheap-tier `--check` |
+| `build-examples.sh` (snapshots → static `index.html`) | shipped, deterministic, cheap-tier `--check`; redesigned per `DESIGN.md` |
+| `build-index.sh` (marketplace + snapshots + packs → landing `docs/index.html`) | shipped, deterministic, cheap-tier `--check` |
+| role-by-role model disclosure + same-family refusal (capture script, cheap tier, page) | shipped |
+| Sigstore attestation of CI-captured snapshots (`refresh-examples.yml`) | shipped; fires on the next refresh run |
 | cheap tier §19 (sync + provenance guard) | shipped, mutation-proven |
 | `pages.yml` (deploy from Actions, `enablement:true`) | shipped, runs on merge to main |
 | behavioral CI captures each pack's snapshot | shipped (artifact) |
@@ -90,19 +93,60 @@ Two honest options per plugin, decided per plugin:
 - A plugin with neither seed nor pack simply has no card — the gallery never
   fabricates one.
 
-### Phase 5 — polish
+### Phase 5 — provenance you can check, models disclosed by role *(done)*
+The question this phase answers: how does a reader know a pair is real model
+output and not typed by hand — and which model did what?
+- **Every model disclosed by role.** A snapshot's `provenance` now names the
+  `subject_model` (answered both sides), the `grader_model` (the pack's
+  pass/fail rubric, read from `promptfooconfig.yaml` by `capture-example.sh`,
+  never hard-coded) and the `judge_model` (who wrote the divergence verdict),
+  plus `same_family_judge`. The cheap tier refuses a snapshot missing any of
+  them. The gallery shows them on every card and in a page-level table.
+- **A model never grades its own family.** Every behavioral pack tests one
+  model (`openrouter:nvidia/nemotron-3-ultra-550b-a55b`) and grades with another
+  (`anthropic:messages:claude-sonnet-5`); the cheap tier now checks every pack
+  for that, `capture-example.sh` refuses to write a same-family pair, and the
+  gate rejects a graded snapshot whose subject and grader share a family. The
+  15 seeds were all Claude on every side, and now say so out loud
+  (`same_family_judge: true`, a warning badge on the card) instead of reading
+  as independent verdicts. They are replaced, not re-dressed: the 12 packed
+  plugins get a graded pair on the next refresh run.
+- **A signed chain back to the run.** `refresh-examples.yml` passes the
+  Actions `run_url` into each snapshot, keeps every `results.json` as a
+  90-day artifact, and signs each snapshot it wrote with
+  `actions/attest-build-provenance` (only the files that run produced — a seed
+  or an unchanged snapshot never carries a run's signature). A reader runs
+  `gh attestation verify docs/examples/data/<plugin>.json --repo
+  JRichlen/agent-plugins --signer-workflow …/refresh-examples.yml`; the card
+  prints that command, the file's SHA-256 and the run link. Seeds have no
+  signature and the page says exactly what a seed can and cannot prove.
+- **The page itself** was redesigned around the research in `DESIGN.md`:
+  sidebar + filters, verdict first, prompt verbatim behind a one-line preview,
+  transcripts clamped with one expand and stacking on narrow screens, a
+  nutrition-label provenance block per card, and a "how to verify" section.
+  The landing page is now generated (`docs/build-index.sh`) so it lists every
+  plugin with its example / grading / deep-dive status.
+
+### Phase 6 — polish
 - **Staleness guard**: flag a snapshot older than the `SKILL.md` it demonstrates
   (its captured-at commit predates the skill's last change) — a `docs-hygiene`
   or cheap-tier check, so an example can't quietly misrepresent a changed skill.
 - **Two-way linking**: each plugin `README`/`AGENTS.md` links to its gallery
-  card; the root `README` links to the gallery. (Cards already link to docs.)
+  card. (The root `README`, the landing page and the cards already link.)
 - **Multiple scenarios per plugin** where the extra pressure case adds signal
   (e.g. scope-fence pressures 1 and 2).
-- **Landing/index niceties**: filter by graded/seed, per-plugin permalink pages.
+- **Per-plugin permalink pages**, if the single page grows past what the
+  sidebar and filters can carry.
+- **Re-seed the 12 unpacked plugins with a different judge family** — or,
+  better, give them packs so the grade is a real rubric rather than a
+  same-family reader.
 
 ## Invariant this feature keeps
 
 Every published pair is a real, provenanced model run — captured from the eval
-tier, never hand-written. The gallery shows truth, including where a skill's
-effect is modest (the seed card says so out loud). No card without two real
-outputs and provenance; the cheap tier enforces it.
+tier, never hand-written — with every model named by role, and no model
+grading its own family. The gallery shows truth, including where a skill's
+effect is modest (the seed card says so out loud) and where the verdict is not
+independent (the same-family badge). No card without two real outputs and
+role-by-role provenance; the cheap tier enforces it, and a CI-captured pair is
+signed to the run that produced it.

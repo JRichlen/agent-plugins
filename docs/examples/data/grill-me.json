@@ -19,9 +19,14 @@
   "notice": "[divergence: stark] The two differ in shape more than in care. B is not the flat strawman the skill anticipates — it leads with the one thing it would argue with (app-layer-only isolation on a money system), carries opinions inside most of its 30 questions, leaves Stripe alone, tells you to split the rename into its own PR, and ends with a ranked \"start here\" — but it is still one undifferentiated dump the user must triage themselves, with no tier labels, no cost estimate, no way to accept a whole branch, and no gate before the plan counts as executable. A inverts that: anchor first, then five consent headers with tier, question count, and a whole-path recommendation, so the user can spend the 20 minutes on the two irreversible branches and wave the rest through. The honest cost is that A spends its entire first turn on routing and asks nothing yet, while B has already surfaced the concrete landmines — serial-PK collisions on fold, ledger hash chains, gapless invoice numbering, webhook tenant resolution — that A only promises to reach in Round 1.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

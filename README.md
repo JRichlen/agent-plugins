@@ -88,6 +88,18 @@ Pinning writes that exact form into `apm.yml`/`apm.lock.yaml`, so every machine
 that runs `apm install --frozen` resolves to the same plugin code — not
 "whatever `main` happened to be that day."
 
+## The documentation site
+
+[jrichlen.github.io/agent-plugins](https://jrichlen.github.io/agent-plugins/)
+is generated from this repository: a catalog of every plugin, real
+[before/after examples](https://jrichlen.github.io/agent-plugins/examples/)
+for each skill with the subject, grader and judge models disclosed and a
+verification path back to the CI run that produced them, the
+[design timeline](https://jrichlen.github.io/agent-plugins/timeline/), and
+deep dives on redgate and agent-compiler. The pages are rendered by scripts in
+`docs/` and the cheap tier fails any commit that lets them drift from their
+data.
+
 ## Repository layout
 
 ```

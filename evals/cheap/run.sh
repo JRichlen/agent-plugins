@@ -1094,7 +1094,7 @@ else
 fi
 if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
-import glob, json, os, sys
+import glob, json, os, re, sys
 root = sys.argv[1]
 fail = 0
 found = 0
@@ -1112,15 +1112,54 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
         if isinstance(s.get(side), dict) and not (s[side].get("output") or "").strip():
             prob.append(f"{side} has no output")
     prov = s.get("provenance") or {}
-    for k in ("source", "model"):
+    # Every model involved is DISCLOSED by role — subject (answered), grader
+    # (pass/fail rubric), judge (the divergence verdict) — and the snapshot
+    # says whether it is attested. A legacy 'model'/'grader' pair is not
+    # enough: it never said who judged, nor whether judge and subject were
+    # the same model.
+    for k in ("source", "subject_model", "grader_model", "judge_model", "attestation"):
         if not prov.get(k): prob.append(f"provenance missing {k}")
+    if not isinstance(prov.get("same_family_judge"), bool):
+        prob.append("provenance.same_family_judge must be true or false")
+    for k in ("commit", "captured_at"):
+        if not prov.get(k): prob.append(f"provenance missing {k}")
+    def family(mid):
+        m = str(mid or "").lower()
+        if m.startswith("openrouter:"):
+            rest = m.split(":", 1)[1]
+            return rest.split("/", 1)[0] if "/" in rest else rest
+        return m.split(":", 1)[0]
+    src = str(prov.get("source") or "")
+    if src.startswith("promptfoo"):
+        # A graded pair: the grader must be a different model family from
+        # the subject (a model grading itself is not a grade), the run that
+        # produced it must be linkable, and the grades must be real booleans.
+        if family(prov.get("subject_model")) == family(prov.get("grader_model")):
+            prob.append(f"graded pair whose subject ({prov.get('subject_model')}) and grader ({prov.get('grader_model')}) are the same model family")
+        if prov.get("same_family_judge") is not False:
+            prob.append("graded pair must set same_family_judge=false")
+        ru = prov.get("run_url")
+        if not (isinstance(ru, str) and re.match(r"^https://github\.com/[^/]+/[^/]+/actions/runs/\d+", ru)):
+            prob.append("graded pair has no GitHub Actions run_url")
+        for side in ("with_skill", "without_skill"):
+            g = (s.get(side) or {}).get("graded") or {}
+            if not isinstance(g.get("pass"), bool):
+                prob.append(f"{side}.graded.pass must be true/false on a graded pair")
+    elif "seed" in src:
+        # An ungraded seed may not pose as more than it is.
+        if prov.get("same_family_judge") is not True and "none" not in str(prov.get("judge_model")).lower() and "not recorded" not in str(prov.get("judge_model")).lower():
+            prob.append("seed with an independent judge must say whether it shares the subject's model family (same_family_judge)")
+        if str(prov.get("attestation") or "").startswith("github"):
+            prob.append("a seed cannot claim a GitHub attestation — only the refresh workflow signs snapshots")
+    else:
+        prob.append(f"unknown provenance.source '{src}' (expected promptfoo* or *seed*)")
     # a plugin snapshot must name a real installed plugin
     if s.get("plugin") and not os.path.isdir(os.path.join(root, "plugins", s["plugin"])):
         prob.append(f"plugin '{s['plugin']}' is not installed")
     if prob:
         print(f"  FAIL examples/{name}: " + "; ".join(prob)); fail += 1
     else:
-        print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
+        print(f"  PASS examples/{name}: real pair, models disclosed by role ({s['plugin']}: {src})")
 if found == 0:
     print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
 # PLAN.md's "committed snapshots | **N of M**" row is a hand-written count that
@@ -1142,6 +1181,70 @@ sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
+
+# --- 19a. Landing page (docs/index.html) is in sync with the marketplace -----
+# The Pages hub lists every plugin with its example / pack / deep-dive status,
+# rendered by docs/build-index.sh from marketplace.json, the snapshots and the
+# packs. Same guard as the gallery: present-but-stale fails, so the hub can
+# never again list two plugins of twenty-four.
+group "landing page — in sync with the marketplace"
+if [ ! -e docs/build-index.sh ]; then
+  ok "landing page: not present in this root — nothing to check"
+elif [ ! -x docs/build-index.sh ]; then
+  bad "landing: build-index.sh exists but is not executable — chmod +x it"
+elif docs/build-index.sh --check >/dev/null 2>&1; then
+  ok "landing: docs/index.html is in sync with marketplace.json, the snapshots and the packs"
+else
+  bad "landing: docs/index.html is STALE — run docs/build-index.sh"
+fi
+
+# --- 19b. Behavioral packs never grade with the model family they test -------
+# The gallery's "graded" badge is only worth something if the grader is not the
+# subject. Every promptfoo pack pins one subject provider (providers[0]) and one
+# llm-rubric grader (defaultTest.options.provider); this refuses a pack where
+# the two share a vendor/family (openrouter:anthropic/... counts as anthropic).
+# Coupled: point a pack's grader at the subject's family and this goes red.
+group "behavioral packs — subject and grader are different model families"
+python3 - "$REPO_ROOT" <<'PYF'
+import glob, os, re, sys
+root = sys.argv[1]
+def family(mid):
+    m = str(mid or "").lower()
+    if m.startswith("openrouter:"):
+        rest = m.split(":", 1)[1]
+        return rest.split("/", 1)[0] if "/" in rest else rest
+    return m.split(":", 1)[0]
+def roles(cfg_path):
+    txt = open(cfg_path).read()
+    try:
+        import yaml
+        doc = yaml.safe_load(txt) or {}
+        provs = doc.get("providers") or []
+        p0 = provs[0] if provs else None
+        subj = (p0.get("id") if isinstance(p0, dict) else p0) if p0 else None
+        gp = (((doc.get("defaultTest") or {}).get("options") or {}).get("provider"))
+        grader = gp.get("id") if isinstance(gp, dict) else gp
+        return subj, grader
+    except Exception:
+        subj = re.search(r"^providers:\s*\n\s*-\s*id:\s*(\S+)", txt, re.M)
+        grader = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
+        return (subj.group(1) if subj else None), (grader.group(1) if grader else None)
+fail = 0; seen = 0
+for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
+    seen += 1
+    plugin = cfg.split(os.sep)[-4]
+    subj, grader = roles(cfg)
+    if not subj or not grader:
+        print(f"  FAIL {plugin}: cannot read subject ({subj}) and grader ({grader}) from promptfooconfig.yaml"); fail += 1
+    elif family(subj) == family(grader):
+        print(f"  FAIL {plugin}: subject {subj} and grader {grader} are the same model family — a model must not grade itself"); fail += 1
+    else:
+        print(f"  PASS {plugin}: subject={subj} grader={grader}")
+if seen == 0:
+    print("  PASS no promptfoo packs in this root — nothing to check")
+sys.exit(1 if fail else 0)
+PYF
+if [ $? -eq 0 ]; then ok "every behavioral pack grades with a different model family than it tests"; else bad "a behavioral pack grades with the model family it tests"; fi
 
 # ═══ BEGIN testing-doc drift guard (issue #89) ═══════════════════════════════
 # --- 20. Testing-doc drift (docs/testing.md <-> live tier inventory) ---------
