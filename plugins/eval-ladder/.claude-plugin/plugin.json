@@ -1,0 +1,14 @@
+{
+  "name": "eval-ladder",
+  "version": "0.0.1",
+  "description": "Design and audit the eval ladder for an agent system: pick the cheapest tier that can catch a given regression, name what each tier structurally cannot prove, validate every LLM judge against human labels (TPR and TNR separately), and score irreversible-action scenarios pass^k rather than by majority.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/eval-ladder",
+  "license": "MIT",
+  "keywords": [],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}
