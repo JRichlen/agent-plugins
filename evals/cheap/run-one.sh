@@ -11,9 +11,11 @@
 # plugin without re-running the entire repo sweep.
 #
 # It replicates run.sh section 10's sourcing contract exactly: resolve the
-# plugin's source from marketplace.json, export PLUGIN_NAME / PLUGIN_DIR, define
-# the same ok()/bad()/group() helpers the pack inherits, cd to the repo root, and
-# dot-source plugins/<source>/evals/cheap/checks.sh. Discovery FAILS CLOSED: a
+# plugin's source from marketplace.json, export PLUGIN_NAME / PLUGIN_DIR, source
+# the SAME evals/cheap/helpers.sh run.sh does (so both runners offer an identical
+# helper set — see #120, where this file defined three of six and packs silently
+# skipped every check using the other three), cd to the repo root, and dot-source
+# plugins/<source>/evals/cheap/checks.sh. Discovery FAILS CLOSED: a
 # registered plugin with no pack is a failure, never a silent skip — identical to
 # run.sh's philosophy.
 #
@@ -69,16 +71,21 @@ fi
 PLUGIN_DIR="$PLUGIN_SRC"
 
 pass=0; fail=0
-ok()   { printf '  \033[32mPASS\033[0m %s\n' "$1"; pass=$((pass+1)); }
-bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=$((fail+1)); }
-group(){ printf '\n\033[1m%s\033[0m\n' "$1"; }
+# The SAME helper file run.sh sources. Before #120 this runner defined only
+# ok/bad/group, so every has/hasE/lacksE call in a pack was a "command not
+# found" that execution sailed past — 249 checks across 14 plugins silently
+# skipped in the tier the REQUIRED install matrix uses, reported as green.
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 
 group "plugin '$PLUGIN_NAME' cheap eval pack (isolated)"
 pack="$PLUGIN_SRC/evals/cheap/checks.sh"
 if [ -f "$pack" ]; then
   export PLUGIN_NAME PLUGIN_DIR
+  pack_guard_on
   # shellcheck source=/dev/null
   . "$pack"
+  pack_guard_off
 else
   bad "plugin '$PLUGIN_NAME' ($PLUGIN_SRC) has no cheap eval pack at $pack"
 fi
