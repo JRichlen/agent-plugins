@@ -390,6 +390,15 @@ that it is green because it did not run, never silently.
   (accepted owner decision); pages is free.
 - **Local run.** `docs/build-examples.sh --check` (sync only; the capture
   itself needs the behavioral tier's keys).
+- **Why a zero-capture run is now a hard failure.** Two refresh runs
+  (2026-09-01 and 2026-09-08) graded all 12 packs, spent roughly 50 minutes of
+  paid API time, wrote **zero** snapshots, and both reported success: every
+  `capture-example.sh` call is `|| true`, and its skip printed one opaque line.
+  The workflow now fails when it captures nothing (that is always systemic — a
+  dead subject key, a moved schema, a pack whose real-skill rows all fail), the
+  skip names its own cause (row counts, pass counts, the top failure reason),
+  and the cheap tier pins both halves against offline fixtures in the shape
+  promptfoo 0.122.0 actually emits (`evals/cheap/fixtures/capture-example/`).
 - **Why the refresh deletes its own `results.json`.** `promptfoo eval --output
   results.json` writes into each pack directory. Those files are gitignored,
   but the cheap tier scans the *working tree*, and a `results.json` embeds the

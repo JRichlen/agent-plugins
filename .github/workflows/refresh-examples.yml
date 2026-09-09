@@ -66,7 +66,9 @@ jobs:
             echo "::group::eval $p"
             # One eval per pack is enough to capture a representative pair. A pack
             # that errors does not abort the run — its previous snapshot stands.
-            ( cd "plugins/$p/evals/promptfoo" && npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json ) || echo "::warning::$p eval failed — keeping previous snapshot"
+            rc=0
+            ( cd "plugins/$p/evals/promptfoo" && npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json ) || rc=$?
+            [ "$rc" -eq 0 ] || echo "::warning::$p: promptfoo exited $rc — capture will explain what that left behind"
             # Provenance the reader can follow back: the run URL (this log), the
             # grader read from the pack itself, and a promise of attestation that
             # the step below keeps — the job fails, and no PR opens, if it doesn't.
@@ -75,11 +77,19 @@ jobs:
               --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               --attestation github || true
             echo "::endgroup::"
+            # Per-plugin outcome, outside the collapsed group so a reader sees the
+            # shape of the run at a glance rather than expanding twelve sections.
+            if [ -f "docs/examples/data/$p.json" ] && [ "docs/examples/data/$p.json" -nt "$stamp" ]; then
+              echo "captured: $p"
+            else
+              echo "NOT captured: $p (eval exit $rc — see its group above for the reason)"
+            fi
           done
           {
             echo "written<<EOF"
             find docs/examples/data -name '*.json' -newer "$stamp" | sort
             echo "EOF"
+            echo "attempted=$(printf '%s\n' $plugins | grep -c . || true)"
           } >> "$GITHUB_OUTPUT"
       - name: keep the raw promptfoo results next to the run
         # The results.json files are the primary evidence the snapshots are
@@ -91,6 +101,18 @@ jobs:
           path: plugins/*/evals/promptfoo/results.json
           if-no-files-found: warn
           retention-days: 90
+      - name: fail if the refresh captured nothing
+        # A run that grades every pack and writes no snapshot is not a success.
+        # Two runs (2026-09-01 and 2026-09-08) did exactly that — all 12 packs
+        # evaluated, ~50 minutes of paid API time spent, zero snapshots written,
+        # and both reported green because every capture is `|| true`. Zero
+        # captures is always systemic (a dead subject key, a moved schema, a
+        # pack whose real-skill rows all fail), never routine, so it is a hard
+        # failure with the per-plugin reasons already printed above.
+        if: steps.capture.outputs.written == ''
+        run: |
+          echo "::error::refresh captured ZERO snapshots from ${{ steps.capture.outputs.attempted }} pack(s). The packs ran and produced results, but no plugin yielded a passing real-skill row paired with a calibration row. Each plugin's 'NO SNAPSHOT' block above names its own cause; the raw results are in the promptfoo-results artifact on this run."
+          exit 1
       - name: drop the generated results.json files
         # `promptfoo eval --output results.json` writes into each pack directory.
         # Those files are gitignored, but the cheap tier scans the WORKING TREE:
