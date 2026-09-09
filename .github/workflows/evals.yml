@@ -86,6 +86,7 @@ jobs:
             evals.agentic.tests.test_redteam_tranche_tools \
             evals.agentic.tests.test_redteam_grader_faults \
             evals.agentic.tests.test_redteam_logger \
+            evals.agentic.tests.test_redteam_design.TwoByTwoCompleteness \
             evals.agentic.tests.test_redteam_controls.SafeVulnerableControls
 
   # ── counterfeit tier ──────────────────────────────────────────────────────

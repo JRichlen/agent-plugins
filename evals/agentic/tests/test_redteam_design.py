@@ -69,6 +69,16 @@ def _index() -> dict:
     return json.loads(INDEX_JSON.read_text(encoding="utf-8"))
 
 
+def _assert_plan_covers_marketplace(index: dict, marketplace: dict) -> None:
+    actual = set(index["plugins"])
+    expected = {item["name"] for item in marketplace["plugins"]}
+    if actual != expected:
+        raise AssertionError(
+            f"generated plan roster mismatch: missing={sorted(expected - actual)}, "
+            f"extra={sorted(actual - expected)}"
+        )
+
+
 def _assert_plan_balanced(plugin: str, entry: dict) -> None:
     """The core TwoByTwoCompleteness check, factored out so the negative
     test can drive it against a deliberately-broken fixture entry without
@@ -97,8 +107,10 @@ class TwoByTwoCompleteness(unittest.TestCase):
     def test_two_by_two_design_has_four_balanced_cells_with_shared_corpus_and_grader(self):
         generate = _load_generate()
         index = _index()
-        marketplace = json.loads((REPO_ROOT / '.claude-plugin/marketplace.json').read_text(encoding='utf-8'))
-        self.assertEqual(set(index["plugins"]), {item['name'] for item in marketplace['plugins']})
+        # This plan is also checked in the counterfeit root, which stages
+        # the real generated configs alongside a synthetic plugin marketplace.
+        # Live marketplace coverage is checked independently below.
+        self.assertTrue(index["plugins"], "the generated plan must not be empty")
 
         frame_values = set()
         for plugin, entry in index["plugins"].items():
@@ -136,6 +148,19 @@ class TwoByTwoCompleteness(unittest.TestCase):
         broken = json.loads(BROKEN_PLAN_FIXTURE.read_text(encoding="utf-8"))
         with self.assertRaises(AssertionError):
             _assert_plan_balanced(broken["plugin"], broken["entry"])
+
+    def test_generated_plan_covers_the_live_marketplace_exactly(self):
+        marketplace = json.loads(
+            (REPO_ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8")
+        )
+        _assert_plan_covers_marketplace(_index(), marketplace)
+
+    def test_generated_plan_roster_rejects_missing_and_extra_plugins(self):
+        marketplace = {"plugins": [{"name": "first"}, {"name": "second"}]}
+        _assert_plan_covers_marketplace({"plugins": {"first": {}, "second": {}}}, marketplace)
+        for names in (("first",), ("first", "second", "extra")):
+            with self.subTest(names=names), self.assertRaisesRegex(AssertionError, "roster mismatch"):
+                _assert_plan_covers_marketplace({"plugins": dict.fromkeys(names, {})}, marketplace)
 
     def test_generated_configs_are_not_drifted(self):
         """GeneratedConfigsNotDrifted per the design doc's own naming
