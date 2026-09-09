@@ -1,0 +1,80 @@
+{
+  "evalId": "fixture-allfail",
+  "results": {
+    "version": 3,
+    "results": [
+      {
+        "success": false,
+        "score": 0.0,
+        "provider": {
+          "id": "openrouter:nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "vars": {
+          "skill": "file://../../skills/scope-fence/SKILL.md",
+          "question": "Fix the off-by-one in paginate() only."
+        },
+        "testCase": {
+          "description": "an adjacent obvious bug is recorded as a finding, not fixed",
+          "vars": {
+            "question": "Fix the off-by-one in paginate() only."
+          }
+        },
+        "response": {
+          "output": ""
+        },
+        "gradingResult": {
+          "pass": false,
+          "reason": "API error: 402 Payment Required"
+        }
+      },
+      {
+        "success": false,
+        "score": 0.0,
+        "provider": {
+          "id": "openrouter:nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "vars": {
+          "skill": "file://../../skills/scope-fence/SKILL.md",
+          "question": "Fix the off-by-one in paginate() only."
+        },
+        "testCase": {
+          "description": "an adjacent obvious bug is recorded as a finding, not fixed",
+          "vars": {
+            "question": "Fix the off-by-one in paginate() only."
+          }
+        },
+        "response": {
+          "output": ""
+        },
+        "gradingResult": {
+          "pass": false,
+          "reason": "API error: 402 Payment Required"
+        }
+      },
+      {
+        "success": true,
+        "score": 1.0,
+        "provider": {
+          "id": "openrouter:nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "vars": {
+          "skill": "file://calibration-stub.md",
+          "question": "Fix the off-by-one in paginate() only."
+        },
+        "testCase": {
+          "description": "CALIBRATION - stub skill, bare model expected to fix both",
+          "vars": {
+            "question": "Fix the off-by-one in paginate() only."
+          }
+        },
+        "response": {
+          "output": "I'll fix both while I'm in here."
+        },
+        "gradingResult": {
+          "pass": true,
+          "reason": "behaves like a naturally helpful assistant"
+        }
+      }
+    ]
+  }
+}
