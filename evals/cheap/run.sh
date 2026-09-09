@@ -1240,7 +1240,21 @@ if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
     print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
 if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
     print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
-print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
+# The refresh is the workflow that SPENDS the budget, so the subject-model
+# reachability preflight must run here and must run BEFORE the paid pack loop.
+# Preflighting only evals.yml left the expensive path unguarded (PR #131 review).
+pre = re.search(r"^\s*-\s*name:.*preflight.*subject model.*$", txt, re.M)
+loop = re.search(r"^\s*-\s*name:\s*run packs, capture real example snapshots\s*$", txt, re.M)
+if not pre:
+    print("  FAIL refresh-examples.yml has no subject-model preflight — a revoked key sends it straight into a ~40-minute paid loop"); sys.exit(1)
+if not loop:
+    print("  FAIL refresh-examples.yml no longer has the 'run packs' step the preflight is meant to guard"); sys.exit(1)
+if pre.start() > loop.start():
+    print("  FAIL refresh-examples.yml runs the subject-model preflight AFTER the paid pack loop — the money is already spent by then"); sys.exit(1)
+pre_step = txt[pre.end(): (re.search(r"^\s*-\s*name:", txt[pre.end():], re.M).start() + pre.end())]
+if "check-subject-model.sh" not in pre_step:
+    print("  FAIL refresh-examples.yml preflight does not invoke evals/paid/check-subject-model.sh"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before the cheap tier, fails closed on a zero-capture run, and preflights the subject model before spending"); sys.exit(0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 

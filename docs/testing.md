@@ -373,12 +373,24 @@ that it is green because it did not run, never silently.
 - **What it cannot prove.** That the model answers *well* — only that it
   answers at all. A pack whose rubric legitimately fails a reachable model
   looks identical here.
-- **Advisory on purpose.** It is deliberately **not** in the behavioral gate's
-  `needs`, so a dead subject key reports in seconds instead of turning a
-  required check red across every open PR. Promoting it to a gate (adding it to
-  the behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is
-  a one-line change and an owner decision.
-- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs).
+- **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
+  workflow it is deliberately **not** in the behavioral gate's `needs`, so a
+  dead subject key reports in seconds instead of turning a required check red
+  across every open PR; promoting it to a gate there (adding it to the
+  behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is a
+  one-line change and an owner decision. In the **refresh** workflow it runs as
+  a hard preflight *before* the paid pack loop, because that is the workflow
+  that actually spends the budget — preflighting only `evals.yml` would leave
+  the expensive path unguarded. A cheap-tier guard fails if that preflight is
+  removed, reordered after the pack loop, or stops calling the script.
+- **Implementation.** `evals/paid/check-subject-model.sh`, shared by both
+  workflows so the two can never drift. It reads provider ids from the parsed
+  YAML `providers:` list rather than grepping the file, so a commented-out
+  historical slug left above the active one during a migration cannot be
+  reported green while promptfoo calls a different model. `--list` prints the
+  slugs it would ping and needs no network or key.
+- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
+  and at the start of every `refresh-examples.yml` run.
 - **Cost.** One 8-token completion per distinct subject slug per run.
 - **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
 
