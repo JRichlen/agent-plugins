@@ -355,15 +355,23 @@ jobs:
 
   behavioral-run:
     name: behavioral tier — promptfoo (${{ matrix.plugin }})
-    needs: [behavioral-detect, grader-model]
+    needs: [behavioral-detect, grader-model, routing-eval]
+    # Share the subject-provider budget with routing without overlapping calls.
+    # !cancelled() overrides the implicit success() dependency gate: a routing
+    # FAILURE must not skip these independent behavioral measurements.
     # No packs → nothing to run. Fork PRs have no secrets, same as the other tiers.
     if: >-
+      !cancelled() &&
+      needs.behavioral-detect.result == 'success' &&
+      needs.grader-model.result == 'success' &&
       needs.behavioral-detect.outputs.plugins != '[]' &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # A per-pack cap alone multiplies across the matrix. Serialize packs too.
+      max-parallel: 1
       matrix:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
@@ -435,7 +443,7 @@ jobs:
         # real arbiter: it excludes FAULTs and scores a per-scenario floor over the
         # valid samples. A total crash that writes no results.json still fails,
         # because pass-rate.sh exits non-zero on a missing/unreadable file.
-        run: npx --yes promptfoo@0.122.0 eval --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
+        run: npx --yes promptfoo@0.122.0 eval --max-concurrency 1 --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
       - name: statistical gate (per-scenario pass rate, FAULT-excluding)
         if: steps.touched.outputs.paid == 'true'
         # repeat:3 in each pack expands every scenario into 3 rows. This enforces a
@@ -601,7 +609,7 @@ jobs:
         # distinction unreachable. Only a missing/empty results.json (the eval
         # itself never ran) fails this step.
         run: |
-          npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json \
+          npx --yes promptfoo@0.122.0 eval --max-concurrency 1 -c promptfooconfig.yaml --output results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s results.json
       - name: promptfoo eval (redgate trajectory)
@@ -615,7 +623,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PROMPTFOO_RETRY_5XX: "true"
         run: |
-          npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output trajectory-results.json \
+          npx --yes promptfoo@0.122.0 eval --max-concurrency 1 -c promptfooconfig.yaml --output trajectory-results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s trajectory-results.json
       - name: statistical gate (per-scenario k-of-N pass rate)

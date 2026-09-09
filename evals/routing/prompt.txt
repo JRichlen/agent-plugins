@@ -15,8 +15,11 @@ another:
   rounds, or a classified human gate. Work that is merely nontrivial does not
   acquire an envelope; none is the default.
 - guards — zero or more cross-cutting rules honored during execution, owning
-  neither the procedure nor the round loop. Comma-separated, alphabetically
-  sorted, no duplicates; none when empty.
+  neither the procedure nor the round loop. Evaluate each guard's trigger
+  independently: an envelope or specialist does not subsume a different skill's
+  guard merely because their verification steps overlap. If that guard's rule
+  applies, include it alongside the procedure and envelope. Comma-separated,
+  alphabetically sorted, no duplicates; none when empty.
 - interaction_owner — the skill that owns any blocking human question. It
   must be a skill already named in specialist or envelope (a guard never
   interviews the user), or none when no blocking human decision is expected.

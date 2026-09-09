@@ -1763,6 +1763,27 @@ if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" 
 fi
 # ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
 
+# ─── Paid subject scheduling (offline) ──────────────────────────────────────
+# Routing and behavioral packs share one provider's in-flight budget. Protect
+# both job order and per-command caps without changing trials or scoring.
+# Synthetic roots without the paid workflow have no schedule to validate;
+# a present workflow with a missing/broken checker fails closed.
+if [ -f ".github/workflows/evals.yml" ]; then
+  group "paid subject scheduling (routing then serialized packs)"
+  if out="$(python3 ci/check_paid_scheduling.py --repo . --self-test 2>&1)"; then
+    ok "paid scheduling regressions rejected by offline self-test"
+  else
+    bad "paid-scheduling drift: scheduling guard self-test failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+  if out="$(python3 ci/check_paid_scheduling.py --repo . 2>&1)"; then
+    ok "paid subject jobs and commands serialize without losing selection guards"
+  else
+    bad "paid-scheduling drift: provider calls can overlap or selection changed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
+
 # ─── BEGIN RQ-002 typed route/step contracts (offline) ───────────────────────
 # The composition routing pack (evals/routing/) and its redgate trajectory pack
 # (evals/routing/trajectory/) grade a typed ROUTE:/STEP: line through fail-closed

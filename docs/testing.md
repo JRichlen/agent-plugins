@@ -231,6 +231,18 @@ that it is green because it did not run, never silently.
   `behavioral tier (promptfoo)`; skipped legs announce themselves.
 - **Cost.** Cents per touched plugin per run (subject model via OpenRouter,
   grader on Anthropic).
+- **Scheduling.** Within one evals workflow, routing and trajectory finish before
+  behavioral packs start. A failed routing verdict does not skip the independent
+  behavioral packs. Packs run one at a time and all three subject-evaluation
+  commands use `--max-concurrency 1`; this prevents the per-pack concurrency cap
+  from multiplying across the matrix. The change addresses recorded OpenRouter
+  `402 in_flight_budget_exhausted` faults without changing trials, token budgets,
+  models, assertions, or statistical floors. Other workflows/accounts can still
+  consume the same provider budget; a remaining fault must still fail closed.
+  The offline scheduling guard checks the dependency, failure continuation,
+  matrix cap, and CLI limits, including deliberately broken controls.
+  See GitHub's [status-check expression semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions)
+  and [matrix concurrency control](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations#defining-the-maximum-number-of-concurrent-jobs).
 - **Local run.**
   ```sh
   cd plugins/<plugin>/evals/promptfoo
@@ -255,6 +267,12 @@ persistent monitoring, provider availability, cross-provider equivalence,
 HydraFusion performance, cost savings, or a multi-round project outcome.
 
 ## routing tier
+
+The routing prompt evaluates each guard independently even when an envelope or
+specialist has overlapping verification steps. This makes the existing required
+guard assertions explicit in the input contract; it does not add scenario answers
+or relax the assertions. Empty completion-budget-exhausted replies remain failures.
+
 
 - **What it proves.** With the *full* roster of installed skill descriptions
   in context, a model routes labeled requests to the right **composition** —
