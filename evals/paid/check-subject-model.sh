@@ -10,6 +10,17 @@
 # 12 packs, spent ~50 minutes of paid API time, captured nothing, and reported
 # success.
 #
+# WHAT A GREEN HERE DOES NOT MEAN. A ping is a single 8-token request. OpenRouter
+# reserves credit per request against the ones already in flight, so it answers
+# 402 "would exceed your available credits given your current in-flight requests"
+# for a real pack run while still answering 200 for a ping — and a full CI fan-out
+# is ~12 packs x concurrency 3. That is not a hypothetical: on 2026-09-09 this
+# check returned 200 for every slug and 11 of 12 behavioral packs were
+# simultaneously failing every row with exactly that 402. So the ping proves the
+# key and the slug, and it proves NOTHING about whether the account can fund a
+# run. The balance probe below is what speaks to funding; it is advisory because
+# it depends on a response shape this repo does not control.
+#
 # It lives in a script rather than inline in a workflow because BOTH the evals
 # workflow and the refresh workflow must run it — the refresh is the one that
 # actually spends the budget, so preflighting only the former would leave the
@@ -130,7 +141,36 @@ if [ -z "${OPENROUTER_API_KEY:-}" ]; then
   exit 1
 fi
 
-fail=0
+# --- balance probe -----------------------------------------------------------
+# Advisory, and deliberately so. It reports what the account says about its own
+# credit so a 402 storm is diagnosable BEFORE the packs run, rather than after a
+# reviewer reads an empty transcript box. It never fails the run on a shape it
+# cannot parse: this repo does not own OpenRouter's response schema, and failing
+# closed on an unrecognised field would block CI on a vendor's rename. It DOES
+# fail closed on the one unambiguous signal — a remaining balance at or below 0.
+kb="$(mktemp)"
+kcode=$(curl -sS -o "$kb" -w '%{http_code}' https://openrouter.ai/api/v1/key \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY") || kcode=000
+if [ "$kcode" = "200" ]; then
+  remaining="$(jq -r '.data.limit_remaining // empty' "$kb" 2>/dev/null || true)"
+  usage="$(jq -r '.data.usage // "?"' "$kb" 2>/dev/null || echo "?")"
+  limit="$(jq -r '.data.limit // "unlimited/unknown"' "$kb" 2>/dev/null || echo "?")"
+  echo "credit: usage=$usage limit=$limit remaining=${remaining:-<not reported>}"
+  case "$remaining" in
+    ''|*[!0-9.eE+-]*)
+      echo "::warning::OpenRouter did not report a numeric remaining balance, so funding is UNVERIFIED. A pack run can still 402 with every ping below green." ;;
+    *)
+      if awk -v r="$remaining" 'BEGIN{exit !(r+0 <= 0)}'; then
+        echo "::error::OpenRouter reports $remaining credit remaining — the behavioral packs will 402 on every row. Add credit before spending a run."
+        fail_balance=1
+      fi ;;
+  esac
+else
+  echo "::warning::could not read the OpenRouter key/credit endpoint (HTTP $kcode) — funding is UNVERIFIED; the pings below prove reachability only."
+fi
+rm -f "$kb"
+
+fail="${fail_balance:-0}"
 checked=0
 while IFS= read -r model; do
   [ -n "$model" ] || continue
@@ -141,9 +181,9 @@ while IFS= read -r model; do
     -H "content-type: application/json" \
     -d "{\"model\":\"$model\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
   case "$code" in
-    200) echo "subject model '$model' resolved OK — key valid, slug valid, balance sufficient." ;;
+    200) echo "subject model '$model' reachable — key valid, slug valid. (Says nothing about funding a full run: see the balance probe above.)" ;;
     401) echo "::error::subject model '$model': HTTP 401 — the OpenRouter key is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
-    402) echo "::error::subject model '$model': HTTP 402 — OpenRouter reports insufficient credit. Packs will run and every real-skill row will fail."; fail=1 ;;
+    402) echo "::error::subject model '$model': HTTP 402 — OpenRouter reports insufficient credit. Packs will run and every real-skill row will fail. If even this 8-token ping is 402, the account is empty; the same 402 at pack scale with a green ping means the balance is too thin for the concurrent fan-out."; fail=1 ;;
     404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
     429) echo "::warning::subject model '$model': HTTP 429 — rate limited right now; not conclusive." ;;
     *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' "$body" 2>/dev/null | head -5; fail=1 ;;

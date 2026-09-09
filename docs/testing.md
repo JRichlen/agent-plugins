@@ -362,23 +362,35 @@ that it is green because it did not run, never silently.
 ## subject-model reachability (advisory)
 
 - **What it proves.** That the model every behavioral pack actually tests is
-  callable right now: the `OPENROUTER_API_KEY` secret is valid, the balance is
-  sufficient, and the pinned slug still exists. It reports the distinct HTTP
-  causes separately (401 revoked key, 402 no credit, 404 moved slug) so the fix
-  is named rather than guessed.
+  *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
+  slug still exists. It reports the distinct HTTP causes separately (401 revoked
+  key, 402 no credit, 404 moved slug) so the fix is named rather than guessed,
+  and it separately probes the account's reported credit, failing closed when
+  that balance is at or below zero.
 - **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
   never once checked the *subject*, so an unreachable subject was a blind spot:
   it would produce packs where every real-skill row fails with no signal
   anywhere. Two refresh runs (2026-09-01 and 2026-09-08) graded all 12 packs,
   spent roughly 50 minutes of paid API time, captured nothing and reported
   success — that is the evidence gap this check closes, **not** a diagnosis of
-  those runs. On its first run the check came back green, so subject
-  reachability was **ruled out** as their cause; the observed cause is that
-  five packs ship no calibration case, so no before/after pair can exist for
-  them (see the example-gallery section).
+  those runs. On its first run the check came back green, so a dead key or a
+  moved slug was ruled out. Two independent causes were then found: five packs
+  ship no calibration case, so no before/after pair can exist for them (see the
+  example-gallery section); and, separately, OpenRouter was answering
+  `402 Payment Required — this request would exceed your available credits given
+  your current in-flight requests` on the pack runs themselves.
 - **What it cannot prove.** That the model answers *well* — only that it
   answers at all. A reachable model can still fail every rubric, so a green
   here never means the packs are healthy; it only removes one explanation.
+- **What a green ping specifically does NOT prove: funding.** OpenRouter
+  reserves credit per request against the requests already in flight, and a CI
+  fan-out is roughly 12 packs at concurrency 3. So an 8-token ping can return
+  200 while every row of every pack returns 402. That is measured, not
+  theoretical: on 2026-09-09 this check reported all slugs reachable while 11 of
+  12 behavioral packs failed every row on exactly that 402. The credit probe
+  exists because of this; where the account reports no numeric remaining
+  balance, the check says outright that funding is **unverified** rather than
+  implying it is fine.
 - **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
   workflow it is deliberately **not** in the behavioral gate's `needs`, so a
   dead subject key reports in seconds instead of turning a required check red

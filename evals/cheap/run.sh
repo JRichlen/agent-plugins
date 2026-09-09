@@ -1258,6 +1258,42 @@ print("  PASS refresh-examples.yml deletes its results.json before the cheap tie
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 19a2b. The failing-transcript dump surfaces the TRANSPORT error ----------
+# A provider error leaves .response.output EMPTY, so a dump that prints only the
+# output renders "the API refused us" as a blank box that reads like "the model
+# said nothing". On 2026-09-09 that cost two runs and a wrong public diagnosis:
+# every failing row carried `402 Payment Required — would exceed your available
+# credits given your current in-flight requests` in .error, while this dump
+# showed empty output and the write-up said "the endpoint returns empty
+# completions". The dump must print the error, and must NOT mislabel a rubric
+# failure as transport — promptfoo >= 0.122 puts assertion text in .error too,
+# so the discriminator is .failureReason, exactly as pass-rate.sh uses it.
+group "failing-transcript dump surfaces the provider error, not just empty output"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "evals.yml")
+if not os.path.exists(wf):
+    print("  PASS evals.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+m = re.search(r"^\s*-\s*name:\s*show failing transcripts\s*$", txt, re.M)
+if not m:
+    print("  FAIL evals.yml has no 'show failing transcripts' step — a failing pack would print nothing to diagnose"); sys.exit(1)
+nxt = re.search(r"^\s*-\s*name:", txt[m.end():], re.M)
+step = txt[m.end(): m.end() + (nxt.start() if nxt else len(txt))]
+prob = []
+if ".error" not in step:
+    prob.append("the dump never reads .error, so a transport failure prints as an empty output box (the 402 that was misdiagnosed as 'empty completions')")
+if "TRANSPORT ERROR" not in step:
+    prob.append("the dump has no labelled transport-error section, so a reader cannot tell a refused call from a silent model")
+if "failureReason" not in step:
+    prob.append("the dump does not consult .failureReason, so an assertion message (which promptfoo >= 0.122 also puts in .error) would be mislabelled as a transport error")
+if prob:
+    print("  FAIL evals.yml failing-transcript dump: " + "; ".join(prob)); sys.exit(1)
+print("  PASS evals.yml failing-transcript dump prints the provider error and distinguishes it from a rubric failure"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
 # The gallery's whole supply chain runs through this script, and it silently
 # captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —
