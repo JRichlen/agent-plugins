@@ -358,6 +358,30 @@ that it is green because it did not run, never silently.
   plugins/graveyard/evals/pier/run.sh                            # full roster in Docker
   ```
 
+## subject-model reachability (advisory)
+
+- **What it proves.** That the model every behavioral pack actually tests is
+  callable right now: the `OPENROUTER_API_KEY` secret is valid, the balance is
+  sufficient, and the pinned slug still exists. CI had always confirmed the
+  Anthropic *grader* resolves and never once checked the *subject*, so a dead
+  key, an exhausted balance or a moved slug produced packs where every
+  real-skill row failed with no signal anywhere. That is how two refresh runs
+  (2026-09-01 and 2026-09-08) graded all 12 packs, spent roughly 50 minutes of
+  paid API time, captured nothing and reported success. The job reports the
+  distinct HTTP causes separately (401 revoked key, 402 no credit, 404 moved
+  slug) so the fix is named rather than guessed.
+- **What it cannot prove.** That the model answers *well* — only that it
+  answers at all. A pack whose rubric legitimately fails a reachable model
+  looks identical here.
+- **Advisory on purpose.** It is deliberately **not** in the behavioral gate's
+  `needs`, so a dead subject key reports in seconds instead of turning a
+  required check red across every open PR. Promoting it to a gate (adding it to
+  the behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is
+  a one-line change and an owner decision.
+- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs).
+- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
+
 ## example gallery (refresh + pages)
 
 - **What it proves.** The published before/after gallery is a *verification
@@ -524,6 +548,7 @@ job: build
 job: calibration sheet — draw and commit
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
+job: confirm subject model resolves (advisory)
 job: counterfeit tier
 job: counterfeit tier — detect
 job: counterfeit tier — run (corpus)

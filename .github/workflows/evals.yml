@@ -235,6 +235,69 @@ jobs:
           done <<< "$graders"
           [ "$fail" -eq 0 ]
 
+  subject-model:
+    # The mirror of grader-model, for the model actually UNDER TEST. CI has always
+    # confirmed the Anthropic grader slug resolves and never once checked the
+    # OpenRouter subject — so a dead key, an exhausted balance or a moved slug
+    # produced packs where every real-skill row failed, with no signal anywhere.
+    # That is how two refresh runs (2026-09-01, 2026-09-08) graded all 12 packs,
+    # spent ~50 minutes of paid API time, captured nothing, and reported success.
+    #
+    # ADVISORY on purpose: it is deliberately NOT wired into the behavioral gate's
+    # `needs`, so a dead subject key reports here in seconds instead of turning a
+    # required check red across every open PR. Promote it to a gate (add it to the
+    # behavioral aggregate's needs + assess, exactly as grader-model is) once the
+    # signal has been watched for a while — that is a one-line change and an
+    # owner decision, not one to make silently.
+    name: confirm subject model resolves (advisory)
+    runs-on: ubuntu-latest
+    # Secrets aren't available to fork PRs, so only run where they are.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: ping the configured subject model
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          set -uo pipefail
+          if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+            echo "::error::OPENROUTER_API_KEY secret is not set — every behavioral pack would grade a model it cannot call."
+            exit 1
+          fi
+          plugins="$(evals/paid/discover-paid-packs.sh promptfoo)"
+          if [ "$plugins" = "[]" ]; then echo "no promptfoo packs — nothing to resolve"; exit 0; fi
+          # The subject slug is the unambiguous `openrouter:` provider id (the
+          # grader is the `anthropic:messages:` one), so a plain grep is enough
+          # and is immune to a comment sitting under the `providers:` key.
+          subjects=""
+          for p in $(printf '%s' "$plugins" | jq -r '.[]'); do
+            cfg="plugins/$p/evals/promptfoo/promptfooconfig.yaml"
+            m="$(grep -oE 'openrouter:[A-Za-z0-9._/-]+' "$cfg" | head -1 | cut -d: -f2-)"
+            if [ -z "$m" ]; then
+              echo "::error::$p ($cfg) declares no 'openrouter:<model>' subject provider"
+              exit 1
+            fi
+            subjects="$subjects $m"
+          done
+          subjects="$(printf '%s\n' $subjects | sort -u)"
+          fail=0
+          while IFS= read -r model; do
+            [ -n "$model" ] || continue
+            code=$(curl -sS -o /tmp/or.json -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
+              -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+              -H "content-type: application/json" \
+              -d "{\"model\":\"$model\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
+            case "$code" in
+              200) echo "subject model '$model' resolved OK — key valid, slug valid, balance sufficient." ;;
+              401) echo "::error::subject model '$model': HTTP 401 — the OPENROUTER_API_KEY secret is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
+              402) echo "::error::subject model '$model': HTTP 402 — OpenRouter reports insufficient credit. Packs will run and every real-skill row will fail."; fail=1 ;;
+              404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
+              429) echo "::warning::subject model '$model': HTTP 429 — rate limited right now; not conclusive." ;;
+              *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' /tmp/or.json 2>/dev/null | head -5; fail=1 ;;
+            esac
+          done <<< "$subjects"
+          [ "$fail" -eq 0 ]
+
   # ── behavioral tier (promptfoo) ───────────────────────────────────────────
   # Paid LLM-rubric tier. Discovery enumerates the plugins that ship a promptfoo
   # pack (fail-closed: a plugin that DECLARES a pack but ships a broken/missing
