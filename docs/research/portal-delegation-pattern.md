@@ -285,8 +285,9 @@ models."* A cascade is not additive with the single largest free lever.
 ### The native equivalent, which costs nothing to try
 
 Claude Code ships the context-isolation half already. The built-in `Explore`
-subagent is read-only, runs in its own window, and returns a summary. Since
-v2.1.198 it inherits the main model — but a user or project subagent named
+subagent is read-only, runs in its own window, and returns a summary. As of
+v2.1.198 it inherits the main conversation's model instead of always running on
+Haiku ([subagents reference][subagents]) — but a user or project subagent named
 `Explore` overrides the built-in and keeps its own `model` field:
 
 ```markdown
@@ -355,7 +356,13 @@ deciding not to delegate.
 - [RouteLLM][routellm] — arXiv:2406.18665
 - [Claude Code hooks reference][hooks] and [subagents][subagents] — hook schema, built-in `Explore`, `CLAUDE_CODE_SUBAGENT_MODEL`
 - [Gemini API pricing][gemini] — Gemini 2.5 Flash rates
-- Claude model and prompt-caching rates: the bundled `claude-api` skill's pricing and `shared/prompt-caching.md` / `shared/cost-optimization.md` references
+- [Claude model pricing][pricing] — the Opus 5 base-input, 5-minute cache-write, and
+  cache-hit rates used in §3 ($5.00 / $6.25 / $0.50 per MTok)
+- [Prompt caching][caching] — the `1.25×` write and `0.1×` read multipliers
+- The orchestrator measurement and lever ordering quoted in §5 come from Anthropic's
+  bundled `claude-api` agent skill (`shared/cost-optimization.md`), which ships with
+  Claude Code rather than living in this repository or on a public URL. Quoted
+  verbatim above so the claim can be checked against that file directly.
 
 [post]: https://engineering.atspotify.com/2026/9/portal-by-spotify-cut-my-claude-code-token-usage-by-90
 [repo]: https://github.com/spotify/portal-ai-plugins
@@ -368,3 +375,5 @@ deciding not to delegate.
 [hooks]: https://docs.claude.com/en/docs/claude-code/hooks
 [subagents]: https://docs.claude.com/en/docs/claude-code/sub-agents
 [gemini]: https://ai.google.dev/gemini-api/docs/pricing
+[pricing]: https://docs.claude.com/en/docs/about-claude/pricing
+[caching]: https://docs.claude.com/en/docs/build-with-claude/prompt-caching
