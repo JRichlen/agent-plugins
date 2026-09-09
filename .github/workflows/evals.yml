@@ -238,8 +238,12 @@ jobs:
   subject-model:
     # The mirror of grader-model, for the model actually UNDER TEST. CI has always
     # confirmed the Anthropic grader slug resolves and never once checked the
-    # OpenRouter subject — so a dead key, an exhausted balance or a moved slug
-    # produced packs where every real-skill row failed, with no signal anywhere.
+    # OpenRouter subject — a blind spot, since an unreachable subject WOULD
+    # produce packs where every real-skill row fails with no signal anywhere.
+    # Two refresh runs (2026-09-01, 2026-09-08) did exactly that and reported
+    # success; this check closes the evidence gap those runs exposed rather than
+    # diagnosing them. It came back green on its first run, so reachability was
+    # ruled out as their cause — a callable model can still fail every rubric.
     #
     # The check itself lives in evals/paid/check-subject-model.sh because the
     # REFRESH workflow must run it too: that is the one that actually spends the

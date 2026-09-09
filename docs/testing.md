@@ -27,6 +27,7 @@ structurally cannot.
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~1 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
+| [subject-model](#subject-model-reachability-advisory) | `evals/paid/check-subject-model.sh` | ~1 API ping per subject slug | every push/PR (needs secrets; skipped on fork PRs) **and** as a preflight in `refresh-examples.yml` | no — advisory in `evals.yml`; blocking in the refresh, which spends the budget |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
@@ -362,17 +363,22 @@ that it is green because it did not run, never silently.
 
 - **What it proves.** That the model every behavioral pack actually tests is
   callable right now: the `OPENROUTER_API_KEY` secret is valid, the balance is
-  sufficient, and the pinned slug still exists. CI had always confirmed the
-  Anthropic *grader* resolves and never once checked the *subject*, so a dead
-  key, an exhausted balance or a moved slug produced packs where every
-  real-skill row failed with no signal anywhere. That is how two refresh runs
-  (2026-09-01 and 2026-09-08) graded all 12 packs, spent roughly 50 minutes of
-  paid API time, captured nothing and reported success. The job reports the
-  distinct HTTP causes separately (401 revoked key, 402 no credit, 404 moved
-  slug) so the fix is named rather than guessed.
+  sufficient, and the pinned slug still exists. It reports the distinct HTTP
+  causes separately (401 revoked key, 402 no credit, 404 moved slug) so the fix
+  is named rather than guessed.
+- **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
+  never once checked the *subject*, so an unreachable subject was a blind spot:
+  it would produce packs where every real-skill row fails with no signal
+  anywhere. Two refresh runs (2026-09-01 and 2026-09-08) graded all 12 packs,
+  spent roughly 50 minutes of paid API time, captured nothing and reported
+  success — that is the evidence gap this check closes, **not** a diagnosis of
+  those runs. On its first run the check came back green, so subject
+  reachability was **ruled out** as their cause; the observed cause is that
+  five packs ship no calibration case, so no before/after pair can exist for
+  them (see the example-gallery section).
 - **What it cannot prove.** That the model answers *well* — only that it
-  answers at all. A pack whose rubric legitimately fails a reachable model
-  looks identical here.
+  answers at all. A reachable model can still fail every rubric, so a green
+  here never means the packs are healthy; it only removes one explanation.
 - **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
   workflow it is deliberately **not** in the behavioral gate's `needs`, so a
   dead subject key reports in seconds instead of turning a required check red
