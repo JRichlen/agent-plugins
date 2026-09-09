@@ -41,11 +41,32 @@ lacksE(){ if grep -qE "$2" "$1" 2>/dev/null; then bad "$4"; else ok "$3"; fi; }
 # missing command to a temp file, and pack_guard_off reads that file back in the
 # parent shell and raises a real failure there.
 pack_guard_on() {
-  _PACK_GUARD_LOG="$(mktemp)"
+  # Preserve any handler the environment already installed (several distros ship
+  # one via a command-not-found package) so pack_guard_off can put it back
+  # instead of clobbering it.
+  _PACK_GUARD_PREV=""
+  if declare -F command_not_found_handle >/dev/null 2>&1; then
+    _PACK_GUARD_PREV="$(declare -f command_not_found_handle)"
+  fi
+  # Explicit template: bare `mktemp` is not portable to every platform. And if
+  # it fails for any reason, say so as a FAILURE rather than continuing with an
+  # empty path — a guard that quietly stops recording is the exact false-green
+  # this whole change exists to remove.
+  _PACK_GUARD_LOG="$(mktemp "${TMPDIR:-/tmp}/cheap-pack-guard.XXXXXX" 2>/dev/null || true)"
+  if [ -z "$_PACK_GUARD_LOG" ] || [ ! -w "$_PACK_GUARD_LOG" ]; then
+    _PACK_GUARD_LOG=""
+    bad "pack guard could not create its record file — the fail-closed guard is UNAVAILABLE, so an undefined helper in this pack would go unrecorded (#120)"
+    return 0
+  fi
   command_not_found_handle() { printf '%s\n' "$1" >> "$_PACK_GUARD_LOG"; return 127; }
 }
 pack_guard_off() {
   unset -f command_not_found_handle 2>/dev/null || true
+  # Restore the environment's own handler, if it had one.
+  if [ -n "${_PACK_GUARD_PREV:-}" ]; then
+    eval "$_PACK_GUARD_PREV"
+  fi
+  unset _PACK_GUARD_PREV
   if [ -n "${_PACK_GUARD_LOG:-}" ] && [ -s "$_PACK_GUARD_LOG" ]; then
     while IFS= read -r _cmd; do
       bad "pack called an undefined command '$_cmd' — a check that cannot run is not a check that passed (#120)"

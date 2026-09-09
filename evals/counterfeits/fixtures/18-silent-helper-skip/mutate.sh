@@ -9,8 +9,8 @@ pack="$root/plugins/sample-guard/evals/cheap/checks.sh"
 
 cat >> "$pack" <<'OUTER'
 
-# A check that cannot run. `hasNot` is defined by no runner and by no pack, so
+# A check that cannot run. `__cheap_tier_undefined_helper_zz9` is defined by no runner and by no pack, so
 # this line is a "command not found" that execution would otherwise sail past —
 # leaving the tier green over an assertion that never executed.
-hasNot "$PLUGIN_DIR/scripts/emit.sh" "rm -rf" "guard present" "guard MISSING"
+__cheap_tier_undefined_helper_zz9 "$PLUGIN_DIR/scripts/emit.sh" "rm -rf" "guard present" "guard MISSING"
 OUTER
