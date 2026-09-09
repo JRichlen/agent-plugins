@@ -438,12 +438,33 @@ if [ -f "$_HELPERS" ]; then
     else
       ok "$_r defines no local check helper"
     fi
-    # Fail-closed guard around pack sourcing, so a pack calling a helper NO
-    # runner defines is a recorded failure rather than a silent skip.
-    if grep -q 'pack_guard_on' "$_r" && grep -q 'pack_guard_off' "$_r"; then
-      ok "$_r installs the fail-closed guard around pack sourcing"
-    else
-      bad "$_r does not wrap pack sourcing in pack_guard_on/off — an undefined helper would go silent again (#120)"
+    # Fail-closed guard around pack sourcing. Grepping for the two names only
+    # proves they appear SOMEWHERE in the file, not that they ENCLOSE the
+    # `. "$pack"` line — a runner that moved pack_guard_off above the source
+    # would keep both tokens and silently stop guarding (Codex review, PR #132).
+    # So validate the ordering structurally instead.
+    if python3 - "$_r" <<'PYORD'
+import re, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+src = [i for i, l in enumerate(lines) if re.search(r'^\s*\.\s+"\$pack"', l)]
+if len(src) != 1:
+    print(f"  expected exactly one `. \"$pack\"` line, found {len(src)}"); sys.exit(1)
+s = src[0]
+on  = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_on\b', l)]
+off = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_off\b', l)]
+on_before  = [i for i in on  if i < s]
+off_after  = [i for i in off if i > s]
+if not on_before:
+    print("  no pack_guard_on before the pack source — the guard is not armed"); sys.exit(1)
+if not off_after:
+    print("  no pack_guard_off after the pack source — the guard is never lifted"); sys.exit(1)
+nearest_on = max(on_before)
+if any(nearest_on < i < s for i in off):
+    print("  pack_guard_off sits BETWEEN pack_guard_on and the pack source — the guard is lifted before it can catch anything"); sys.exit(1)
+sys.exit(0)
+PYORD
+    then ok "$_r arms the guard before the pack source and lifts it after"
+    else bad "$_r does not ENCLOSE the pack source in pack_guard_on/off (see above) — an undefined helper would go silent again (#120)"
     fi
   done
   # Every helper a pack may call must actually be defined in the shared file.

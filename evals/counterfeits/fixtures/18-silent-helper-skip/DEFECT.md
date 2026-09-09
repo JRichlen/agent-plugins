@@ -23,3 +23,4 @@ catch #120 on its own: a gate that cannot fail is invisible to a corpus that
 only asks whether gates reject bad content.
 
 EXPECT_FAIL_SUBSTRING=pack called an undefined command
+ALSO_RUN_ONE=sample-guard
