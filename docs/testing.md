@@ -57,7 +57,11 @@ that it is green because it did not run, never silently.
   (fail-closed: a registered plugin with no `evals/cheap/checks.sh` is a
   failure, not a skip), branch-protection lock, paid-pack discovery self-test,
   install-smoke coverage, cross-plugin references, context-tax budget, version
-  drift, secret gate on agent exhaust, routing-pack structure, statistical-gate
+  drift, secret gate on agent exhaust, routing-pack structure, runner helper
+  parity (`run.sh` and `run-one.sh` must source the one shared
+  `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
+  the fail-closed guard — see
+  [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
   self-test, example-gallery sync/provenance, design-timeline sync/receipts
   (`docs/timeline/`: page in sync with its decision data, every receipt
   resolving), and the testing-doc drift guard defending this document.
@@ -81,7 +85,10 @@ that it is green because it did not run, never silently.
   baseline at runtime in a temp dir) must be rejected by the cheap tier **for
   the right reason** (expected failure substring), after a calibration step
   proves the untouched baseline is green. Includes a `weakened-guard` fixture
-  that is structurally perfect and only weakens the safety invariant.
+  that is structurally perfect and only weakens the safety invariant, and a
+  `silent-helper-skip` fixture that breaks the pack-to-harness relationship
+  rather than plugin content: a pack assertion calling a helper no runner
+  defines must be rejected, not silently skipped ([#120](https://github.com/JRichlen/agent-plugins/issues/120)).
 - **What it cannot prove.** Anything about gates the corpus has no fixture
   for, and nothing about model behavior.
 - **Fires.** Path-gated in CI (`evals/cheap/**`, `evals/counterfeits/**`,
