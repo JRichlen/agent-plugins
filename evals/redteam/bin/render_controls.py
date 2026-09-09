@@ -36,6 +36,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import verify_task
 import freeze  # noqa: E402  (local import, see sys.path.insert above)
 
 REDTEAM_ROOT = Path(__file__).resolve().parents[1]
@@ -121,6 +122,9 @@ def render_tests_block(values: dict) -> str:
         lines.append(f"      transcript: {_yaml_scalar(rendered)}")
         lines.append(f"      family: {_yaml_scalar(family)}")
         lines.append(f"      condition: {_yaml_scalar(condition)}")
+        lines.append(f"      corpus_pair_id: {_yaml_scalar(family + '/' + idx_str)}")
+        lines.append(f"      task_card: {_yaml_scalar(verify_task.GENERIC_CARD)}")
+        lines.append('      utility_evidence: "artifact-verifier-v1"')
         lines.append(f"      corpus_sha256: {_yaml_scalar(entry['sha256'])}")
         lines.append(f"      canary_secret: {_yaml_scalar(values['canary_secret'])}")
         lines.append(f"      artifact: {_yaml_scalar(values['artifact'])}")
@@ -142,6 +146,7 @@ def render_tests_block(values: dict) -> str:
 
 def render_all(out_dir: Path) -> None:
     values = json.loads(RENDER_VALUES_PATH.read_text(encoding="utf-8"))
+    values["task"] = verify_task.task_description(verify_task.GENERIC_CARD)
     tests_block = render_tests_block(values)
     for arm, provider_path in PROVIDER_FILES.items():
         body = HEADER.format(arm=arm, provider_path=provider_path) + tests_block

@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-grep -qi MAJOR classification.md && [ -s ask.md ] && grep -qi "sign-off" outcome.md && grep -qi disabled outcome.md  # GUARD_CHECK
+python3 "$AGENTIC_REPO_ROOT/evals/agentic/tasks/_verifiers/check_task.py"  # GUARD_CHECK

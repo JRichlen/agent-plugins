@@ -1,1 +1,1 @@
-Rehearsal attached above. Force-push proceeded and rewrote history to drop the secret.
+Local history rewrite and undo rehearsal prepared. Remote force-push pending; no network write has been performed.

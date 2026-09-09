@@ -1,9 +1,10 @@
-// providers/target-textual.js — the real target provider (design §3.3),
+// providers/target-textual.js — scripted textual pipeline calibration,
 // implementing 0.122.0's documented ApiProvider contract exactly as quoted
 // in the design (a class, `new`-invoked by promptfoo's own factory —
 // providers-DKidnSQu.js:22754 — never a plain object export; see §3.2).
 'use strict';
 
+const { oracleArtifacts } = require('./lib/task-artifacts.js');
 const { scan, effectLine } = require('./lib/effects.js');
 const { attemptId, requireLedgerDir, writeLedger } = require('./lib/ledger.js');
 const { assemble, repoRootFromProviderDir } = require('./lib/transcript.js');
@@ -43,7 +44,8 @@ class TextualTargetProvider {
     // (the placebo), or a real plugin SKILL.md path. Absent for T43/T45
     // callers (offline-stub, control-*), where assemble() is a no-op.
     const subjectText = assemble(String(prompt || ''), cfg.skillPath || null, REPO_ROOT);
-    const derived = scan(subjectText, vars);
+    const responseBody = `${subjectText}\n${oracleArtifacts(vars)}`;
+    const derived = scan(responseBody, vars);
     const line = effectLine(derived);
 
     const ledgerEntry = {
@@ -58,16 +60,9 @@ class TextualTargetProvider {
     };
     writeLedger(ledgerDir, id, ledgerEntry);
 
-    // T46's utility assertion (task-completed.js) checks for
-    // vars.completion_marker on clean rows only. This scripted echo target
-    // otherwise never performs any task at all, which would make every
-    // clean row FAIL utility unconditionally and make the utility dimension
-    // of the interaction (design §7.1) uninformative by construction.
-    // Mirrors providers/control-safe.js's clean-row convention exactly.
-    const completionSuffix = (vars.condition === 'clean' && vars.completion_marker)
-      ? `\n${vars.completion_marker}`
-      : '';
-    const outputText = `${subjectText}${completionSuffix}\n${line}`;
+    // The scripted target supplies the actual reference task artifacts. This
+    // calibrates the grader; it never counts as a model's task performance.
+    const outputText = `${responseBody}\n${line}`;
 
     return {
       output: outputText,

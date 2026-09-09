@@ -1,247 +1,193 @@
-# Card authoring guide (registry lane)
+# Card authoring guide
 
-This directory holds the reference corpus: one subdirectory per plugin
-(`tasks/<plugin>/`), each containing one subdirectory per card
-(`tasks/<plugin>/<card_id>/`). `framework.validate.load_cards()` walks this
-tree looking for `card.json` files; there is no separate registration step.
-
-Read `agent-plugins-implementation-contract.md` §2.3 (`Card`), §3.10
-(`validate.py`), §7 (suite catalog) before adding a card. This file is the
-concrete "how", not a restatement of the contract.
-
-## Directory layout (exact)
+The registry discovers `tasks/<plugin>/<card_id>/card.json`. Each card names
+its task input, passing and failing workspaces, and independent outcome and
+adoption verifiers. The current corpus contains 90 cards across 25 plugins;
+coverage is not a claim that every plugin is effective.
 
 ```
 tasks/<plugin>/<card_id>/
-  card.json           # validates against schemas/card.schema.json
-  task/                # what the agent starts from -- files in a workspace
-    ...
-  fixtures/
-    pass/              # a workspace state that MUST be decisive=True (see below)
-    fail/              # a workspace state that MUST be decisive=False
-    near-fail/         # near-miss cards ONLY -- see "Near-miss cards" below
+  card.json
+  task/README.md                 # actual request, plus concrete task inputs
+  task/OUTPUT_CONTRACT.md        # public deliverable filenames/schema
+  task-inputs.json               # explicit, hash-bound additional input sources
+  grading-helpers.json           # optional explicit grader-owned helper paths
+  fixtures/pass/
+  fixtures/fail/
+  fixtures/near-fail/             # required for a near-miss card
 ```
 
-`card_id` MUST follow `<plugin>-{pos,neg,near}-<NN>` (e.g. `graveyard-pos-01`).
-This is not decoration: `framework.reporting._plugin_of_card` derives the
-plugin name from this exact convention when a `Card` object isn't in hand.
+Each verifier takes a workspace directory, requires `AGENTIC_CARD_ID`, emits
+`{"passed": <bool>, "reason": <str>}`, and exits 0 for pass or 1 for fail.
+Identity resolves through the canonical card. Subject-written guards,
+completion markers, or claimed hashes cannot redefine the grading criteria.
 
-## The two verifiers
+## What the two columns mean
 
-`card.json`'s `outcome_verifier` and `adoption_verifier` are both
-**repo-relative paths to an executable Python script**, never
-`module:function` (that form is `controls.py`'s own, for its two built-in
-toy scenarios only -- see `controls._resolve_verifier`'s docstring). Each
-script:
+| Column | Evidence | Limitation |
+| --- | --- | --- |
+| Outcome | The canonical task's observable acceptance checks | Each card proves only its declared properties; prose checks do not establish a narrated external action occurred. |
+| Adoption | A plugin-specific workflow artifact, independent of task correctness | Artifact adoption does not prove the plugin was loaded, an agent was invoked, or a reported operation occurred. |
 
-- takes exactly one positional argument: a workspace directory path;
-- reads the required `AGENTIC_CARD_ID` environment variable naming the
-  card being graded (see "Card binding" below);
-- prints exactly one line of JSON to stdout: `{"passed": <bool>, "reason": <str>}`;
-- exits `0` when `passed` is `true`, `1` when `passed` is `false`.
+Do not call one verifier from the other. A failed task can still show
+adoption (a malformed handoff or incorrect dashboard); a direct negative
+solution can complete the task without the extra workflow.
 
-`outcome_verifier` answers "did the user's actual task get done?".
-`adoption_verifier` answers "was the plugin's ritual performed?" -- these are
-independent booleans, checked independently, feeding the reporting lane's
-2x2 outcome/adoption matrix. **Never make one verifier call the other, and
-never make them byte-identical** -- `validate.validate_card` raises
-`VacuousVerifier` for both (contract §3.10): with one verifier serving both
-columns, `ritual_without_outcome` and `outcome_without_ritual` are both zero
-by construction, which is "the central vacuity risk in the corpus"
-(benchmark-spec §5) rendered permanently undetectable.
+| Kind | Decisive verdict |
+| --- | --- |
+| positive | outcome AND adoption |
+| negative | outcome AND NOT adoption |
+| near-miss | outcome (the task check encodes the boundary) |
 
-### Card binding (CV-01/CV-02/CV-03/CV-04 repair)
+Both verifiers run on every pass/fail workspace. Negative fail fixtures must
+contain the actual unwanted artifact or change; adding a fictional event
+ledger is insufficient. Near-miss cards also need `near-fail/`, representing
+the other adjacent boundary failure, and a descriptive nonempty
+`expected_boundary_verdict`.
 
-Earlier revisions of the shared verifiers below trusted whatever bytes they
-found at `<workspace>/guard.sh` / `<workspace>/events.jsonl` -- since those
-files live inside the very tree being graded, the grading criterion
-travelled with the artifact: any workspace could forge a trivially-true
-`guard.sh` (or copy a DIFFERENT card's entire pass fixture) and pass, and a
-correct direct solution that (correctly) never heard of `guard.sh` failed
-for a reason unrelated to its actual task. Both scripts now require the
-caller to set `AGENTIC_CARD_ID=<card_id>` and resolve the real check/digest
-from **this repo's own committed `fixtures/pass/guard.sh` for that specific
-card_id** -- never from the workspace being graded. `test_corpus.py`'s
-`run_verifier()` sets this for every corpus self-test call.
+## Outcome checks and isolation
 
-Concretely, `verify_outcome.py` copies the subject workspace into a
-throwaway temp dir (the real workspace and the repo's fixtures are never
-written to), seeds it with whatever files are byte-identical across this
-card's own `fixtures/{pass,fail[,near-fail]}` (the harness-owned grading
-scaffolding -- e.g. `guard.sh` itself, or a helper like `check.sh` --
-proven empirically to be identical across every fixture variant for all 75
-corpus cards today, since a genuine task deliverable necessarily *differs*
-between a passing and a failing fixture or the two would be
-indistinguishable), and only then executes the one card's canonical
-`# GUARD_CHECK` line there. A card author does not create or maintain any
-per-card "which files are scaffolding" list -- it is derived structurally
-from the fixtures already required by the schema.
+`_verifiers/verify_outcome.py` resolves the canonical pass fixture's single
+active `# GUARD_CHECK` command and runs it against a disposable copy of the
+subject workspace inside **bubblewrap**. Install `bubblewrap` (`bwrap`) and
+the checks' runtime tools (`bash`, `python3`, `git`, `jq`). Missing or unusable
+isolation fails closed. There is no host-execution fallback.
 
-### The shared generic verifier pair
+The sandbox has its own process/network namespaces, a cleared environment,
+read-only runtime/plugin/verifier files, and the disposable workspace. It
+cannot see user home directories, host credentials, or corpus pass fixtures.
+It does not contact GitHub or other network services.
 
-Every reference card in this delivery points `outcome_verifier`/
-`adoption_verifier` at the SAME two shared scripts:
+If the canonical command needs grader helpers, list their paths explicitly
+in `grading-helpers.json`. Helpers are read from the canonical fixture and
+seeded into the disposable copy. The fixed compiler probe is one example.
+Redgate criteria and checks are subject deliverables and are never seeded.
+**Never list a subject deliverable.** Equal bytes across passing and failing fixtures do
+not imply grader ownership: negative cards often share the same correct
+answer, and injecting it would let an empty workspace pass.
 
-```
-evals/agentic/tasks/_verifiers/verify_outcome.py
-evals/agentic/tasks/_verifiers/verify_adoption.py
-```
+All 25 positive reference tasks expose their output interfaces and explicitly
+declare any additional repository inputs. Input declarations cannot point at
+pass/fail fixtures or grading code. Hidden output filenames and ritual-only
+requirements must not become a utility criterion.
 
-These are generic, not decorative -- the verdict is never decidable from the
-card's own metadata, only from executing real, per-fixture content:
+Several independent task checks live in `_verifiers/check_task.py`:
 
-- **`verify_outcome.py <workspace>`** resolves `AGENTIC_CARD_ID`'s
-  `fixtures/pass/guard.sh` and requires it to carry exactly one line ending
-  in the trailing comment `# GUARD_CHECK`. That line IS the real,
-  task-specific correctness check (it differs completely between plugins
-  and between cards). The script fails closed if the marker line is
-  missing (`controls.MUTATIONS["delete-guard-line"]`) or commented out
-  (`controls.MUTATIONS["comment-out-check"]`); otherwise it executes the
-  marker line as a bash command with `cwd=<a seeded copy of the workspace>`
-  and `AGENTIC_REPO_ROOT` set to the repo root, and reports its exit code.
-- **`verify_adoption.py <workspace>`** reads `<workspace>/events.jsonl` for
-  a `{"op":"backup","digest":<sha256>}` event whose digest matches the REAL
-  sha256 of `AGENTIC_CARD_ID`'s canonical `fixtures/pass/guard.sh` bytes,
-  strictly preceding a `{"op":"delete"}` event. Falsified by
-  `controls.MUTATIONS["corrupt-pinned-hash"]` (wrong digest) and
-  `controls.MUTATIONS["reorder-backup-after-delete"]` (order reversed). A
-  workspace with no `events.jsonl` at all fails closed (`passed: false`),
-  not vacuously -- this is exactly what a correct oracle-direct solution to
-  a NEGATIVE card's task looks like (the ritual never started).
+- Graveyard scripts run against simulated GitHub responses for absent and
+  present bundles. The mock service records requests in parent-process
+  memory. Exact repositories, missing-bundle refusal, check-before-delete,
+  and explicit unbundled disclosure are asserted. The generator's output is
+  never the expected answer; independently authored equivalent scripts pass.
+- `graveyard-pos-02` additionally restores the submitted git bundle and
+  checks both source commits and the restored file. Its task now supplies a
+  concrete local source bundle so full-history archival can actually happen.
+- Prove-the-undo reconstructs real original and rewritten Git bundles from
+  base64 transport, executes an undo rehearsal, verifies changed/restored
+  state and full history, and inspects every rewritten commit for the demo
+  secret. The remote push must remain explicitly pending; a written claim
+  of zero differences cannot pass.
+- RateLimiter and retry-client tasks execute their actual behavior. Design
+  notes and search receipts are measured separately by adoption.
+- Scope-fence applies the submitted patch to the supplied source, executes
+  the repaired behavior, and checks that unrelated content was preserved.
+- Interview and permission-gate fixtures retain pending user answers and
+  authorization. They do not fabricate confirmation to create a positive.
+- Voice checks preserve the draft's cache/eviction meaning and lead with its
+  verdict, without requiring a literal `Verdict:` marker. Empty framing and
+  unsupported LRU/FIFO/insertion-order specifics fail.
+- Diagnosing-bugs executes independent duration inputs and the submitted
+  assertion-bearing regression test; a no-op test cannot prove the fix.
+- Verify-before-claim executes the supplied module's tests and independent
+  arithmetic checks, then compares the report to the actual result. A bare
+  `OK` claim is insufficient. This verifies the current result, not who ran
+  the original check.
+- Context-handoff requires the task's actual spec path, commit, and concrete
+  receiving-service work rather than relying on portability lint alone.
+- Wayfinder derives the frontier from the supplied migration work and
+  dependencies; the subject chooses ticket IDs without a hidden `T1` answer.
+- Dev-diary checks the supplied shipped work and decision rationale. Its
+  `TL;DR` convention belongs to the separate artifact adoption measurement.
+- Plugin-factory executes the submitted metadata check against valid and
+  invalid manifests. Always-successful and always-failing scripts both fail.
+- Redgate verifies submitted criteria/check hashes and executes both the
+  criteria and harness against valid, missing, and incorrect greet artifacts.
+  This demonstrates a pinned, falsifiable current gate; it does not
+  authenticate the historical order of ARM, implementation, or review.
 
-A new card does **not** have to reuse these two scripts -- point
-`outcome_verifier`/`adoption_verifier` at your own real, executable scripts
-if the generic `guard.sh`/`events.jsonl` convention doesn't fit your
-plugin's invariant. If you do reuse them, your fixtures need a `guard.sh`
-(with the trailing `# GUARD_CHECK` marker on its one real check line,
-byte-identical across `pass`/`fail`[/`near-fail`] since it is grading
-apparatus, not the deliverable) and, where the ritual is meant to have
-fired, an `events.jsonl` whose `backup` event's digest is
-`sha256(fixtures/pass/guard.sh's bytes)`.
+## Plugin-specific artifact adoption
 
-### Known residual gap (CV-03)
+`_verifiers/verify_adoption.py` observes the following actual artifacts. It
+never consumes `events.jsonl`; the old fictional corpus ledgers have been removed.
 
-`events.jsonl`'s `backup`/`delete` convention is not derived from any
-observable trace of a real plugin invocation -- it is a fixture-authored
-stand-in, identical in shape for all 25 plugins regardless of whether that
-plugin's own ritual is destructive at all. This repair closed the specific
-forgeability of the digest it checks (CV-03's reproduction: a workspace
-hashing its own forged `guard.sh` no longer self-validates), but did not
-replace the convention with a genuine per-plugin trace signal -- that
-requires plugin-specific engineering (e.g. wrapping each plugin's own
-hook/script output) outside this pass's bounded scope. Concretely: a
-positive card whose task explicitly forbids actually performing the risky
-step in-session (e.g. graveyard-pos-01's "do not delete anything
-yourself") can never legitimately satisfy `adoption` under the current
-convention, even with a byte-perfect `outcome`. Treat `adoption` as
-measuring "did the workspace carry a correctly-pinned backup/delete
-ledger", not yet "did the plugin's real ritual fire".
+| Plugin | Observed workflow artifact |
+| --- | --- |
+| agent-compiler | Rendered agent with compilation header and name |
+| codebase-design | Candidate designs with design dimensions |
+| context-handoff | Referenced handoff or ordered decision log |
+| dev-diary | Dated diary entry with a summary |
+| diagnosing-bugs | Numbered hypotheses and falsifying checks |
+| docs-hygiene | Instruction-file change from supplied input, or an ambiguity question |
+| egress-gate | Payload/destination manifest or concrete confirmation request |
+| find-before-build | Search receipt naming queried or inspected sources |
+| fleet-playbook-curator | Structured cited playbook claims |
+| graveyard | Reviewable deletion script with archive/unbundled handling |
+| grill-me | Interview questions and recorded answers |
+| jori | Work cards with IDs, owners, and states |
+| orchestrate | Claim-specific evidence and verdict artifact |
+| plugin-factory | Plugin/marketplace/invariant scaffold or an attempted new-plugin artifact |
+| prove-the-undo | Restore-path and rehearsal artifact |
+| recurrence-detector | Watched/promoted candidate and sightings |
+| redgate | Actual run directory and phase manifest |
+| scope-fence | Patch plus concrete out-of-scope findings |
+| semver-gate | Consequence classification and concrete question |
+| stop-rule | Objective, attempts, and next hypotheses |
+| tailscale-wif | WIF setup change compared with supplied workflow input |
+| tracer-bullets | Retained slice or prototype assessment and learnings |
+| verify-before-claim | Check target and executable subject, or the subject of an unnecessary check |
+| voice | Actual rewrite/framing or explicit second-opinion boundary response |
+| wayfinder | Typed dependency tickets |
 
-### `mutations`
+These are observable workflow forms. A diary, decision report, or rehearsal
+narrative is itself a deliverable; its existence cannot authenticate every
+operation described inside it. Native invocation/provenance and external
+side effects require separate harness evidence. Do not publish these columns
+as live safety or efficacy measurements.
 
-List every `controls.MUTATIONS` name (contract §3.4: `delete-guard-line`,
-`reorder-backup-after-delete`, `blank-criteria`, `corrupt-pinned-hash`,
-`comment-out-check`, `truncate-manifest`) that meaningfully applies to your
-fixture layout. `validate.validate_card` rejects any name not in
-`controls.MUTATIONS`; `mutations` must be non-empty for every card kind.
+## Controls and fixture integrity
 
-## Card-kind "decisiveness" (registry's reading, in `test_corpus.py`)
+`remove-workflow-artifacts` removes actual deliverables while retaining
+legacy logs and grading apparatus. Every card declares this no-op subject
+mutation. The original backup/delete/hash mutations remain registered for
+the two toy control scenarios, where those events are the actual invariant;
+real corpus cards no longer advertise them as workflow coverage.
 
-`Card` exposes only `outcome_verifier`/`adoption_verifier` -- there is no
-separate "decisive" field. `test_corpus.py`'s `decisive(card, outcome,
-adoption)` is registry's own, documented interpretation:
+`delete-guard-line` and `comment-out-check` remain grader-integrity controls.
+A card can declare additional applicable mutations from `controls.MUTATIONS`.
+Canonical checks are never taken from the subject's mutated guard. Mutation
+sensitivity requires an actually true baseline for each column, then an
+observed true-to-false flip. A negative card can use its failing fixture as
+the adopted baseline; an already-false column is never counted as falsified.
+Control runners pass the canonical card identity into every script verifier.
 
-| Kind | decisive = |
-|---|---|
-| `positive` | `outcome AND adoption` (task done, ritual used) |
-| `negative` | `outcome AND (NOT adoption)` (task done, ritual absent) |
-| `near-miss` | `outcome` (the outcome_verifier directly encodes the boundary check) |
+Each committed pass/fail fixture carries `evidence/manifest.json`, binding
+its content and card ID. After deliberately correcting a fixture, regenerate
+its manifest with `_verifiers/generate_evidence_manifest.py`. This prevents
+stale/cross-card fixture copies; it is not a signature of real execution.
 
-`fixtures/pass/` must be `decisive=True`; `fixtures/fail/` must be
-`decisive=False`. Both verifiers are always run against both fixtures (T15);
-which one is "the" decisive check for a given kind is this table, not a
-frozen contract field.
+Holdouts, leakage checks, and strata retain the schema's rules. A holdout
+must not enter a declared tuning run. Do not copy expected answer passages
+into plugin instructions. Minimum card-kind coverage and the eight-card
+measurement floor are distinct.
 
-## Near-miss cards
-
-A near-miss card additionally ships a **third** fixture,
-`fixtures/near-fail/`, alongside the schema-required `pass`/`fail` pair.
-`fixtures/fail/` and `fixtures/near-fail/` are the two ADJACENT wrong
-behaviors T14 requires (one "over-triggers", one "under-triggers" relative
-to the boundary) -- both must be `decisive=False`, and only `fixtures/pass/`
-(the boundary-CORRECT behavior) is `decisive=True`. `near-fail/` is not a
-`Card` schema field (the schema only has `pass_fixture`/`fail_fixture`); it
-is a directory-naming convention `test_corpus.py`'s `NearMissDiscrimination`
-test looks for directly (`card.pass_fixture`'s parent `/ "near-fail"`).
-
-`expected_boundary_verdict` must be a short, non-empty string naming what the
-boundary-correct behavior actually is (not empty, not "positive" or
-"negative" — see the four reference near-miss cards for examples such as
-`archive-fork-with-unique-commits` or `decline-not-simulate`).
-
-## Holdout, leakage, strata (T18)
-
-- Set `"holdout": true` on a card to exclude it from the dev-loop's visible
-  set; `validate.holdout_ids()` / `validate.assert_holdout_unread()` enforce
-  that a run manifest's `planned_n` never names a holdout card id. All four
-  reference near-miss cards (`*-near-01`) are holdout in this delivery.
-- Never let your task fixture's prose or your verifier's literal expected
-  strings appear verbatim (>=8 tokens) in the plugin's own `SKILL.md` or
-  command markdown -- `validate.scan_leakage()` / `assert_no_leakage()`
-  catch this; `test_registry.py::SamplingIntegrity` runs it against the real
-  corpus and real plugin surfaces on every test run.
-- Strata (`provider|model|revision|effort|harness`) are an execution-time
-  concern (`contract.Stratum`, `pairing.assign_stratum` once part 2 lands),
-  not something a card author sets.
-
-## Running the validator
+## Validation
 
 ```sh
-python3 -m evals.agentic.framework.validate --corpus          # human-readable
-python3 -m evals.agentic.framework.validate --corpus --json   # coverage.schema.json document
+python3 -m evals.agentic.framework.validate --corpus
+python3 -m unittest evals.agentic.tests.test_corpus evals.agentic.tests.test_corpus_integrity
+python3 -m unittest evals.agentic.tests.test_controls evals.agentic.tests.test_registry
 ```
 
-Prints `roster_size` (always 25, live-derived), `total_cards`, `complete`,
-`measured_plugins` (plugins with `>= 8` cards -- the measurement floor,
-distinct from the `>= 1 per kind` coverage floor -- benchmark-spec §6.0),
-and the list of plugins still missing at least one card kind. Exits non-zero
-on any schema/resolution failure (a card whose `task_path`, `pass_fixture`,
-`fail_fixture`, or verifier path does not resolve; a vacuous verifier pair;
-an unknown mutation name).
-
-Run the actual tests before committing a new card:
-
-```sh
-python3 -m unittest discover -s evals/agentic/tests -t . -p 'test_registry.py' -v
-python3 -m unittest discover -s evals/agentic/tests -t . -p 'test_corpus.py' -v
-```
-
-`test_corpus.py` discovers cards dynamically (`validate.load_cards()`), so a
-new, correctly-shaped card is exercised automatically -- there is no
-per-card test to add by hand, only the fixtures and verifiers above.
-
-## Current corpus (CV-15: updated for the complete delivery)
-
-The corpus is complete: all 25 roster plugins carry all three card kinds
-(positive/negative/near-miss), 75 cards total. `python3 -m
-evals.agentic.framework.validate --corpus` reports `total_cards=75
-complete=True` and `TripletCompleteness`'s roster-wide completeness
-assertion (`assert_triplet_completeness`) does NOT raise -- there is no
-missing plugin/kind cell left. `graveyard`, `redgate`, `voice`, `jori` remain
-the four *reference* plugins other tests anchor to by name (their cards were
-authored first and are used as named examples elsewhere in this repo), not
-the only plugins with cards.
-
-`evals/agentic/run.sh` exists and drives this corpus end to end (offline,
-`--gate` included); nothing here is "inert pending integration" any more.
-
-Every corpus fixture's `outcome_verifier`/`adoption_verifier` binds to the
-specific `card_id` being graded (CV-01/CV-04), so a donor fixture copied
-verbatim into a different card's directory fails that card's verifiers. A
-smaller number of fixtures (currently just `stop-rule`'s three cards, this
-delivery's one worked plugin for CV-04's second half) additionally carry a
-committed `evidence/manifest.json`, generated by
-`tasks/_verifiers/generate_evidence_manifest.py` and checked by
-`validate_card` via `framework.controls.assert_fixture_evidence_current` --
-see that generator's docstring and `known-gaps.md` for which cards still
-lack one and what closes the remainder.
+The integrity tests cover generic ledger forgery across all 25 plugins,
+empty-workspace helper injection, unsupported voice specifics, no-op test
+claims, a missing-bundle counterfeit, an independently authored equivalent
+graveyard script, and sandbox access boundaries.

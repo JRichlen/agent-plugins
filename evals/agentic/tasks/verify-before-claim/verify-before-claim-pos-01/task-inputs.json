@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "files": {
+    "inputs/module_test.py": {
+      "source": "evals/agentic/tasks/verify-before-claim/verify-before-claim-pos-01/task/module_test.py",
+      "sha256": "20ec2b50e390e2f98ca9669ba0866c0b23dfe395072c212e9692d265628ee67a",
+      "immutable": true
+    }
+  }
+}

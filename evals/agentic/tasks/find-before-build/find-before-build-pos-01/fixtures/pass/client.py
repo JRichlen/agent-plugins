@@ -1,5 +1,4 @@
-from utils.retry import with_backoff
+from utils.retry import retry
 
-@with_backoff
-def call():
-    pass
+def fetch(client, url):
+    return retry(lambda: client.get(url))

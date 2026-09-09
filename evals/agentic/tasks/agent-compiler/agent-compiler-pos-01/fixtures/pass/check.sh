@@ -5,8 +5,9 @@ registry="$AGENTIC_REPO_ROOT/plugins/agent-compiler/registry"
 out="$(mktemp)"
 out_log="$(mktemp)"
 if [ ! -f query.json ]; then rm -f "$out" "$out_log"; exit 1; fi
+python3 -I -c 'import json; q=json.load(open("query.json")); assert q["role"]=="reviewer" and q["task"]=="pull-request-review" and q["environment"]=="production" and q["risk"]=="high"; assert set(q["domains"])=={"aws","iam"}; assert set(q["stance"])=={"adversarial","evidence-driven"}; assert set(q["effectCeiling"])=={"network","scm:read"}' || exit 1
 if ! python3 "$compiler" compile --registry "$registry" --query query.json --out "$out" >"$out_log" 2>&1; then rm -f "$out" "$out_log"; exit 1; fi
-hash="$(python3 -c "import json;print(json.load(open('$out'))['hash'])")"
+hash="$(python3 -I -c "import json;print(json.load(open('$out'))['hash'])")"
 rm -f "$out" "$out_log"
 [ -f rendered.md ] || exit 1
 [ -f persona.md ] && exit 1

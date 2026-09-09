@@ -1,0 +1,21 @@
+{
+  "objective": "fix flaky CI check",
+  "bound": 3,
+  "attempts": [
+    {
+      "id": 1,
+      "change": "fix A",
+      "result": "assertion mismatch line 12"
+    },
+    {
+      "id": 2,
+      "change": "fix B",
+      "result": "timeout after 30s"
+    },
+    {
+      "id": 3,
+      "change": "fix C",
+      "result": "assertion mismatch line 12"
+    }
+  ]
+}

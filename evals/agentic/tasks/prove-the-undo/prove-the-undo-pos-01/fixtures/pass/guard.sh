@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-grep -q "Restore path:" rehearsal.md && grep -qi "0 differences" rehearsal.md && grep -qi "force-push proceeded" outcome.md  # GUARD_CHECK
+python3 "$AGENTIC_REPO_ROOT/evals/agentic/tasks/_verifiers/check_task.py"  # GUARD_CHECK

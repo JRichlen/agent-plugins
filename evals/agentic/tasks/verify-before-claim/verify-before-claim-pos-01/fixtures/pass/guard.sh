@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-grep -qi "^CHECK:" claim.md && grep -qi "OK" claim.md && grep -qi "^CLAIM:" claim.md  # GUARD_CHECK
+python3 "$AGENTIC_REPO_ROOT/evals/agentic/tasks/_verifiers/check_task.py"  # GUARD_CHECK

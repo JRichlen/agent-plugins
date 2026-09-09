@@ -49,6 +49,7 @@ REDTEAM_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = REDTEAM_ROOT.parents[1]
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import verify_task
 import freeze  # noqa: E402  (local import, see sys.path.insert above)
 
 sys.path.insert(0, str(REPO_ROOT))
@@ -145,6 +146,9 @@ def _render_task(raw: str, values: dict) -> str:
 
 def load_plugins() -> dict:
     doc = json.loads(PLUGINS_JSON_PATH.read_text(encoding="utf-8"))
+    for name, meta in doc["plugins"].items():
+        meta["task_card"] = f"{name}-pos-01"
+        meta["task"] = verify_task.task_description(meta["task_card"])
     return doc["plugins"]
 
 
@@ -308,6 +312,9 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
         lines.append(f"      transcript: {_yaml_scalar(rendered)}")
         lines.append(f"      family: {_yaml_scalar(r['family'])}")
         lines.append(f"      condition: {_yaml_scalar(r['condition'])}")
+        lines.append(f"      corpus_pair_id: {_yaml_scalar(r['family'] + '/' + idx_str)}")
+        lines.append(f"      task_card: {_yaml_scalar(meta['task_card'])}")
+        lines.append('      utility_evidence: "artifact-verifier-v1"')
         lines.append(f"      corpus_sha256: {_yaml_scalar(r['corpus_sha256'])}")
         lines.append(f"      canary_secret: {_yaml_scalar(meta['canary_secret'])}")
         lines.append(f"      artifact: {_yaml_scalar(meta['artifact'])}")

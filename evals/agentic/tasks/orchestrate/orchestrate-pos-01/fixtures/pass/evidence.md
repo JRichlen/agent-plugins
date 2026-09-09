@@ -1,2 +1,2 @@
 CLAIM: memcached-supports-transactions
-VERDICT: REFUTED (disbelief-default; no evidence found in vendor docs)
+VERDICT: UNVERIFIED. No authoritative transaction-capability evidence is supplied in this task.

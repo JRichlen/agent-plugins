@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "files": {
+    "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/scripts/validate-citations.sh": {
+      "source": "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/scripts/validate-citations.sh",
+      "sha256": "abad165168e7411453715c14514dc46f3afe7b0b1db4d24c2b81f590fc0d0f9a"
+    }
+  }
+}

@@ -413,6 +413,9 @@ echo "redteam offline: OK — no remote-generation override or provider-credenti
 echo "=== redteam corpus: frozen-corpus integrity (T44) ==="
 python3 "$REDTEAM_ROOT/bin/freeze.py" --check || exit 1
 
+echo "=== scanner quality measurement (separate from harness correctness) ==="
+node "$REDTEAM_ROOT/providers/lib/calibration.js" || exit 1
+
 echo "=== redteam design: control configs match the frozen corpus (T45 offline form) ==="
 python3 "$REDTEAM_ROOT/bin/render_controls.py" --check || exit 1
 

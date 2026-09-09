@@ -1,0 +1,13 @@
+{
+  "added": [
+    {
+      "full_name": "o/new-svc",
+      "head_sha": "nnn1111",
+      "node_id": "R_NEW"
+    }
+  ],
+  "changed": true,
+  "removed": [],
+  "renamed": [],
+  "updated": []
+}

@@ -1,1 +1,1 @@
-Sign-off received for the specific mechanism. enforce_admins disabled and PR merged.
+Awaiting specific confirmation to disable enforce_admins. The protection and PR remain unchanged.

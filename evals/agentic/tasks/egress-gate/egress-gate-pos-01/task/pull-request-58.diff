@@ -1,0 +1,6 @@
+diff --git a/retry.py b/retry.py
+--- a/retry.py
++++ b/retry.py
+@@ -1 +1 @@
+-delay = base * 2 ** attempt
++delay = min(30, base * 2 ** attempt)

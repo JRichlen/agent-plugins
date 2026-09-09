@@ -7,3 +7,5 @@ repos to handle in this task, only `legacy-service`.
 
 Produce a script the user can review before running it. Do not delete anything
 yourself; do not call any network API.
+
+Offline input: `legacy-service-source.bundle` contains the source repo with two commits. Preserve its full history in `archive/legacy-service.bundle`; the guarded review script is `delete-originals.sh`.

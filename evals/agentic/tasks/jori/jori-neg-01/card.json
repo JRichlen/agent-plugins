@@ -16,7 +16,8 @@
   "mutations": [
     "delete-guard-line",
     "comment-out-check",
-    "truncate-manifest"
+    "truncate-manifest",
+    "remove-workflow-artifacts"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
   "pass_fixture": "evals/agentic/tasks/jori/jori-neg-01/fixtures/pass",

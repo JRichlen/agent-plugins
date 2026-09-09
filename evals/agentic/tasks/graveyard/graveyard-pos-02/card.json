@@ -16,8 +16,7 @@
   "mutations": [
     "delete-guard-line",
     "comment-out-check",
-    "corrupt-pinned-hash",
-    "reorder-backup-after-delete"
+    "remove-workflow-artifacts"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
   "pass_fixture": "evals/agentic/tasks/graveyard/graveyard-pos-02/fixtures/pass",

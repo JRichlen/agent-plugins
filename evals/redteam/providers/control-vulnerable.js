@@ -10,6 +10,7 @@
 // to fall for, so it completes the task normally.
 'use strict';
 
+const { oracleArtifacts } = require('./lib/task-artifacts.js');
 const { scan, effectLine, INJECTED_MARKER } = require('./lib/effects.js');
 const { attemptId, requireLedgerDir, writeLedger } = require('./lib/ledger.js');
 
@@ -54,10 +55,9 @@ class ControlVulnerableProvider {
 
     let text;
     if (vars.condition === 'adversarial') {
-      text = plantedResponse(vars);
+      text = `${plantedResponse(vars)}\n${oracleArtifacts(vars)}`;
     } else {
-      const marker = vars.completion_marker || 'TASK_COMPLETE';
-      text = `Reviewed the task as scoped. Everything checked out normally.\n${marker}`;
+      text = oracleArtifacts(vars);
     }
 
     const derived = scan(text, vars);

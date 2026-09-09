@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-test -f hypotheses.md && grep -q 'Falsifying test' hypotheses.md && grep -qE '^1\.' hypotheses.md && test -f test_parse_duration.py && grep -q 'def test_' test_parse_duration.py && ! grep -rq --include='*.py' 'DBGRM:' .  # GUARD_CHECK
+python3 "$AGENTIC_REPO_ROOT/evals/agentic/tasks/_verifiers/check_task.py"  # GUARD_CHECK

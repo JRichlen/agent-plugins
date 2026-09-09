@@ -81,94 +81,61 @@ that it is green because it did not run, never silently.
 
 ## agentic suite
 
-- **What it proves.** The marketplace-wide agentic testing framework itself is
-  sound and offline-safe: the frozen contract vocabulary and schema validator
-  (core); real hook, MCP, and subprocess fixtures against the live plugin tree
-  (protocol); the derived 25-plugin roster, per-plugin positive/negative/
-  near-miss cards, exposure parity and estimand arms (registry); native CLI
-  driver argv/flag conformance and the host-observed evidence ledger, offline
-  forms only (adapter); accounting, statistics, and reporting with no silent
-  zero-substitution for unknown usage (measurement); and the suite catalog
-  that maps all 52 `T01`-`T52` backlog items to a real, executing, falsifiable
-  assertion (`evals/agentic/run.py --catalog`). Six catalog entries
-  (`T26`-`T29`, native-required; `T45`-`T46`, paid-required) are reported
-  `BLOCKED — approval required` and never counted as passed.
-- **What it cannot prove.** Live native-harness behavior (a real `claude`/
-  `codex` multi-turn session, resume/fork/cancel with harness-emitted acks) or
-  a real subject-model pass over the red-team controls — both are
-  approval-gated and have offline forms only, never promoted to
-  `NATIVE_PROVEN`/qualified by an offline run.
-- **Fires.** Folded into the always-on cheap tier (`evals/cheap/run.sh`
-  section 22) via `evals/agentic/run.sh --gate`, so it is part of the
-  `cheap tier (deterministic, offline)` required check on every push/PR and
-  before every local commit that touches `evals/**`.
-- **Cost — measured on this host, not estimated.** `--gate` (what the cheap
-  tier's section 22 actually runs, twice on every commit that touches
-  `evals/**`): **~5-15 seconds.** It deliberately excludes `heavy_external`
-  catalog entries (`T42`, `T43`, `T45`, `T48` — each invokes a real
-  `promptfoo validate`/`eval` subprocess or a real `docker run
-  --network=none` container) and `requires_real_marketplace` entries, and
-  runs everything else once via the suite-catalog test itself (T52), plus
-  five fast structural probes. `--offline`/no-flag (full suite: `unittest
-  discover` over all ~355 tests + the 52-ID `--catalog` walk + a run
-  manifest) is **not** what the cheap tier runs and costs materially more:
-  **~4-5 minutes** on this host, dominated by the same real
-  promptfoo/docker subprocess work plus the real 25-plugin card/pairing
-  corpus. `--catalog` alone falls in between. None of these ever make a
-  model call or reach the network.
+- **What it proves.** The evaluation framework's contracts, positive and negative
+  controls, task-specific artifact graders, protocol fixtures, native evidence
+  binding, attempt accounting, statistical calculations, and catalog wiring.
+  The corpus has 90 cards across 25 plugins. Grader-owned helper files are
+  explicit; arbitrary identical fixture files are never injected as answers.
+  The subject cannot replace the canonical grader, and executable artifacts run
+  in Bubblewrap without host credentials, network or hidden fixture answers.
+- **What it cannot prove.** Offline fixture success does not demonstrate plugin
+  effectiveness or native model behavior. The catalog's approval-required native
+  and paid entries remain distinct from their offline regression forms.
+  Historical native receipts are replay evidence when read in a later process.
+- **Fires.** The cheap tier invokes `evals/agentic/run.sh --gate`, a structural
+  subset. The complete `--offline` path runs additional unit tests, real
+  protocol/provider processes and the full catalog. Do not equate the subset
+  with a full-suite run. CI provisions the actual pinned CLIs and Promptfoo;
+  it must not substitute fake binaries or bypass unsupported flags.
+- **Dependencies and cost.** Offline, no model calls. Python, Bash, jq and
+  Bubblewrap (`bwrap`) are needed for corpus checks; full external-tool checks
+  also need the pinned Promptfoo/native CLIs and the network-denial sandbox.
+  Runtime depends on the host and which path executes; record actual command,
+  counts, skips and duration with every validation receipt.
 - **Local run.**
   ```sh
-  evals/agentic/run.sh              # full offline suite + catalog + run manifest (~4-5 min)
-  evals/agentic/run.sh --gate       # root-portable subset (what the cheap tier runs, ~5-15s)
-  evals/agentic/run.py --catalog    # the 52-ID fail-closed catalog walk
+  evals/agentic/run.sh --offline
+  evals/agentic/run.sh --gate
+  evals/agentic/run.py --catalog
   evals/agentic/run.py coverage --json
-  evals/agentic/run.py driver --dry-run --name claude
   ```
 
 ## redteam suite
 
-- **What it proves.** Pinned-Promptfoo (0.122.0) red-teaming validates offline
-  against every generated per-plugin config and the frozen, hashed corpus; the
-  custom-provider API is actually invoked (not merely configured); and the
-  offline default never shells to `npx`, resolves DNS, or opens a socket.
-- **What it cannot prove.** Real subject/grader discrimination — a real pass
-  over the safe/vulnerable controls and the full clean/adversarial ×
-  baseline/treatment 2×2 both require a paid run and are approval-gated
-  (`T45`, `T46` in the agentic suite's catalog).
-- **Fires.** Folded into the cheap tier the same way as the agentic suite,
-  via `evals/redteam/run.sh --gate`.
-- **Cost — measured, not estimated.** `--gate` (root-portable subset — pin
-  check, corpus-freeze hashing, an `npx`-invocation grep, a static
-  provider-shape scan, generated-config presence, an in-process
-  dominance/weight-map scan, an in-process native-provenance forgery guard,
-  and a static text scan for `disableDefaultAsserts` on a generated-config
-  row with none of its own): **~1 second** measured repeatedly on this
-  host. This step's history is worth knowing: an earlier version closed
-  counterfeit fixture 31's gap with a real `promptfoo eval`, which
-  intermittently misclassified a genuine provider FAULT as VACUOUS under
-  host contention (a `bin/verdict.py` classification-ordering bug, fixed
-  separately) — replaced with the current static scan once the real defect
-  was understood, on the principle that a flaky always-on gate is worse
-  than an accepted static/runtime split. `--gate` still deliberately
-  excludes `promptfoo validate` over every config, any real `promptfoo
-  eval`, `docker`, and `generate.py --check`'s live-tree regeneration —
-  those remain real subprocess/container work exercised only by the
-  `--offline` default below, which is what still exercises this fixture's
-  RUNTIME half (an actual vacuous row promptfoo itself scores a perfect
-  pass) via `test_redteam_design.ProtectedEffectDominanceAndNativeGate`.
-  `--offline`/no-flag (the pin check, the
-  full config-validate pass over every generated config, and the full
-  `evals.agentic.tests.test_redteam_*` suite, including real `promptfoo
-  eval` invocations) costs materially more: **~1.5-2 minutes** on this host
-  (measured: 1m38s, 47 tests + full config validation). Run it locally
-  rather than assume the cheap tier's `--gate` already covered it.
-  `--assert-offline` additionally runs the real docker network-denial
-  proof on top of that.
+- **What it proves.** Pinned-tool and corpus integrity, real provider API
+  conformance, detector controls, task-artifact verification and faithful
+  reporting of the evidence available. The same legitimate task and verifier
+  appear in all clean/adversarial and baseline/generic/treatment cells.
+- **Measurement boundaries.** Lexical indicators are diagnostic text matches,
+  not executed effects. Reports name them `textual_indicator_free_rate`;
+  native provenance cannot promote them to runtime safety. Utility requires
+  canonical verification of returned files, never `TASK_COMPLETE` markers or
+  an automatic adversarial pass. Actual protected-file qualification requires
+  an independent in-process observer around an executed action and covers
+  only its stated final-file invariant. See `evals/redteam/README.md`.
+- **Statistics.** Shared Wilson intervals preserve endpoint uncertainty;
+  paired corpus-item contrasts preserve dependence. Legacy marker-only utility,
+  insufficient clusters and missing pairs are not reportable efficacy estimates.
+  Thresholds and fault ceilings remain declared before a run.
+- **Fires.** Cheap CI runs `evals/redteam/run.sh --gate`, not full config
+  evaluation or network-isolation proof. `--offline` performs real pinned
+  Promptfoo validation/evaluation. `--assert-offline` adds a positive-control
+  canary and actual network-denied Docker execution.
 - **Local run.**
   ```sh
-  evals/redteam/run.sh                  # offline default (real promptfoo/config validation)
-  evals/redteam/run.sh --gate           # root-portable subset (what the cheap tier runs)
-  evals/redteam/run.sh --assert-offline # + the docker network-denial proof (T48)
+  evals/redteam/run.sh --gate
+  evals/redteam/run.sh --offline
+  evals/redteam/run.sh --assert-offline
   ```
 
 ## counterfeit tier

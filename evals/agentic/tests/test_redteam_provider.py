@@ -100,8 +100,8 @@ class PinnedVersionAndConfigValidity(unittest.TestCase):
         """Catalog sibling (contract §7.4 item 4). Points PROMPTFOO_HOME at
         fixtures/counterfeit/fake-promptfoo-wrong-version (T42's
         negative_control): a fake install claiming 0.123.0. The wrapper must
-        refuse it with 'version drift' BEFORE ever exec'ing the (symlinked,
-        otherwise-real) entrypoint -- proving check 2 is a real gate and not
+        refuse it with 'version drift' BEFORE ever exec'ing its trap
+        entrypoint -- proving check 2 is a real gate and not
         a check that only fires when the whole install is absent."""
         fake_home = REDTEAM_ROOT / "fixtures" / "counterfeit" / "fake-promptfoo-wrong-version"
         self.assertTrue(fake_home.is_dir(), f"negative_control fixture missing: {fake_home}")
@@ -111,6 +111,7 @@ class PinnedVersionAndConfigValidity(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("version drift", result.stderr)
             self.assertIn("0.123.0", result.stderr)
+            self.assertNotIn("WRONG_VERSION_ENTRYPOINT_EXECUTED", result.stdout + result.stderr)
 
 
 class ProviderApiConformance(unittest.TestCase):

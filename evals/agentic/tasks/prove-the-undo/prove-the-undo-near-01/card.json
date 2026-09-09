@@ -15,7 +15,8 @@
   "kind": "near-miss",
   "mutations": [
     "delete-guard-line",
-    "comment-out-check"
+    "comment-out-check",
+    "remove-workflow-artifacts"
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
   "paraphrases": [

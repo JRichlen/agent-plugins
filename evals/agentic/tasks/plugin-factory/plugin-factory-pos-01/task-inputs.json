@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "files": {
+    ".claude-plugin/marketplace.json": {
+      "source": ".claude-plugin/marketplace.json",
+      "sha256": "dfc82d70e139f40a25a3afab31ed99af23a3d74e607b8e543f9fa1e07e5223f5"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "corpus_manifest_sha256": "7c6a7534b5f50f921d3d8684250b9dff9c836cb63f2ef6e64bd896b7ed3691e7",
+  "corpus_manifest_sha256": "e8229feed6960b2eaacb261ef65bdfb3eb04b1758d30967159aa357b25c0c34d",
   "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
   "generated_by": "evals/redteam/bin/generate.py",
   "plugins": {
@@ -39,8 +39,8 @@
       "config_path": "configs/generated/agent-compiler.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "d72778db644d60481dc0a1852b96be7964186de6c784c32a0a9851418b273f9d",
-        "clean": "95fb969840ef178d4e44631a41b6ac3cc46a573286d56bda58cf8e64e52ddfe6"
+        "adversarial": "9303f88367214941f5f5ec8dbb4ea8d987ce9481606c8487ef6f6ff32204d9d2",
+        "clean": "ec9ecaa1d2e42e71283cafa2cc65ae87d889a7b97122c746a15638cce9d1f4ec"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -95,8 +95,8 @@
       "config_path": "configs/generated/codebase-design.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "dd0f90a3c1e8ae2ee99217d0af06358051716b80b26954c53c3dd76fa5542512",
-        "clean": "9c9249b004d6303a1a2de455ae2e0887f7fef1bbee00ecff479c9b5d78ae33cb"
+        "adversarial": "81a3568a4169a8fd8296c9172d510778c93fc47314086a65d1fb9a1d0bd05f54",
+        "clean": "d591f3cd49b2fb0c15503a7ae9bee8bfce3153fb0ef462621f9e3ab1aa0e4c87"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -151,8 +151,8 @@
       "config_path": "configs/generated/context-handoff.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "e2b3753df33a02e2e70a949b7138e240b10289fbc416ccf1c8ba9c04348c6876",
-        "clean": "4c5a9b2a2f6703918bc151e9ef958b70414752a976fb6b314b420708d1516c8b"
+        "adversarial": "4c86a50551340eafec96b4bb34dd7c25f1203a0ccdcf14c7e471c75562f8fb50",
+        "clean": "7005fb4fc3b41ed4087250b0b109f9fa3a9ac4a6bec6303163ac7aa0322f49f3"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -207,8 +207,8 @@
       "config_path": "configs/generated/dev-diary.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "1817dac8d834ee4a45c322e2ffdb2f88694777897dde0b4c1eb11a758a59a7d0",
-        "clean": "7cef8def93099936fff189a102c53e2164e882e4964a2628e05f2b704637e7af"
+        "adversarial": "87ddb00f1968544b212b0dc0af04349fed33afa5147cda085fa23a9edc50e1a0",
+        "clean": "c359650c71ae08f3b29a3fc4565c6d67d31e8f9b5228156d8e32a2aff3d8ec99"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -265,8 +265,8 @@
       "config_path": "configs/generated/diagnosing-bugs.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "58d4fc1d78eea7a94a7772ced74b615034b75be59de7bfc9a229214a66220cd9",
-        "clean": "34ccb241100be277e94a67386a156c60c7b97631a09deb1171a9a32ca453d4b3"
+        "adversarial": "9f25f17c1877eac633b5673116d4b3edd76eba60ea6d1a7a2a16b673f04dd51c",
+        "clean": "ebb04b00c848bd12dd0fd582bdc3cf971ae3317f8fcff3868cbbe3c46a9ce296"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -321,8 +321,8 @@
       "config_path": "configs/generated/docs-hygiene.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "46ca8eb2da7c5a52a9f1512f1ff6e68b905c00b2a92528e82ac5f98823708d08",
-        "clean": "ebdd1a9636045ee4987df06de07ad73a85ce84f61df700979ab7b967600af59c"
+        "adversarial": "77d77be98065ea865395db144d59c8ec7f2b8527a3f844835490c7ddd0f945d5",
+        "clean": "28973ab2fc5d3fb1dee83598076cf9b7235d9adb0679779a479817871b13b148"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -377,8 +377,8 @@
       "config_path": "configs/generated/egress-gate.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "533ae988a3cf0d031cf9941fffb3a9dbefac667254aa922fdbf348590122d1a4",
-        "clean": "f1c1543fed8bb83a43a5e105500317c6e9253c8002a75e503d03a3c09cb71077"
+        "adversarial": "30fb476820b37262771c457ec14a6de08fcf62e763cebb1830a7e600bc6d42fe",
+        "clean": "eea4ad9bced96ad45b1e6e9ac64df03b7c4dbd1231ac41d0ccc3a4a53def184f"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -433,8 +433,8 @@
       "config_path": "configs/generated/find-before-build.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "c3cb3c8de811e32adedaaad2c129ef47b23df53520b619fe04ac2ea7d3750b87",
-        "clean": "9edbd1eb739af0e5d5910a9f35150da1ee715538873d0c958d7c3bc06c94011d"
+        "adversarial": "2b7fc5e3db376f3efb447c6bf80b269d77424c015490240138f452405a54c723",
+        "clean": "a25f2dd48c60e1025906cfc32674a3900f4d1486f45a38a4896de8c6ac6b1ecd"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -489,8 +489,8 @@
       "config_path": "configs/generated/fleet-playbook-curator.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "091b83de3b7639b566063269aa32e4fc22b4e86c0eab3e6492f87dd2fac92d44",
-        "clean": "fbbc670f175495b2c9e50cc83f319d08fe66d97de2c9c9704a8c09ec03bc84ee"
+        "adversarial": "9f703210467d8578950c4433f66dc73718556749c91e7ca3619b7637617f6cff",
+        "clean": "356e6f27ce12b60d41fea9e6441ffa086a0b563fd3d1e0711b4da192a5dadce2"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -545,8 +545,8 @@
       "config_path": "configs/generated/graveyard.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "ecc24a0f0496666c703b66e1bd1ddd16cb98abc7e881aac8489ed9b0b98e1798",
-        "clean": "93e3569b6d4b7b307fa3564df8a54f8f31454c61d78c306de4681ae99f60088b"
+        "adversarial": "67b3f3d2198fec5a7e63354da3bc9d8afc9aa5591b8502a71bcb5ce103909b4e",
+        "clean": "3a0dc7981f3134adff580e8213047dddec520bbdb9f0bd51544d9655e42d6641"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -601,8 +601,8 @@
       "config_path": "configs/generated/grill-me.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "92d149950aa64ee4ab957b445a24dd38bd307c3c64474933b4127fe7a08c6336",
-        "clean": "a336d6e47fc7dda7ec58885814e45ca80616d62173e126d4ac9633060e5869c1"
+        "adversarial": "e837e8e37dd67bf770f04cc24461be2b0c284d570c9a7f9e4fb1518dc4595f30",
+        "clean": "3667c74d7f89ead78df889a9971511aa298f37f1655b457bfa5cab1bcdd4fffb"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -657,8 +657,8 @@
       "config_path": "configs/generated/jori.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "f9db97e5571f64e540f61cc3a13ce740869894f7e328e1cde341b667e8730a4e",
-        "clean": "657ac1a7353503ada58f6269ae8bcace0654ccf9cb12e7824e24a882274d79e7"
+        "adversarial": "5b12f8abb521cbe786c1975cf996bce9c64c9a71db1d7b0a084a14d078cbb9b3",
+        "clean": "ec7be5742dae1bfc153a55dfffe456d22c83827b2f74c969074fb4fa702ff5ee"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -713,8 +713,8 @@
       "config_path": "configs/generated/orchestrate.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "17ce0ed9f0d8807c148e0abc23d3d04635769ee4d0a64de9dc5df22fd173fde1",
-        "clean": "b81ef90ae8e98648c28c37b77d226fa9bf9bc0f1132e033f969f3dbfc14a45e7"
+        "adversarial": "26678b845a4e2d63a74a692bc65565240b8664ffa46f151713833eb1434d25be",
+        "clean": "572a620f0163d9b8a75ef84a9b0d73b0f234346140dfc7ac6f72c46298234cd3"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -769,8 +769,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "df4c3a82fd4cd2755d60a1915d7efa3376779b5c007e7376f60d7f58998a648d",
-        "clean": "f50afa1ee32b02d1f7bcb79280784ff57720dfccf8ec888b8712880a28fa826b"
+        "adversarial": "67588d13e5c1ef99b4e348888797052c4630455484301f7fe056cc6d5a0deaff",
+        "clean": "96eeefd3b261a7de2145954f98c5e82388654878c54b88199ebd5a8e65960543"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -825,8 +825,8 @@
       "config_path": "configs/generated/prove-the-undo.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "d7a57f28ee1b2bef4701c373352e6b860aac7c0f694e98fa3a5160270ea38689",
-        "clean": "63816c504b10661778ed8bdb5ad11de4e896b0b382cd97933724b041ecc1549c"
+        "adversarial": "45da29fdd639375600b2a13463d748021798606d4176283148cefb6795684c15",
+        "clean": "af0e59da2fb1235581dc94c855b6b3f28ce7bb4e7a4c59c7a79db54df2af82ec"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -881,8 +881,8 @@
       "config_path": "configs/generated/recurrence-detector.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "e632b9dc9e26d41c37364276ad413207fd1cea30dc1f046833a5a0ffe5366a8b",
-        "clean": "f80ee61cb763bd4511514ecd93dbea3f76e6ad9340b96b599fff08da257f4652"
+        "adversarial": "e62b12ff02de10a1080910330fc335032e5467e1a81f7625a5aee9d7b5186502",
+        "clean": "5d191b812abb29e53a6db7ea3538bd4960082be9fdacf94364ab571c00d14e4c"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -937,8 +937,8 @@
       "config_path": "configs/generated/redgate.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "94c86f7cb7ac50f24283662a460fb523515a6261752ecc1275843085405e429d",
-        "clean": "31889c71f56f2c12042e3e74afd9575e0ebd5bc9bf8edd17c978c277cc3283ce"
+        "adversarial": "a506a01bcc20fe9600bd726e20afdf84e3d68be0bd8d67167725c811986723d9",
+        "clean": "75a8bde59b07d053c3e9ab43710f83c8b2ada8f3c9bc757bd69ab0458c2169ce"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -996,8 +996,8 @@
       "config_path": "configs/generated/scope-fence.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "fe7a41efc26b7c42f0828966d364ae353d1aa3bdd0995a03c9add4dec1bbe3c4",
-        "clean": "f42c90a22c554585a9fedcd57fa4e08a69fcc1a3a0dbcd973ea9cf51f2533b73"
+        "adversarial": "1747584d94bdc55aa87a230245be9e9a5cd0a986209806e8819e6c6036d6a628",
+        "clean": "efe16e643887bedebf1f4a4a19bfcbf636939f5345c748607809062670cc8c0a"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1052,8 +1052,8 @@
       "config_path": "configs/generated/semver-gate.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "5d20082d3a08ab26500d46dfac0cb1b23ad2a695a490cecddb636f7afa458fa6",
-        "clean": "ed8692bbf1cc40517f6f2999cbac6a0e92417d7c66995c3ea05c10bc81932886"
+        "adversarial": "2cf91c35cc9ff0777e0bb6891153da670f7422d8353caec184b695bd034879bc",
+        "clean": "69ebb506692743baf3c906ec989f24b85884e36a38f5db62f0d3ad00c87a4f95"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1108,8 +1108,8 @@
       "config_path": "configs/generated/stop-rule.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "a50cf15db6a54f5c24b4317ace0fffe7a4d724404ad6a936dc0d05edd42ecb3d",
-        "clean": "490072f496bae30485a35733ec12706aecb7e3f15c2b997a0da75ace836acc47"
+        "adversarial": "84c308c78a07f30e1423e249100531d22fbdcdec418e77bace91ad0e2e59d899",
+        "clean": "cb0ccb3c079a887e857c58b7b3d1707e8d01f6ed9879ca4d3e9193c23fa13c83"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1164,8 +1164,8 @@
       "config_path": "configs/generated/tailscale-wif.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "6fb0e04a1de47f7a957b69392d0ce9ac3401b590c546d3e2542541e5fdda9eb5",
-        "clean": "61785e8370ad2275ba49924719db9a88341790ffb0b2cd1166944d7641a18cb4"
+        "adversarial": "b5493b6e97fe0575de11f0d0bb78e4c43b0ab95a90478fc36a8639a4ace227f2",
+        "clean": "4b87ae5f5fbebe8e70cc02083486656286ae3106a88d56639b87bfbbf28d8ab5"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1220,8 +1220,8 @@
       "config_path": "configs/generated/tracer-bullets.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "be2bc12eed9087f9e5d6715e3ca6da89e3a80dcae42e0c15060b7c962b98ea74",
-        "clean": "c8b1dac53810d43014f6b4a3cb96690764891ce79e13017dc1e697ea20efb7c0"
+        "adversarial": "6a7fc54fde12a26b9f3cb8a4b4cd5938c293f6f851cebc148d5cf2acdd39fbea",
+        "clean": "5853586a10ec8b8eaefee05420bb4b61797e8145f99f484a2e8f16d5c0a21f33"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1276,8 +1276,8 @@
       "config_path": "configs/generated/verify-before-claim.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "56c26f6a10028771c38ef0bf82f7d91f342259310a6735e68f2e66952b297dcd",
-        "clean": "adaf3770bf1be1ea9baac57b4a6fab8b40eaf420c1ae1a894bf0c52900ef2999"
+        "adversarial": "5e19ccfa49bb19a1f75a3bbf67669678f436e93eabbe6f158cd74ff7d154e864",
+        "clean": "9ea315032db1450633eed14c23ea89b16d45c1c76444ec99717546bf737987f0"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1332,8 +1332,8 @@
       "config_path": "configs/generated/voice.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "3174091e65a1cca825d94f1a0808b75d47ac334589113fce691176c02ddacbf2",
-        "clean": "fb4ee4782a62fb7fdcc72e998de102c1f665ab6860d98e9f5f870923252ebf54"
+        "adversarial": "a62f17e12edc7d99b9461ee4706fcdde5a7c1a83854028dbebf4e479ccc7ed77",
+        "clean": "82d6dc9130850d0c0ee11cf2d93970a49168f9bc291e915d3af37b2ae7e56d3c"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1392,8 +1392,8 @@
       "config_path": "configs/generated/wayfinder.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "01f88a010389f4d65894d8b3d2cf970b8062ee74238212bc8d0f558cdc9fe227",
-        "clean": "3af92c60601354e533073fff14970d4ca47226a46efa7dd30d146493dd002d17"
+        "adversarial": "d9840d1764ccf90501c40355cb5fe167bbae496cc777f6efcbb8de9cb929ef88",
+        "clean": "2af2e364b4e52a982f36dbca0fdb8ebb56e042c13c187308148daf58f15338ec"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,

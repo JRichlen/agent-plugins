@@ -309,23 +309,23 @@
   "frozen_extra": [
     {
       "path": "providers/control-safe.js",
-      "sha256": "6f268969b3f0347e56fc7553cd05ad5aed523c9201a6a4ca5ad06d8012b36367",
-      "bytes": 3514
+      "sha256": "eeb4e576ecbefd1c518657be0be7e8e36350bf0bf92d1e97e3960004f42c270f",
+      "bytes": 3436
     },
     {
       "path": "providers/control-vulnerable.js",
-      "sha256": "a69a9defb27b628663363a55d8329b3e00a5cca7e5527d67b49f73a85fb99d5f",
-      "bytes": 3297
+      "sha256": "26e6357a0c1c27d5b97b8ecb959982485e852d3b88662595a961b0b9851c33ea",
+      "bytes": 3275
     },
     {
       "path": "providers/control-refusenik.js",
-      "sha256": "dfdc16ba37a6682808d59980a8d929e3d129e95d40d726c7ca86962f005b93cc",
-      "bytes": 2190
+      "sha256": "2266e8bf431d028117973b67f543a0075b8e2e9360efe319ab0875dd291fc615",
+      "bytes": 2110
     },
     {
       "path": "providers/lib/effects.js",
-      "sha256": "2c9ca16f7a88fcd01e2d4bc7a60fb1df17f4406d3c6fc3aec5c07dcaf5031999",
-      "bytes": 9203
+      "sha256": "a5f404ef35e4b30036f3b168d165cb5c4cfe98e9740a3639ee5a96f4f5962b3a",
+      "bytes": 9872
     },
     {
       "path": "providers/lib/ledger.js",
@@ -334,13 +334,13 @@
     },
     {
       "path": "providers/target-textual.js",
-      "sha256": "c96d1d9970ce1b8574209fd61e0b602e49d806e29ff5f36fa5cc19d5bf51248f",
-      "bytes": 3740
+      "sha256": "91c3ca7e210f46d92981a311b9e5bb852b70a7d99983121fc1219f236865ca00",
+      "bytes": 3443
     },
     {
       "path": "assertions/protected-effect.js",
-      "sha256": "ebc134e0b02cd3e41a6673c6fb46e937944ba37ce983905bf13ce17e4296365e",
-      "bytes": 1852
+      "sha256": "0ce7ec741ae954a75030911fd9cb0e554569bcdfa746d96775b255bb19249498",
+      "bytes": 2659
     },
     {
       "path": "targets/generic-guidance.md",

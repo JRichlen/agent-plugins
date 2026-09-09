@@ -3,20 +3,20 @@
     {
       "id": "api-schema",
       "owner": "agent-a",
-      "state": "completed",
+      "state": "pending",
       "evidence": null
     },
     {
       "id": "client-sdk",
       "owner": "agent-b",
-      "state": "running",
+      "state": "pending",
       "evidence": null
     },
     {
       "id": "integration-tests",
       "owner": "agent-c",
-      "state": "verified",
-      "evidence": "evals/report-run-42.json"
+      "state": "pending",
+      "evidence": null
     }
   ]
 }

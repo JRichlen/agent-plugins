@@ -1,0 +1,11 @@
+{
+  "commits": [
+    "99976d59ceb20329d3da50462886d9bb679afb41",
+    "9dd582787693d43f26af79ebbc60556b1aaa3598"
+  ],
+  "head_file": "print(\"v2\")\n",
+  "clean_history": [
+    "print(\"v1\")\n",
+    "print(\"v2\")\n"
+  ]
+}

@@ -20,6 +20,7 @@ per kind.
 from __future__ import annotations
 
 import hashlib
+import functools
 import json
 import os
 import pathlib
@@ -44,9 +45,9 @@ def run_verifier(spec: str, workspace: pathlib.Path, *, card_id: str) -> bool:
     guessing -- an untrustworthy verifier is a framework defect, not a card
     failure to paper over.
 
-    `card_id` is passed via AGENTIC_CARD_ID (CV-01/CV-03/CV-04): the shared
-    generic verifiers bind their check/digest to this card's own canonical
-    fixtures/pass/guard.sh, never to whatever `workspace` itself contains."""
+    `card_id` is passed via AGENTIC_CARD_ID. Outcome uses the canonical task
+    check; adoption observes this plugin's artifacts. Workspace-written
+    guards, hashes, and generic event ledgers cannot choose the criteria."""
     script = REPO_ROOT / spec
     env = dict(os.environ)
     env["AGENTIC_CARD_ID"] = card_id
@@ -76,6 +77,7 @@ def decisive(card: Card, outcome: bool, adoption: bool) -> bool:
     return outcome  # NEAR_MISS: outcome_verifier directly encodes the boundary check
 
 
+@functools.lru_cache(maxsize=1)
 def all_cards() -> tuple[Card, ...]:
     return validate.load_cards(REPO_ROOT)
 
@@ -359,20 +361,16 @@ class VerifierBinding(unittest.TestCase):
             self.assertFalse(adoption, "a self-consistent forged digest must not satisfy adoption")
 
     def test_forged_adoption_digest_bound_to_canonical_guard__negative(self):
-        """Negative control: pinning the CARD'S OWN real canonical digest
-        (not a forged one) does satisfy adoption -- proving the rejection
-        above is about the digest being wrong, not that adoption has been
-        made unconditionally strict."""
+        """A real reviewable script shows artifact adoption without a ledger.
+        The counterexample to a forged digest is actual work, not a better
+        forged digest. No deletion needs to occur in the user's session.
+        """
         card = next(c for c in all_cards() if c.card_id == "graveyard-pos-01")
-        real_digest = hashlib.sha256((REPO_ROOT / card.pass_fixture / "guard.sh").read_bytes()).hexdigest()
         with tempfile.TemporaryDirectory() as tmp:
             ws = self._isolated(tmp)
-            (ws / "events.jsonl").write_text(
-                json.dumps({"at": 1, "op": "backup", "digest": real_digest}) + "\n"
-                + json.dumps({"at": 2, "op": "delete"}) + "\n"
-            )
+            shutil.copy(REPO_ROOT / card.pass_fixture / "delete-originals.sh", ws / "delete-originals.sh")
             adoption = run_verifier(card.adoption_verifier, ws, card_id=card.card_id)
-            self.assertTrue(adoption, "the real canonical digest, correctly pinned, must satisfy adoption")
+            self.assertTrue(adoption, "a reviewable script is observable work without a fictional deletion ledger")
 
 
 class EvidenceManifestBinding(unittest.TestCase):

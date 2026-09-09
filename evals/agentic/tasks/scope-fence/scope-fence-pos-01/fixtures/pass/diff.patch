@@ -1,3 +1,7 @@
 --- a/parse_config.py
 +++ b/parse_config.py
+@@ -1,2 +1,4 @@
+ def parse_config(cfg):
 +    if cfg is None:
++        cfg = {}
+     result = cfg.get("name", "default")

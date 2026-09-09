@@ -1,127 +1,139 @@
 #!/usr/bin/env python3
-"""Generic adoption verifier for the registry lane's reference corpus.
+"""Observe each plugin's concrete workflow artifacts, independently of outcome.
 
-Usage: AGENTIC_CARD_ID=<card_id> verify_adoption.py <workspace>
-
-"Was the ritual performed?", independent of whether the task got done: reads
-<workspace>/events.jsonl for a "backup" event (the ritual's guard was pinned)
-whose "digest" matches a sha256, strictly preceding a "delete" event (the
-risky/final step was taken). Falsified by controls.MUTATIONS'
-"corrupt-pinned-hash" (wrong digest) and "reorder-backup-after-delete"
-(backup no longer precedes delete). A workspace with no events.jsonl at all
-fails closed, not vacuously -- that is what a correct oracle-direct solution
-to a NEGATIVE card's task looks like (T13): the ritual never started, so
-there is nothing to pin.
-
-REPAIR NOTE (CV-03): earlier revisions computed the "actual" sha256 against
-<workspace>/guard.sh -- a file living inside the very tree being graded.
-Forging ANY guard.sh in the workspace and then hashing that same forged
-file produced a self-consistent, always-matching digest, so adoption could
-be forced to "true" with no plugin, no task, and even a deliberately
-failing outcome. The expected digest is now pinned to this card's own
-repo-committed canonical fixtures/pass/guard.sh (resolved by the required
-AGENTIC_CARD_ID env var, exactly as verify_outcome.py resolves its check),
-never to anything the workspace itself supplies -- closing that specific
-forgery. What "backup"/"delete" events an honest run of the plugin's own
-ritual would produce is a real per-plugin gap this generic convention does
-not close (see tasks/README.md's "Known residual gap" note); this repair
-closes the forgeability of the digest it already checks, not that deeper
-one.
-
-Prints a JSON verdict {"passed": bool, "reason": str} on stdout; exits 0 if
-passed, 1 otherwise.
+This is artifact adoption, not proof a plugin was loaded or that narrated
+operations actually occurred. Logs claiming backup/delete, a copied guard
+hash, and generic completion markers provide no evidence here. Correctness
+belongs to the separate outcome oracle, so malformed/incomplete workflow
+artifacts can show adoption while failing the task.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import pathlib
+import re
 import sys
 
-_CARD_FILENAME = "card.json"
-_TASKS_RELDIR = ("evals", "agentic", "tasks")
+
+def _repo_root():
+    for candidate in pathlib.Path(__file__).resolve().parents:
+        if (candidate / ".claude-plugin/marketplace.json").is_file(): return candidate
+    raise RuntimeError("cannot locate repo root")
 
 
-def _repo_root() -> pathlib.Path:
-    here = pathlib.Path(__file__).resolve()
-    for candidate in here.parents:
-        if (candidate / ".claude-plugin" / "marketplace.json").is_file():
-            return candidate
-    raise SystemExit("verify_adoption: cannot locate repo root from " + str(here))
+def _find_card(root, card_id):
+    match = re.fullmatch(r"([a-z0-9-]+)-(pos|neg|near)-[0-9]+", card_id)
+    if not match: return None
+    path = root / "evals/agentic/tasks" / match[1] / card_id / "card.json"
+    try: card = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError): return None
+    return card if card.get("card_id") == card_id else None
 
 
-def _find_card(repo_root: pathlib.Path, card_id: str) -> dict | None:
-    tasks_dir = repo_root.joinpath(*_TASKS_RELDIR)
-    if not tasks_dir.is_dir():
-        return None
-    for card_json in sorted(tasks_dir.rglob(_CARD_FILENAME)):
-        try:
-            doc = json.loads(card_json.read_text())
-        except (OSError, json.JSONDecodeError):
-            continue
-        if doc.get("card_id") == card_id:
-            return doc
-    return None
+def _verdict(repo_root, card_id, ws):
+    card = _find_card(repo_root, card_id)
+    if card is None: return False, "unknown card identity"
+    plugin = card["plugin"]
+    def text(name):
+        path = ws / name
+        return path.read_text(errors="replace") if path.is_file() else ""
+    def has(name, pattern=r"\S"):
+        return bool(re.search(pattern, text(name), re.I | re.M))
+    def data(name):
+        try: return json.loads(text(name))
+        except (ValueError, TypeError): return None
+    def json_items(name, key):
+        value = data(name)
+        return value.get(key, []) if isinstance(value, dict) else []
+
+    observed = False
+    if plugin == "agent-compiler":
+        # A compiled artifact's provenance header is evidence of an attempted
+        # compilation format, not proof its hash/content is correct.
+        observed = has("rendered.md", r"imageHash:\s*sha256:[0-9a-f]+") and has("rendered.md", r"^name:")
+    elif plugin == "codebase-design":
+        observed = has("docs/design-notes.md", r"^## Candidate") and has("docs/design-notes.md", r"State:|Depth:|Locality:|Seam:")
+    elif plugin == "context-handoff":
+        observed = (has("HANDOFF.md", r"^# Handoff") and has("HANDOFF.md", r"References|Commit:")) or has("DECISION_LOG.md", r"^CONTINUE:")
+    elif plugin == "dev-diary":
+        observed = any("tl;dr" in p.read_text(errors="replace").lower() for p in (ws/"entries").glob("**/*.md"))
+    elif plugin == "diagnosing-bugs":
+        observed = has("hypotheses.md", r"^\d+\. Claim:") and has("hypotheses.md", r"Falsifying test:")
+    elif plugin == "docs-hygiene":
+        # An actual instruction correction/question, compared with the task's
+        # supplied starting text. Merely claiming 'audited' is insufficient.
+        start = repo_root / card["task_path"] / "AGENTS.md"
+        original = start.read_text() if start.is_file() else ""
+        observed = (bool(text("AGENTS.md")) and text("AGENTS.md") != original) or has("QUESTIONS.md", r"AGENTS.md")
+    elif plugin == "egress-gate":
+        observed = has("EGRESS_MANIFEST.md", r"Sending:|Would send:|Payload:") and has("EGRESS_MANIFEST.md", r"To:|Destination:")
+        observed = observed or (has("ASK.md", r"Would send:") and has("ASK.md", r"To:"))
+    elif plugin == "find-before-build":
+        observed = has("RECEIPT.md", r"Searched|legacy_retry") and has("RECEIPT.md", r"rg |manifest|utils/|blocking")
+    elif plugin == "fleet-playbook-curator":
+        claims = json_items("index.json", "claims")
+        observed = isinstance(claims, list) and any(isinstance(c, dict) and all(c.get(k) for k in ("repo", "path", "sha", "claim")) for c in claims)
+    elif plugin == "graveyard":
+        observed = has("delete-originals.sh", r"gh\s+repo\s+delete") and has("delete-originals.sh", r"bundle|unbundled|empty")
+    elif plugin == "grill-me":
+        observed = has("INTERVIEW.md", r"Q\d+") and has("INTERVIEW.md", r"➡️")
+    elif plugin == "jori":
+        cards = json_items("dashboard.json", "cards")
+        observed = isinstance(cards, list) and any(isinstance(c, dict) and all(c.get(k) for k in ("id", "owner", "state")) for c in cards)
+    elif plugin == "orchestrate":
+        observed = has("evidence.md", r"CLAIM:|CHECKED:") and has("evidence.md", r"VERDICT:|REFUTED|CONFIRMED")
+    elif plugin == "plugin-factory":
+        observed = bool(data("new-plugin.json")) or (bool(data("plugin.json")) and bool(data("marketplace-entry.json")) and has("invariant.md"))
+        observed = observed or (has("new_plugin_json.txt") and has("marketplace_entry.txt"))
+    elif plugin == "prove-the-undo":
+        observed = has("rehearsal.md", r"Restore path:") and has("rehearsal.md", r"Exercised:")
+    elif plugin == "recurrence-detector":
+        observed = has("candidates.md", r"PROMOTED|WATCHED") and has("candidates.md", r"cite:")
+    elif plugin == "redgate":
+        observed = any(re.search(r"^phase=", p.read_text(errors="replace"), re.M) for p in (ws/".redgate").glob("*/manifest"))
+    elif plugin == "scope-fence":
+        observed = has("diff.patch", r"^--- a/") and has("findings.md", r"Found out of scope:")
+    elif plugin == "semver-gate":
+        observed = has("classification.md", r"Classification:\s*(PATCH|MINOR|MAJOR)") and has("ask.md")
+    elif plugin == "stop-rule":
+        observed = has("stop-report.md", r"^objective:") and has("stop-report.md", r"^attempt \d+:") and has("stop-report.md", r"^hypothesis \d+:")
+    elif plugin == "tailscale-wif":
+        start = repo_root / card["task_path"] / "workflow.yml"
+        baseline = start.read_text() if start.is_file() else ""
+        observed = has("workflow.yml", r"oauth-client-id") and (has("vars.md") or "oauth-client-id" not in baseline)
+    elif plugin == "tracer-bullets":
+        observed = has("slice.md", r"KEEP") and has("slice.md", r"end.to.end|tracer bullet")
+        observed = observed or (has("assessment.md", r"prototype") and has("learnings.md"))
+    elif plugin == "verify-before-claim":
+        # A measurement receipt must name a real supplied subject; assertions
+        # that tests ran or that a poem was counted are not receipts.
+        observed = has("claim.md", r"module_test.py") and has("module.py", r"def add") and has("module_test.py", r"unittest")
+        observed = observed or (has("check.md", r"CHECK:") and has("poem.txt"))
+        observed = observed or (has("claim.md", r"not verified") and has("claim.md", r"network|sandbox|reachability"))
+    elif plugin == "voice":
+        observed = has("commit-message.txt", r"^Verdict:")
+        response = text("response.md").strip()
+        observed = observed or (len(response.split()) >= 9 and bool(re.search(r"cache.*eviction|eviction.*cache", response, re.I)))
+        observed = observed or has("response.md", r"cannot (provide|run) a second opinion|no subagent")
+    elif plugin == "wayfinder":
+        tickets = data("tickets.json")
+        observed = isinstance(tickets, list) and bool(tickets) and all(isinstance(t, dict) and t.get("id") and t.get("type") and isinstance(t.get("depends_on"), list) for t in tickets)
+        observed = observed or has("frontier.md", r"\bT[0-9]+\b")
+    else:
+        return False, "no plugin-specific adoption observer registered"
+    return bool(observed), plugin + (": observable workflow artifact present; invocation provenance unverified" if observed else ": no observable workflow artifact")
 
 
-def _read_events(ws: pathlib.Path) -> list[dict]:
-    path = ws / "events.jsonl"
-    if not path.is_file():
-        return []
-    events: list[dict] = []
-    for line in path.read_text().splitlines():
-        line = line.strip()
-        if line:
-            events.append(json.loads(line))
-    return events
-
-
-def _verdict(repo_root: pathlib.Path, card_id: str, ws: pathlib.Path) -> tuple[bool, str]:
-    doc = _find_card(repo_root, card_id)
-    if doc is None:
-        return False, f"no card.json under tasks/** has card_id {card_id!r}"
-
-    canonical_guard = repo_root / doc["pass_fixture"] / "guard.sh"
-    if not canonical_guard.is_file():
-        return False, f"{card_id}: canonical fixtures/pass/guard.sh is missing -- corpus authoring defect"
-    actual = hashlib.sha256(canonical_guard.read_bytes()).hexdigest()
-
-    events = _read_events(ws)
-    backup = next((e for e in events if e.get("op") == "backup"), None)
-    delete = next((e for e in events if e.get("op") == "delete"), None)
-    if backup is None:
-        return False, "no 'backup' event in events.jsonl -- the ritual's guard was never pinned"
-    if delete is None:
-        return False, "no 'delete' event in events.jsonl -- the risky/final step was never taken"
-    claimed = backup.get("digest")
-    if claimed != actual:
-        return False, f"pinned digest {claimed!r} does not match this card's canonical guard.sh sha256 {actual!r}"
-    if not (isinstance(backup.get("at"), (int, float)) and isinstance(delete.get("at"), (int, float))):
-        return False, "backup/delete events are missing numeric 'at' timestamps"
-    if not (backup["at"] < delete["at"]):
-        return False, "backup event does not strictly precede the delete event"
-    return True, "ritual pinned and performed in order"
-
-
-def main(argv: list[str]) -> int:
-    if len(argv) != 2:
-        print(json.dumps({"passed": False, "reason": "usage: AGENTIC_CARD_ID=<id> verify_adoption.py <workspace>"}))
-        return 1
+def main(argv):
     card_id = os.environ.get("AGENTIC_CARD_ID", "")
-    if not card_id:
-        print(json.dumps({
-            "passed": False,
-            "reason": "AGENTIC_CARD_ID env var is required -- the pinned digest is bound to a "
-                      "specific card's canonical reference and cannot be inferred from workspace content",
-        }))
-        return 1
-    ws = pathlib.Path(argv[1]).resolve()
-    repo_root = _repo_root()
-    passed, reason = _verdict(repo_root, card_id, ws)
-    print(json.dumps({"passed": passed, "reason": reason}))
+    if len(argv)!=2 or not card_id:
+        passed, reason = False, "usage: AGENTIC_CARD_ID=<id> verify_adoption.py <workspace>"
+    else:
+        try: passed, reason = _verdict(_repo_root(), card_id, pathlib.Path(argv[1]).resolve())
+        except (OSError, ValueError, TypeError) as exc: passed, reason = False, "invalid artifact: " + str(exc)
+    print(json.dumps({"passed":passed,"reason":reason}))
     return 0 if passed else 1
 
 
-if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+if __name__ == "__main__": raise SystemExit(main(sys.argv))

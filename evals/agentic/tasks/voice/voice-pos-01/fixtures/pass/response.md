@@ -1,1 +1,1 @@
-Verdict: switch the eviction policy to LRU; the cache is slow because it evicts by insertion order.
+The cache is slow because its eviction policy is poor. Improve that policy to address the performance problem.

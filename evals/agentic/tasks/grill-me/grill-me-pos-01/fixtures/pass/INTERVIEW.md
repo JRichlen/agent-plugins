@@ -1,15 +1,7 @@
-❓ Q1 -- rollback: can the sharded store be rolled back cleanly if the migration fails?
-➡️ keep the Postgres primary live in shadow-write mode until cutover is verified
+❓ Q1 -- rollback: what keeps the Postgres data recoverable through cutover if the sharded store loses writes?
+➡️ pending user response
 
-Devil's-advocate: what if shadow-write itself masks a data-loss bug until cutover?
+❓ Q2 -- public API: how will existing clients migrate their pagination cursors without losing or duplicating results?
+➡️ pending user response
 
-**Confirmed Decisions**
-- Shadow-write until verified.
-
-**Open Risks Accepted As-Is**
-- Pagination cursor format changes for API clients.
-
-**Deferred-for-Later**
-- Long-term sharding key choice.
-
-Please confirm this shared understanding before we start.
+Open risks: data loss during cutover and pagination compatibility. No user decisions or accepted risks have been confirmed yet.

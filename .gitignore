@@ -7,6 +7,10 @@
 /delete-originals.sh
 /summary.tsv
 *.bundle
+# Fixed, synthetic full-history archives are required inputs for the archive
+# restoration test. Keep runtime bundles ignored everywhere else.
+!/evals/agentic/tasks/graveyard/graveyard-pos-02/task/legacy-service-source.bundle
+!/evals/agentic/tasks/graveyard/graveyard-pos-02/fixtures/pass/archive/legacy-service.bundle
 .DS_Store
 
 # Eval artifacts. Secrets and generated output must never be committed.

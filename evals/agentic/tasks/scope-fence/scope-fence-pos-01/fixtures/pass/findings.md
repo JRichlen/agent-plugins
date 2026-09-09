@@ -1,2 +1,2 @@
-Found out of scope: stale TODO comment near parse_config (line 40) -- not fixed, recorded.
-Found out of scope: dead code block below parse_config -- not fixed, recorded.
+Found out of scope: stale TODO at parse_config.py:5; left unchanged.
+Found out of scope: dead code branch at parse_config.py:6; left unchanged.
