@@ -126,17 +126,28 @@ genuinely strong result and it deserves to be stated plainly.
 Free of *context*, not free of *dollars*. Each follow-up is another full
 `$0.0053` Flash round trip, whereas a resident file costs `$0` marginal for the
 second question — you are already paying its `$0.0030`/turn cache read whether
-you ask about it or not. Delegation wins while
+you ask about it or not.
+
+And the summaries accumulate. Each delegated answer stays in Claude's context
+and is re-billed on every later turn, so `Q` questions leave `Q` resident
+summaries, not one. Charging both sides symmetrically — the file resident for
+`T` turns against `Q` summaries resident for `T` turns — delegation wins while
 
 ```
-Q  <  7.1 + 0.53·T
+Q  <  (0.0375 + 0.0030·T) / (0.0053 + 0.0002·T)
 ```
 
-for `Q` questions about the same corpus over `T` turns. At `T = 10` that is ~12
-questions. Comfortable for normal use, and it inverts exactly where the post
-claims the design is strongest: **tight interrogation loops over one corpus are
-the worst case for delegation, not the best.** One-shot ephemeral invocations
-mean the worker has no cache to amortize against, while Claude does.
+taking the worst case where the questions come early. That is ~7 questions at
+`T = 0`, ~9 at `T = 10`, ~11 at `T = 30` — and it **saturates at 15**, never
+exceeding it however long the session runs. The ceiling is just `6000 / 400`:
+the point where the accumulated summaries occupy as much context as the file
+would have.
+
+So delegation's advantage over a resident file is bounded, and it inverts
+exactly where the post claims the design is strongest: **tight interrogation
+loops over one corpus are the worst case for delegation, not the best.**
+One-shot ephemeral invocations mean the worker has no cache to amortize
+against, while Claude does.
 
 Swap the worker and the picture moves: Haiku 4.5 (`$1`/`$5`) gives ~72% at
 `T = 0`, not 86%. The saving is a property of the price gap, not the
@@ -301,7 +312,10 @@ model: haiku
 
 `CLAUDE_CODE_SUBAGENT_MODEL` forces a model onto every subagent. That is
 "delegate reading to a cheap model in a separate context" with no plugin, no
-second vendor, no network round trip, and no ARG_MAX ceiling. **Anyone
+second vendor, and no ARG_MAX ceiling. It is not free of latency — a Haiku
+subagent is still a hosted model call — but it is one hop to a provider already
+in the loop, where a Portal delegation adds an `npx`/CLI invocation, the Portal
+backend, and the worker behind that. **Anyone
 evaluating the Portal pattern should price this first** — it is the closest
 available baseline, and the post does not compare against it.
 
@@ -340,7 +354,7 @@ deciding not to delegate.
 - How often does a delegated read lead to an edit, forcing the double payment
   of §3? That ratio decides whether the real-world saving is nearer 90% or 45%.
 - Does the `Explore`-with-`model: haiku` baseline capture most of the win at
-  none of the operational cost?
+  a fraction of the operational cost?
 
 ---
 
