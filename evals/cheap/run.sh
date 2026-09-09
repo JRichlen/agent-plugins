@@ -426,7 +426,11 @@ _HELPERS="evals/cheap/helpers.sh"
 if [ -f "$_HELPERS" ]; then
   ok "shared helper file exists: $_HELPERS"
   for _r in evals/cheap/run.sh evals/cheap/run-one.sh; do
-    if grep -qE '^\. "\$\(dirname "\$\{BASH_SOURCE\[0\]\}"\)/helpers\.sh"' "$_r"; then
+    # Loose on FORM, strict on FACT: any `.`/`source` line naming helpers.sh
+    # counts, so reformatting the dirname expression cannot cause a spurious
+    # red. What the runner then DOES with those helpers is proven behaviourally
+    # by the counterfeit corpus, which drives both runners (fixture 18).
+    if grep -qE '^[[:space:]]*(\.|source)[[:space:]].*helpers\.sh' "$_r"; then
       ok "$_r sources the shared helpers"
     else
       bad "$_r does NOT source $_HELPERS — the two runners can drift again (#120)"
