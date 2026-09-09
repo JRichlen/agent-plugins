@@ -557,6 +557,7 @@ pack: dev-diary/cheap
 pack: diagnosing-bugs/cheap
 pack: docs-hygiene/cheap
 pack: egress-gate/cheap
+pack: eval-ladder/cheap
 pack: find-before-build/cheap
 pack: find-before-build/promptfoo
 pack: fleet-playbook-curator/cheap
