@@ -25,15 +25,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 pass=0; fail=0
-ok()   { printf '  \033[32mPASS\033[0m %s\n' "$1"; pass=$((pass+1)); }
-bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=$((fail+1)); }
-group(){ printf '\n\033[1m%s\033[0m\n' "$1"; }
-# Shared marker helpers for per-plugin packs — a SINGLE definition here, inherited
-# by every sourced checks.sh, so the byte-identical per-plugin copies can't drift
-# apart. has FILE FIXED OK FAIL | hasE FILE REGEX OK FAIL | lacksE FILE REGEX OK FAIL.
-has()   { if grep -qF "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-hasE()  { if grep -qE "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-lacksE(){ if grep -qE "$2" "$1" 2>/dev/null; then bad "$4"; else ok "$3"; fi; }
+# The six check helpers live in ONE file, sourced by this runner and by
+# run-one.sh alike, so the two can never again define different sets (#120).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 
 # --- 1. Shell scripts parse -------------------------------------------------
 group "shell syntax (bash -n)"
@@ -398,8 +393,10 @@ while IFS= read -r entry; do
   pack="$PLUGIN_SRC/evals/cheap/checks.sh"
   if [ -f "$pack" ]; then
     export PLUGIN_NAME PLUGIN_DIR
+    pack_guard_on
     # shellcheck source=/dev/null
     . "$pack"
+    pack_guard_off
   else
     group "plugin '$PLUGIN_NAME' cheap eval pack"
     bad "plugin '$PLUGIN_NAME' ($PLUGIN_SRC) has no cheap eval pack at $pack"
@@ -413,6 +410,89 @@ for p in mkt.get("plugins", []):
     print(f"{p.get('name','')}\t{src}")
 PY
 )
+
+# --- 10b. Runner helper parity (issue #120) ---------------------------------
+# The two runners that source per-plugin packs — run.sh (whole repo) and
+# run-one.sh (one plugin, and the runner the REQUIRED install matrix uses) —
+# must offer packs an IDENTICAL helper set. They did not: run.sh defined six,
+# run-one.sh three, and because packs are sourced without `set -e` every call to
+# a missing helper was a silent no-op that still reported green. 253 checks
+# across 14 plugins never ran in the required tier.
+#
+# The fix is one shared helpers.sh sourced by both. This gate keeps it that way:
+# a runner that stops sourcing it, or re-grows a local definition, goes red here.
+group "runner helper parity (run.sh <-> run-one.sh)"
+_HELPERS="evals/cheap/helpers.sh"
+if [ -f "$_HELPERS" ]; then
+  ok "shared helper file exists: $_HELPERS"
+  for _r in evals/cheap/run.sh evals/cheap/run-one.sh; do
+    # Loose on FORM, strict on FACT: any `.`/`source` line naming helpers.sh
+    # counts, so reformatting the dirname expression cannot cause a spurious
+    # red. What the runner then DOES with those helpers is proven behaviourally
+    # by the counterfeit corpus, which drives both runners (fixture 18).
+    if grep -qE '^[[:space:]]*(\.|source)[[:space:]].*helpers\.sh' "$_r"; then
+      ok "$_r sources the shared helpers"
+    else
+      bad "$_r does NOT source $_HELPERS — the two runners can drift again (#120)"
+    fi
+    # A runner defining a helper itself would shadow the shared one and
+    # reintroduce exactly the asymmetry this gate exists to prevent.
+    if grep -qE '^(ok|bad|group|has|hasE|lacksE)\(\)' "$_r"; then
+      bad "$_r defines a check helper locally — it must inherit them from $_HELPERS only"
+    else
+      ok "$_r defines no local check helper"
+    fi
+    # Fail-closed guard around pack sourcing. Grepping for the two names only
+    # proves they appear SOMEWHERE in the file, not that they ENCLOSE the
+    # `. "$pack"` line — a runner that moved pack_guard_off above the source
+    # would keep both tokens and silently stop guarding (Codex review, PR #132).
+    # So validate the ordering structurally instead.
+    if python3 - "$_r" <<'PYORD'
+import re, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+src = [i for i, l in enumerate(lines) if re.search(r'^\s*\.\s+"\$pack"', l)]
+if len(src) != 1:
+    print(f"  expected exactly one `. \"$pack\"` line, found {len(src)}"); sys.exit(1)
+s = src[0]
+on  = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_on\b', l)]
+off = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_off\b', l)]
+on_before  = [i for i in on  if i < s]
+off_after  = [i for i in off if i > s]
+if not on_before:
+    print("  no pack_guard_on before the pack source — the guard is not armed"); sys.exit(1)
+if not off_after:
+    print("  no pack_guard_off after the pack source — the guard is never lifted"); sys.exit(1)
+nearest_on = max(on_before)
+if any(nearest_on < i < s for i in off):
+    print("  pack_guard_off sits BETWEEN pack_guard_on and the pack source — the guard is lifted before it can catch anything"); sys.exit(1)
+sys.exit(0)
+PYORD
+    then ok "$_r arms the guard before the pack source and lifts it after"
+    else bad "$_r does not ENCLOSE the pack source in pack_guard_on/off (see above) — an undefined helper would go silent again (#120)"
+    fi
+  done
+  # Every helper a pack may call must actually be defined in the shared file.
+  for _h in ok bad group has hasE lacksE pack_guard_on pack_guard_off; do
+    if grep -qE "^${_h}\(\)" "$_HELPERS"; then
+      ok "helpers.sh defines $_h"
+    else
+      bad "helpers.sh is missing $_h — packs calling it would silently skip"
+    fi
+  done
+  # No plugin pack may carry its own copy: a second definition is a second thing
+  # that can drift, and a local copy is what made one plugin accidentally immune
+  # to the bug rather than protected from it.
+  _dupes=0
+  while IFS= read -r _pk; do
+    if grep -qE '^(has|hasE|lacksE)\(\)' "$_pk"; then
+      bad "$_pk redefines a shared helper locally — delete it and inherit from $_HELPERS"
+      _dupes=$((_dupes+1))
+    fi
+  done < <(find plugins -path '*/evals/cheap/checks.sh' | sort)
+  [ "$_dupes" -eq 0 ] && ok "no plugin pack redefines a shared helper"
+else
+  bad "missing $_HELPERS — both runners depend on it (#120)"
+fi
 
 # --- 11. Branch-protection lock (winner #15) --------------------------------
 # The four required status checks and the two deep-tier safety paths are frozen

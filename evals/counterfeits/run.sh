@@ -71,6 +71,15 @@ run_tier() {  # <root> -> prints combined output, returns run.sh exit code
   "$1/evals/cheap/run.sh" 2>&1
 }
 
+# The corpus historically drove ONLY run.sh. That is precisely the blind spot
+# that let #120 live: run-one.sh — the runner the REQUIRED install matrix uses —
+# was the one silently skipping checks, and nothing here ever executed it. A
+# fixture may name a plugin via ALSO_RUN_ONE= in its DEFECT.md to be driven
+# through the isolated runner as well.
+run_tier_one() {  # <root> <plugin> -> prints combined output, returns run-one.sh exit code
+  "$1/evals/cheap/run-one.sh" "$2" 2>&1
+}
+
 # --- calibration: the baseline must be GREEN --------------------------------
 # If the known-good plugin doesn't pass the real gate, the corpus proves nothing:
 # a rejection could just mean the baseline itself is broken. Assert green first.
@@ -89,6 +98,17 @@ rm -rf "$cal_root"
 # the gate's group header vanishes from the baseline run and its fixture(s) below
 # would silently pass by never triggering — this catches that coverage regression
 # (the "add a gate but leave it unexercised" drift the corpus exists to prevent).
+group "calibration — the baseline is green under run-one.sh too"
+cal_root_one="$(build_root)"
+cal_one_out="$(run_tier_one "$cal_root_one" sample-guard)"; cal_one_code=$?
+if [ "$cal_one_code" -eq 0 ]; then
+  ok "baseline sample-guard passes run-one.sh (isolated runner calibrated)"
+else
+  bad "baseline sample-guard FAILS run-one.sh — every isolated rejection below is meaningless"
+  printf '%s\n' "$cal_one_out" | grep -i fail | sed 's/^/    /'
+fi
+rm -rf "$cal_root_one"
+
 group "gate coverage — repo-level gates fire in the synthetic root"
 for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin"; do
   if grep -qF "$g" <<<"$cal_out"; then ok "gate fires in synthetic root: $g"; else bad "gate '$g' did NOT fire in the synthetic root — build_root staging regressed"; fi
@@ -121,6 +141,21 @@ for dir in "$FIXTURES"/*/; do
     printf '%s\n' "$out" | grep -i fail | sed 's/^/    /'
   else
     ok "$name rejected by the expected gate ('$expect')"
+  fi
+
+  # ALSO_RUN_ONE=<plugin>: drive the SAME mutated tree through run-one.sh, so a
+  # defect in the isolated runner cannot hide behind a green run.sh (#120).
+  one_plugin="$(sed -n 's/^ALSO_RUN_ONE=//p' "$defect" | head -n1)"
+  if [ -n "$one_plugin" ]; then
+    out1="$(run_tier_one "$root" "$one_plugin")"; code1=$?
+    if [ "$code1" -eq 0 ]; then
+      bad "$name was ACCEPTED by run-one.sh $one_plugin (expected rejection: '$expect')"
+    elif ! grep -qF "$expect" <<<"$out1"; then
+      bad "$name rejected by run-one.sh, but not by the expected gate (missing '$expect')"
+      printf '%s\n' "$out1" | grep -i fail | sed 's/^/    /'
+    else
+      ok "$name rejected by run-one.sh $one_plugin too ('$expect')"
+    fi
   fi
   rm -rf "$root"
 done
