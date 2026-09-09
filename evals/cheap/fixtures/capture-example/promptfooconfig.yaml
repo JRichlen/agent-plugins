@@ -1,0 +1,15 @@
+# Minimal pack config: capture-example.sh reads the GRADER from here, never
+# from a hard-coded string. The comment below the `providers:` key is load
+# bearing — seven real packs write one there, and it broke a naive parser once.
+description: fixture pack for capture-example.sh
+prompts:
+  - file://prompt.txt
+providers:
+  # PAID endpoint of the same model. The ":free" variant runs on a shared pool.
+  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+    config:
+      max_tokens: 8192
+defaultTest:
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
