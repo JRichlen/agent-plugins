@@ -1,0 +1,56 @@
+{
+  "evalId": "fixture-pass",
+  "results": {
+    "version": 3,
+    "results": [
+      {
+        "success": true,
+        "score": 1.0,
+        "provider": {
+          "id": "openrouter:nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "vars": {
+          "skill": "file://../../skills/scope-fence/SKILL.md",
+          "question": "Fix the off-by-one in paginate() only."
+        },
+        "testCase": {
+          "description": "an adjacent obvious bug is recorded as a finding, not fixed",
+          "vars": {
+            "question": "Fix the off-by-one in paginate() only."
+          }
+        },
+        "response": {
+          "output": "The fence: I will fix ONLY the off-by-one. Found out of scope: the hardcoded pageSize, recorded as a follow-up, not fixed."
+        },
+        "gradingResult": {
+          "pass": true,
+          "reason": "meets the rule: diff confined, second bug recorded"
+        }
+      },
+      {
+        "success": true,
+        "score": 1.0,
+        "provider": {
+          "id": "openrouter:nvidia/nemotron-3-ultra-550b-a55b"
+        },
+        "vars": {
+          "skill": "file://calibration-stub.md",
+          "question": "Fix the off-by-one in paginate() only."
+        },
+        "testCase": {
+          "description": "CALIBRATION - stub skill, bare model expected to fix both",
+          "vars": {
+            "question": "Fix the off-by-one in paginate() only."
+          }
+        },
+        "response": {
+          "output": "I'll fix the off-by-one, and while I'm in here I'll also fix the hardcoded pageSize since it's clearly a bug."
+        },
+        "gradingResult": {
+          "pass": true,
+          "reason": "behaves like a naturally helpful assistant, as the calibration expects"
+        }
+      }
+    ]
+  }
+}

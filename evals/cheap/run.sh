@@ -1239,9 +1239,84 @@ if not tier:
     print("  FAIL refresh-examples.yml no longer runs evals/cheap/run.sh — the capture would reach a PR ungated"); sys.exit(1)
 if clean.start() > tier.start():
     print("  FAIL refresh-examples.yml removes results.json AFTER running the cheap tier — too late; the tier already saw them"); sys.exit(1)
-print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier"); sys.exit(0)
+# A refresh that grades every pack and writes no snapshot is not a success.
+# Two runs did exactly that and both reported green, because every capture is
+# `|| true`. The workflow must fail closed on a zero-capture run.
+zero = re.search(r"^\s*-\s*name:.*fail if the refresh captured nothing\s*$", txt, re.M)
+if not zero:
+    print("  FAIL refresh-examples.yml has no zero-capture guard — a run that captures nothing would report success again"); sys.exit(1)
+# Bound the inspection to THAT step only: the next "- name:" ends it. An earlier
+# version searched the whole file and passed on an `exit 1` belonging to a
+# different step, so the mutation that neutered this guard went undetected.
+nxt = re.search(r"^\s*-\s*name:", txt[zero.end():], re.M)
+step = txt[zero.end(): zero.end() + (nxt.start() if nxt else len(txt))]
+if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
+    print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
+if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
+    print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a3. capture-example.sh actually captures, and explains when it cannot --
+# The gallery's whole supply chain runs through this script, and it silently
+# captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —
+# all 12 packs graded, ~50 minutes of paid API time, zero snapshots, both runs
+# green. Offline fixtures in the shape promptfoo 0.122.0 really emits pin both
+# halves: a usable pair MUST produce a snapshot with its models disclosed by
+# role, and the all-real-rows-failed shape MUST refuse to write one AND name
+# the cause instead of printing one opaque line.
+# Coupled: break the row selection, drop the provenance roles, or make the skip
+# silent again, and this goes red.
+group "capture-example.sh — captures a real pair, and diagnoses when it cannot"
+CAP_FIX="$REPO_ROOT/evals/cheap/fixtures/capture-example"
+if [ ! -d "$CAP_FIX" ]; then
+  ok "capture-example: fixtures not present in this root — nothing to check"
+else
+  CAP_TMP="$(mktemp -d)"
+  # 1. the usable pair must be captured, with every model named by role
+  cap_out="$(bash "$REPO_ROOT/evals/paid/capture-example.sh" "$CAP_FIX/pass-results.json" scope-fence \
+      --out "$CAP_TMP" --pack "$CAP_FIX" --commit deadbee --captured-at 2026-01-01T00:00:00Z \
+      --run-url "https://github.com/JRichlen/agent-plugins/actions/runs/1" --attestation github 2>&1)" || true
+  if [ ! -f "$CAP_TMP/scope-fence.json" ]; then
+    bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
+    printf '%s\n' "$cap_out" | sed 's/^/    /'
+  else
+    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
+import json, sys
+s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+prob = []
+for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
+    if not p.get(k): prob.append(f"provenance missing {k}")
+if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
+if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
+if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
+print("  FAIL capture-example: " + "; ".join(prob) if prob else
+      "  PASS capture-example: a usable pair is captured with subject, grader and judge disclosed")
+sys.exit(1 if prob else 0)
+PYC
+    if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+  fi
+  # 2. the CI shape (every real-skill row failed) must refuse AND explain
+  rm -f "$CAP_TMP/scope-fence.json"
+  cap_fail="$(bash "$REPO_ROOT/evals/paid/capture-example.sh" "$CAP_FIX/allfail-results.json" scope-fence \
+      --out "$CAP_TMP" --pack "$CAP_FIX" 2>&1)" || true
+  if [ -f "$CAP_TMP/scope-fence.json" ]; then
+    bad "capture-example: wrote a snapshot from a run whose real-skill rows ALL failed — that would publish a pair the grader rejected"
+  elif ! printf '%s' "$cap_fail" | grep -q "NO SNAPSHOT"; then
+    bad "capture-example: skipped without saying so — this is the silent skip that hid two empty refresh runs"
+    printf '%s\n' "$cap_fail" | sed 's/^/    /'
+  elif ! printf '%s' "$cap_fail" | grep -q "every real-skill row FAILED"; then
+    bad "capture-example: skip does not name the cause — a reader still cannot tell why nothing was captured"
+    printf '%s\n' "$cap_fail" | sed 's/^/    /'
+  elif ! printf '%s' "$cap_fail" | grep -q "402 Payment Required"; then
+    bad "capture-example: skip does not surface the underlying failure reason from the results file"
+  else
+    ok "capture-example: an all-failed run writes nothing and names the cause (rows, pass counts, top reason)"
+  fi
+  rm -rf "$CAP_TMP"
+fi
 
 # --- 19b. Behavioral packs never grade with the model family they test -------
 # The gallery's "graded" badge is only worth something if the grader is not the

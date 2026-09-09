@@ -61,7 +61,7 @@ case "$ATTEST" in github|none) ;; *) echo "capture-example: --attestation must b
 mkdir -p "$OUT"
 
 python3 - "$RESULTS" "$PLUGIN" "$OUT" "$COMMIT" "$CAPTURED" "$RUN_URL" "$ATTEST" "$PACK" <<'PY'
-import json, os, re, sys
+import collections, json, os, re, sys
 results, plugin, outdir, commit, captured, run_url, attest, pack = sys.argv[1:9]
 try:
     doc = json.load(open(results))
@@ -90,7 +90,36 @@ def uses_stub(r):
 real = next((r for r in rows if r.get("success") and not uses_stub(r) and var(r, "question")), None)
 stub = next((r for r in rows if uses_stub(r) and var(r, "question")), None)
 if not real or not stub:
-    print(f"capture-example: no usable real+stub pair for '{plugin}' in {results} — keeping any existing snapshot")
+    # A skip used to be one opaque line, so two full refresh runs (2026-09-01 and
+    # 2026-09-08) captured nothing across all 12 packs and still reported success —
+    # roughly 50 minutes of paid API time with no way to see why. Say exactly what
+    # the results file contained and what the most common failure was, so the next
+    # reader has the cause and not a mystery.
+    qrows  = [r for r in rows if var(r, "question")]
+    reals  = [r for r in qrows if not uses_stub(r)]
+    stubs  = [r for r in qrows if uses_stub(r)]
+    okr    = sum(1 for r in reals if r.get("success"))
+    oks    = sum(1 for r in stubs if r.get("success"))
+    reasons = collections.Counter()
+    for r in reals:
+        if r.get("success"):
+            continue
+        why = ((r.get("gradingResult") or {}).get("reason") or "").strip() or \
+              ((r.get("error") or "") if isinstance(r.get("error"), str) else "") or \
+              "(no reason recorded)"
+        reasons[" ".join(why.split())[:160]] += 1
+    print(f"capture-example: NO SNAPSHOT for '{plugin}' — nothing captured from {results}")
+    print(f"  rows: {len(rows)} total, {len(qrows)} with a question "
+          f"| real-skill {len(reals)} ({okr} passed) | stub/calibration {len(stubs)} ({oks} passed)")
+    if not reals:
+        print("  cause: NO real-skill rows at all — the pack produced no gradeable non-calibration result")
+    elif okr == 0:
+        print("  cause: every real-skill row FAILED — a snapshot needs at least one passing one")
+        for why, n in reasons.most_common(3):
+            print(f"    x{n}: {why}")
+    if not stubs:
+        print("  cause: NO stub/calibration row — the pack has no negative control to pair against")
+    print("  the previous snapshot (if any) stands; nothing was overwritten")
     sys.exit(0)
 
 def provider_id(r):
