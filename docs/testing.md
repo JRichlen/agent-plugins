@@ -60,7 +60,11 @@ that it is green because it did not run, never silently.
   (fail-closed: a registered plugin with no `evals/cheap/checks.sh` is a
   failure, not a skip), branch-protection lock, paid-pack discovery self-test,
   install-smoke coverage, cross-plugin references, context-tax budget, version
-  drift, secret gate on agent exhaust, routing-pack structure, statistical-gate
+  drift, secret gate on agent exhaust, routing-pack structure, runner helper
+  parity (`run.sh` and `run-one.sh` must source the one shared
+  `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
+  the fail-closed guard — see
+  [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
   self-test, example-gallery sync/provenance, design-timeline sync/receipts
   (`docs/timeline/`: page in sync with its decision data, every receipt
   resolving), and the testing-doc drift guard defending this document.
@@ -84,10 +88,13 @@ that it is green because it did not run, never silently.
 - **What it proves.** The evaluation framework's contracts, positive and negative
   controls, task-specific artifact graders, protocol fixtures, native evidence
   binding, attempt accounting, statistical calculations, and catalog wiring.
-  The corpus has 90 cards across 25 plugins. Grader-owned helper files are
+  The corpus has 93 cards across 26 plugins. Grader-owned helper files are
   explicit; arbitrary identical fixture files are never injected as answers.
   The subject cannot replace the canonical grader, and executable artifacts run
   in Bubblewrap without host credentials, network or hidden fixture answers.
+  Pinned tooling includes a source-verified Winston lifecycle backport: queued
+  log records drain before file transports close. A real backpressure regression
+  checks clean shutdown and complete logs; exit failures remain test failures.
 - **What it cannot prove.** Offline fixture success does not demonstrate plugin
   effectiveness or native model behavior. The catalog's approval-required native
   and paid entries remain distinct from their offline regression forms.
@@ -145,7 +152,10 @@ that it is green because it did not run, never silently.
   baseline at runtime in a temp dir) must be rejected by the cheap tier **for
   the right reason** (expected failure substring), after a calibration step
   proves the untouched baseline is green. Includes a `weakened-guard` fixture
-  that is structurally perfect and only weakens the safety invariant.
+  that is structurally perfect and only weakens the safety invariant, and a
+  `silent-helper-skip` fixture that breaks the pack-to-harness relationship
+  rather than plugin content: a pack assertion calling a helper no runner
+  defines must be rejected, not silently skipped ([#120](https://github.com/JRichlen/agent-plugins/issues/120)).
 - **What it cannot prove.** Anything about gates the corpus has no fixture
   for, and nothing about model behavior.
 - **Fires.** Path-gated in CI (`evals/cheap/**`, `evals/counterfeits/**`,
@@ -452,22 +462,52 @@ HydraFusion performance, cost savings, or a multi-round project outcome.
 
 - **What it proves.** The published before/after gallery is a *verification
   surface*: every card is a real, provenanced with-skill/without-skill pair
-  captured from a graded behavioral run — never hand-written.
-  `refresh-examples.yml` re-runs the packs on a biweekly schedule and opens a
-  **review-gated PR** (never pushes to main); `pages.yml` publishes `docs/`
-  only after merge, re-verifying `docs/build-examples.sh --check` and
-  `docs/timeline/build-timeline.sh --check` first — the gallery and the
-  design-trajectory timeline are both generated surfaces. The cheap tier's
-  gallery gate enforces sync + provenance offline; its timeline gate enforces
-  sync + receipts.
+  captured from a graded behavioral run — never hand-written — with the
+  subject, grader and judge models disclosed by role, and no model grading
+  its own family. `refresh-examples.yml` re-runs the packs on a biweekly
+  schedule, records each snapshot's Actions `run_url`, keeps the raw
+  `results.json` as a 90-day artifact, **Sigstore-attests every snapshot it
+  wrote** (`actions/attest-build-provenance`, verifiable with
+  `gh attestation verify … --signer-workflow`), and opens a **review-gated
+  PR** (never pushes to main); `pages.yml` publishes `docs/` only after
+  merge, re-verifying `docs/build-index.sh --check`,
+  `docs/build-examples.sh --check` and `docs/timeline/build-timeline.sh
+  --check` first — the landing page, the gallery and the design-trajectory
+  timeline are all generated surfaces. The cheap tier's gallery gate enforces
+  sync + role-by-role provenance offline (a graded snapshot whose subject and
+  grader share a model family fails; so does a seed claiming an attestation),
+  its pack gate refuses any promptfoo pack whose subject and grader share a
+  family, and its timeline gate enforces sync + receipts.
 - **What it cannot prove.** That the captured pair is *representative* — a
-  human reviews the transcript diffs before merge.
+  human reviews the transcript diffs before merge. And an attestation proves
+  GitHub-hosted infrastructure produced the bytes in a run of the public
+  workflow, not that a model rather than the workflow wrote the text — which
+  is why the workflow file is short and pinned by commit in the run. Seeds
+  (produced outside CI) carry no attestation and are labelled as such.
 - **Fires.** Refresh: scheduled (1st and 15th, 06:00 UTC) + manual dispatch.
   Pages: push to main touching `docs/**`.
 - **Cost.** Refresh spends real API budget on every packed plugin per run
   (accepted owner decision); pages is free.
 - **Local run.** `docs/build-examples.sh --check` (sync only; the capture
   itself needs the behavioral tier's keys).
+- **Why a zero-capture run is now a hard failure.** Two refresh runs
+  (2026-09-01 and 2026-09-08) graded all 12 packs, spent roughly 50 minutes of
+  paid API time, wrote **zero** snapshots, and both reported success: every
+  `capture-example.sh` call is `|| true`, and its skip printed one opaque line.
+  The workflow now fails when it captures nothing (that is always systemic — a
+  dead subject key, a moved schema, a pack whose real-skill rows all fail), the
+  skip names its own cause (row counts, pass counts, the top failure reason),
+  and the cheap tier pins both halves against offline fixtures in the shape
+  promptfoo 0.122.0 actually emits (`evals/cheap/fixtures/capture-example/`).
+- **Why the refresh deletes its own `results.json`.** `promptfoo eval --output
+  results.json` writes into each pack directory. Those files are gitignored,
+  but the cheap tier scans the *working tree*, and a `results.json` embeds the
+  pack's prompt template — so its `{{question}}` trips the "no unfilled
+  `{{placeholder}}` tokens" gate for every packed plugin. The 2026-09-01
+  refresh died exactly there: 24 failures at the last step, no PR opened, and
+  the whole run's API spend lost. The workflow now removes them after
+  uploading the artifact and before running the tier, and a cheap-tier guard
+  fails if that step is dropped or reordered after the tier.
 
 ## model pricing monitor
 
@@ -521,14 +561,17 @@ uninterpretable n=1 and no required check goes red on the weather:
 - **k-of-N pass-rate floor** — `evals/paid/pass-rate.sh` is the verdict, not
   promptfoo's exit code: per-scenario pass rate over *valid* samples must meet
   the floor (behavioral 0.6 = majority of 3; routing 0.8).
-- **FAULT vs verdict separation** — a transport error (504, aborted call,
-  empty body) is a FAULT, an invalid sample excluded from the floor — never
-  counted as a rubric failure. Classification keys on promptfoo's
-  `failureReason`: `2`/`"error"` = FAULT (excluded); `1` = a real assertion
-  FAIL scored against the floor — even though under promptfoo ≥ 0.122 every
-  assertion-failed row *also* carries `.error` (the assertion message).
-  `.error` alone marks a FAULT only on legacy rows with no `failureReason`
-  recorded.
+- **FAULT vs verdict separation** — provider errors (`failureReason` of
+  `2`/`"error"`) and unusable grader responses are invalid samples excluded
+  from the floor. Grader faults require the harness's boolean
+  `metadata.graderError` signal in a grading result; model output and error
+  message text cannot supply that authority. An independent ordinary assertion
+  failure still counts when it settles the default all-assertions verdict.
+  Real assertion failures remain FAILs even when they also carry `.error`;
+  `.error` alone marks a FAULT only on legacy rows with no `failureReason`.
+  Empty output, repeated reasoning delimiters, or token-budget exhaustion alone
+  does not establish a fault. These failed answers remain visible to the blind
+  human-calibration sampler; missing grader judgments are excluded.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.
@@ -647,6 +690,7 @@ pack: dev-diary/cheap
 pack: diagnosing-bugs/cheap
 pack: docs-hygiene/cheap
 pack: egress-gate/cheap
+pack: eval-ladder/cheap
 pack: find-before-build/cheap
 pack: find-before-build/promptfoo
 pack: fleet-playbook-curator/cheap

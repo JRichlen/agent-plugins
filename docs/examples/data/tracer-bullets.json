@@ -19,9 +19,14 @@
   "notice": "[divergence: moderate] Both responses pause before writing files and both spot that a fake Stripe client can't answer the reconciliation question — B is genuinely strong unaided: it keeps the user lookup against the real Prisma client and deliberately fakes the nasty cases (out-of-order events, duplicate `evt_` ids, an orphan customer). The structural difference is what stays fake. B's payloads are still authored by the same person writing the handler, signature verification is a no-op, and nothing is written to Postgres — so the handler passes against fixtures that encode its author's assumptions, which is the failure mode the exercise was meant to catch. A refuses that trade: real test-mode Checkout, real deliveries via `stripe listen`, one migration, one row read back — narrowed to one plan rather than faked — and it names the fate explicitly (widened next sprint, not rewritten), which B never touches while accepting \"delete the branch\" at face value. A is longer and pushier, and gates on keys plus schema sign-off it doesn't have; B is more immediately actionable and its cost estimate isn't obviously worse.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

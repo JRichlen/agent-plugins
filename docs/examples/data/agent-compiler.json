@@ -19,9 +19,14 @@
   "notice": "[divergence: strong] The WITH-skill answer refuses the direct request entirely — it stops to explain the agent-compiler workflow (normalize → inspect → compile → render) and asks three clarifying questions before doing any work, delivering no usable file. The WITHOUT answer actually does what the user asked: it writes a genuinely thorough, well-structured persona prompt (prioritized checklist for `any`/casts/non-null assertions, output format with severity tiers, explicit \"what NOT to flag\" section, PR-posting guidance) and proactively flags its own real assumptions (gh CLI availability, tools frontmatter, untested/uninvoked status) rather than inventing false certainty. A reader who just wants the file will strongly prefer WITHOUT — it's more useful in the moment and its caveats are honest and specific rather than blocking. What WITH gets right that WITHOUT doesn't even consider: an effect ceiling / capability boundary (should this agent be read-only, or can it approve/merge?) is a real gap in WITHOUT's version, since its \"Ground rules\" say don't auto-approve but the `tools:` frontmatter still grants Bash broadly with no enforced ceiling. WITH's weakness is that it produces zero deliverable and leans on a plugin/registry workflow the user never asked for and may not want, so on pure task-completion grounds this is a case where the ungated answer is arguably better, not just different.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

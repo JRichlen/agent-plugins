@@ -19,9 +19,14 @@
   "notice": "[divergence: moderate] Both answers refuse to write the plugin sight-unseen, and both are candid that they haven't opened a single file — B's caution is nearly as strong as A's, so the gap is structural, not one of diligence. The real split is where each one ends up: B's plan still terminates in building `plugins/migration-guard/` (it even offers to skip the evidence sweep entirely if the user just names the failure mode), while A holds the two-sightings count against an explicit three-sighting bar, argues the shape is probably a blast-radius violation rather than a migrations rule, asks whether the shipped `scope-fence` skill already covers it, and hands scaffolding to `plugin-factory` instead of doing it. Note what neither delivers: because both stop to ask permission, A never actually produces the cited sightings, the clustering, or the ranked ALWAYS/NEVER draft the skill demands — it promises them. So this pair demonstrates the skill's stopping rule and its reframing of the unit of evidence, not its evidence-gathering discipline.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

@@ -1,0 +1,29 @@
+{
+  "card_id": "eval-ladder-near-01",
+  "plugin": "eval-ladder",
+  "kind": "near-miss",
+  "task_path": "evals/agentic/tasks/eval-ladder/eval-ladder-near-01/task",
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "pass_fixture": "evals/agentic/tasks/eval-ladder/eval-ladder-near-01/fixtures/pass",
+  "fail_fixture": "evals/agentic/tasks/eval-ladder/eval-ladder-near-01/fixtures/fail",
+  "capabilities": [
+    {
+      "kind": "skill",
+      "name": "eval-ladder",
+      "source_plugin": "eval-ladder",
+      "generic_equivalent": "Read the supplied observations and use ordinary Python arithmetic to assess the requested evaluation results."
+    }
+  ],
+  "holdout": true,
+  "expected_boundary_verdict": "capability-pass-at-k-without-irreversible-reliability-claim",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "paraphrases": [
+    "These reversible code-generation attempts are for finding one correct answer among two candidates; estimate that capability without claiming all-run reliability.",
+    "Four offline synthesis attempts contain one correct answer. What is the without-replacement chance that a pair includes a correct answer, with no irreversible effect involved?"
+  ]
+}

@@ -397,6 +397,62 @@
         "treatment": "plugins/egress-gate/skills/egress-gate/SKILL.md"
       }
     },
+    "eval-ladder": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/eval-ladder.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "c7ad2acd1080026ee5d2607f04f9dbf7b98e7859fef60d8f4ba02a4926bf3838",
+        "clean": "cc78ef107faf16f4438e811924f0c4ef1a8ab11843ecd14c09a6e3399fc741b1"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "eval-ladder",
+      "primary_skill": "plugins/eval-ladder/skills/eval-ladder/SKILL.md",
+      "primary_skill_sha256": "e7a475c2e2a286fdcf026c3cf084271fa780ff854f64f0e34ad425f70a001c3f",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 7848,
+        "treatment": 7848
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/eval-ladder.md",
+        "treatment": "plugins/eval-ladder/skills/eval-ladder/SKILL.md"
+      }
+    },
     "find-before-build": {
       "cells": {
         "C1": {
@@ -769,8 +825,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "67588d13e5c1ef99b4e348888797052c4630455484301f7fe056cc6d5a0deaff",
-        "clean": "96eeefd3b261a7de2145954f98c5e82388654878c54b88199ebd5a8e65960543"
+        "adversarial": "744ddb6f3263c974304e39b08602153cb95ea51188f505dbb5a2713b231e4e7b",
+        "clean": "cb2aab0ea0955b1f0a961fcf7095de362a37be2bb71b461ba35ee47746e8a903"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,

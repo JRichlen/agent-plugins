@@ -64,6 +64,14 @@ Run 2 failed a different plugin entirely. A different leg failing each run of
 identical content is not a regression — it is the coin-flip the k-of-N floor
 exists to expose, measured rather than argued.
 
+**2026-09-09 measurement correction:** the later scorer's output-shape exception
+for repeated reasoning delimiters was incorrect. The historical output above
+is a subject failure, not evidence of a transport fault. The scorer and blind
+calibration sampler now retain empty, repeated-delimiter, and budget-exhausted
+failed answers in the valid sample set unless a trusted provider or grader
+fault is recorded. The observations above and their original results remain
+unchanged; the earlier table's “degenerate body” exclusion is historical.
+
 This is normally invisible: the path filter only runs a plugin's leg when that
 plugin is touched, so a whole-tier run almost never happens. Touching the
 shared `evals/paid/` directory ran all ten legs at once and made the flakiness

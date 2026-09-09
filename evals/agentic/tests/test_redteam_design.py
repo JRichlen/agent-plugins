@@ -97,7 +97,8 @@ class TwoByTwoCompleteness(unittest.TestCase):
     def test_two_by_two_design_has_four_balanced_cells_with_shared_corpus_and_grader(self):
         generate = _load_generate()
         index = _index()
-        self.assertEqual(index["plugins"].keys().__len__(), 25)
+        marketplace = json.loads((REPO_ROOT / '.claude-plugin/marketplace.json').read_text(encoding='utf-8'))
+        self.assertEqual(set(index["plugins"]), {item['name'] for item in marketplace['plugins']})
 
         frame_values = set()
         for plugin, entry in index["plugins"].items():

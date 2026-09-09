@@ -19,9 +19,14 @@
   "notice": "[divergence: subtle] Neither response actually does the work: both stop at \"I haven't opened the files yet\" and describe a plan, so the headline divergence the example promises — one side editing CLAUDE.md and AGENTS.md and quoting verified facts, the other pasting a stale blurb — never appears in the transcript. B is already careful unaided: it names staleness, proposes spot-checking the same three claims against package.json, the tree, and the middleware, and volunteers that the fixes should be patched back into both files. The finer structural difference that survives is commitment: A treats verification and in-place repair as non-negotiable steps (including resolving the root-vs-nested contradiction down to one kept version), while B keeps an \"Option B\" on the table that is exactly the prohibited act — summarize the two files verbatim, no code checks — and relegates patching the docs to a closing suggestion. A partly undercuts itself too, ending by asking the user to choose and offering a \"docs are known-stale\" hedge note as a fallback.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed); divergence judged by an independent reader agent",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "claude (Claude Code subagent; exact model id not recorded) — an independent reader agent, but the SAME model family as the subject",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-29"
+    "captured_at": "2026-08-29",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

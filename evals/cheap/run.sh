@@ -25,15 +25,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 pass=0; fail=0
-ok()   { printf '  \033[32mPASS\033[0m %s\n' "$1"; pass=$((pass+1)); }
-bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$1"; fail=$((fail+1)); }
-group(){ printf '\n\033[1m%s\033[0m\n' "$1"; }
-# Shared marker helpers for per-plugin packs — a SINGLE definition here, inherited
-# by every sourced checks.sh, so the byte-identical per-plugin copies can't drift
-# apart. has FILE FIXED OK FAIL | hasE FILE REGEX OK FAIL | lacksE FILE REGEX OK FAIL.
-has()   { if grep -qF "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-hasE()  { if grep -qE "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-lacksE(){ if grep -qE "$2" "$1" 2>/dev/null; then bad "$4"; else ok "$3"; fi; }
+# The six check helpers live in ONE file, sourced by this runner and by
+# run-one.sh alike, so the two can never again define different sets (#120).
+# shellcheck source=/dev/null
+. "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 
 # --- 1. Shell scripts parse -------------------------------------------------
 group "shell syntax (bash -n)"
@@ -398,8 +393,10 @@ while IFS= read -r entry; do
   pack="$PLUGIN_SRC/evals/cheap/checks.sh"
   if [ -f "$pack" ]; then
     export PLUGIN_NAME PLUGIN_DIR
+    pack_guard_on
     # shellcheck source=/dev/null
     . "$pack"
+    pack_guard_off
   else
     group "plugin '$PLUGIN_NAME' cheap eval pack"
     bad "plugin '$PLUGIN_NAME' ($PLUGIN_SRC) has no cheap eval pack at $pack"
@@ -413,6 +410,89 @@ for p in mkt.get("plugins", []):
     print(f"{p.get('name','')}\t{src}")
 PY
 )
+
+# --- 10b. Runner helper parity (issue #120) ---------------------------------
+# The two runners that source per-plugin packs — run.sh (whole repo) and
+# run-one.sh (one plugin, and the runner the REQUIRED install matrix uses) —
+# must offer packs an IDENTICAL helper set. They did not: run.sh defined six,
+# run-one.sh three, and because packs are sourced without `set -e` every call to
+# a missing helper was a silent no-op that still reported green. 253 checks
+# across 14 plugins never ran in the required tier.
+#
+# The fix is one shared helpers.sh sourced by both. This gate keeps it that way:
+# a runner that stops sourcing it, or re-grows a local definition, goes red here.
+group "runner helper parity (run.sh <-> run-one.sh)"
+_HELPERS="evals/cheap/helpers.sh"
+if [ -f "$_HELPERS" ]; then
+  ok "shared helper file exists: $_HELPERS"
+  for _r in evals/cheap/run.sh evals/cheap/run-one.sh; do
+    # Loose on FORM, strict on FACT: any `.`/`source` line naming helpers.sh
+    # counts, so reformatting the dirname expression cannot cause a spurious
+    # red. What the runner then DOES with those helpers is proven behaviourally
+    # by the counterfeit corpus, which drives both runners (fixture 18).
+    if grep -qE '^[[:space:]]*(\.|source)[[:space:]].*helpers\.sh' "$_r"; then
+      ok "$_r sources the shared helpers"
+    else
+      bad "$_r does NOT source $_HELPERS — the two runners can drift again (#120)"
+    fi
+    # A runner defining a helper itself would shadow the shared one and
+    # reintroduce exactly the asymmetry this gate exists to prevent.
+    if grep -qE '^(ok|bad|group|has|hasE|lacksE)\(\)' "$_r"; then
+      bad "$_r defines a check helper locally — it must inherit them from $_HELPERS only"
+    else
+      ok "$_r defines no local check helper"
+    fi
+    # Fail-closed guard around pack sourcing. Grepping for the two names only
+    # proves they appear SOMEWHERE in the file, not that they ENCLOSE the
+    # `. "$pack"` line — a runner that moved pack_guard_off above the source
+    # would keep both tokens and silently stop guarding (Codex review, PR #132).
+    # So validate the ordering structurally instead.
+    if python3 - "$_r" <<'PYORD'
+import re, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+src = [i for i, l in enumerate(lines) if re.search(r'^\s*\.\s+"\$pack"', l)]
+if len(src) != 1:
+    print(f"  expected exactly one `. \"$pack\"` line, found {len(src)}"); sys.exit(1)
+s = src[0]
+on  = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_on\b', l)]
+off = [i for i, l in enumerate(lines) if re.search(r'^\s*pack_guard_off\b', l)]
+on_before  = [i for i in on  if i < s]
+off_after  = [i for i in off if i > s]
+if not on_before:
+    print("  no pack_guard_on before the pack source — the guard is not armed"); sys.exit(1)
+if not off_after:
+    print("  no pack_guard_off after the pack source — the guard is never lifted"); sys.exit(1)
+nearest_on = max(on_before)
+if any(nearest_on < i < s for i in off):
+    print("  pack_guard_off sits BETWEEN pack_guard_on and the pack source — the guard is lifted before it can catch anything"); sys.exit(1)
+sys.exit(0)
+PYORD
+    then ok "$_r arms the guard before the pack source and lifts it after"
+    else bad "$_r does not ENCLOSE the pack source in pack_guard_on/off (see above) — an undefined helper would go silent again (#120)"
+    fi
+  done
+  # Every helper a pack may call must actually be defined in the shared file.
+  for _h in ok bad group has hasE lacksE pack_guard_on pack_guard_off; do
+    if grep -qE "^${_h}\(\)" "$_HELPERS"; then
+      ok "helpers.sh defines $_h"
+    else
+      bad "helpers.sh is missing $_h — packs calling it would silently skip"
+    fi
+  done
+  # No plugin pack may carry its own copy: a second definition is a second thing
+  # that can drift, and a local copy is what made one plugin accidentally immune
+  # to the bug rather than protected from it.
+  _dupes=0
+  while IFS= read -r _pk; do
+    if grep -qE '^(has|hasE|lacksE)\(\)' "$_pk"; then
+      bad "$_pk redefines a shared helper locally — delete it and inherit from $_HELPERS"
+      _dupes=$((_dupes+1))
+    fi
+  done < <(find plugins -path '*/evals/cheap/checks.sh' | sort)
+  [ "$_dupes" -eq 0 ] && ok "no plugin pack redefines a shared helper"
+else
+  bad "missing $_HELPERS — both runners depend on it (#120)"
+fi
 
 # --- 11. Branch-protection lock (winner #15) --------------------------------
 # The four required status checks and the two deep-tier safety paths are frozen
@@ -870,6 +950,43 @@ json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
 # read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
 def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
 json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
+# Promptfoo 0.122 also uses failureReason=1 for a failed grader call/JSON parse.
+# The trusted grading component, not subject text or .error, identifies it.
+def grow(desc, marker=True):
+    r = frow(desc)
+    r["error"] = "Could not extract JSON from llm-rubric response"
+    r["gradingResult"] = {"pass":False, "componentResults":[{
+        "pass":False, "score":0, "reason":r["error"],
+        "assertion":{"type":"llm-rubric"}, "metadata":{"graderError":marker}}]}
+    return r
+json.dump({"results":{"results": rows("G",4,4)+[grow("G")]}}, open(d+"/grader-fault.json","w"))
+json.dump({"results":{"results": [grow("G") for _ in range(3)]}}, open(d+"/grader-starved.json","w"))
+mixed = grow("G")
+mixed["gradingResult"]["componentResults"].append({
+    "pass":False,"score":0,"reason":"Expected regex X", "assertion":{"type":"regex","value":"X"}})
+json.dump({"results":{"results": rows("G",4,4)+[mixed]}}, open(d+"/grader-mixed-fail.json","w"))
+# An ordinary component failure is not independently decisive under aggregate
+# threshold or custom scoring overrides: the missing grade may change verdict.
+for field, value in [("threshold",0.9), ("assertScoringFunction","file://score.js")]:
+    alternate = json.loads(json.dumps(mixed))
+    alternate["testCase"][field] = value
+    json.dump({"results":{"results":rows("G",4,4)+[alternate]}}, open(d+"/grader-"+field+".json","w"))
+for label, marker in [("string","true"),("number",1),("false",False)]:
+    json.dump({"results":{"results":rows("G",4,4)+[grow("G",marker)]}}, open(d+"/grader-marker-"+label+".json","w"))
+quoted = frow("G")
+quoted["response"]["output"] = '{"metadata":{"graderError":true}}'
+json.dump({"results":{"results":rows("G",4,4)+[quoted]}}, open(d+"/grader-quoted.json","w"))
+shape_rows = []
+for label, body in [("THINK", "</think>" * 11), ("EMPTY", ""), ("LENGTH", "unfinished answer")]:
+    failed = frow(label)
+    failed["response"].update(output=body, finishReason="length")
+    shape_rows.append(failed)
+    json.dump({"results":{"results":rows(label,4,4)+[failed]}}, open(d+"/shape-"+label+".json","w"))
+transport = erow("TRANSPORT")
+transport["response"]["output"] = "</think>" * 11
+json.dump({"results":{"results":rows("TRANSPORT",4,4)+[transport]}}, open(d+"/shape-transport.json","w"))
+mixed["testCase"]["description"] = "MIXED"
+json.dump({"results":{"results":shape_rows+[transport,grow("GRADER_ONLY"),mixed]}}, open(d+"/shape-sampler.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -916,6 +1033,61 @@ if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/d
   bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
 else
   ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-fault.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+  ok "pass-rate: a typed grader parse fault is excluded from valid judgments"
+else
+  bad "pass-rate: a typed grader parse fault was scored as a subject failure"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-starved.json" --floor 0.9 --min-valid 2 2>&1); then
+  bad "pass-rate: all grader faults passed without any valid judgments"
+elif [[ "$_score" == *"[STARVED] 0/0 valid"*"3 FAULT excluded"* ]]; then
+  ok "pass-rate: all grader faults fail closed as insufficient valid judgments"
+else
+  bad "pass-rate: all grader faults were misreported as valid subject failures"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-mixed-fail.json" --floor 0.9 --min-valid 2 2>&1); then
+  bad "pass-rate: a grader fault concealed an independently failed mandatory assertion"
+elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+  ok "pass-rate: an independent mandatory assertion failure stays valid despite another grader fault"
+else
+  bad "pass-rate: mixed grader fault/mandatory failure denominator is wrong"
+fi
+for _variant in threshold assertScoringFunction; do
+  if _score=$(bash "$_pr" "$_tmp/grader-$_variant.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+    ok "pass-rate: $_variant does not turn a partial grade into a decisive failure"
+  else
+    bad "pass-rate: $_variant scored an incomplete aggregate as a valid judgment"
+  fi
+done
+for _variant in marker-string marker-number marker-false quoted; do
+  if _score=$(bash "$_pr" "$_tmp/grader-$_variant.json" --floor 0.9 --min-valid 2 2>&1); then
+    bad "pass-rate: $_variant laundered a real failure as a grader fault"
+  elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+    ok "pass-rate: $_variant cannot manufacture the typed grader fault signal"
+  else
+    bad "pass-rate: $_variant changed the valid-failure denominator"
+  fi
+done
+for _shape in THINK EMPTY LENGTH; do
+  if _score=$(bash "$_pr" "$_tmp/shape-$_shape.json" --floor 0.9 --min-valid 2 2>&1); then
+    bad "pass-rate: $_shape output shape concealed a subject failure"
+  elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+    ok "pass-rate: $_shape without a trusted fault signal remains a valid failure"
+  else
+    bad "pass-rate: $_shape changed the valid-failure denominator"
+  fi
+done
+if _score=$(bash "$_pr" "$_tmp/shape-transport.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+  ok "pass-rate: explicit transport failure remains FAULT regardless of output shape"
+else
+  bad "pass-rate: output shape overrode a trusted transport fault"
+fi
+if python3 evals/paid/calibration/sample-for-labelling.py "$_tmp/shape-sampler.json" --n 100 --sheet "$_tmp/shape-sheet.json" --verdicts "$_tmp/shape-verdicts.json" >/dev/null 2>&1 \
+   && python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); v=json.load(open(sys.argv[2])); assert sorted(r["scenario"] for r in s)==["EMPTY","LENGTH","MIXED","THINK"]; assert all(v[r["hash"]]=="fail" for r in s)' "$_tmp/shape-sheet.json" "$_tmp/shape-verdicts.json"; then
+  ok "calibration: missing/truncated answers remain visible failures; trusted faults lack judgments"
+else
+  bad "calibration: output shape hid valid failures or a trusted fault fabricated a judgment"
 fi
 rm -rf "$_tmp"
 
@@ -1038,6 +1210,9 @@ def row(desc, out, comps):
 rows = [row("S1", "a", [("llm-rubric", True), ("icontains", False)]),   # row fails overall; rubric passed
         row("S2", "b", [("icontains", True)]),                           # no model-graded component
         row("S3", "c", [("llm-rubric", False)])]
+faulted = row("S4", "grader never judged this", [("llm-rubric",False),("icontains",False)])
+faulted["gradingResult"]["componentResults"][0]["metadata"] = {"graderError":True}
+rows.append(faulted)  # a decisive deterministic FAIL cannot invent an LLM judgment
 json.dump({"results": {"results": rows}}, open(d + "/mg.json", "w"))
 PYG
 if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/mg.json" --n 100 --model-graded-only --sheet "$_mx/mg.sheet.json" --verdicts "$_mx/mg.v.json" >/dev/null 2>&1 \
@@ -1094,7 +1269,7 @@ else
 fi
 if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
-import glob, json, os, sys
+import glob, json, os, re, sys
 root = sys.argv[1]
 fail = 0
 found = 0
@@ -1112,15 +1287,54 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
         if isinstance(s.get(side), dict) and not (s[side].get("output") or "").strip():
             prob.append(f"{side} has no output")
     prov = s.get("provenance") or {}
-    for k in ("source", "model"):
+    # Every model involved is DISCLOSED by role — subject (answered), grader
+    # (pass/fail rubric), judge (the divergence verdict) — and the snapshot
+    # says whether it is attested. A legacy 'model'/'grader' pair is not
+    # enough: it never said who judged, nor whether judge and subject were
+    # the same model.
+    for k in ("source", "subject_model", "grader_model", "judge_model", "attestation"):
         if not prov.get(k): prob.append(f"provenance missing {k}")
+    if not isinstance(prov.get("same_family_judge"), bool):
+        prob.append("provenance.same_family_judge must be true or false")
+    for k in ("commit", "captured_at"):
+        if not prov.get(k): prob.append(f"provenance missing {k}")
+    def family(mid):
+        m = str(mid or "").lower()
+        if m.startswith("openrouter:"):
+            rest = m.split(":", 1)[1]
+            return rest.split("/", 1)[0] if "/" in rest else rest
+        return m.split(":", 1)[0]
+    src = str(prov.get("source") or "")
+    if src.startswith("promptfoo"):
+        # A graded pair: the grader must be a different model family from
+        # the subject (a model grading itself is not a grade), the run that
+        # produced it must be linkable, and the grades must be real booleans.
+        if family(prov.get("subject_model")) == family(prov.get("grader_model")):
+            prob.append(f"graded pair whose subject ({prov.get('subject_model')}) and grader ({prov.get('grader_model')}) are the same model family")
+        if prov.get("same_family_judge") is not False:
+            prob.append("graded pair must set same_family_judge=false")
+        ru = prov.get("run_url")
+        if not (isinstance(ru, str) and re.match(r"^https://github\.com/[^/]+/[^/]+/actions/runs/\d+", ru)):
+            prob.append("graded pair has no GitHub Actions run_url")
+        for side in ("with_skill", "without_skill"):
+            g = (s.get(side) or {}).get("graded") or {}
+            if not isinstance(g.get("pass"), bool):
+                prob.append(f"{side}.graded.pass must be true/false on a graded pair")
+    elif "seed" in src:
+        # An ungraded seed may not pose as more than it is.
+        if prov.get("same_family_judge") is not True and "none" not in str(prov.get("judge_model")).lower() and "not recorded" not in str(prov.get("judge_model")).lower():
+            prob.append("seed with an independent judge must say whether it shares the subject's model family (same_family_judge)")
+        if str(prov.get("attestation") or "").startswith("github"):
+            prob.append("a seed cannot claim a GitHub attestation — only the refresh workflow signs snapshots")
+    else:
+        prob.append(f"unknown provenance.source '{src}' (expected promptfoo* or *seed*)")
     # a plugin snapshot must name a real installed plugin
     if s.get("plugin") and not os.path.isdir(os.path.join(root, "plugins", s["plugin"])):
         prob.append(f"plugin '{s['plugin']}' is not installed")
     if prob:
         print(f"  FAIL examples/{name}: " + "; ".join(prob)); fail += 1
     else:
-        print(f"  PASS examples/{name}: real pair with provenance ({s['plugin']})")
+        print(f"  PASS examples/{name}: real pair, models disclosed by role ({s['plugin']}: {src})")
 if found == 0:
     print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
 # PLAN.md's "committed snapshots | **N of M**" row is a hand-written count that
@@ -1142,6 +1356,193 @@ sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
+
+# --- 19a. Landing page (docs/index.html) is in sync with the marketplace -----
+# The Pages hub lists every plugin with its example / pack / deep-dive status,
+# rendered by docs/build-index.sh from marketplace.json, the snapshots and the
+# packs. Same guard as the gallery: present-but-stale fails, so the hub can
+# never again list two plugins of twenty-four.
+group "landing page — in sync with the marketplace"
+if [ ! -e docs/build-index.sh ]; then
+  ok "landing page: not present in this root — nothing to check"
+elif [ ! -x docs/build-index.sh ]; then
+  bad "landing: build-index.sh exists but is not executable — chmod +x it"
+elif docs/build-index.sh --check >/dev/null 2>&1; then
+  ok "landing: docs/index.html is in sync with marketplace.json, the snapshots and the packs"
+else
+  bad "landing: docs/index.html is STALE — run docs/build-index.sh"
+fi
+
+# --- 19a2. The refresh workflow cleans its own eval output before the tier ----
+# `promptfoo eval --output results.json` writes into each pack directory. Those
+# files are gitignored, but THIS tier scans the working tree, and a results.json
+# carries the pack's prompt template — so its `{{question}}` trips check 6's
+# "no unfilled {{placeholder}} tokens" gate for every packed plugin. That is
+# exactly how the 2026-09-01 refresh died: 24 failures at the last step, no PR,
+# and a full run of API spend lost. The workflow must therefore delete them
+# BEFORE it runs this tier. Coupled: drop that cleanup step, or move it after
+# the cheap-tier step, and this goes red.
+group "refresh workflow — removes its eval output before running this tier"
+python3 - "$REPO_ROOT" <<'PYR'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "refresh-examples.yml")
+if not os.path.exists(wf):
+    print("  PASS refresh-examples.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+# Position of the cleanup (an rm of the packs' results.json) and of the step
+# that runs this tier. Compared by offset, so ordering is what is enforced.
+clean = re.search(r"rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+[^\n]*plugins/\*/evals/promptfoo/results\.json", txt)
+tier  = re.search(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M)
+if not clean:
+    print("  FAIL refresh-examples.yml never removes plugins/*/evals/promptfoo/results.json — the cheap tier will fail on every packed plugin and the refresh will open no PR"); sys.exit(1)
+if not tier:
+    print("  FAIL refresh-examples.yml no longer runs evals/cheap/run.sh — the capture would reach a PR ungated"); sys.exit(1)
+if clean.start() > tier.start():
+    print("  FAIL refresh-examples.yml removes results.json AFTER running the cheap tier — too late; the tier already saw them"); sys.exit(1)
+# A refresh that grades every pack and writes no snapshot is not a success.
+# Two runs did exactly that and both reported green, because every capture is
+# `|| true`. The workflow must fail closed on a zero-capture run.
+zero = re.search(r"^\s*-\s*name:.*fail if the refresh captured nothing\s*$", txt, re.M)
+if not zero:
+    print("  FAIL refresh-examples.yml has no zero-capture guard — a run that captures nothing would report success again"); sys.exit(1)
+# Bound the inspection to THAT step only: the next "- name:" ends it. An earlier
+# version searched the whole file and passed on an `exit 1` belonging to a
+# different step, so the mutation that neutered this guard went undetected.
+nxt = re.search(r"^\s*-\s*name:", txt[zero.end():], re.M)
+step = txt[zero.end(): zero.end() + (nxt.start() if nxt else len(txt))]
+if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
+    print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
+if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
+    print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
+PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a3. capture-example.sh actually captures, and explains when it cannot --
+# The gallery's whole supply chain runs through this script, and it silently
+# captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —
+# all 12 packs graded, ~50 minutes of paid API time, zero snapshots, both runs
+# green. Offline fixtures in the shape promptfoo 0.122.0 really emits pin both
+# halves: a usable pair MUST produce a snapshot with its models disclosed by
+# role, and the all-real-rows-failed shape MUST refuse to write one AND name
+# the cause instead of printing one opaque line.
+# Coupled: break the row selection, drop the provenance roles, or make the skip
+# silent again, and this goes red.
+group "capture-example.sh — captures a real pair, and diagnoses when it cannot"
+CAP_FIX="$REPO_ROOT/evals/cheap/fixtures/capture-example"
+if [ ! -d "$CAP_FIX" ]; then
+  ok "capture-example: fixtures not present in this root — nothing to check"
+else
+  CAP_TMP="$(mktemp -d)"
+  # 1. the usable pair must be captured, with every model named by role
+  cap_out="$(bash "$REPO_ROOT/evals/paid/capture-example.sh" "$CAP_FIX/pass-results.json" scope-fence \
+      --out "$CAP_TMP" --pack "$CAP_FIX" --commit deadbee --captured-at 2026-01-01T00:00:00Z \
+      --run-url "https://github.com/JRichlen/agent-plugins/actions/runs/1" --attestation github 2>&1)" || true
+  if [ ! -f "$CAP_TMP/scope-fence.json" ]; then
+    bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
+    printf '%s\n' "$cap_out" | sed 's/^/    /'
+  else
+    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
+import json, sys
+s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+prob = []
+for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
+    if not p.get(k): prob.append(f"provenance missing {k}")
+if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
+if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
+if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
+print("  FAIL capture-example: " + "; ".join(prob) if prob else
+      "  PASS capture-example: a usable pair is captured with subject, grader and judge disclosed")
+sys.exit(1 if prob else 0)
+PYC
+    if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+  fi
+  # 2. the CI shape (every real-skill row failed) must refuse AND explain
+  rm -f "$CAP_TMP/scope-fence.json"
+  cap_fail="$(bash "$REPO_ROOT/evals/paid/capture-example.sh" "$CAP_FIX/allfail-results.json" scope-fence \
+      --out "$CAP_TMP" --pack "$CAP_FIX" 2>&1)" || true
+  if [ -f "$CAP_TMP/scope-fence.json" ]; then
+    bad "capture-example: wrote a snapshot from a run whose real-skill rows ALL failed — that would publish a pair the grader rejected"
+  elif ! printf '%s' "$cap_fail" | grep -q "NO SNAPSHOT"; then
+    bad "capture-example: skipped without saying so — this is the silent skip that hid two empty refresh runs"
+    printf '%s\n' "$cap_fail" | sed 's/^/    /'
+  elif ! printf '%s' "$cap_fail" | grep -q "every real-skill row FAILED"; then
+    bad "capture-example: skip does not name the cause — a reader still cannot tell why nothing was captured"
+    printf '%s\n' "$cap_fail" | sed 's/^/    /'
+  elif ! printf '%s' "$cap_fail" | grep -q "402 Payment Required"; then
+    bad "capture-example: skip does not surface the underlying failure reason from the results file"
+  else
+    ok "capture-example: an all-failed run writes nothing and names the cause (rows, pass counts, top reason)"
+  fi
+  rm -rf "$CAP_TMP"
+fi
+
+# --- 19b. Behavioral packs never grade with the model family they test -------
+# The gallery's "graded" badge is only worth something if the grader is not the
+# subject. Every promptfoo pack pins one subject provider (providers[0]) and one
+# llm-rubric grader (defaultTest.options.provider); this refuses a pack where
+# the two share a vendor/family (openrouter:anthropic/... counts as anthropic).
+# Coupled: point a pack's grader at the subject's family and this goes red.
+group "behavioral packs — subject and grader are different model families"
+python3 - "$REPO_ROOT" <<'PYF'
+import glob, os, re, sys
+root = sys.argv[1]
+def family(mid):
+    m = str(mid or "").lower()
+    if m.startswith("openrouter:"):
+        rest = m.split(":", 1)[1]
+        return rest.split("/", 1)[0] if "/" in rest else rest
+    return m.split(":", 1)[0]
+def roles(cfg_path):
+    txt = open(cfg_path).read()
+    try:
+        import yaml
+        doc = yaml.safe_load(txt) or {}
+        provs = doc.get("providers") or []
+        p0 = provs[0] if provs else None
+        subj = (p0.get("id") if isinstance(p0, dict) else p0) if p0 else None
+        gp = (((doc.get("defaultTest") or {}).get("options") or {}).get("provider"))
+        grader = gp.get("id") if isinstance(gp, dict) else gp
+        return subj, grader
+    except Exception:
+        # PyYAML absent: scan by hand. The first provider entry may be several
+        # comment or blank lines below "providers:" (seven packs write a note
+        # there), so skip those rather than requiring the entry on the next
+        # line — otherwise this gate would fail closed on a valid pack.
+        subj = grader = None
+        lines = txt.splitlines()
+        for i, line in enumerate(lines):
+            if line.rstrip() != "providers:":
+                continue
+            for nxt in lines[i + 1:]:
+                bare = nxt.strip()
+                if not bare or bare.startswith("#"):
+                    continue
+                m = re.match(r"-\s*(?:id:\s*)?[\"\']?([^\"\'\s]+)", bare)
+                subj = m.group(1) if m else None
+                break
+            break
+        g = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
+        grader = g.group(1) if g else None
+        return subj, grader
+fail = 0; seen = 0
+for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
+    seen += 1
+    plugin = cfg.split(os.sep)[-4]
+    subj, grader = roles(cfg)
+    if not subj or not grader:
+        print(f"  FAIL {plugin}: cannot read subject ({subj}) and grader ({grader}) from promptfooconfig.yaml"); fail += 1
+    elif family(subj) == family(grader):
+        print(f"  FAIL {plugin}: subject {subj} and grader {grader} are the same model family — a model must not grade itself"); fail += 1
+    else:
+        print(f"  PASS {plugin}: subject={subj} grader={grader}")
+if seen == 0:
+    print("  PASS no promptfoo packs in this root — nothing to check")
+sys.exit(1 if fail else 0)
+PYF
+if [ $? -eq 0 ]; then ok "every behavioral pack grades with a different model family than it tests"; else bad "a behavioral pack grades with the model family it tests"; fi
 
 # ═══ BEGIN testing-doc drift guard (issue #89) ═══════════════════════════════
 # --- 20. Testing-doc drift (docs/testing.md <-> live tier inventory) ---------

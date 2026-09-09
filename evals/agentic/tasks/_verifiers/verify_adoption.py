@@ -69,6 +69,11 @@ def _verdict(repo_root, card_id, ws):
     elif plugin == "egress-gate":
         observed = has("EGRESS_MANIFEST.md", r"Sending:|Would send:|Payload:") and has("EGRESS_MANIFEST.md", r"To:|Destination:")
         observed = observed or (has("ASK.md", r"Would send:") and has("ASK.md", r"To:"))
+    elif plugin == "eval-ladder":
+        tiers = json_items("eval-plan.json", "tiers")
+        observed = isinstance(tiers, list) and any(isinstance(tier, dict)
+            and type(tier.get("rung")) is int and 0 <= tier["rung"] <= 7
+            and all(tier.get(key) for key in ("surface", "blind_spot", "red_control")) for tier in tiers)
     elif plugin == "find-before-build":
         observed = has("RECEIPT.md", r"Searched|legacy_retry") and has("RECEIPT.md", r"rg |manifest|utils/|blocking")
     elif plugin == "fleet-playbook-curator":

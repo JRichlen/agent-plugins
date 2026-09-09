@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "files": {
+    "inputs/suite.py": {
+      "source": "evals/agentic/tasks/eval-ladder/eval-ladder-pos-01/task/suite.py",
+      "sha256": "bf6d703ef1f568a7e36d4b177a017b978a7ba00df96638d92a18f6a247d9e292",
+      "immutable": true
+    },
+    "inputs/judge_labels.json": {
+      "source": "evals/agentic/tasks/eval-ladder/eval-ladder-pos-01/task/judge_labels.json",
+      "sha256": "8f98608f7845750a280a632d6beb198b1364e7ce5e9bd7d0061ff9dabbb23761",
+      "immutable": true
+    },
+    "inputs/trials.json": {
+      "source": "evals/agentic/tasks/eval-ladder/eval-ladder-pos-01/task/trials.json",
+      "sha256": "6c8b5a080bfd87f4d97c308fb95bc2cb6075c22e8caa4c8970269f1e39abec30",
+      "immutable": true
+    }
+  }
+}

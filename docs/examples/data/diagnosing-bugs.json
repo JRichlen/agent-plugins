@@ -19,9 +19,14 @@
   "notice": "Both correctly diagnose float money-math before editing — the strongest calibration risk, and here it fires: the no-skill model already refuses to guess-patch. The divergence is structure and auditability: the with-skill run writes a RANKED list of hypotheses each with an explicit 'falsified if', commits to a grep-able debug tag it must sweep to zero, and requires a regression test proven RED on current code then GREEN after — the skill's three checkpoints (hypothesis-before-code, tag-before-ship, seam-gated-test). The no-skill run gives good advice in prose but none of those are load-bearing commitments.",
   "provenance": {
     "source": "claude-subagent-seed",
-    "model": "claude (via Claude Code subagent)",
-    "grader": "none (ungraded seed)",
+    "workflow": null,
+    "subject_model": "claude (Claude Code subagent; exact model id not recorded) — the same model answered both the with-skill and the without-skill side",
+    "grader_model": "none — ungraded seed (no pass/fail rubric was applied)",
+    "judge_model": "not recorded — the original provenance names no independent judge for the divergence note; treat it as written by the seeding session (claude, same family as the subject)",
+    "same_family_judge": true,
     "commit": "seed",
-    "captured_at": "2026-08-28"
+    "captured_at": "2026-08-28",
+    "run_url": null,
+    "attestation": "none — seeded by a Claude Code session outside CI; the only provenance is the git commit that introduced this file"
   }
 }

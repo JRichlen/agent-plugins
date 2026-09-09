@@ -35,12 +35,10 @@ _HOOK="$PLUGIN_DIR/hooks/hooks.json"
 _HANDLER="$PLUGIN_DIR/hooks-handlers/session-start.sh"
 _PROMPT="$PLUGIN_DIR/evals/promptfoo/prompt.txt"
 
-# has FILE PATTERN OK-MSG FAIL-MSG  — fixed-string grep
-has()  { if grep -qF "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-# hasE FILE REGEX OK-MSG FAIL-MSG   — extended-regex grep
-hasE() { if grep -qE "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-# lacksE FILE REGEX OK-MSG FAIL-MSG — must NOT match (negative check)
-lacksE(){ if grep -qE "$2" "$1" 2>/dev/null; then bad "$4"; else ok "$3"; fi; }
+# has/hasE/lacksE come from evals/cheap/helpers.sh, sourced by both runners
+# (#120). This pack used to redefine them locally — behaviour-identical, but a
+# second definition is a second thing that can drift, and the local copy is what
+# made voice accidentally immune to the bug the shared file now fixes.
 
 # --- structure: the advertised surface exists ------------------------------
 group "voice — structure"

@@ -77,6 +77,10 @@ elif (( NV_MAJOR == MIN_NODE_MAJOR )); then
 fi
 [[ "$node_ok" == "0" ]] || fail "node v$NODE_VERSION_RAW below promptfoo engine floor >=22.22.0"
 
+# Verify the declared logger lifecycle backport without changing the install.
+# Provisioning is explicit so ordinary evaluation never edits user tooling.
+python3 "$HERE/provision-logger.py" --promptfoo-home "$PROMPTFOO_HOME" --check >/dev/null || fail "logger lifecycle correction is not provisioned"
+
 # --- the offline environment (design §10.2) --------------------------------
 # Forced, not defaulted: T42's third control mutates this file to remove
 # these two exports and the run must then fail under T48's sandbox on the

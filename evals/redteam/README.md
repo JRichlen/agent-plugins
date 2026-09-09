@@ -68,6 +68,7 @@ old utility scores are unavailable to the corrected inference code.
 ```sh
 export PROMPTFOO_HOME=/path/to/pinned-tools/node_modules/promptfoo
 export PATH=/path/to/pinned-tools/node_modules/.bin:$PATH
+python3 evals/redteam/bin/provision-logger.py --promptfoo-home "$PROMPTFOO_HOME" --apply
 
 evals/redteam/run.sh --gate           # structural subset used by cheap CI
 evals/redteam/run.sh --offline        # actual config validation + offline evaluations
@@ -82,6 +83,11 @@ explicitly when that bind-mount source differs. No tool is downloaded by
 these checks, and another user's installation path is not a prerequisite.
 
 Install the versions declared by `pin.json` and the native driver fixtures.
+The controlled install also pins Winston 3.19.0 and winston-transport 4.9.0
+and applies the declared logger and transport lifecycle corrections. Provisioning verifies the dependency version and exact
+source hashes; ordinary wrapper invocations only check the patched source.
+Provisioning requires the standard `patch` utility, which CI installs explicitly.
+The regression requires all queued log records to reach disk before clean exit.
 Executable corpus grading requires `bwrap` (package `bubblewrap`), Bash,
 Python and the validators' normal utilities such as jq. There is no unsandboxed
 grading fallback. The complete network-denial proof requires Docker and the

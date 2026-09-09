@@ -54,7 +54,7 @@ class RosterDerivation(unittest.TestCase):
         marketplace = io.load_json(REPO_ROOT / ".claude-plugin" / "marketplace.json")
         expected_names = {p["name"] for p in marketplace["plugins"]}
 
-        self.assertEqual(len(roster), 25)
+        self.assertEqual(len(roster), len(marketplace["plugins"]))
         self.assertEqual({r.name for r in roster}, expected_names)
         for ref in roster:
             plugin_dir = REPO_ROOT / ref.directory

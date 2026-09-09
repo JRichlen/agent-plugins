@@ -48,6 +48,7 @@ multiple machines and want it to resolve identically every time.
 | [**recurrence-detector**](plugins/recurrence-detector/) | Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, findings, unmet criteria, diary entries) by failure shape, and surface any shape seen at least 3 times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. |
 | [**jori**](plugins/jori/) | Coordinate complex work with bounded agents, evidence, and proportional dashboards. |
 | [**agent-compiler**](plugins/agent-compiler/) | Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, then a stdlib-only kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage with per-line provenance. |
+| [**eval-ladder**](plugins/eval-ladder/) | Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing, auditing, or defending a test/eval strategy for an agent, skill, or prompt; when adding an eval tier or LLM judge; or when a suite is all-green and you cannot say what it would catch. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry
@@ -88,6 +89,18 @@ apm install JRichlen/agent-plugins/plugins/graveyard#621d9bae97200b8aeb2a9525a76
 Pinning writes that exact form into `apm.yml`/`apm.lock.yaml`, so every machine
 that runs `apm install --frozen` resolves to the same plugin code — not
 "whatever `main` happened to be that day."
+
+## The documentation site
+
+[jrichlen.github.io/agent-plugins](https://jrichlen.github.io/agent-plugins/)
+is generated from this repository: a catalog of every plugin, real
+[before/after examples](https://jrichlen.github.io/agent-plugins/examples/)
+for each skill with the subject, grader and judge models disclosed and a
+verification path back to the CI run that produced them, the
+[design timeline](https://jrichlen.github.io/agent-plugins/timeline/), and
+deep dives on redgate and agent-compiler. The pages are rendered by scripts in
+`docs/` and the cheap tier fails any commit that lets them drift from their
+data.
 
 ## Repository layout
 

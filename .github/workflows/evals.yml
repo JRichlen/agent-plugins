@@ -44,10 +44,10 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y bubblewrap
+          sudo apt-get install -y bubblewrap patch
           mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
           npm init -y >/dev/null
-          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
+          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4 winston@3.19.0 winston-transport@4.9.0
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
           # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
@@ -62,6 +62,8 @@ jobs:
           claude --version
           codex --version || true
           codex exec --help 2>&1 | head -5 || true
+      - name: apply the pinned logger lifecycle correction
+        run: python3 evals/redteam/bin/provision-logger.py --promptfoo-home "$PROMPTFOO_HOME" --apply
       - name: provision scoped bubblewrap namespaces and prove the positive baseline
         run: bash ci/provision-bubblewrap.sh
       - name: run cheap eval gate
@@ -74,6 +76,7 @@ jobs:
             evals.agentic.tests.test_corpus_integrity \
             evals.agentic.tests.test_grader_forgery \
             evals.agentic.tests.test_task_contracts \
+            evals.agentic.tests.test_eval_ladder \
             evals.agentic.tests.test_effect_observer \
             evals.agentic.tests.test_redteam_inference \
             evals.agentic.tests.test_redteam_effect_validity \
@@ -82,6 +85,7 @@ jobs:
             evals.agentic.tests.test_redteam_task_tools \
             evals.agentic.tests.test_redteam_tranche_tools \
             evals.agentic.tests.test_redteam_grader_faults \
+            evals.agentic.tests.test_redteam_logger \
             evals.agentic.tests.test_redteam_controls.SafeVulnerableControls
 
   # ── counterfeit tier ──────────────────────────────────────────────────────
@@ -136,10 +140,10 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y bubblewrap
+          sudo apt-get install -y bubblewrap patch
           mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
           npm init -y >/dev/null
-          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4
+          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4 winston@3.19.0 winston-transport@4.9.0
           echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
           echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
           # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
@@ -154,6 +158,8 @@ jobs:
           claude --version
           codex --version || true
           codex exec --help 2>&1 | head -5 || true
+      - name: apply the pinned logger lifecycle correction
+        run: python3 evals/redteam/bin/provision-logger.py --promptfoo-home "$PROMPTFOO_HOME" --apply
       - name: provision scoped bubblewrap namespaces and prove the positive baseline
         run: bash ci/provision-bubblewrap.sh
       - name: prove the cheap gate discriminates (counterfeit corpus)
@@ -467,7 +473,9 @@ jobs:
             "plugins/${{ matrix.plugin }}/evals/promptfoo/results.json" \
             "${{ matrix.plugin }}" \
             --commit "${{ github.sha }}" \
-            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" || true
+            --captured-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --attestation none || true
       - name: upload captured example snapshot
         if: always() && steps.touched.outputs.paid == 'true'
         uses: actions/upload-artifact@v4
