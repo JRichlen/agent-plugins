@@ -259,18 +259,32 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
+          # Deliberately not `set -e`: the ping loop aggregates every slug's
+          # result rather than dying on the first bad one. That makes the
+          # discovery half fail OPEN unless it is checked by hand, which is the
+          # exact "green because it never ran" shape this job exists to catch —
+          # so every step below that could yield nothing is asserted explicitly,
+          # and the job refuses to pass without having pinged something.
           set -uo pipefail
           if [ -z "${OPENROUTER_API_KEY:-}" ]; then
             echo "::error::OPENROUTER_API_KEY secret is not set — every behavioral pack would grade a model it cannot call."
             exit 1
           fi
-          plugins="$(evals/paid/discover-paid-packs.sh promptfoo)"
+          if ! plugins="$(evals/paid/discover-paid-packs.sh promptfoo)"; then
+            echo "::error::discover-paid-packs.sh failed — cannot tell which packs exist, so nothing was verified."
+            exit 1
+          fi
           if [ "$plugins" = "[]" ]; then echo "no promptfoo packs — nothing to resolve"; exit 0; fi
+          if ! names="$(printf '%s' "$plugins" | jq -r '.[]')" || [ -z "$names" ]; then
+            echo "::error::could not parse the discovered pack list as JSON — nothing was verified."
+            printf '%s\n' "$plugins" | head -5
+            exit 1
+          fi
           # The subject slug is the unambiguous `openrouter:` provider id (the
           # grader is the `anthropic:messages:` one), so a plain grep is enough
           # and is immune to a comment sitting under the `providers:` key.
           subjects=""
-          for p in $(printf '%s' "$plugins" | jq -r '.[]'); do
+          for p in $names; do
             cfg="plugins/$p/evals/promptfoo/promptfooconfig.yaml"
             m="$(grep -oE 'openrouter:[A-Za-z0-9._/-]+' "$cfg" | head -1 | cut -d: -f2-)"
             if [ -z "$m" ]; then
@@ -280,9 +294,15 @@ jobs:
             subjects="$subjects $m"
           done
           subjects="$(printf '%s\n' $subjects | sort -u)"
+          if [ -z "$subjects" ]; then
+            echo "::error::no subject slugs extracted from $(printf '%s' "$names" | wc -w) pack(s) — nothing was verified."
+            exit 1
+          fi
           fail=0
+          checked=0
           while IFS= read -r model; do
             [ -n "$model" ] || continue
+            checked=$((checked+1))
             code=$(curl -sS -o /tmp/or.json -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
               -H "Authorization: Bearer $OPENROUTER_API_KEY" \
               -H "content-type: application/json" \
@@ -296,6 +316,13 @@ jobs:
               *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' /tmp/or.json 2>/dev/null | head -5; fail=1 ;;
             esac
           done <<< "$subjects"
+          # The load-bearing assertion: a pass must mean a model was actually
+          # pinged. Without this the job could exit 0 having verified nothing.
+          if [ "$checked" -eq 0 ]; then
+            echo "::error::verified ZERO subject models despite discovering packs — this job would otherwise be green without checking anything."
+            exit 1
+          fi
+          echo "verified $checked distinct subject model(s)."
           [ "$fail" -eq 0 ]
 
   # ── behavioral tier (promptfoo) ───────────────────────────────────────────
