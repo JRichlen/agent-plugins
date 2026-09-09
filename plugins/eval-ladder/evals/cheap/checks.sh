@@ -12,17 +12,10 @@
 # These checks are paranoid about those three. Wording drift elsewhere is not
 # what this tier catches — that is the behavioral tier's and the demo's job.
 
-# Self-contained across runners. run.sh defines six helpers; run-one.sh — the
-# runner the REQUIRED install matrix uses — defines only ok/bad/group. Packs are
-# sourced without `set -e`, so a call to a missing helper prints "command not
-# found" and the run continues, reporting green over checks that never executed
-# (issue #120: 275 such checks across 15 plugins). Define the three missing ones
-# here, guarded, so this pack runs whole under either runner while still
-# deferring to the runner's own definitions when it has them. Delete this block
-# once #120 gives both runners a shared preamble.
-declare -F has    >/dev/null || has()   { if grep -qF "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-declare -F hasE   >/dev/null || hasE()  { if grep -qE "$2" "$1" 2>/dev/null; then ok "$3"; else bad "$4"; fi; }
-declare -F lacksE >/dev/null || lacksE(){ if grep -qE "$2" "$1" 2>/dev/null; then bad "$4"; else ok "$3"; fi; }
+# has/hasE/lacksE come from evals/cheap/helpers.sh, sourced by BOTH runners
+# since #120. This pack briefly carried its own declare -F-guarded copies,
+# added when run-one.sh defined only three of the six helpers; that block said
+# to delete it once the shared preamble landed, and this is that change.
 
 SKILL="$PLUGIN_DIR/skills/eval-ladder/SKILL.md"
 AGENTS="$PLUGIN_DIR/AGENTS.md"
