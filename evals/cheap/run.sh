@@ -1338,6 +1338,38 @@ print("  PASS refresh-examples.yml deletes its results.json before the cheap tie
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 19a2a. The subject preflight reserves what the PACKS reserve -------------
+# OpenRouter prices a request against max_tokens, not against what comes back,
+# so an 8-token ping is affordable in exactly the situation where every pack row
+# is refused. That is not theoretical: on 2026-09-10 this check reported the
+# subject reachable with $17.92 remaining while all 12 packs got
+# `402 ... you requested up to 8192 tokens, but can only afford 5385`. A
+# preflight that cannot predict the failure it exists to prevent is decoration.
+# Coupled: hard-code the ping size, or stop reading max_tokens from the pack
+# configs, and this goes red.
+group "subject preflight pings at the pack's max_tokens, not a token-sized ping"
+python3 - "$REPO_ROOT" <<'PYP'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+if "max_tokens" not in txt:
+    prob.append("the script never reads max_tokens from the pack configs, so the ping cannot match what the packs request")
+# the ping body must interpolate a variable, never a literal ceiling
+m = re.search(r'\\"max_tokens\\":([^,]+),', txt)
+if not m:
+    prob.append("no max_tokens field found in the ping request body")
+elif re.fullmatch(r"\d+", m.group(1).strip()):
+    prob.append(f"the ping hard-codes max_tokens={m.group(1).strip()} instead of using the ceiling the packs declare")
+if prob:
+    print("  FAIL subject preflight: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight reserves the pack-declared max_tokens, so a 402 surfaces before the packs run"); sys.exit(0)
+PYP
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19a2b. The failing-transcript dump surfaces the TRANSPORT error ----------
 # A provider error leaves .response.output EMPTY, so a dump that prints only the
 # output renders "the API refused us" as a blank box that reads like "the model

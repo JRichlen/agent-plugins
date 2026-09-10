@@ -44,6 +44,9 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 cd "$ROOT" || exit 1
 
+# Fallback ceiling for a provider that declares no max_tokens of its own.
+DEFAULT_PING_TOKENS=8
+
 MODE="${1:-ping}"
 case "$MODE" in
   --list) MODE=list ;;
@@ -70,16 +73,21 @@ subjects="$(python3 - $names <<'PY'
 import os, sys
 sys.dont_write_bytecode = True
 def ids_from(cfg):
-    """Active provider ids only. Parse the YAML; a commented-out slug is not a
-    provider and must never be returned."""
+    """Active provider ids only, each paired with the max_tokens that provider
+    declares. The token count matters: OpenRouter reserves credit against
+    max_tokens, so a ping that asks for 8 tokens succeeds while the pack asking
+    for 8192 is refused. Pinging with the pack's own ceiling is what makes the
+    preflight predictive instead of merely reassuring."""
     try:
         import yaml
         doc = yaml.safe_load(open(cfg)) or {}
         out = []
         for p in (doc.get("providers") or []):
             pid = p.get("id") if isinstance(p, dict) else p
+            mt = ((p.get("config") or {}).get("max_tokens")
+                  if isinstance(p, dict) else None)
             if isinstance(pid, str):
-                out.append(pid)
+                out.append((pid, mt if isinstance(mt, int) and mt > 0 else None))
         return out
     except ImportError:
         pass
@@ -87,6 +95,7 @@ def ids_from(cfg):
         print(f"PARSE-ERROR {cfg}: {e}", file=sys.stderr)
         return None
     # PyYAML absent: walk the providers block by hand, skipping comment lines.
+    # max_tokens belongs to the id most recently seen.
     out, in_block = [], False
     for line in open(cfg):
         stripped = line.strip()
@@ -102,10 +111,15 @@ def ids_from(cfg):
             v = stripped[2:].strip()
             if v.startswith("id:"):
                 v = v[3:].strip()
-            out.append(v.strip("'\""))
+            out.append([v.strip("'\""), None])
         elif stripped.startswith("id:"):
-            out.append(stripped[3:].strip().strip("'\""))
-    return out
+            out.append([stripped[3:].strip().strip("'\""), None])
+        elif stripped.startswith("max_tokens:") and out:
+            try:
+                out[-1][1] = int(stripped.split(":", 1)[1].strip())
+            except ValueError:
+                pass
+    return [tuple(x) for x in out]
 
 bad = 0
 found = []
@@ -116,12 +130,17 @@ for name in sys.argv[1:]:
     ids = ids_from(cfg)
     if ids is None:
         bad += 1; continue
-    subs = [i for i in ids if i.startswith("openrouter:")]
+    subs = [(i, mt) for (i, mt) in ids if i.startswith("openrouter:")]
     if not subs:
         print(f"NO-SUBJECT {name}: declares no 'openrouter:<model>' provider", file=sys.stderr); bad += 1; continue
-    found.extend(s.split(":", 1)[1] for s in subs)
-for s in sorted(set(found)):
-    print(s)
+    found.extend((i.split(":", 1)[1], mt) for (i, mt) in subs)
+# Ping each slug at the LARGEST ceiling any pack asks for: that is the request
+# most likely to be refused, so it is the one worth proving affordable.
+worst = {}
+for slug, mt in found:
+    worst[slug] = max(worst.get(slug) or 0, mt or 0)
+for slug in sorted(worst):
+    print(f"{slug}\t{worst[slug] or 0}")
 sys.exit(1 if bad else 0)
 PY
 )" || { echo "::error::could not read subject providers from one or more packs (see above) — nothing was verified." >&2; exit 1; }
@@ -132,7 +151,14 @@ if [ -z "$subjects" ]; then
 fi
 
 if [ "$MODE" = "list" ]; then
-  printf '%s\n' "$subjects"
+  while IFS="$(printf '\t')" read -r slug mt; do
+    [ -n "$slug" ] || continue
+    if [ "${mt:-0}" -gt 0 ] 2>/dev/null; then
+      echo "$slug (ping reserves max_tokens=$mt, the largest any pack declares)"
+    else
+      echo "$slug (no max_tokens declared; ping reserves the default $DEFAULT_PING_TOKENS)"
+    fi
+  done <<< "$subjects"
   exit 0
 fi
 
@@ -172,18 +198,27 @@ rm -f "$kb"
 
 fail="${fail_balance:-0}"
 checked=0
-while IFS= read -r model; do
+while IFS="$(printf '\t')" read -r model mt; do
   [ -n "$model" ] || continue
   checked=$((checked+1))
+  # Reserve what the packs reserve. OpenRouter prices a request against
+  # max_tokens, not against what the model actually returns, so an 8-token ping
+  # is affordable in situations where every pack row is refused. Observed on
+  # 2026-09-10: this check reported reachable with $17.92 remaining while all 12
+  # packs got `402 ... you requested up to 8192 tokens, but can only afford
+  # 5385`. The ceiling is a reservation, not spend: the reply is still one word.
+  tokens="${mt:-0}"
+  [ "$tokens" -gt 0 ] 2>/dev/null || tokens="$DEFAULT_PING_TOKENS"
   body="$(mktemp)"
   code=$(curl -sS -o "$body" -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
     -H "Authorization: Bearer $OPENROUTER_API_KEY" \
     -H "content-type: application/json" \
-    -d "{\"model\":\"$model\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
+    -d "{\"model\":\"$model\",\"max_tokens\":$tokens,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
   case "$code" in
-    200) echo "subject model '$model' reachable — key valid, slug valid. (Says nothing about funding a full run: see the balance probe above.)" ;;
+    200) echo "subject model '$model' reachable AND affordable at max_tokens=$tokens — the ceiling the packs actually request." ;;
     401) echo "::error::subject model '$model': HTTP 401 — the OpenRouter key is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
-    402) echo "::error::subject model '$model': HTTP 402 — OpenRouter reports insufficient credit. Packs will run and every real-skill row will fail. If even this 8-token ping is 402, the account is empty; the same 402 at pack scale with a green ping means the balance is too thin for the concurrent fan-out."; fail=1 ;;
+    402) echo "::error::subject model '$model': HTTP 402 at max_tokens=$tokens — OpenRouter will not fund a request this size, so every real-skill row in every pack will fail the same way. Remedies, in the vendor's words: add credit, or lower max_tokens in the pack configs to fit the remaining balance."
+         sed -e 's/^/    /' "$body" 2>/dev/null | head -3; fail=1 ;;
     404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
     429) echo "::warning::subject model '$model': HTTP 429 — rate limited right now; not conclusive." ;;
     *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' "$body" 2>/dev/null | head -5; fail=1 ;;
