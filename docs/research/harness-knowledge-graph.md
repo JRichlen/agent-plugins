@@ -14,7 +14,7 @@ knowledge-graph patterns in [`agentic-patterns-corpus.md`](agentic-patterns-corp
 > **Not a new plugin, and not a change of mind about graph memory.** Harness's
 > payoff comes from a condition a repo fleet does not meet: heterogeneous,
 > non-git-native estate data (billing, K8s, CloudWatch, Jira, PagerDuty) with no
-> single strongly-consistent query surface. A repo fleet already has one —
+> single authoritative query surface. A repo fleet already has one —
 > `git`, `gh api`, `grep`. Harness's own ROI rule ("start with one use case that
 > cannot be solved by a single system") is the exact test this domain fails.
 >
@@ -99,9 +99,16 @@ This survives contact with Harness intact, and Harness's own material is the
 best argument for it. Their canonical-identity section — *"the same service is
 called something different in Git, Kubernetes, CloudWatch, and your runbook"* —
 names precisely the problem a graph solves. A fleet of GitHub repos has no such
-problem: GitHub hands you a stable `node_id`, `gh api orgs/<owner>/repos` is a
-strongly-consistent read, and the join key is not ambiguous. The graph is buying
-normalization nobody in this domain needs to buy.
+problem: GitHub hands you a stable `node_id`, `gh api orgs/<owner>/repos` is an
+authoritative read of membership, and the join key is not ambiguous. The graph
+is buying normalization nobody in this domain needs to buy.
+
+(Deliberately *authoritative*, not "strongly consistent" — GitHub publishes no
+consistency guarantee for REST list endpoints, and the argument does not need
+one. What carries it is that one surface is the system of record and its join
+key is stable. `fleet-playbook-curator`'s own prose calls that endpoint
+"strongly-consistent"; the defensible contrast it is reaching for is with the
+Search API, which documents its own indexing lag.)
 
 Net: keep the rejection, change the reason, and note that the reason is now
 domain-scoped rather than universal. If this marketplace ever spans
