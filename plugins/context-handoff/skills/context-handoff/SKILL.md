@@ -103,7 +103,8 @@ Before a handoff artifact travels off-machine, run `evals/cheap/secret-gate.sh`
 ### 4. DELEGATE (subagent)
 
 **Check:** Is the remaining work scoped tightly enough to run unattended —
-bounded enough that the delegate won't need you mid-execution?
+bounded enough that the delegate won't need you mid-execution? And is the
+delegate's corpus read once, rather than interrogated over and over?
 
 If yes → delegate via the harness's fan-out primitive (Task tool / Workflow
 tool / equivalent). If the delegated work is itself a multi-agent
@@ -111,6 +112,16 @@ research-and-verify fan-out, reach for the `orchestrate` plugin's templates
 to shape it — context-handoff decides IF/whether to delegate, orchestrate
 governs HOW a research fan-out runs once delegation is chosen. Do not inline
 fan-out mechanics here.
+
+**Delegation's advantage is bounded.** Each delegate returns a summary that
+lands in your context and is re-billed on every turn after it, so N questions
+against one corpus leave N summaries resident — while the corpus itself is
+re-sent in full each time, because a one-shot delegate has no cache to
+amortize against. Read-once-summarize-once is where delegating pays; a long
+question-and-answer loop against a corpus you could have kept in context is
+the case where it inverts. Delegating also removes your judgment from whatever
+the delegate produced: work that must be reviewed anyway, or edited against
+exact line numbers, gets paid for twice.
 
 ### 5. COMPACT (default)
 
