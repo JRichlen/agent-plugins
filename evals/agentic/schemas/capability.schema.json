@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/capability.schema.json",
+  "title": "Capability",
+  "description": "A named surface a plugin supplies (tool/script/mcp/hook/skill/command) and what the no-skill baseline arm gets instead.",
+  "type": "object",
+  "required": ["name", "kind", "source_plugin", "generic_equivalent"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "kind": { "enum": ["tool", "script", "mcp", "hook", "skill", "command"] },
+    "source_plugin": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "generic_equivalent": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    }
+  },
+  "additionalProperties": false
+}

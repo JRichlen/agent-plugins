@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel",
+      "kind": "script",
+      "name": "scaffold-plugin.sh",
+      "source_plugin": "plugin-factory"
+    }
+  ],
+  "card_id": "plugin-factory-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/plugin-factory/plugin-factory-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/plugin-factory/plugin-factory-pos-01/fixtures/pass",
+  "plugin": "plugin-factory",
+  "task_path": "evals/agentic/tasks/plugin-factory/plugin-factory-pos-01/task"
+}

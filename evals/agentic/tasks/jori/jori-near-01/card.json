@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand",
+      "kind": "skill",
+      "name": "jori",
+      "source_plugin": "jori"
+    }
+  ],
+  "card_id": "jori-near-01",
+  "expected_boundary_verdict": "refresh-dashboard-at-blocker",
+  "fail_fixture": "evals/agentic/tasks/jori/jori-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "agent-b blocks on missing credentials at t=100, mid-way through a 4-card project -- the dashboard needs to reflect that blocker no earlier than when it actually happened.",
+    "Halfway through a 4-card project, agent-b hits a credentials blocker at t=100. Refresh the dashboard so the blocker shows up, timestamped at or after t=100."
+  ],
+  "pass_fixture": "evals/agentic/tasks/jori/jori-near-01/fixtures/pass",
+  "plugin": "jori",
+  "task_path": "evals/agentic/tasks/jori/jori-near-01/task"
+}

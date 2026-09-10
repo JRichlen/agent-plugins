@@ -1,0 +1,3 @@
+--- a/plugins/redgate/evals/cheap/checks.sh
++++ b/plugins/redgate/evals/cheap/checks.sh
++check_new_guard

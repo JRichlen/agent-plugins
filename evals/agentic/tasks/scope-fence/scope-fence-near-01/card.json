@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "fix whatever looks wrong in the file while you're there, with no fence statement and no findings record",
+      "kind": "skill",
+      "name": "scope-fence",
+      "source_plugin": "scope-fence"
+    }
+  ],
+  "card_id": "scope-fence-near-01",
+  "expected_boundary_verdict": "mechanical-consequences-are-in-scope-no-finding-needed",
+  "fail_fixture": "evals/agentic/tasks/scope-fence/scope-fence-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Fix the null-deref in parse_config() -- doing so genuinely requires one new import and an update to the single existing test covering this function.",
+    "parse_config() has a null-deref bug; the real fix needs a new import at the top of the file plus a matching update to its one existing test."
+  ],
+  "pass_fixture": "evals/agentic/tasks/scope-fence/scope-fence-near-01/fixtures/pass",
+  "plugin": "scope-fence",
+  "task_path": "evals/agentic/tasks/scope-fence/scope-fence-near-01/task"
+}

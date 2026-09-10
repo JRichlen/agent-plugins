@@ -1,0 +1,11 @@
+{
+  "description": "benchmark-spec §8 worked example: model A, 12 attempts, mean 3,400 output tokens (sum 40,800); model B, 8 attempts, mean 9,100 (sum 72,800). Pooling raw tokens across the two without by= must raise CrossModelPoolingRefused; the naive pooled mean (40800+72800)/20=5680 describes neither model.",
+  "groups": [
+    {"model_id": "claude-opus-5", "output_tokens_each": 3400, "count": 12},
+    {"model_id": "claude-sonnet-5", "output_tokens_each": 9100, "count": 8}
+  ],
+  "expected": {
+    "by_model": {"claude-opus-5": 40800, "claude-sonnet-5": 72800},
+    "naive_pooled_mean": 5680.0
+  }
+}

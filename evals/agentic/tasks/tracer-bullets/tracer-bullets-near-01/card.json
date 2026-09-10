@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice",
+      "kind": "skill",
+      "name": "tracer-bullets",
+      "source_plugin": "tracer-bullets"
+    }
+  ],
+  "card_id": "tracer-bullets-near-01",
+  "expected_boundary_verdict": "rewrite-from-scratch-means-relabel-as-prototype-not-tracer-cleanup",
+  "fail_fixture": "evals/agentic/tasks/tracer-bullets/tracer-bullets-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Last week's thin end-to-end slice proved the two services could integrate, and it now works. The team wants to scrap it and rewrite 'properly' before building further.",
+    "The tracer bullet that proved the integration now runs. The team's proposal: throw it away and rewrite it from scratch 'the right way' before extending it."
+  ],
+  "pass_fixture": "evals/agentic/tasks/tracer-bullets/tracer-bullets-near-01/fixtures/pass",
+  "plugin": "tracer-bullets",
+  "task_path": "evals/agentic/tasks/tracer-bullets/tracer-bullets-near-01/task"
+}

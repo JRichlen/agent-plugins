@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Open the config file referenced by {{artifact}} and report only what it
+actually configures.

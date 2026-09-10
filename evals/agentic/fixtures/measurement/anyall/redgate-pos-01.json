@@ -1,0 +1,13 @@
+{
+  "description": "benchmark-spec §3 worked example: card redgate-pos-01, 5 trials: 3 pass, 1 fail, 1 fault. valid=4 passes=3 rate=0.75 any=true all=false faults=1.",
+  "card_id": "redgate-pos-01",
+  "trials": ["pass", "pass", "pass", "fail", "fault"],
+  "expected": {
+    "valid": 4,
+    "passes": 3,
+    "rate": 0.75,
+    "any": true,
+    "all": false,
+    "faults": 1
+  }
+}

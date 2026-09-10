@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim": "left the fleet",
+      "curated_at": "2026-09-06",
+      "path": "(manifest)",
+      "repo": "o/gone-svc",
+      "sha": "ggg1111"
+    }
+  ]
+}

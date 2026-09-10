@@ -121,3 +121,25 @@ should always pass and `nop` always fail — the calibration floor.
 > Task format is Harbor-compatible (`task.toml` + `instruction.md` +
 > `environment/Dockerfile` + `tests/test.sh` + `solution/solve.sh`). Validate a
 > task with `pier check`; confirm exact `pier run` flags with `pier run --help`.
+
+## Marketplace-wide agentic testing — `evals/agentic/` and `evals/redteam/`
+
+Two eval directories beyond the graveyard-centric tiers above, wired into the
+same cheap-tier discipline (`evals/cheap/run.sh` section 22: a missing runner
+here is a failure, never a silent skip):
+
+- **`evals/agentic/`** — the marketplace-wide harness: schema/control
+  vocabulary, real hook/MCP/subprocess fixtures, the plugin roster and card
+  corpus, native CLI adapter drivers, accounting/statistics, and the suite
+  catalog mapping every `T01`-`T52` backlog item to a real, executable,
+  falsifiable assertion. Run `evals/agentic/run.sh` (offline suite + catalog +
+  manifest) or `evals/agentic/run.sh --gate` (root-portable subset).
+- **`evals/redteam/`** — pinned-Promptfoo (0.122.0) red-teaming: a frozen
+  hashed corpus, safe/vulnerable controls, and the clean/adversarial ×
+  baseline/treatment 2×2. Run `evals/redteam/run.sh`.
+
+Full detail — what each proves, what it structurally cannot, cost, and the
+exact local run commands — lives in
+[../docs/testing.md](../docs/testing.md#agentic-suite) alongside the
+graveyard-centric tiers; this file stays scoped to the three tiers above
+per its own preamble.

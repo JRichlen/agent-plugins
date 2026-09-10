@@ -1,0 +1,82 @@
+{
+  "plugin": "jori",
+  "directory": "plugins/jori",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "jori",
+      "kind": "skill",
+      "source_plugin": "jori",
+      "generic_equivalent": null
+    },
+    {
+      "name": "jori",
+      "kind": "command",
+      "source_plugin": "jori",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-jori-b4d3ef5c13c2fa56e88505c47e0be5b8",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "jori"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "jori",
+        "kind": "skill",
+        "source_plugin": "jori",
+        "generic_equivalent": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/jori/SKILL.md": "81b2d02c9b6c2da57e61fcd2e677cb304eee75786869a487b6cdb3715179b6fb",
+      "skills/jori/assets/dashboard-template.md": "d90915553817c9493f2758a04be5c72a7e8686dccbff3cb97a5f716e5f0b3905",
+      "skills/jori/references/model-equivalence.md": "0a319db0e2474b061397358a1b1cc4637204dc87f7009c4c01a203ecc67e0cc9",
+      "skills/jori/references/orchestration.md": "8a0686654b42b1de5d33e64f9d807289c63cdbfb5c667f6fdf601f28a3c132b3"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-322b0fbf62fa9f4959ed118af98b027c",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "manual multi-item tracking (a todo list / issue tracker) kept up to date by hand",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "dbb5beca5d343b30ab3815faaf164909beb868f84755efc6417a6e6e53e85155"
+    }
+  },
+  "arm_source_card": "jori-pos-01"
+}

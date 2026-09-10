@@ -1,0 +1,84 @@
+{
+  "plugin": "eval-ladder",
+  "directory": "plugins/eval-ladder",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "eval-ladder",
+      "kind": "skill",
+      "source_plugin": "eval-ladder",
+      "generic_equivalent": null
+    },
+    {
+      "name": "eval-ladder",
+      "kind": "command",
+      "source_plugin": "eval-ladder",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-eval-ladder-9f268fa1a753f8420b6dc120f0aaec6c",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "eval-ladder"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "eval-ladder",
+        "kind": "skill",
+        "source_plugin": "eval-ladder",
+        "generic_equivalent": "Read the supplied observations and use ordinary Python arithmetic to assess the requested evaluation results."
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/eval-ladder/SKILL.md": "e7a475c2e2a286fdcf026c3cf084271fa780ff854f64f0e34ad425f70a001c3f",
+      "skills/eval-ladder/references/eval-surfaces.md": "27bb309cba837305f970143a8e0686c0cdd0b51675750f896d363cd9cb81a0fb",
+      "skills/eval-ladder/references/integrity-hazards.md": "20ee0930b472ce0e88172433ee46591628293b4a13edd8d6ec61c66b8386e390",
+      "skills/eval-ladder/references/judge-alignment.md": "61c7d6dff1a689fccefd0abc5a81aaa4d29741fa15bc256cd521a7b888309d55",
+      "skills/eval-ladder/references/metric-choice.md": "6b45967f080dfd17ad9362f851441aeace4138c92a9bed00e7dd866e3068072d",
+      "skills/eval-ladder/references/source-map.md": "2eaa7e9c2133f951b28df538771176386a864c51385ff5278d1e391a8e421eb0"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-b2a23b3863a445f96164a23b2907e799",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "Read the supplied observations and use ordinary Python arithmetic to assess the requested evaluation results.",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "b0e48e3f1190db4577c2fe914de27eaf6636f21320214bcb4df452c686d957de"
+    }
+  },
+  "arm_source_card": "eval-ladder-pos-01"
+}

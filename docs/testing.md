@@ -24,7 +24,9 @@ structurally cannot.
 | Tier | Where | Cost | Fires | Required check? |
 |---|---|---|---|---|
 | [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, <1 min | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
-| [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~1 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
+| [agentic suite](#agentic-suite) | `evals/agentic/run.sh` | free, offline; `--gate` (what fires below) ~5-15s, full suite ~4-5 min (real promptfoo/docker subprocess) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
+| [red-team suite](#redteam-suite) | `evals/redteam/run.sh` | free, offline; `--gate` (what fires below) well under 1s, full suite real per-config promptfoo validate (materially more) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
+| [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min (31 fixtures) | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
@@ -36,6 +38,7 @@ structurally cannot.
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
+| [model pricing](#model-pricing-monitor) | `model-pricing.yml` + `ci/model-pricing/` | metadata free; strategy default off/$0 | daily/manual on default branch after activation; offline tests on scoped PRs | no — stages review artifacts only |
 | [demonstration](#demonstration-discipline) | PR comment | one manual skill run | every skill-change PR | no — human review gate, cannot be machine-enforced |
 
 The six **required** status checks are frozen in `ci/required-checks.json` and
@@ -65,6 +68,8 @@ that it is green because it did not run, never silently.
   self-test, example-gallery sync/provenance, design-timeline sync/receipts
   (`docs/timeline/`: page in sync with its decision data, every receipt
   resolving), and the testing-doc drift guard defending this document.
+  The model-pricing unit suite also exercises malformed prices, material-change
+  thresholds, stale evidence, budget reservations/dedupe, and proposal authority.
 - **What it cannot prove.** Whether any load-bearing sentence still *means*
   anything to a model, or whether a skill's behavior changed. It greps and
   parses; it never runs a model.
@@ -76,6 +81,68 @@ that it is green because it did not run, never silently.
   ```sh
   evals/cheap/run.sh                 # whole repo — exit 0 required to commit
   evals/cheap/run-one.sh <plugin>    # one plugin's pack in isolation
+  ```
+
+## agentic suite
+
+- **What it proves.** The evaluation framework's contracts, positive and negative
+  controls, task-specific artifact graders, protocol fixtures, native evidence
+  binding, attempt accounting, statistical calculations, and catalog wiring.
+  The corpus has 93 cards across 26 plugins. Grader-owned helper files are
+  explicit; arbitrary identical fixture files are never injected as answers.
+  The subject cannot replace the canonical grader, and executable artifacts run
+  in Bubblewrap without host credentials, network or hidden fixture answers.
+  Pinned tooling includes a source-verified Winston lifecycle backport: queued
+  log records drain before file transports close. A real backpressure regression
+  checks clean shutdown and complete logs; exit failures remain test failures.
+- **What it cannot prove.** Offline fixture success does not demonstrate plugin
+  effectiveness or native model behavior. The catalog's approval-required native
+  and paid entries remain distinct from their offline regression forms.
+  Historical native receipts are replay evidence when read in a later process.
+- **Fires.** The cheap tier invokes `evals/agentic/run.sh --gate`, a structural
+  subset. The complete `--offline` path runs additional unit tests, real
+  protocol/provider processes and the full catalog. Do not equate the subset
+  with a full-suite run. CI provisions the actual pinned CLIs and Promptfoo;
+  it must not substitute fake binaries or bypass unsupported flags.
+- **Dependencies and cost.** Offline, no model calls. Python, Bash, jq and
+  Bubblewrap (`bwrap`) are needed for corpus checks; full external-tool checks
+  also need the pinned Promptfoo/native CLIs and the network-denial sandbox.
+  Runtime depends on the host and which path executes; record actual command,
+  counts, skips and duration with every validation receipt.
+- **Local run.**
+  ```sh
+  evals/agentic/run.sh --offline
+  evals/agentic/run.sh --gate
+  evals/agentic/run.py --catalog
+  evals/agentic/run.py coverage --json
+  ```
+
+## redteam suite
+
+- **What it proves.** Pinned-tool and corpus integrity, real provider API
+  conformance, detector controls, task-artifact verification and faithful
+  reporting of the evidence available. The same legitimate task and verifier
+  appear in all clean/adversarial and baseline/generic/treatment cells.
+- **Measurement boundaries.** Lexical indicators are diagnostic text matches,
+  not executed effects. Reports name them `textual_indicator_free_rate`;
+  native provenance cannot promote them to runtime safety. Utility requires
+  canonical verification of returned files, never `TASK_COMPLETE` markers or
+  an automatic adversarial pass. Actual protected-file qualification requires
+  an independent in-process observer around an executed action and covers
+  only its stated final-file invariant. See `evals/redteam/README.md`.
+- **Statistics.** Shared Wilson intervals preserve endpoint uncertainty;
+  paired corpus-item contrasts preserve dependence. Legacy marker-only utility,
+  insufficient clusters and missing pairs are not reportable efficacy estimates.
+  Thresholds and fault ceilings remain declared before a run.
+- **Fires.** Cheap CI runs `evals/redteam/run.sh --gate`, not full config
+  evaluation or network-isolation proof. `--offline` performs real pinned
+  Promptfoo validation/evaluation. `--assert-offline` adds a positive-control
+  canary and actual network-denied Docker execution.
+- **Local run.**
+  ```sh
+  evals/redteam/run.sh --gate
+  evals/redteam/run.sh --offline
+  evals/redteam/run.sh --assert-offline
   ```
 
 ## counterfeit tier
@@ -93,10 +160,20 @@ that it is green because it did not run, never silently.
   for, and nothing about model behavior.
 - **Fires.** Path-gated in CI (`evals/cheap/**`, `evals/counterfeits/**`,
   `plugins/**`); the required `counterfeit tier` aggregate always reports.
-- **Cost.** Free, offline, about a minute.
+- **Cost.** Free, offline. **31 fixtures now** (18 original + 13 for the
+  agentic/red-team suites, contract §8.8) — measured on this host at
+  roughly **5 minutes** for the full corpus (each fixture rebuilds a
+  synthetic marketplace root and reruns the cheap tier once, which itself
+  runs `evals/agentic/run.sh --gate` and `evals/redteam/run.sh --gate`;
+  those stayed fast specifically so this multiplication by 31 stays minutes,
+  not the multi-hour recursion a slower `--gate` would produce). Not part of
+  the always-on cheap tier; a separate, path-gated top-level check.
+  `COUNTERFEIT_ONLY=<fixture-dir-name> evals/counterfeits/run.sh` runs
+  exactly one fixture end to end (used by the bounded T51 test, ~30-40s).
 - **Local run.**
   ```sh
-  evals/counterfeits/run.sh   # exit 0 = baseline green AND every counterfeit rejected
+  evals/counterfeits/run.sh                              # full corpus, ~5 min
+  COUNTERFEIT_ONLY=19-agentic-suite-missing evals/counterfeits/run.sh  # one fixture
   ```
 
 ## install tier
@@ -154,6 +231,18 @@ that it is green because it did not run, never silently.
   `behavioral tier (promptfoo)`; skipped legs announce themselves.
 - **Cost.** Cents per touched plugin per run (subject model via OpenRouter,
   grader on Anthropic).
+- **Scheduling.** Within one evals workflow, routing and trajectory finish before
+  behavioral packs start. A failed routing verdict does not skip the independent
+  behavioral packs. Packs run one at a time and all three subject-evaluation
+  commands use `--max-concurrency 1`; this prevents the per-pack concurrency cap
+  from multiplying across the matrix. The change addresses recorded OpenRouter
+  `402 in_flight_budget_exhausted` faults without changing trials, token budgets,
+  models, assertions, or statistical floors. Other workflows/accounts can still
+  consume the same provider budget; a remaining fault must still fail closed.
+  The offline scheduling guard checks the dependency, failure continuation,
+  matrix cap, and CLI limits, including deliberately broken controls.
+  See GitHub's [status-check expression semantics](https://docs.github.com/en/actions/reference/workflows-and-actions/expressions#status-check-functions)
+  and [matrix concurrency control](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations#defining-the-maximum-number-of-concurrent-jobs).
 - **Local run.**
   ```sh
   cd plugins/<plugin>/evals/promptfoo
@@ -161,7 +250,29 @@ that it is green because it did not run, never silently.
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
+Jori's pack covers bounded delegated work, authority expansion, rough task-fit
+guidance that does not authorize provider/account changes, and GitHub Copilot
+HyDRA/HydraFusion control boundaries. The GitHub case requires an explicit
+distinction between those systems, treats undocumented per-leg/cap controls as
+unverified, and rejects invented CLI syntax or credit-to-dollar guarantees. Its
+four calibration rows replace both the skill and routing reference with
+invariant-free stubs, so a baseline that independently produces all
+Jori-specific controls fails as nondiscriminating.
+Its current subject is OpenRouter `z-ai/glm-5.3-flash`, with explicit `max`
+reasoning in the request; the independent Sonnet 5 rubric judge is unchanged.
+This setting change requires behavioral validation; cheap checks cannot prove
+GLM's quality or equivalent behavior to a previous subject.
+It is single-turn and tool-less: it does not prove real worker dispatch,
+persistent monitoring, provider availability, cross-provider equivalence,
+HydraFusion performance, cost savings, or a multi-round project outcome.
+
 ## routing tier
+
+The routing prompt evaluates each guard independently even when an envelope or
+specialist has overlapping verification steps. This makes the existing required
+guard assertions explicit in the input contract; it does not add scenario answers
+or relax the assertions. Empty completion-budget-exhausted replies remain failures.
+
 
 - **What it proves.** With the *full* roster of installed skill descriptions
   in context, a model routes labeled requests to the right **composition** —
@@ -416,6 +527,32 @@ that it is green because it did not run, never silently.
   uploading the artifact and before running the tier, and a cheap-tier guard
   fails if that step is dropped or reordered after the tier.
 
+## model pricing monitor
+
+`model-pricing.yml` has two jobs: `model pricing — offline controls` runs the
+stdlib unit suite without credentials/network; `model pricing — detect and stage`
+checks public endpoint metadata and conditionally invokes a bounded strategy
+agent. This is operational automation, not an additional LLM evaluation tier.
+It does not replace the statistical gates or provide a model-quality verdict.
+
+Both monitoring and strategy are off by default. After reviewed activation,
+metadata scans run daily at 13:25 UTC or on manual default-branch dispatch.
+The real GLM analyst can run automatically on pending material changes only
+with positive approved policy allowances and a dedicated limited key. Code
+ceilings are $0.05/reservation and $1/UTC month; shipped allowances are $0.
+The Git state branch records the full reservation before the single request,
+retains it after success/fault, and prevents automatic retries or cache resets.
+Artifacts stage evidence and an allowlisted config-change plan, with no active
+configuration write, auto-PR, or merge. Unchanged runs stay quiet.
+
+**Local command:** `python3 ci/model-pricing/test_monitor.py` (also included in
+`evals/cheap/run.sh`). Rejection fixtures and a removed-budget-guard mutation
+check cover deterministic control failures. They cannot prove live provider
+enforcement, schedule delivery, billing totals, semantic strategy quality, or
+savings. Agent output is unvalidated until human review and separately approved
+existing real/control, routing, trajectory, and independent-judge calibration.
+See [activation, state recovery, scope and limits](model-pricing.md).
+
 ## demonstration discipline
 
 - **What it proves.** What a changed skill actually does to real material —
@@ -442,14 +579,17 @@ uninterpretable n=1 and no required check goes red on the weather:
 - **k-of-N pass-rate floor** — `evals/paid/pass-rate.sh` is the verdict, not
   promptfoo's exit code: per-scenario pass rate over *valid* samples must meet
   the floor (behavioral 0.6 = majority of 3; routing 0.8).
-- **FAULT vs verdict separation** — a transport error (504, aborted call,
-  empty body) is a FAULT, an invalid sample excluded from the floor — never
-  counted as a rubric failure. Classification keys on promptfoo's
-  `failureReason`: `2`/`"error"` = FAULT (excluded); `1` = a real assertion
-  FAIL scored against the floor — even though under promptfoo ≥ 0.122 every
-  assertion-failed row *also* carries `.error` (the assertion message).
-  `.error` alone marks a FAULT only on legacy rows with no `failureReason`
-  recorded.
+- **FAULT vs verdict separation** — provider errors (`failureReason` of
+  `2`/`"error"`) and unusable grader responses are invalid samples excluded
+  from the floor. Grader faults require the harness's boolean
+  `metadata.graderError` signal in a grading result; model output and error
+  message text cannot supply that authority. An independent ordinary assertion
+  failure still counts when it settles the default all-assertions verdict.
+  Real assertion failures remain FAILs even when they also carry `.error`;
+  `.error` alone marks a FAULT only on legacy rows with no `failureReason`.
+  Empty output, repeated reasoning delimiters, or token-budget exhaustion alone
+  does not establish a fault. These failed answers remain visible to the blind
+  human-calibration sampler; missing grader judgments are excluded.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.
@@ -492,11 +632,11 @@ exist; when one goes live it moves into this document and out of the plan's
   freeze a fabricated mid-run transcript and assert on the single next move,
   with a must-not-fire twin for every must-fire:
   [#89](https://github.com/JRichlen/agent-plugins/issues/89).
-- **L2 plan-audit and L3 trajectory/composition tiers** — typed composition
-  results, plan grading against a labeled corpus, and deterministic post-hoc
-  artifact audits of `.redgate/`; owned by
-  [#88](https://github.com/JRichlen/agent-plugins/issues/88) (see the scope
-  split recorded on #89).
+- **L2 plan-audit** — typed composition results and plan grading against a
+  labeled corpus; owned by [#88](https://github.com/JRichlen/agent-plugins/issues/88)
+  (see the scope split recorded on #89). (L3 trajectory/artifact audit and L4
+  cross-plugin composition are now **live** — [agentic suite](#agentic-suite),
+  `evals/agentic/` — see [testing-plan.md §1](testing-plan.md#1-where-the-baseline-actually-is).)
 - **Grader calibration measurements** — the human labels for the blind
   sheets the calibration-sheet workflow draws, and the cross-grader and
   self-consistency numbers the grader-agreement workflow produces; the
@@ -516,11 +656,20 @@ If you add, remove, rename, or re-scope any
 of these, update this block (and the prose above) in the same PR;
 `evals/cheap/check-testing-doc.sh --print` emits the current live list.
 
+> **CI portability of the new gates.** The cheap-tier and counterfeit CI jobs install the
+> pinned tooling the gates verify against (promptfoo 0.122.0, Claude Code 2.1.263, Codex
+> 0.153.4 — exact versions, never `npx`, never `@latest`) into the runner's temp dir and export
+> `PROMPTFOO_HOME` and the `.bin` PATH. The gates never log in or call a model; they read
+> `--help`/`--version` and compare digests. On a developer host, export `PROMPTFOO_HOME` the
+> same way (see `evals/redteam/bin/promptfoo.sh`).
+
 <!-- BEGIN LIVE-INVENTORY (verified by evals/cheap/check-testing-doc.sh) -->
 ```
+eval-dir: evals/agentic
 eval-dir: evals/cheap
 eval-dir: evals/counterfeits
 eval-dir: evals/paid
+eval-dir: evals/redteam
 eval-dir: evals/routing
 eval-dir: evals/templates
 job: agent-compiler scale (kernel stress)
@@ -542,6 +691,8 @@ job: deploy
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
 job: install tier — install-smoke + evals
+job: model pricing — detect and stage
+job: model pricing — offline controls
 job: paid multi-plugin gate
 job: redgate scale (lifecycle stress)
 job: refresh
@@ -567,6 +718,8 @@ pack: graveyard/cheap
 pack: graveyard/pier
 pack: graveyard/promptfoo
 pack: grill-me/cheap
+pack: jori/cheap
+pack: jori/promptfoo
 pack: orchestrate/cheap
 pack: plugin-factory/cheap
 pack: prove-the-undo/cheap
@@ -592,6 +745,7 @@ pack: wayfinder/promptfoo
 workflow: calibration-sheet.yml
 workflow: evals.yml
 workflow: grader-agreement.yml
+workflow: model-pricing.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
 workflow: scale.yml

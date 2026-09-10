@@ -1,0 +1,1 @@
+- 2026-09-06: retry-policy fix shipped; dropped duplicate health check.

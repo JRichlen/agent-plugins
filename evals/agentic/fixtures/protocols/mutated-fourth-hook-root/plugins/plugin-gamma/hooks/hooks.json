@@ -1,0 +1,13 @@
+{
+  "description": "the FOURTH hook added by T19's negative control: a hardcoded discovery list (or any discovery function keyed on a fixed set of plugin names) would still report the same three hooks as the unmutated tree and never notice this one. Real discover_hooks() must return 4.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/handler.py"}
+        ]
+      }
+    ]
+  }
+}

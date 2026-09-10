@@ -1,0 +1,20 @@
+{
+  "PROVENANCE": "HAND-AUTHORED, NOT RECORDED. Field names follow the OpenAI Responses API usage object as documented (input_tokens, output_tokens, total_tokens, plus reasoning tokens reported inside an output-token detail block), which is the vocabulary codex-cli reports against. NOT PINNED BY ANY SOURCE AVAILABLE HERE: (a) the JSONL envelope 'codex exec --json' wraps each event in, (b) whether reasoning tokens surface at the top level or only nested, (c) whether cached input tokens are reported separately. Those are exactly why load_grammar() raises.",
+  "note": "Reports a different subset than the claude fixture on purpose: the two CLIs must not be made to look alike by the parser.",
+  "record": {
+    "kind": "usage",
+    "model": "codex-hand-authored-model",
+    "usage": {
+      "input_tokens": 800,
+      "output_tokens": 190,
+      "reasoning_tokens": 64,
+      "total_tokens": 990
+    }
+  },
+  "expected_unknown_fields": [
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+    "wall_clock_ms"
+  ],
+  "expected_cost_usd": null
+}

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Jori"
+  short_description: "Coordinate complex work with bounded agents"
+  default_prompt: "Use $jori to coordinate this complex task with bounded agents and evidence."
+
+policy:
+  allow_implicit_invocation: true

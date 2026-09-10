@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim": "playbook lives here",
+      "curated_at": "2026-09-06",
+      "path": "site.yml",
+      "repo": "o/new-svc",
+      "sha": "nnn1111"
+    }
+  ]
+}

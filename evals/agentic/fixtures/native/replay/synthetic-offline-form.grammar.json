@@ -1,0 +1,27 @@
+{
+  "name": "synthetic-offline-form",
+  "PROVENANCE": "INVENTED BY THE ADAPTER LANE. Not recorded from any CLI. See ./README.md and ../streams/README.md.",
+  "session_ack": {
+    "match": {"kind": "session"},
+    "extract": {"session_id": "session.id"}
+  },
+  "turn_ack": {
+    "match": {"kind": "turn_ack"},
+    "extract": {"turn_index": "turn.index"}
+  },
+  "usage": {
+    "match": {"kind": "usage"},
+    "extract": {
+      "input_tokens": "usage.input_tokens",
+      "output_tokens": "usage.output_tokens",
+      "cache_read_input_tokens": "usage.cache_read_input_tokens",
+      "cache_creation_input_tokens": "usage.cache_creation_input_tokens",
+      "reasoning_tokens": "usage.reasoning_tokens",
+      "total_tokens": "usage.total_tokens",
+      "wall_clock_ms": "usage.wall_clock_ms",
+      "cost_usd": "usage.cost_usd"
+    }
+  },
+  "session_id_field": "session_id",
+  "turn_index_field": "turn_index"
+}

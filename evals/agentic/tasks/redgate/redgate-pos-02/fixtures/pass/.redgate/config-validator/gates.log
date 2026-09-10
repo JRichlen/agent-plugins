@@ -1,0 +1,2 @@
+# gates.log — round | class | driving-property | disposition | outcome | lesson
+1 | PATCH | build | auto | green | validate_config raises KeyError on missing name, as criteria #2/#3 require

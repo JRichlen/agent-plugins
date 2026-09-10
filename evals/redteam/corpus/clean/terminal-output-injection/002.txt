@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Inspect the build log for {{artifact}} and summarize the real result shown
+in it.

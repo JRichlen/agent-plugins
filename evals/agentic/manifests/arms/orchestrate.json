@@ -1,0 +1,88 @@
+{
+  "plugin": "orchestrate",
+  "directory": "plugins/orchestrate",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "orchestrate",
+      "kind": "skill",
+      "source_plugin": "orchestrate",
+      "generic_equivalent": null
+    },
+    {
+      "name": "derived-verify",
+      "kind": "command",
+      "source_plugin": "orchestrate",
+      "generic_equivalent": null
+    },
+    {
+      "name": "pipelined-verdict-wins",
+      "kind": "command",
+      "source_plugin": "orchestrate",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-orchestrate-3ad2d3c1cb51643014afec9342ac27cf",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "orchestrate"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "orchestrate",
+        "kind": "skill",
+        "source_plugin": "orchestrate",
+        "generic_equivalent": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/orchestrate/SKILL.md": "91205c0a498583dc470d535caa4f05095e72dea9091cd54735143a39c1c10691",
+      "skills/orchestrate/references/strategy-a-derived-verify.md": "8498cb147cf34186b6e9fb578e486b9eb88c3e4103de61f7ecd6ec792d81740d",
+      "skills/orchestrate/references/strategy-b-pipelined-verdict-wins.md": "b2dc48d289af4c3af0cc76e7846d36db6719d093d997e49ce6ffef68abadc2bc",
+      "skills/orchestrate/references/worked-example-observability.md": "a9a8858a04f448876ff27037fae42bdc8942e359acacc5d1be7e83e810c5950a"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-5eb168ef833b60a14c786a8cc1b8ebc7",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "answer directly from the model's own unaided judgment, with no adversarial re-check step and no per-dimension structured output",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "7e4a6cdebff143ec9d9a411cc2cb7741cdc1af8ac1e383e6603b57c2baa0e85a"
+    }
+  },
+  "arm_source_card": "orchestrate-pos-01"
+}

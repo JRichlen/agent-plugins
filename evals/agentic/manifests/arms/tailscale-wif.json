@@ -1,0 +1,88 @@
+{
+  "plugin": "tailscale-wif",
+  "directory": "plugins/tailscale-wif",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "tailscale-wif",
+      "kind": "skill",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": null
+    },
+    {
+      "name": "tailscale-wif",
+      "kind": "command",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": null
+    },
+    {
+      "name": "compute-subject.sh",
+      "kind": "script",
+      "source_plugin": "tailscale-wif",
+      "generic_equivalent": "plain-bash-filesystem-git::compute-subject.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-tailscale-wif-cb12161aef24acc826222f73bf912918",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "tailscale-wif"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "tailscale-wif",
+        "kind": "skill",
+        "source_plugin": "tailscale-wif",
+        "generic_equivalent": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/tailscale-wif/SKILL.md": "9be6835d519818e222443bcba7f60636e6d8c26933ed1594552be4e46d0289de",
+      "skills/tailscale-wif/references/oidc-subject-hardening.md": "ca07982e6062227fe2d2f0cd66a321318e46bf737799077f0ec41ce780545017",
+      "skills/tailscale-wif/references/troubleshooting.md": "24d74c98a03939230780c6385fc8b826e8f5854b2de92b87ae1dc936263f3555",
+      "skills/tailscale-wif/references/trust-credential-console-setup.md": "e4d29a468ee883ecf293d141fc944291761ca366db75402663abe9aa66d5fdd6"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-6cc84012685c36ded78fb97f9e12e5a0",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "eea97c22aabf387a8124003d6819e26535ed7e2b9365e8200aee379c72116667"
+    }
+  },
+  "arm_source_card": "tailscale-wif-pos-01"
+}

@@ -7,6 +7,10 @@
 /delete-originals.sh
 /summary.tsv
 *.bundle
+# Fixed, synthetic full-history archives are required inputs for the archive
+# restoration test. Keep runtime bundles ignored everywhere else.
+!/evals/agentic/tasks/graveyard/graveyard-pos-02/task/legacy-service-source.bundle
+!/evals/agentic/tasks/graveyard/graveyard-pos-02/fixtures/pass/archive/legacy-service.bundle
 .DS_Store
 
 # Eval artifacts. Secrets and generated output must never be committed.
@@ -39,3 +43,10 @@ plugins/*/evals/promptfoo/results.matrix.json
 plugins/*/evals/promptfoo/promptfooconfig.regrade.*.yaml
 plugins/*/evals/promptfoo/replay.*.json
 plugins/*/evals/promptfoo/results.regrade.*.json
+
+# Agentic test framework run manifests (evals/agentic/run.py, contract §9) — emitted per run, never committed.
+evals/agentic/manifests/runs/
+*.out.json
+
+# red-team runner scratch (promptfoo home, logs, results) — generated, never committed
+evals/redteam/.artifacts/

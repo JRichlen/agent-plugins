@@ -1,0 +1,32 @@
+{
+  "name": "codex",
+  "binary": "/home/jrichlen/.local/bin/codex",
+  "help_argv": ["exec", "--help"],
+  "argv_template": [
+    "exec",
+    "--json",
+    "--ephemeral",
+    "--skip-git-repo-check",
+    "--sandbox", "{sandbox}",
+    "-C", "{workspace}",
+    "--add-dir", "{extra_dir}",
+    "-m", "{model}",
+    "--output-last-message", "{last_message_path}"
+  ],
+  "optional_argv": {
+    "fresh": [],
+    "resume": ["resume", "--last"],
+    "fork": ["fork", "{session_id}"]
+  },
+  "env": {
+    "PATH": "/usr/bin:/bin",
+    "HOME": "{home}",
+    "LANG": "en_US.UTF-8",
+    "CODEX_HOME": "{home}/.codex"
+  },
+  "cwd": "{workspace}",
+  "timeout_s": 600,
+  "stream_format": "jsonl",
+  "grammar": "codex-exec-json",
+  "adapter_class": "native"
+}

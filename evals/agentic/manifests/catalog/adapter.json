@@ -1,0 +1,89 @@
+{
+  "lane": "adapter",
+  "entries": [
+    {
+      "id": "T25",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "DriverArgvConformance",
+      "test_name": "test_driver_flags_conform_to_installed_help_and_spawn_needs_approval",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/native/drivers/invented-flag.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T26",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "SessionTurnAcks",
+      "test_name": "test_session_and_turn_acks_bind_to_harness_reported_ids__offline_form",
+      "evidence_class": "simulated",
+      "approval_gate": "native-required",
+      "negative_control": "evals/agentic/fixtures/native/replay/no-session-ack.jsonl",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T27",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "ResumeAndIsolation",
+      "test_name": "test_resume_continues_the_same_session_and_fork_records_its_parent__offline_form",
+      "evidence_class": "simulated",
+      "approval_gate": "native-required",
+      "negative_control": "evals/agentic/fixtures/native/isolation/carried-over",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T28",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "CancellationPath",
+      "test_name": "test_cancel_kills_the_process_group_and_tags_late_output__offline_form",
+      "evidence_class": "simulated",
+      "approval_gate": "native-required",
+      "negative_control": "evals/agentic/fixtures/native/workers/worker_ignores_sigterm.py",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T29",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "EventLedgerIntegrity",
+      "test_name": "test_chain_verifies_and_names_the_first_bad_index_per_tamper__offline_form",
+      "evidence_class": "simulated",
+      "approval_gate": "native-required",
+      "negative_control": "evals/agentic/fixtures/native/tamper/edited-field.jsonl",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T30",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "TelemetryUnknowns",
+      "test_name": "test_absent_usage_fields_parse_as_unknown_and_never_zero",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/native/usage/coerced-zero.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T31",
+      "lane": "adapter",
+      "module": "evals.agentic.tests.test_adapters_and_protocols",
+      "test_class": "EvidenceClassLabeling",
+      "test_name": "test_evidence_class_is_derived_and_has_no_promotion_path",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/native/attempts/forged-native-proven.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

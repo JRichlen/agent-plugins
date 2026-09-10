@@ -1,0 +1,13 @@
+{
+  "promptfoo_version": "0.122.0",
+  "winston_version": "3.19.0",
+  "source": "lib/winston/logger.js",
+  "source_sha256_before": "cacf975c23aac70fbf476fba548691762f2c08f9b6f347845979558c830257b6",
+  "source_sha256_after": "0bbed9f55aafcdd22e6f405a3d936ea9a7f6228042dbfbdecda9751de58e5081",
+  "patch": "winston-3.19.0-drain.patch",
+  "patch_sha256": "89745e4f9da850807fb2cd2439a83a682680c678b940dde3342da1fa073f0488",
+  "upstream_pr": "https://github.com/winstonjs/winston/pull/2599",
+  "upstream_head": "569d0ba4f5774415daf1541153db0ff16f1bb7ad",
+  "upstream_status_at_review": "open and unmerged on 2026-09-09",
+  "license": "MIT; see LICENSE.winston"
+}

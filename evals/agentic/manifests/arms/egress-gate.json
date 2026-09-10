@@ -1,0 +1,79 @@
+{
+  "plugin": "egress-gate",
+  "directory": "plugins/egress-gate",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "egress-gate",
+      "kind": "skill",
+      "source_plugin": "egress-gate",
+      "generic_equivalent": null
+    },
+    {
+      "name": "egress-gate",
+      "kind": "command",
+      "source_plugin": "egress-gate",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-egress-gate-64b1abb2a22a511af96a73187e1ed837",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "egress-gate"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "egress-gate",
+        "kind": "skill",
+        "source_plugin": "egress-gate",
+        "generic_equivalent": "no pre-transmission manifest or secret sweep before an outbound call"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/egress-gate/SKILL.md": "6171afe22d11e6272d1d4f70faf7d4e72ac8ec5f703cf3f78156aa790648bb75"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-80df68aa1231978bba69a61fb188599b",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "no pre-transmission manifest or secret sweep before an outbound call",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "a0d9aeaccbbdead17e653fcb36e4e87bb3bfb33a40605cfec886fcd82e95f170"
+    }
+  },
+  "arm_source_card": "egress-gate-pos-01"
+}

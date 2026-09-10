@@ -1,0 +1,5 @@
+{
+  "description": "REPAIR N-01/S-01 negative control (review-wave4-statistics.md finding S-01): 8 cards, treatment delivered+pass on every card, baseline arm FAULT on every card -- the baseline arm produced zero scoring-valid trials. benchmark-spec §1.1 makes FAULT scoring-invalid ('transport weather, not evidence'); a baseline that never produced a scoring-valid trial must never read as the strongest possible evidence for the plugin.",
+  "n_cards": 8,
+  "card_prefix": "redgate-pos"
+}

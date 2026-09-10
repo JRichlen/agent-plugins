@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same repo and a plain editing/git capability -- a purely local commit needs no egress manifest.",
+  "capabilities": [
+    {
+      "generic_equivalent": "no pre-transmission manifest or secret sweep before an outbound call",
+      "kind": "skill",
+      "name": "egress-gate",
+      "source_plugin": "egress-gate"
+    }
+  ],
+  "card_id": "egress-gate-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Add unit tests for add() and commit locally -- no push, no external call.",
+    "Local-only task: write tests for add(), then commit on this branch."
+  ],
+  "pass_fixture": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/fixtures/pass",
+  "plugin": "egress-gate",
+  "task_path": "evals/agentic/tasks/egress-gate/egress-gate-neg-01/task"
+}

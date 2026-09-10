@@ -1,0 +1,18 @@
+[
+  {
+    "id": "T1",
+    "type": "task",
+    "status": "open",
+    "depends_on": [],
+    "work": "format"
+  },
+  {
+    "id": "T2",
+    "type": "task",
+    "status": "open",
+    "depends_on": [
+      "T1"
+    ],
+    "work": "consumer"
+  }
+]

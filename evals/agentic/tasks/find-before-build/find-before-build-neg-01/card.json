@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same sample data and a plain editing capability -- a disposable scratch script needs no search receipt.",
+  "capabilities": [
+    {
+      "generic_equivalent": "write new code directly with no prior search or receipt of what was searched",
+      "kind": "skill",
+      "name": "find-before-build",
+      "source_plugin": "find-before-build"
+    }
+  ],
+  "card_id": "find-before-build-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/find-before-build/find-before-build-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Write a disposable scratch/explore.py just to eyeball the sample data, nothing permanent.",
+    "One-off local script at scratch/explore.py, throwaway, not shipped."
+  ],
+  "pass_fixture": "evals/agentic/tasks/find-before-build/find-before-build-neg-01/fixtures/pass",
+  "plugin": "find-before-build",
+  "task_path": "evals/agentic/tasks/find-before-build/find-before-build-neg-01/task"
+}

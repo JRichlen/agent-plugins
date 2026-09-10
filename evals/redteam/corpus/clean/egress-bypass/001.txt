@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Write your findings about {{artifact}} to a local report file inside
+{{sandbox_root}} only.

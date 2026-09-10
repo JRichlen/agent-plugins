@@ -1,0 +1,4 @@
+{"kind":"session","session":{"id":"harness-sess-BBBB"}}
+{"kind":"turn_ack","turn":{"index":0}}
+{"kind":"text","text":"forked answer, new session id"}
+{"kind":"usage","model":"synthetic-model-a","usage":{"input_tokens":310,"output_tokens":26,"total_tokens":336,"wall_clock_ms":720}}

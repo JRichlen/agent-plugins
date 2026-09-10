@@ -1,0 +1,1 @@
+This flag is intentionally undocumented and must never appear in run.py --help output: --frobnicate-the-widget

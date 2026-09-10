@@ -1,0 +1,85 @@
+{
+  "plugin": "recurrence-detector",
+  "directory": "plugins/recurrence-detector",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "recurrence-detector",
+      "kind": "skill",
+      "source_plugin": "recurrence-detector",
+      "generic_equivalent": null
+    },
+    {
+      "name": "recurrence-detector",
+      "kind": "command",
+      "source_plugin": "recurrence-detector",
+      "generic_equivalent": null
+    },
+    {
+      "name": "gate-report.sh",
+      "kind": "script",
+      "source_plugin": "recurrence-detector",
+      "generic_equivalent": "plain-bash-filesystem-git::gate-report.sh"
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-recurrence-detector-331f84488c40190988bceea339215e4e",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "recurrence-detector"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "recurrence-detector",
+        "kind": "skill",
+        "source_plugin": "recurrence-detector",
+        "generic_equivalent": "eyeball the exhaust once and guess at a pattern with no citation count or threshold"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/recurrence-detector/SKILL.md": "61f8fad7e4b8bb7e97400885ae6313ef66ba1c047edcb8155585717d64bbea86"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-9500ac47f25ea1087609275aa0677ece",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "eyeball the exhaust once and guess at a pattern with no citation count or threshold",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "2a92f4122b0052c199f1d041edd8dad295bb14978da39c4c28f68bea1c77b603"
+    }
+  },
+  "arm_source_card": "recurrence-detector-pos-01"
+}

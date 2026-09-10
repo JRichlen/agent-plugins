@@ -1,0 +1,12 @@
+{
+  "description": "benchmark-spec §6.2 worked example B: twelve cards, six at +0.20 and six at 0.00. d-bar=0.10 s=0.104447 SE=0.030151 t(0.975,11)=2.200985 CI=(0.0336,0.1664). C=12 >= min_clusters=8 -> reported; lower bound above 0 so noninferior for any margin>0.",
+  "cluster_means": [0.20, 0.20, 0.20, 0.20, 0.20, 0.20, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  "expected": {
+    "mean": 0.10,
+    "s": 0.104447,
+    "se": 0.030151,
+    "t_crit": 2.200985,
+    "lo": 0.0336,
+    "hi": 0.1664
+  }
+}

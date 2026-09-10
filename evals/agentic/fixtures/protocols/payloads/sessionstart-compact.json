@@ -1,0 +1,7 @@
+{
+  "session_id": "33333333-3333-4333-8333-333333333335",
+  "transcript_path": "/tmp/agentic-fixture-transcript.jsonl",
+  "cwd": "/tmp/agentic-fixture-cwd",
+  "hook_event_name": "SessionStart",
+  "source": "compact"
+}

@@ -57,6 +57,52 @@ root — so it lints exactly the synthetic tree and nothing from the real repo.
 | `09-portability` | 9 — portability lint | undeclared Claude-Code-only prose is caught |
 | `10-missing-pack` | 10 — fail-closed pack discovery | a registered plugin with no safety pack is caught |
 | `11-weakened-guard` | the plugin's OWN sourced pack | a real safety-invariant weakening is caught |
+| `19-agentic-suite-missing` | 22 — agentic suite gate | a deleted `evals/agentic/run.sh` is caught, not silently skipped |
+| `20-agentic-catalog-gap` | 22 — agentic suite gate (catalog merge, contract §7.3) | a catalog fragment silently dropping an allocated ID is caught |
+| `21-agentic-vacuous-verifier` | 22 — agentic suite gate (core, T10) | a positive card's outcome verifier degenerating to `return True` is caught |
+| `22-agentic-zero-denominator` | 22 — agentic suite gate (measurement, T38) | a zero-denominator rate rendered as `0%` instead of `unavailable (...)` is caught |
+| `23-agentic-forged-native` | 22 — agentic suite gate (adapter, T09/T29/T31) | an attempt asserting its own native provenance (or a replay minting host-observed entries) is caught |
+| `24-agentic-hardcoded-hooks` | 22 — agentic suite gate (protocol, T19) | a fourth hook added to the synthetic plugin tree that hardcoded discovery would miss is caught |
+| `25-agentic-exposure-parity` | 22 — agentic suite gate (registry, T16) | an unmatched-widening baseline arm capability is caught |
+| `26-redteam-npx` | 22 — redteam suite gate (T48) | an `npx promptfoo@latest` reference breaking the offline default is caught |
+| `27-redteam-corpus-drift` | 22 — redteam suite gate (T44) | a frozen red-team corpus hash drifting undetected is caught |
+| `28-redteam-pin-drift` | 22 — redteam suite gate (T42) | an unpinned/drifted promptfoo version is caught |
+| `29-redteam-rubric-dominance` | 22 — redteam suite gate (T47) | a disagreeing grader rubric silently overriding the protected-effect verdict is caught |
+| `30-redteam-native-forgery` | 22 — redteam suite gate (T47) | a forged native-proof claim gating safety qualification is caught |
+| `31-redteam-vacuous-row` | 22 — redteam suite gate (T44/T47) | a generated-config row that disables its default assertions with none of its own is caught by a static text scan, no promptfoo process |
+
+Fixtures `19`-`31` are new in this change (contract §8.8, backlog T51): they
+exercise `evals/cheap/run.sh` section 22's `evals/agentic/run.sh --gate` /
+`evals/redteam/run.sh --gate` calls, reached only once `build_root()` stages
+`evals/agentic/**` and `evals/redteam/**` into the synthetic root (above).
+Total corpus after this change: 18 existing + 13 new = **31 fixtures**. A
+full run measures **31 of 31** rejected by the expected gate, ~5-6 minutes
+on this host.
+
+**`31-redteam-vacuous-row`'s history is worth reading before touching this
+gate again.** Its mutation (`testCase.options.disableDefaultAsserts: true`
+on one row) was originally caught only by letting the pinned promptfoo
+actually evaluate the mutated row and feeding the result through
+`bin/verdict.py`. That real-eval step in `--gate` was later found to
+intermittently misclassify an ordinary provider FAULT (a call that
+errored/timed out) as VACUOUS under heavy host CPU contention, because
+`bin/verdict.py`'s `classify_row` checked VACUOUS before `failureReason ==
+2` — both shapes have zero `componentResults`. Two independent fixes
+landed: `classify_row` now checks FAULT first (a real, general correctness
+fix, covered by a synthetic-row regression test in
+`test_redteam_provider.ClassifyRowFaultVsVacuous`), and `--gate`'s own check
+for this fixture was replaced with a static, subprocess-free text scan of
+the already-generated YAML (`bin/generate.py` never emits a per-row
+`assert:` override, so `disableDefaultAsserts: true` with none of its own
+is, by construction, a zero-assertion row) — a flaky always-on gate is
+worse than a documented static/runtime split. The RUNTIME half of the
+defect (a row promptfoo itself scores a vacuous "No assertions" perfect
+pass) is still real and still tested, just not from `--gate`:
+`test_redteam_design.ProtectedEffectDominanceAndNativeGate`'s
+`test_vacuous_row_is_never_counted_as_pass` and
+`test_real_offline_eval_feeds_a_complete_tranche` exercise it directly, and
+`evals/redteam/run.sh` with no flag / `--offline` still runs that full
+suite for real. See the integration report for the full timeline.
 
 `11-weakened-guard` is the most important: the plugin stays structurally perfect
 (valid JSON, parseable shell, pack present) and only the safety invariant is

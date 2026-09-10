@@ -1,0 +1,26 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
+      "kind": "script",
+      "name": "scaffold-run.sh",
+      "source_plugin": "redgate"
+    }
+  ],
+  "card_id": "redgate-neg-03",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/redgate/redgate-neg-03/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "truncate-manifest",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/redgate/redgate-neg-03/fixtures/pass",
+  "plugin": "redgate",
+  "task_path": "evals/agentic/tasks/redgate/redgate-neg-03/task"
+}

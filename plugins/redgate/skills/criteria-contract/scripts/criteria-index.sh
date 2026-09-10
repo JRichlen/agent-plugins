@@ -57,7 +57,7 @@ emit() {
   printf '| run | # | status | layers | statement |\n'
   printf '|---|---|---|---|---|\n'
   local run slug crit
-  for run in $(ls -d "$RG"/*/ 2>/dev/null | sort); do
+  for run in $(ls -d "$RG"/*/ 2>/dev/null | LC_ALL=C sort); do
     [ -f "$run/manifest" ] || continue           # not a run dir (or synthetic)
     [ -f "$run/CRITERIA.md" ] || continue
     slug="$(basename "$run")"

@@ -1,0 +1,1 @@
+Move configuration loading to the new format across multiple sessions. Define and complete the format first; migration of the consuming service depends on the agreed format. No work has been completed yet.

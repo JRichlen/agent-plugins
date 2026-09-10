@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same single repo and a plain editing capability -- a local typo fix needs no citation ledger.",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling",
+      "kind": "script",
+      "name": "validate-citations.sh",
+      "source_plugin": "fleet-playbook-curator"
+    }
+  ],
+  "card_id": "fleet-playbook-curator-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Just this one repo, no fleet -- fix the 'recieve' typo in README.md.",
+    "Single-repo typo fix: README.md should say 'receive', not 'recieve'."
+  ],
+  "pass_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-neg-01/fixtures/pass",
+  "plugin": "fleet-playbook-curator",
+  "task_path": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-neg-01/task"
+}

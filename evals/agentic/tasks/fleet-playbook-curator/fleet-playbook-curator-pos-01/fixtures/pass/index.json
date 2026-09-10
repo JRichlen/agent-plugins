@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim": "entrypoint documented in README.md",
+      "curated_at": "2026-09-06",
+      "path": "README.md",
+      "repo": "o/new-svc",
+      "sha": "nnn1111"
+    }
+  ]
+}

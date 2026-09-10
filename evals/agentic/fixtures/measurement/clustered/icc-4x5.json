@@ -1,0 +1,11 @@
+{
+  "description": "benchmark-spec §6.3 ICC worked example: 4 cards x 5 binary trials, card pass counts 5,4,1,0 (p=1.0,0.8,0.2,0.0), grand p-bar=0.5. MSB=1.13333 MSW=0.10000 icc_raw=0.6739 deff=3.696.",
+  "cluster_size": 5,
+  "pass_counts": [5, 4, 1, 0],
+  "expected": {
+    "msb": 1.13333,
+    "msw": 0.10000,
+    "icc_raw": 0.6739,
+    "deff": 3.696
+  }
+}

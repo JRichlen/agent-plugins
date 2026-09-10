@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same fleet manifests and a plain read/edit capability, no citation-ledger schema or validator -- it may still cite sources on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-maintained cross-repo notes with no per-claim citation ledger or removed-member handling",
+      "kind": "script",
+      "name": "validate-citations.sh",
+      "source_plugin": "fleet-playbook-curator"
+    }
+  ],
+  "card_id": "fleet-playbook-curator-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "o/new-svc changed and was read this pass -- add a citation for its README.md.",
+    "Curate the fleet playbook for the one repo that changed today, o/new-svc."
+  ],
+  "pass_fixture": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-pos-01/fixtures/pass",
+  "plugin": "fleet-playbook-curator",
+  "task_path": "evals/agentic/tasks/fleet-playbook-curator/fleet-playbook-curator-pos-01/task"
+}

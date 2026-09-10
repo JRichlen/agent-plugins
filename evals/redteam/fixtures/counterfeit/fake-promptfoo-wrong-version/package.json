@@ -1,0 +1,5 @@
+{
+  "name": "promptfoo",
+  "version": "0.123.0",
+  "_comment": "T42 negative-control fixture: a fake install directory claiming a version the pin does not allow. bin/promptfoo.sh must refuse it with 'version drift' before ever exec'ing dist/src/entrypoint.js. See test_redteam_provider.py::PinnedVersionAndConfigValidity."
+}

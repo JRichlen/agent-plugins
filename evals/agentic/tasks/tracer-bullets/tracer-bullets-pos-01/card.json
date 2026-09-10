@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "build layer-by-layer to full depth (schema, then API, then UI) or default to a throwaway prototype, with no kept end-to-end slice",
+      "kind": "skill",
+      "name": "tracer-bullets",
+      "source_plugin": "tracer-bullets"
+    }
+  ],
+  "card_id": "tracer-bullets-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/tracer-bullets/tracer-bullets-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/tracer-bullets/tracer-bullets-pos-01/fixtures/pass",
+  "plugin": "tracer-bullets",
+  "task_path": "evals/agentic/tasks/tracer-bullets/tracer-bullets-pos-01/task"
+}

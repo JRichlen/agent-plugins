@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/event.schema.json",
+  "title": "Event",
+  "description": "One entry of the host event ledger (contract.py Event, §4, §5). Entries are append-only and hash-chained: sha256 covers the entry body plus its predecessor's hash, so an insertion, deletion, reordering or edit is detectable by re-walking the chain. host_signature carries the caller/host distinction that is the sole authority for native provenance (§5.3).",
+  "type": "object",
+  "required": [
+    "index",
+    "event_id",
+    "run_id",
+    "attempt_id",
+    "session_id",
+    "kind",
+    "at",
+    "payload",
+    "prev_hash",
+    "sha256",
+    "host_signature"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "index": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "0-based, dense, monotonic. A gap is a deleted entry."
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Minted by the HOST, never by the subject under test."
+    },
+    "run_id": { "type": "string", "minLength": 1 },
+    "attempt_id": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+    },
+    "session_id": {
+      "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+      "description": "Harness-reported only. A caller-minted uuid appears in a SESSION_OPEN payload, never here as if it were an ack (§10.2)."
+    },
+    "kind": {
+      "enum": [
+        "run-start", "run-end",
+        "session-open", "session-ack",
+        "turn-start", "turn-ack", "turn-end",
+        "spawn", "exit",
+        "cancel-issued", "cancel-observed", "late-output",
+        "approval-granted", "correction", "compaction",
+        "verifier-run", "usage"
+      ]
+    },
+    "at": { "type": "string", "format": "date-time", "maxLength": 32 },
+    "payload": {
+      "type": "object",
+      "description": "OPEN MAP by design (§4). The payload is harness data whose keys are not knowable in advance -- §10.3 requires {\"parent_session_id\": \"<old>\"} on a fork, for one. It is validated by the driver's StreamGrammar, not here."
+    },
+    "prev_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "'0' * 64 at index 0."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(prev_hash + '\\n' + canonical_json(body)) where body is this object with 'sha256' and host_signature.value removed (§5.2)."
+    },
+    "host_signature": { "$ref": "#/$defs/host_signature" }
+  },
+  "$defs": {
+    "host_signature": {
+      "type": "object",
+      "required": ["value_class", "algo", "key_id", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "value_class": {
+          "enum": ["host-observed", "caller-asserted"],
+          "description": "host-observed: the host process itself witnessed the fact. caller-asserted: the thing under test reported it -- recorded, but zero provenance weight."
+        },
+        "algo": { "enum": ["hmac-sha256", "none"] },
+        "key_id": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }],
+          "description": "Names the run-scoped key. NEVER the key itself."
+        },
+        "value": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "if": {
+        "properties": { "value_class": { "const": "host-observed" } },
+        "required": ["value_class"]
+      },
+      "then": {
+        "properties": {
+          "algo": { "const": "hmac-sha256" },
+          "value": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "key_id": { "type": "string", "minLength": 1 }
+        }
+      },
+      "else": {
+        "properties": {
+          "algo": { "const": "none" },
+          "value": { "type": "null" },
+          "key_id": { "type": "null" }
+        }
+      }
+    }
+  }
+}

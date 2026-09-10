@@ -1,0 +1,8 @@
+{
+  "metric": "pass@k",
+  "n": 4,
+  "k": 2,
+  "successes": 1,
+  "estimate": 0.25,
+  "evidence_scope": "supplied-offline-fixture"
+}

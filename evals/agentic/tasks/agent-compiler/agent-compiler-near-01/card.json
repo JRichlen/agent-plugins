@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same registry directory and the same request, with plain filesystem read/write only -- no kernel MCP tools, no hooks -- so it can freely take the freehand shortcut the request literally asks for.",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement",
+      "kind": "mcp",
+      "name": "kernel",
+      "source_plugin": "agent-compiler"
+    }
+  ],
+  "card_id": "agent-compiler-near-01",
+  "expected_boundary_verdict": "compile-with-ceiling-not-freehand",
+  "fail_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Skip the registry stuff, just hand-write a security reviewer persona file for me.",
+    "I don't need the compiler ceremony -- just draft the reviewer persona markdown yourself."
+  ],
+  "pass_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/fixtures/pass",
+  "plugin": "agent-compiler",
+  "task_path": "evals/agentic/tasks/agent-compiler/agent-compiler-near-01/task"
+}

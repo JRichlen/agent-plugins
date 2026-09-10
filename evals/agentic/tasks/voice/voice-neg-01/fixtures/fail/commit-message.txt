@@ -1,0 +1,3 @@
+Verdict: fix the pagination off-by-one error.
+
+Adjust the loop bound so the last page is included.

@@ -950,6 +950,43 @@ json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
 # read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
 def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
 json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
+# Promptfoo 0.122 also uses failureReason=1 for a failed grader call/JSON parse.
+# The trusted grading component, not subject text or .error, identifies it.
+def grow(desc, marker=True):
+    r = frow(desc)
+    r["error"] = "Could not extract JSON from llm-rubric response"
+    r["gradingResult"] = {"pass":False, "componentResults":[{
+        "pass":False, "score":0, "reason":r["error"],
+        "assertion":{"type":"llm-rubric"}, "metadata":{"graderError":marker}}]}
+    return r
+json.dump({"results":{"results": rows("G",4,4)+[grow("G")]}}, open(d+"/grader-fault.json","w"))
+json.dump({"results":{"results": [grow("G") for _ in range(3)]}}, open(d+"/grader-starved.json","w"))
+mixed = grow("G")
+mixed["gradingResult"]["componentResults"].append({
+    "pass":False,"score":0,"reason":"Expected regex X", "assertion":{"type":"regex","value":"X"}})
+json.dump({"results":{"results": rows("G",4,4)+[mixed]}}, open(d+"/grader-mixed-fail.json","w"))
+# An ordinary component failure is not independently decisive under aggregate
+# threshold or custom scoring overrides: the missing grade may change verdict.
+for field, value in [("threshold",0.9), ("assertScoringFunction","file://score.js")]:
+    alternate = json.loads(json.dumps(mixed))
+    alternate["testCase"][field] = value
+    json.dump({"results":{"results":rows("G",4,4)+[alternate]}}, open(d+"/grader-"+field+".json","w"))
+for label, marker in [("string","true"),("number",1),("false",False)]:
+    json.dump({"results":{"results":rows("G",4,4)+[grow("G",marker)]}}, open(d+"/grader-marker-"+label+".json","w"))
+quoted = frow("G")
+quoted["response"]["output"] = '{"metadata":{"graderError":true}}'
+json.dump({"results":{"results":rows("G",4,4)+[quoted]}}, open(d+"/grader-quoted.json","w"))
+shape_rows = []
+for label, body in [("THINK", "</think>" * 11), ("EMPTY", ""), ("LENGTH", "unfinished answer")]:
+    failed = frow(label)
+    failed["response"].update(output=body, finishReason="length")
+    shape_rows.append(failed)
+    json.dump({"results":{"results":rows(label,4,4)+[failed]}}, open(d+"/shape-"+label+".json","w"))
+transport = erow("TRANSPORT")
+transport["response"]["output"] = "</think>" * 11
+json.dump({"results":{"results":rows("TRANSPORT",4,4)+[transport]}}, open(d+"/shape-transport.json","w"))
+mixed["testCase"]["description"] = "MIXED"
+json.dump({"results":{"results":shape_rows+[transport,grow("GRADER_ONLY"),mixed]}}, open(d+"/shape-sampler.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -996,6 +1033,61 @@ if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/d
   bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
 else
   ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-fault.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+  ok "pass-rate: a typed grader parse fault is excluded from valid judgments"
+else
+  bad "pass-rate: a typed grader parse fault was scored as a subject failure"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-starved.json" --floor 0.9 --min-valid 2 2>&1); then
+  bad "pass-rate: all grader faults passed without any valid judgments"
+elif [[ "$_score" == *"[STARVED] 0/0 valid"*"3 FAULT excluded"* ]]; then
+  ok "pass-rate: all grader faults fail closed as insufficient valid judgments"
+else
+  bad "pass-rate: all grader faults were misreported as valid subject failures"
+fi
+if _score=$(bash "$_pr" "$_tmp/grader-mixed-fail.json" --floor 0.9 --min-valid 2 2>&1); then
+  bad "pass-rate: a grader fault concealed an independently failed mandatory assertion"
+elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+  ok "pass-rate: an independent mandatory assertion failure stays valid despite another grader fault"
+else
+  bad "pass-rate: mixed grader fault/mandatory failure denominator is wrong"
+fi
+for _variant in threshold assertScoringFunction; do
+  if _score=$(bash "$_pr" "$_tmp/grader-$_variant.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+    ok "pass-rate: $_variant does not turn a partial grade into a decisive failure"
+  else
+    bad "pass-rate: $_variant scored an incomplete aggregate as a valid judgment"
+  fi
+done
+for _variant in marker-string marker-number marker-false quoted; do
+  if _score=$(bash "$_pr" "$_tmp/grader-$_variant.json" --floor 0.9 --min-valid 2 2>&1); then
+    bad "pass-rate: $_variant laundered a real failure as a grader fault"
+  elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+    ok "pass-rate: $_variant cannot manufacture the typed grader fault signal"
+  else
+    bad "pass-rate: $_variant changed the valid-failure denominator"
+  fi
+done
+for _shape in THINK EMPTY LENGTH; do
+  if _score=$(bash "$_pr" "$_tmp/shape-$_shape.json" --floor 0.9 --min-valid 2 2>&1); then
+    bad "pass-rate: $_shape output shape concealed a subject failure"
+  elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
+    ok "pass-rate: $_shape without a trusted fault signal remains a valid failure"
+  else
+    bad "pass-rate: $_shape changed the valid-failure denominator"
+  fi
+done
+if _score=$(bash "$_pr" "$_tmp/shape-transport.json" --floor 0.9 --min-valid 2 2>&1) && [[ "$_score" == *"4/4 valid"*"1 FAULT excluded"* ]]; then
+  ok "pass-rate: explicit transport failure remains FAULT regardless of output shape"
+else
+  bad "pass-rate: output shape overrode a trusted transport fault"
+fi
+if python3 evals/paid/calibration/sample-for-labelling.py "$_tmp/shape-sampler.json" --n 100 --sheet "$_tmp/shape-sheet.json" --verdicts "$_tmp/shape-verdicts.json" >/dev/null 2>&1 \
+   && python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); v=json.load(open(sys.argv[2])); assert sorted(r["scenario"] for r in s)==["EMPTY","LENGTH","MIXED","THINK"]; assert all(v[r["hash"]]=="fail" for r in s)' "$_tmp/shape-sheet.json" "$_tmp/shape-verdicts.json"; then
+  ok "calibration: missing/truncated answers remain visible failures; trusted faults lack judgments"
+else
+  bad "calibration: output shape hid valid failures or a trusted fault fabricated a judgment"
 fi
 rm -rf "$_tmp"
 
@@ -1118,6 +1210,9 @@ def row(desc, out, comps):
 rows = [row("S1", "a", [("llm-rubric", True), ("icontains", False)]),   # row fails overall; rubric passed
         row("S2", "b", [("icontains", True)]),                           # no model-graded component
         row("S3", "c", [("llm-rubric", False)])]
+faulted = row("S4", "grader never judged this", [("llm-rubric",False),("icontains",False)])
+faulted["gradingResult"]["componentResults"][0]["metadata"] = {"graderError":True}
+rows.append(faulted)  # a decisive deterministic FAIL cannot invent an LLM judgment
 json.dump({"results": {"results": rows}}, open(d + "/mg.json", "w"))
 PYG
 if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/mg.json" --n 100 --model-graded-only --sheet "$_mx/mg.sheet.json" --verdicts "$_mx/mg.v.json" >/dev/null 2>&1 \
@@ -1668,6 +1763,27 @@ if [ -f "ci/check_behavior_surfaces.py" ] && [ -f ".github/workflows/evals.yml" 
 fi
 # ─── END RQ-001 behavior-surface trigger map ─────────────────────────────────
 
+# ─── Paid subject scheduling (offline) ──────────────────────────────────────
+# Routing and behavioral packs share one provider's in-flight budget. Protect
+# both job order and per-command caps without changing trials or scoring.
+# Synthetic roots without the paid workflow have no schedule to validate;
+# a present workflow with a missing/broken checker fails closed.
+if [ -f ".github/workflows/evals.yml" ]; then
+  group "paid subject scheduling (routing then serialized packs)"
+  if out="$(python3 ci/check_paid_scheduling.py --repo . --self-test 2>&1)"; then
+    ok "paid scheduling regressions rejected by offline self-test"
+  else
+    bad "paid-scheduling drift: scheduling guard self-test failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+  if out="$(python3 ci/check_paid_scheduling.py --repo . 2>&1)"; then
+    ok "paid subject jobs and commands serialize without losing selection guards"
+  else
+    bad "paid-scheduling drift: provider calls can overlap or selection changed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
+
 # ─── BEGIN RQ-002 typed route/step contracts (offline) ───────────────────────
 # The composition routing pack (evals/routing/) and its redgate trajectory pack
 # (evals/routing/trajectory/) grade a typed ROUTE:/STEP: line through fail-closed
@@ -1700,6 +1816,16 @@ if [ -f evals/routing/route-contract.test.js ]; then
       fi
     else
       bad "route/step contract: routing pack present without trajectory/step-contract.test.js (fail-closed)"
+    fi
+    if [ -f evals/routing/subject-provider-config.test.py ]; then
+      if out="$(python3 evals/routing/subject-provider-config.test.py 2>&1)"; then
+        ok "subject provider: GLM configs contain native mandatory max reasoning passthrough"
+      else
+        bad "subject provider: GLM request-shape test failed"
+        printf '%s\n' "$out" | sed 's/^/    /'
+      fi
+    else
+      bad "subject provider: routing pack present without subject-provider-config.test.py (fail-closed)"
     fi
   fi
 fi
@@ -1758,6 +1884,73 @@ if [ -e ".git" ]; then
   fi
 fi
 # ─── END behavioral-pack no-tools clause ─────────────────────────────────────
+
+# Price-monitor operational controls; absent only in synthetic counterfeit roots.
+if [ -e .git ]; then
+  group "model pricing controls (offline)"
+  if out="$(python3 ci/model-pricing/test_monitor.py 2>&1)"; then
+    ok "model pricing: normalization, authority and durable reservation controls"
+  else
+    bad "model pricing: offline control suite failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+fi
+
+# --- 22. Agentic and red-team suites (offline, fail-closed) ------------------
+# Both new eval dirs run their own offline suite here so a broken framework reds the
+# always-on tier. Fail-closed: a MISSING runner is a failure, not a skip — the same rule
+# section 10 applies to per-plugin packs. The gate runs `--gate`, the root-portable
+# subset (see the contract's 9.3): tests that need the real 25-plugin marketplace, and
+# any test that itself invokes evals/cheap/run.sh, are excluded so this cannot recurse.
+group "agentic suite (offline)"
+if [ -f "evals/agentic/run.sh" ]; then
+  if out="$(evals/agentic/run.sh --gate 2>&1)"; then
+    ok "evals/agentic/run.sh --gate"
+  else
+    bad "agentic suite gate: evals/agentic/run.sh --gate failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+else
+  bad "agentic suite gate: evals/agentic/run.sh is missing"
+fi
+
+group "redteam suite (offline)"
+if [ -f "evals/redteam/run.sh" ]; then
+  if out="$(evals/redteam/run.sh --gate 2>&1)"; then
+    ok "evals/redteam/run.sh --gate"
+  else
+    bad "redteam suite gate: evals/redteam/run.sh --gate failed"
+    printf '%s\n' "$out" | sed 's/^/    /'
+  fi
+else
+  bad "redteam suite gate: evals/redteam/run.sh is missing"
+fi
+
+# --- 23. Gitignored generated content is never left tracked ------------------
+# .gitignore documents directories as generated and "never committed" — eval
+# artifacts, promptfoo debug/error logs, canary/listener output, under
+# evals/redteam/.artifacts/ in particular. Adding the ignore RULE does not
+# retroactively untrack a path already tracked before the rule existed: git
+# only consults .gitignore for paths it does not already know about (REPAIR
+# F1/blocker — 78 files under evals/redteam/.artifacts/ stayed tracked here
+# after the ignore rule landed, so every real evals/redteam tool invocation
+# kept dirtying tracked state; the fix is `git rm -r --cached <path>`, a git
+# index change outside this tier's own remit, which is why this check exists
+# to hold the gap open and visible instead of letting it re-drift silently).
+# REPO-level gate: needs a real .git, so it is inert in the synthetic
+# counterfeit root, which is not itself a git worktree.
+if [ -e ".git" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  group "gitignored generated content is not tracked"
+  _gi_hits="$(git ls-files -z 2>/dev/null | git check-ignore --no-index -z --stdin 2>/dev/null | tr '\0' '\n' | grep -v '^$')"
+  if [ -z "$_gi_hits" ]; then
+    ok "no tracked file matches a .gitignore pattern"
+  else
+    _gi_n=$(printf '%s\n' "$_gi_hits" | grep -c .)
+    bad "$_gi_n tracked file(s) match a .gitignore pattern (needs 'git rm -r --cached <path>'):"
+    printf '%s\n' "$_gi_hits" | head -5 | sed 's/^/    /'
+    if [ "$_gi_n" -gt 5 ]; then printf '    ... and %d more\n' "$((_gi_n - 5))"; fi
+  fi
+fi
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"

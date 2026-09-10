@@ -1,0 +1,13 @@
+{
+  "name": "invented-flag",
+  "binary": "/home/jrichlen/.local/bin/claude",
+  "help_argv": ["--help"],
+  "argv_template": ["--print", "--session-name", "{session_name}"],
+  "optional_argv": {"fresh": []},
+  "env": {"PATH": "/usr/bin:/bin", "HOME": "{home}", "LANG": "en_US.UTF-8"},
+  "cwd": "{workspace}",
+  "timeout_s": 600,
+  "stream_format": "stream-json",
+  "grammar": "claude-stream-json",
+  "adapter_class": "native"
+}

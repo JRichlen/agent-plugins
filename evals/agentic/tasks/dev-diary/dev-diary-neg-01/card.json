@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same sprint facts and a plain editing capability, no journal template -- a formal status report needs none of that.",
+  "capabilities": [
+    {
+      "generic_equivalent": "no journal; work summarized ad hoc if at all, with no redaction pass or house style",
+      "kind": "skill",
+      "name": "dev-diary",
+      "source_plugin": "dev-diary"
+    }
+  ],
+  "card_id": "dev-diary-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/dev-diary/dev-diary-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Draft a professional weekly status report on last week's sprint, third person, for my manager.",
+    "I need an email-ready sprint status update, formal tone, not a personal log."
+  ],
+  "pass_fixture": "evals/agentic/tasks/dev-diary/dev-diary-neg-01/fixtures/pass",
+  "plugin": "dev-diary",
+  "task_path": "evals/agentic/tasks/dev-diary/dev-diary-neg-01/task"
+}

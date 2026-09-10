@@ -15,8 +15,8 @@ turns one or more results.json files into two files:
                    two on the hash.
 
 Sampling is seeded (default seed 0) so a sheet is reproducible from the same
-results. Rows the scorer treats as transport FAULTs are excluded — nobody
-should label a 504.
+results. Transport and grader FAULTs are excluded because they have no valid
+judgment. Empty/truncated subject answers remain visible failed samples.
 
 Usage:
   sample-for-labelling.py RESULTS.json [RESULTS2.json ...] --n 20 [--seed 0]
@@ -29,9 +29,7 @@ when comparing grader against grader (measurement 3), so a deterministic
 assertion such as `icontains` cannot force the same verdict on both sides.
 Exit: 0 wrote both files; 2 nothing usable to sample.
 """
-import argparse, hashlib, json, random, re, sys
-
-_DEGEN = re.compile(r'^(?:\s*</?think>\s*)+$', re.IGNORECASE)
+import argparse, hashlib, json, random, sys
 
 def rows_of(doc):
     res = doc.get("results")
@@ -74,17 +72,50 @@ def model_graded_verdict(r):
     mg = [c for c in comps if _is_model_graded(c.get("assertion"))]
     if not mg:
         return None
+    if any(has_grader_fault(c) for c in mg):
+        # An independent deterministic failure can settle the overall row,
+        # but cannot supply the model judgment this mode is comparing.
+        return "fail" if any(c.get("pass") is False and not has_grader_fault(c) for c in mg) else None
     return "pass" if all(c.get("pass") is True for c in mg) else "fail"
 
-def is_fault(r):
+def has_grader_fault(result):
+    """Read typed grading evidence, never subject text or an error string."""
+    if not isinstance(result, dict):
+        return False
+    metadata = result.get("metadata")
+    if isinstance(metadata, dict) and metadata.get("graderError") is True:
+        return True
+    components = result.get("componentResults")
+    return isinstance(components, list) and any(has_grader_fault(c) for c in components)
+
+def independent_assertion_failure(r, doc):
+    # Match pass-rate.sh's default conjunction contract; aggregate/custom
+    # scoring and flattened nested sets cannot establish this from one leaf.
+    default = ((doc or {}).get("config") or {}).get("defaultTest") or {}
+    for scope in (default, r.get("testCase") or {}):
+        if scope.get("threshold") is not None or scope.get("assertScoringFunction") is not None:
+            return False
+    components = (r.get("gradingResult") or {}).get("componentResults")
+    if not isinstance(components, list) or any(
+        not isinstance(c, dict) or "componentResults" in c or
+        (isinstance(c.get("metadata"), dict) and "assertionSet" in c["metadata"])
+        for c in components
+    ):
+        return False
+    return r.get("success") is not True and any(
+        c.get("pass") is False and not has_grader_fault(c) for c in components
+    )
+
+def is_fault(r, doc=None):
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
         return True
+    if has_grader_fault(r.get("gradingResult")):
+        return not independent_assertion_failure(r, doc)
     no_reason = fr is None or (isinstance(fr, str) and not fr.strip())
     if no_reason and isinstance(r.get("error"), str) and r["error"].strip():
         return True
-    body = output_text(r).strip()
-    return (r.get("success") is not True) and bool(body) and bool(_DEGEN.match(body))
+    return False
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -102,11 +133,9 @@ def main():
         except Exception as e:
             print(f"sample: cannot parse {path}: {e}", file=sys.stderr); return 2
         for r in rows_of(doc):
-            if is_fault(r):
+            if is_fault(r, doc):
                 continue
             body = output_text(r)
-            if not body.strip():
-                continue
             sc = scenario(r)
             verdict = "pass" if r.get("success") is True else "fail"
             if a.model_graded_only:
@@ -120,7 +149,7 @@ def main():
             pool.setdefault(h, {"hash": h, "scenario": sc, "request": request_of(r),
                                 "output": body, "verdict": verdict})
     if not pool:
-        print("sample: no usable rows (all faults or empty)", file=sys.stderr); return 2
+        print("sample: no usable judgments (all faults or no matching assertions)", file=sys.stderr); return 2
     items = sorted(pool.values(), key=lambda x: x["hash"])
     random.Random(a.seed).shuffle(items)
     items = items[: a.n]

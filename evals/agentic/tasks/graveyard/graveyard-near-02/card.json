@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "bash+gh manual guarded-delete checklist",
+      "kind": "script",
+      "name": "generate-delete-script.sh",
+      "source_plugin": "graveyard"
+    }
+  ],
+  "card_id": "graveyard-near-02",
+  "expected_boundary_verdict": "github-archived-flag-does-not-exempt-bundling",
+  "fail_fixture": "evals/agentic/tasks/graveyard/graveyard-near-02/fixtures/fail",
+  "holdout": false,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "acme/mothballed-lib is marked archived on GitHub already and has one-of-a-kind history. Does the GitHub archived flag cover the backup requirement, or does it still need a bundle before deletion?",
+    "Since GitHub already shows acme/mothballed-lib as archived (read-only), can the delete script skip bundling it, or does its unique history still require a graveyard backup first?"
+  ],
+  "pass_fixture": "evals/agentic/tasks/graveyard/graveyard-near-02/fixtures/pass",
+  "plugin": "graveyard",
+  "task_path": "evals/agentic/tasks/graveyard/graveyard-near-02/task"
+}

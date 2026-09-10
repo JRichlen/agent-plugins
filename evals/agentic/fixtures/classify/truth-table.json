@@ -1,0 +1,154 @@
+{
+  "rows": [
+    {
+      "note": "normal successful completion, well inside the time budget",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": true,
+        "verifier_verdict": true, "verifier_green_at_ms": 4000,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 5000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 1200
+      },
+      "expected": "delivered"
+    },
+    {
+      "note": "terminal_state is about process completion, not correctness -- a delivered-but-wrong answer is still DELIVERED; Verdict.passed carries correctness separately",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": true,
+        "verifier_verdict": false, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 3000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 800
+      },
+      "expected": "delivered"
+    },
+    {
+      "note": "clean exit but nothing produced",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 2000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 0
+      },
+      "expected": "incomplete"
+    },
+    {
+      "note": "ran past the wall-clock limit on a clean exit, no signal, nothing delivered: the agent neither finished nor stopped on time",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 61000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 0
+      },
+      "expected": "incomplete"
+    },
+    {
+      "note": "user-issued cancel mid-turn, process died on SIGTERM",
+      "facts": {
+        "exit_status": null, "signalled": "SIGTERM", "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": 15000, "wall_clock_ms": 15200,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 50
+      },
+      "expected": "cancelled"
+    },
+    {
+      "note": "T02 negative control: a transport crash with zero output must not classify incomplete -- crediting a start that never happened",
+      "facts": {
+        "exit_status": null, "signalled": null, "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 500,
+        "wall_clock_limit_ms": 60000, "transport_error": "connection reset by peer", "bytes_out": 0
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "OOM-killed mid-run with no cancel issued: an infrastructure fault, distinct from a user stop",
+      "facts": {
+        "exit_status": null, "signalled": "SIGKILL", "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 42000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 0
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "reaped with a non-zero exit status",
+      "facts": {
+        "exit_status": 1, "signalled": null, "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 1200,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 0
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "process never reaped: no exit_status, no signal, no cancel, no transport error -- the harness failed to observe the outcome at all",
+      "facts": {
+        "exit_status": null, "signalled": null, "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 60500,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 0
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "T03: deliverable present, verifier went green at 45s (inside the 60s budget), then the harness's own end-of-budget SIGKILL landed -- must not read as FAULT",
+      "facts": {
+        "exit_status": null, "signalled": "SIGKILL", "deliverable_present": true,
+        "verifier_verdict": true, "verifier_green_at_ms": 45000,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 60050,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 2048
+      },
+      "expected": "timeout-after-delivery"
+    },
+    {
+      "note": "T03 negative control: deliverable_present alone with no verified-green timestamp must NOT be upgraded to timeout-after-delivery -- an ordinary SIGKILL-at-limit fault, the verifier never actually ran",
+      "facts": {
+        "exit_status": null, "signalled": "SIGKILL", "deliverable_present": true,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 60050,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 2048
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "T03 negative control: a deliverable that the verifier explicitly rejected must not be upgraded to timeout-after-delivery either",
+      "facts": {
+        "exit_status": null, "signalled": "SIGKILL", "deliverable_present": true,
+        "verifier_verdict": false, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 60050,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 2048
+      },
+      "expected": "fault"
+    },
+    {
+      "note": "cancel takes priority over an apparent transport fault: killing the connection to enact the cancel must not read as an infra fault",
+      "facts": {
+        "exit_status": null, "signalled": "SIGTERM", "deliverable_present": false,
+        "verifier_verdict": null, "verifier_green_at_ms": null,
+        "cancel_issued_at_ms": 8000, "wall_clock_ms": 8100,
+        "wall_clock_limit_ms": 60000, "transport_error": "connection reset by peer", "bytes_out": 0
+      },
+      "expected": "cancelled"
+    },
+    {
+      "note": "exactly at the wall-clock limit, not over it: still an ordinary delivered completion",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": true,
+        "verifier_verdict": true, "verifier_green_at_ms": 59999,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 60000,
+        "wall_clock_limit_ms": 60000, "transport_error": null, "bytes_out": 900
+      },
+      "expected": "delivered"
+    },
+    {
+      "note": "a transport_error string with real bytes_out is not automatically a fault -- the rule is specifically zero-byte transport failures, not any transport blip",
+      "facts": {
+        "exit_status": 0, "signalled": null, "deliverable_present": true,
+        "verifier_verdict": true, "verifier_green_at_ms": 1000,
+        "cancel_issued_at_ms": null, "wall_clock_ms": 2000,
+        "wall_clock_limit_ms": 60000, "transport_error": "flaky network blip, recovered", "bytes_out": 500
+      },
+      "expected": "delivered"
+    }
+  ]
+}

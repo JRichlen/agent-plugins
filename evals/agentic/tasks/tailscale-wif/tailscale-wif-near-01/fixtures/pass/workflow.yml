@@ -1,0 +1,5 @@
+permissions:
+  id-token: write
+with:
+  oauth-client-id: ${{ vars.TS_OIDC_CLIENT_ID }}
+  audience: ${{ vars.TS_OIDC_AUDIENCE }}

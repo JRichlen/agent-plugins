@@ -25,8 +25,8 @@ ground, not from the original sketch.
 |---|---|---|---|---|
 | L1 decision-point probes | **partly** — the redgate trajectory pack (5 cases, `repeat: 5`) | `evals/routing/trajectory/` | ARM before TRACE; explicit MAJOR stop on a fence widening; silence and adjacent approval are not consent; a pending gate survives a resume | gate *classification* (PATCH auto-pass under mandate vs MAJOR stop); T0 pass-through; re-pin refusal; JUDGE independence; anything outside redgate |
 | L2 plan-audit / composition | **partly** — the typed `ROUTE:` composition contract (14 scenarios, S1–S4 composition, 8 fail-closed rules) | `evals/routing/` | which specialist, whether an envelope, which guards, who owns the blocking interaction — for one request | that the model's *plan* applies those dependencies explicitly (criteria declared when invoking redgate, a gate class placed on the irreversible step); anything about Agent OS |
-| L3 trajectory + artifact audit | **no** | — | — | that a real run writes `.redgate/<slug>/` the way the protocol says, and honors its own state across compaction |
-| L4 cross-plugin composition runs | **no** | — | — | that redgate + a specialist + Agent OS installed together behave at the boundary each claims |
+| L3 trajectory + artifact audit | **framework live (offline forms)** — `evals/agentic/`; native runs approval-gated | `evals/agentic/tests/test_protocols.py` (T19–T24), `test_lifecycle.py` (T50 compaction) | real hook subprocess execution against the live plugin tree, including a real `SessionStart: compact` payload delivered to redgate's and voice's own handlers, and their state surviving it | a real multi-turn native harness session writing `.redgate/<slug>/` itself (native-required, approval-gated: `T26`–`T29`) |
+| L4 cross-plugin composition runs | **framework live (offline forms)** — `evals/agentic/`; native runs approval-gated | `evals/agentic/framework/pairing.py` (T16–T17), `manifests/arms/*.json` | the full-package / guidance-only / composition / version estimand arms are distinct, correctly shaped, and exposure-parity-checked against a matched baseline | a real installed-together multi-plugin run driven by a live native harness (same native-required gate as L3) |
 
 Everything below inherits the [statistical spine](testing.md#the-statistical-spine):
 repeated trials, a k-of-N floor over *valid* samples, FAULT-versus-verdict
@@ -313,8 +313,16 @@ Each is one increment from §4 and should be filed when picked up, not before:
   pass-through; re-pin refusal; JUDGE independence; surface-specific probes;
   graveyard trajectory pack.
 - L2: plan-audit contract and terse twins; stage-two rubric; Agent OS row.
-- L3: `.redgate/` audit script; pier task and gate-responder.
-- L4: release-cadence composition run.
+- ~~L3: `.redgate/` audit script; pier task and gate-responder.~~ **Framework
+  live (offline forms) — `evals/agentic/`; native runs approval-gated**
+  (real hook fixtures + T50 compaction path). The remaining gap (a real
+  multi-turn native harness session) is tracked as `T26`–`T29`,
+  native-required and approval-gated — not a new ticket.
+- ~~L4: release-cadence composition run.~~ **Framework live (offline forms)
+  — `evals/agentic/`; native runs approval-gated** (composition/version
+  estimand arms, `pairing.py`, T16–T17). The remaining gap (plugins actually
+  installed together, driven by a live native harness)
+  is the same native-required gate as L3, not a new ticket.
 - Routing: exact-slot regrade of discipline rows (blocked on #84); roster
   description of redgate carries the envelope on terse destructive requests
   (measured by L2's terse twins first).
