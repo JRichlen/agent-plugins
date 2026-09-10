@@ -570,7 +570,10 @@ jobs:
               + (if $got == "" then
                    "\n--- transport (empty output is a FAULT, not a verdict) ---\n"
                    + "  failureReason: " + ((.failureReason // "<unset>") | tostring)
-                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring | .[0:600])
+                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring
+                        | gsub("https?://[^\\s\"]+"; "<url-redacted>")
+                        | gsub("[0-9a-fA-F]{32,}"; "<hex-redacted>")
+                        | .[0:300])
                  else "" end)
               + "\n--- per-slot expected vs got ---\n"
               + (["specialist", "envelope", "guards", "interaction_owner"]
@@ -611,7 +614,10 @@ jobs:
               + (if $got == "" then
                    "\n--- transport (empty output is a FAULT, not a verdict) ---\n"
                    + "  failureReason: " + ((.failureReason // "<unset>") | tostring)
-                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring | .[0:600])
+                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring
+                        | gsub("https?://[^\\s\"]+"; "<url-redacted>")
+                        | gsub("[0-9a-fA-F]{32,}"; "<hex-redacted>")
+                        | .[0:300])
                  else "" end)
               + "\n--- per-slot expected vs got ---\n"
               + (["action", "gate", "disposition", "proceed"]
