@@ -1,0 +1,2 @@
+{"model":"qwen/qwen3.8-flash","max_tokens":8192,"messages":[{"role":"user","content":"ping"}]}
+{"model":"qwen/qwen3.8-flash","max_tokens":8192,"messages":[{"role":"user","content":"ping"}]}

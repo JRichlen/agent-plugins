@@ -1320,8 +1320,90 @@ if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
     print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
 if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
     print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
-print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
+# The refresh is the workflow that SPENDS the budget, so the subject-model
+# reachability preflight must run here and must run BEFORE the paid pack loop.
+# Preflighting only evals.yml left the expensive path unguarded (PR #131 review).
+pre = re.search(r"^\s*-\s*name:.*preflight.*subject model.*$", txt, re.M)
+loop = re.search(r"^\s*-\s*name:\s*run packs, capture real example snapshots\s*$", txt, re.M)
+if not pre:
+    print("  FAIL refresh-examples.yml has no subject-model preflight — a revoked key sends it straight into a ~40-minute paid loop"); sys.exit(1)
+if not loop:
+    print("  FAIL refresh-examples.yml no longer has the 'run packs' step the preflight is meant to guard"); sys.exit(1)
+if pre.start() > loop.start():
+    print("  FAIL refresh-examples.yml runs the subject-model preflight AFTER the paid pack loop — the money is already spent by then"); sys.exit(1)
+pre_step = txt[pre.end(): (re.search(r"^\s*-\s*name:", txt[pre.end():], re.M).start() + pre.end())]
+if "check-subject-model.sh" not in pre_step:
+    print("  FAIL refresh-examples.yml preflight does not invoke evals/paid/check-subject-model.sh"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before the cheap tier, fails closed on a zero-capture run, and preflights the subject model before spending"); sys.exit(0)
 PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2a. The subject preflight reserves what the PACKS reserve -------------
+# OpenRouter prices a request against max_tokens, not against what comes back,
+# so an 8-token ping is affordable in exactly the situation where every pack row
+# is refused. That is not theoretical: on 2026-09-10 this check reported the
+# subject reachable with $17.92 remaining while all 12 packs got
+# `402 ... you requested up to 8192 tokens, but can only afford 5385`. A
+# preflight that cannot predict the failure it exists to prevent is decoration.
+# Coupled: hard-code the ping size, or stop reading max_tokens from the pack
+# configs, and this goes red.
+group "subject preflight pings at the pack's max_tokens, not a token-sized ping"
+python3 - "$REPO_ROOT" <<'PYP'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+if "max_tokens" not in txt:
+    prob.append("the script never reads max_tokens from the pack configs, so the ping cannot match what the packs request")
+# the ping body must interpolate a variable, never a literal ceiling
+m = re.search(r'\\"max_tokens\\":([^,]+),', txt)
+if not m:
+    prob.append("no max_tokens field found in the ping request body")
+elif re.fullmatch(r"\d+", m.group(1).strip()):
+    prob.append(f"the ping hard-codes max_tokens={m.group(1).strip()} instead of using the ceiling the packs declare")
+if prob:
+    print("  FAIL subject preflight: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight reserves the pack-declared max_tokens, so a 402 surfaces before the packs run"); sys.exit(0)
+PYP
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2b. The failing-transcript dump surfaces the TRANSPORT error ----------
+# A provider error leaves .response.output EMPTY, so a dump that prints only the
+# output renders "the API refused us" as a blank box that reads like "the model
+# said nothing". On 2026-09-09 that cost two runs and a wrong public diagnosis:
+# every failing row carried `402 Payment Required — would exceed your available
+# credits given your current in-flight requests` in .error, while this dump
+# showed empty output and the write-up said "the endpoint returns empty
+# completions". The dump must print the error, and must NOT mislabel a rubric
+# failure as transport — promptfoo >= 0.122 puts assertion text in .error too,
+# so the discriminator is .failureReason, exactly as pass-rate.sh uses it.
+group "failing-transcript dump surfaces the provider error, not just empty output"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "evals.yml")
+if not os.path.exists(wf):
+    print("  PASS evals.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+m = re.search(r"^\s*-\s*name:\s*show failing transcripts\s*$", txt, re.M)
+if not m:
+    print("  FAIL evals.yml has no 'show failing transcripts' step — a failing pack would print nothing to diagnose"); sys.exit(1)
+nxt = re.search(r"^\s*-\s*name:", txt[m.end():], re.M)
+step = txt[m.end(): m.end() + (nxt.start() if nxt else len(txt))]
+prob = []
+if ".error" not in step:
+    prob.append("the dump never reads .error, so a transport failure prints as an empty output box (the 402 that was misdiagnosed as 'empty completions')")
+if "TRANSPORT ERROR" not in step:
+    prob.append("the dump has no labelled transport-error section, so a reader cannot tell a refused call from a silent model")
+if "failureReason" not in step:
+    prob.append("the dump does not consult .failureReason, so an assertion message (which promptfoo >= 0.122 also puts in .error) would be mislabelled as a transport error")
+if prob:
+    print("  FAIL evals.yml failing-transcript dump: " + "; ".join(prob)); sys.exit(1)
+print("  PASS evals.yml failing-transcript dump prints the provider error and distinguishes it from a rubric failure"); sys.exit(0)
+PYD
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
@@ -1348,14 +1430,28 @@ else
     bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
     printf '%s\n' "$cap_out" | sed 's/^/    /'
   else
-    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
-import json, sys
+    python3 - "$CAP_TMP/scope-fence.json" "$CAP_FIX/promptfooconfig.yaml" <<'PYC'
+import json, re, sys
 s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+# Read what the fixture pack DECLARES and require the snapshot to match it.
+# This used to assert the literal string "nemotron", which tested the vendor of
+# the day rather than the invariant: that capture-example reads the models from
+# the pack config instead of hard-coding them. Switching the pinned subject then
+# broke a check that had no business caring which model it was.
+cfg = open(sys.argv[2]).read()
+def declared(prefix):
+    m = re.search(r"^\s*(?:-\s*)?(?:id:\s*)?[\"']?(" + prefix + r"[A-Za-z0-9/._:-]+)", cfg, re.M)
+    return m.group(1) if m else None
+want_subject, want_grader = declared("openrouter:"), declared("anthropic:")
 prob = []
 for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
     if not p.get(k): prob.append(f"provenance missing {k}")
-if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
-if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not want_subject: prob.append("fixture pack declares no openrouter: provider to compare against")
+elif want_subject not in str(p.get("subject_model")):
+    prob.append(f"subject_model {p.get('subject_model')!r} is not the provider the pack declares ({want_subject!r})")
+if not want_grader: prob.append("fixture pack declares no anthropic: grader to compare against")
+elif want_grader not in str(p.get("grader_model")):
+    prob.append(f"grader_model {p.get('grader_model')!r} was not read from the pack config ({want_grader!r})")
 if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
 if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
 print("  FAIL capture-example: " + "; ".join(prob) if prob else

@@ -27,6 +27,7 @@ structurally cannot.
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~1 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
+| [subject-model](#subject-model-reachability-advisory) | `evals/paid/check-subject-model.sh` | ~1 API ping per subject slug | every push/PR (needs secrets; skipped on fork PRs) **and** as a preflight in `refresh-examples.yml` | no — advisory in `evals.yml`; blocking in the refresh, which spends the budget |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
@@ -365,6 +366,59 @@ that it is green because it did not run, never silently.
   plugins/graveyard/evals/pier/run.sh                            # full roster in Docker
   ```
 
+## subject-model reachability (advisory)
+
+- **What it proves.** That the model every behavioral pack actually tests is
+  *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
+  slug still exists. It reports the distinct HTTP causes separately (401 revoked
+  key, 402 no credit, 404 moved slug) so the fix is named rather than guessed,
+  and it separately probes the account's reported credit, failing closed when
+  that balance is at or below zero.
+- **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
+  never once checked the *subject*, so an unreachable subject was a blind spot:
+  it would produce packs where every real-skill row fails with no signal
+  anywhere. Two refresh runs (2026-09-01 and 2026-09-08) graded all 12 packs,
+  spent roughly 50 minutes of paid API time, captured nothing and reported
+  success — that is the evidence gap this check closes, **not** a diagnosis of
+  those runs. On its first run the check came back green, so a dead key or a
+  moved slug was ruled out. Two independent causes were then found: five packs
+  ship no calibration case, so no before/after pair can exist for them (see the
+  example-gallery section); and, separately, OpenRouter was answering
+  `402 Payment Required — this request would exceed your available credits given
+  your current in-flight requests` on the pack runs themselves.
+- **What it cannot prove.** That the model answers *well* — only that it
+  answers at all. A reachable model can still fail every rubric, so a green
+  here never means the packs are healthy; it only removes one explanation.
+- **What a green ping specifically does NOT prove: funding.** OpenRouter
+  reserves credit per request against the requests already in flight, and a CI
+  fan-out is roughly 12 packs at concurrency 3. So an 8-token ping can return
+  200 while every row of every pack returns 402. That is measured, not
+  theoretical: on 2026-09-09 this check reported all slugs reachable while 11 of
+  12 behavioral packs failed every row on exactly that 402. The credit probe
+  exists because of this; where the account reports no numeric remaining
+  balance, the check says outright that funding is **unverified** rather than
+  implying it is fine.
+- **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
+  workflow it is deliberately **not** in the behavioral gate's `needs`, so a
+  dead subject key reports in seconds instead of turning a required check red
+  across every open PR; promoting it to a gate there (adding it to the
+  behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is a
+  one-line change and an owner decision. In the **refresh** workflow it runs as
+  a hard preflight *before* the paid pack loop, because that is the workflow
+  that actually spends the budget — preflighting only `evals.yml` would leave
+  the expensive path unguarded. A cheap-tier guard fails if that preflight is
+  removed, reordered after the pack loop, or stops calling the script.
+- **Implementation.** `evals/paid/check-subject-model.sh`, shared by both
+  workflows so the two can never drift. It reads provider ids from the parsed
+  YAML `providers:` list rather than grepping the file, so a commented-out
+  historical slug left above the active one during a migration cannot be
+  reported green while promptfoo calls a different model. `--list` prints the
+  slugs it would ping and needs no network or key.
+- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
+  and at the start of every `refresh-examples.yml` run.
+- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
+
 ## example gallery (refresh + pages)
 
 - **What it proves.** The published before/after gallery is a *verification
@@ -531,6 +585,7 @@ job: build
 job: calibration sheet — draw and commit
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
+job: confirm subject model resolves (advisory)
 job: counterfeit tier
 job: counterfeit tier — detect
 job: counterfeit tier — run (corpus)

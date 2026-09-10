@@ -40,6 +40,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: preflight — the subject model must be callable before spending
+        # The refresh is the workflow that actually spends the budget, so the
+        # reachability check belongs HERE, not only in evals.yml (caught in
+        # review of #131). A revoked key or an exhausted balance would otherwise
+        # send this straight into a ~40-minute paid pack loop whose every
+        # real-skill row fails — the exact 50 minutes already burned twice.
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: evals/paid/check-subject-model.sh
       - name: run packs, capture real example snapshots
         id: capture
         env:
