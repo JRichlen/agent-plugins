@@ -168,9 +168,30 @@ strong signal the plugin's design is right.
 relationships that create value."* The fleet manifest is a flat entity table —
 `{node_id, name, full_name, default_branch, head_sha, pushed_at, archived,
 private}` per member, sorted by `node_id`. There is no edge field of any kind.
-Every relationship in a fleet playbook exists only as prose the curator wrote,
-which means it is uncited by construction and cannot be diffed by the
-deterministic detector.
+
+Relationships are **not** unaddressed by the skill, and it would be wrong to say
+so. `SKILL.md` names "cross-repo interactions" as exactly the kind of thing that
+belongs in a playbook; every substantive claim — a relationship claim included —
+must carry `repo@sha:path` and an as-of stamp or be omitted/flagged `STALE`; and
+`validate-citations.sh` fails the build on any claim citing a repo not read this
+pass or a path not in that repo's gathered tree. A relationship claim is cited,
+and its citation is machine-checked for traceability.
+
+What a relationship is not is **modeled**. Two consequences, both narrower than
+"uncited" and both real:
+
+- **No edge is diffable.** `diff-fleet.sh` cascades over membership and
+  `pushed_at`; the staleness clock stamps a `head_sha` per member and nothing
+  per edge. A relationship that quietly stops holding produces no `changed`
+  signal of its own — the member's sha moves, but nothing says *which claim
+  about it* that move invalidates.
+- **Traceable is not supported.** `validate-citations.sh` says so itself:
+  *"Semantic support of the claim by the file is the behavioral/verifier layer's
+  job, not this deterministic gate."* For a single-repo claim the cited file
+  usually *is* the evidence. For an edge, the evidence is the **join** — and a
+  relationship claim can cite two real paths, both genuinely read this pass,
+  while asserting an edge neither file supports. Nothing deterministic checks
+  the join.
 
 Harness's own fix is the right shape and the right size: *"map the relationships
 for your chosen use case before expanding"* — not a general ontology. One
