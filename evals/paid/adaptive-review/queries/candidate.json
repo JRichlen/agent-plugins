@@ -1,0 +1,9 @@
+{
+  "name": "issue-review-concise",
+  "role": "reviewer",
+  "task": "issue-review",
+  "domains": [],
+  "views": ["view.issue-review-concise"],
+  "stance": ["goal-aligned"],
+  "effectCeiling": ["filesystem:read"]
+}

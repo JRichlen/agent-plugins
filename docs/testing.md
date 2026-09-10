@@ -33,6 +33,7 @@ structurally cannot.
 | [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
 | [calibration sheet](#calibration-sheet-manual-no-model-calls) | `calibration-sheet.yml` + `evals/paid/calibration/` | free (no model calls) | manual dispatch only | no — writes a blind sheet to a `calibration/<run-id>` branch for a human to label |
 | [grader agreement](#grader-agreement-manual-grading-only) | `grader-agreement.yml` + `evals/paid/calibration/regrade.sh` | grading spend only (no subject calls) | manual dispatch only | no — reports agreement and kappa between graders on a finished run's outputs |
+| [adaptive-review experiment](#adaptive-review-experiment-offline-contract) | `evals/paid/adaptive-review/` | offline contract is free; actor/judge runs are separately authorized | contract self-test on every cheap run; inference is manual only | no — reports improvement, regression, or inconclusive; never installs |
 | [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
@@ -323,6 +324,27 @@ that it is green because it did not run, never silently.
 - **Local run.** `evals/paid/calibration/README.md`, measurement 3. Offline:
   `evals/paid/calibration/regrade.sh --self-test`; the cheap tier §18b
   fixture-tests the overlay and the replay provider.
+
+## adaptive-review experiment (offline contract)
+
+- **What it proves.** `evals/paid/adaptive-review/self-test.sh` proves that the
+frozen public corpus and both `agent-compiler` images have not drifted, and
+that the experiment-specific scorer distinguishes improvement, regression,
+and inconclusive fixtures. It also fails closed when external judge inputs
+lack a separate authorization bound to their exact digest.
+- **What it cannot prove.** The offline fixtures are scorer tests, not evidence
+that concise review helps a person. `status.json` therefore remains
+inconclusive until the pinned local actor, blind human labels, and independent
+frontier judge all produce retained evidence. Detailed run artifacts stay in
+the git-ignored private `runs/` directory.
+- **Fires.** The contract self-test runs inside every cheap-tier invocation.
+Actor and judge inference are manual only; there is no workflow, schedule,
+fallback route, automatic installation, or new required check.
+- **Cost.** Free for the committed self-test. Any external grading needs its own
+input-bound authorization and positive spending limit.
+- **Local run.** `evals/paid/adaptive-review/self-test.sh`; the experiment
+procedure and evidence schemas are in
+`evals/paid/adaptive-review/README.md`.
 
 ## scale tier
 
