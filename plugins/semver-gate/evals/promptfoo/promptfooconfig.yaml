@@ -150,7 +150,7 @@ providers:
   # tokens/run, about $0.04 at $0.60/$3.60 per Mtok — roughly a dollar per
   # thirty runs. This pack's prompts are shorter (no companion skill), so
   # expect less.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       # Single-turn: the model must lay out its complete response — including
       # a full structured sign-off question where one is required — in one

@@ -1398,14 +1398,28 @@ else
     bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
     printf '%s\n' "$cap_out" | sed 's/^/    /'
   else
-    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
-import json, sys
+    python3 - "$CAP_TMP/scope-fence.json" "$CAP_FIX/promptfooconfig.yaml" <<'PYC'
+import json, re, sys
 s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+# Read what the fixture pack DECLARES and require the snapshot to match it.
+# This used to assert the literal string "nemotron", which tested the vendor of
+# the day rather than the invariant: that capture-example reads the models from
+# the pack config instead of hard-coding them. Switching the pinned subject then
+# broke a check that had no business caring which model it was.
+cfg = open(sys.argv[2]).read()
+def declared(prefix):
+    m = re.search(r"^\s*(?:-\s*)?(?:id:\s*)?[\"']?(" + prefix + r"[A-Za-z0-9/._:-]+)", cfg, re.M)
+    return m.group(1) if m else None
+want_subject, want_grader = declared("openrouter:"), declared("anthropic:")
 prob = []
 for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
     if not p.get(k): prob.append(f"provenance missing {k}")
-if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
-if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not want_subject: prob.append("fixture pack declares no openrouter: provider to compare against")
+elif want_subject not in str(p.get("subject_model")):
+    prob.append(f"subject_model {p.get('subject_model')!r} is not the provider the pack declares ({want_subject!r})")
+if not want_grader: prob.append("fixture pack declares no anthropic: grader to compare against")
+elif want_grader not in str(p.get("grader_model")):
+    prob.append(f"grader_model {p.get('grader_model')!r} was not read from the pack config ({want_grader!r})")
 if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
 if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
 print("  FAIL capture-example: " + "; ".join(prob) if prob else

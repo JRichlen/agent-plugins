@@ -104,7 +104,7 @@ output and not typed by hand — and which model did what?
   plus `same_family_judge`. The cheap tier refuses a snapshot missing any of
   them. The gallery shows them on every card and in a page-level table.
 - **A model never grades its own family.** Every behavioral pack tests one
-  model (`openrouter:nvidia/nemotron-3-ultra-550b-a55b`) and grades with another
+  model (`openrouter:qwen/qwen3.8-flash`) and grades with another
   (`anthropic:messages:claude-sonnet-5`); the cheap tier now checks every pack
   for that, `capture-example.sh` refuses to write a same-family pair, and the
   gate rejects a graded snapshot whose subject and grader share a family. The

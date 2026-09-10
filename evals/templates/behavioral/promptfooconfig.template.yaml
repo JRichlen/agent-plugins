@@ -27,7 +27,7 @@ prompts:
 # to check whether a model *given the skill* behaves safely, so testing a cheap
 # model here is exactly the intent. Add/remove providers freely.
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b:free
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       # This tier is single-turn: promptfoo captures ONE completion, with no
       # tool-execution loop feeding results back. The rubrics grade the full

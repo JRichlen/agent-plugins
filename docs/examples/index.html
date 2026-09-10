@@ -220,7 +220,7 @@
   <h2>Models used — by role</h2>
   <p>Three roles, disclosed separately on every card: the <strong>subject</strong> answered the prompt (both sides), the <strong>grader</strong> applied the pack's pass/fail rubric, the <strong>judge</strong> wrote the divergence verdict.
   The rule this repository enforces: <em>a model never grades its own family</em>. Every behavioral pack tests one model and grades with another
-  (12 packs: subject openrouter:nvidia/nemotron-3-ultra-550b-a55b, grader anthropic:messages:claude-sonnet-5); the cheap eval tier refuses a pack or a graded snapshot where the two share a family, and the capture script refuses to write one.
+  (12 packs: subject openrouter:qwen/qwen3.8-flash, grader anthropic:messages:claude-sonnet-5); the cheap eval tier refuses a pack or a graded snapshot where the two share a family, and the capture script refuses to write one.
   Seeds predate that rule, and the table says so instead of hiding it — they are replaced by CI-graded, attested pairs as the refresh workflow reaches each pack.</p>
   <div class="tablewrap"><table>
     <thead><tr><th>Produced by</th><th>Subject (answered)</th><th>Grader (pass/fail)</th><th>Judge (divergence verdict)</th></tr></thead>

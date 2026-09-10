@@ -35,7 +35,7 @@ prompts:
 
 providers:
   # Same subject model as the routing pack — one provider convention per tier.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       # 8192, not the routing pack's 4096: this prompt injects the whole
       # redgate SKILL.md and the model reasons at length over it — PR #93 run
