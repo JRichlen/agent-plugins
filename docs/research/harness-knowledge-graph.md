@@ -2,10 +2,10 @@
 
 **Status:** research note. Placement analysis, not a roadmap item.
 **Question asked:** where does the Harness Knowledge Graph fit into our plugins?
-**How it was produced:** read the Harness docs page and four Harness engineering
-posts (sources at the bottom), then diffed their claims against every skill this
-marketplace already ships and against this repo's own prior verdict on
-knowledge-graph patterns in [`agentic-patterns-corpus.md`](agentic-patterns-corpus.md).
+**How it was produced:** read the Harness docs page, the product page, and four
+Harness engineering posts (six sources at the bottom), then diffed their claims
+against every skill this marketplace already ships and against this repo's own
+prior verdict on knowledge-graph patterns in [`agentic-patterns-corpus.md`](agentic-patterns-corpus.md).
 
 ---
 
@@ -142,8 +142,10 @@ Their sharpest sentence. A query can be structurally valid, reference a
 schema-declared relationship, execute successfully — and return nothing, because
 the relationship was never populated with runtime data. This is exactly our rung
 0's stated blind spot ("whether a sentence still *means* anything") reappearing
-in the data layer, and we do not currently name the data-layer form of it. A
-context/retrieval system needs a rung between *structural* and *code assertion*:
+in the data layer, and we do not currently name the data-layer form of it. The
+rung for it already exists — rung 1, discriminating corpus, is exactly where a
+populated-vs-declared fixture belongs — so what is missing is not a rung but the
+vocabulary that tells a retrieval system what to put on it:
 **declared ≠ populated ≠ fresh.**
 
 **(b) Product-backed validation is our "grade the surface closest to the harm."**
@@ -159,20 +161,20 @@ authors.
 ### 2. `fleet-playbook-curator` — validated design, one named gap
 
 Structurally this is the closest thing we ship to a knowledge graph, and Harness
-independently arrived at two of its invariants:
+independently arrived at four of its invariants:
 
 | Harness | fleet-playbook-curator |
 |---|---|
 | "One entity. Many names. One truth." — canonical identity, alias support | members joined on GitHub `node_id`, never `full_name`, so a rename is not a remove+add |
 | "Perfectly modeled data, a week old" — freshness is non-negotiable | deterministic detector stamps every member's `head_sha` every run as an independent staleness clock; every claim carries `repo@sha:path` and an as-of stamp |
-| "Modeling everything before solving anything" | explicitly a router/index, not a CMDB or a runbook |
+| "Modeling everything before solving anything" | explicitly a router/index, "not a runbook" (`SKILL.md:45`) |
 | Drift prevention as change management | facts auto-commit; interpretation is PR-only |
 
-That is three of Harness's four theses arrived at independently, which is a
-strong signal the plugin's design is right.
+That is four of Harness's theses arrived at independently, which is a strong
+signal the plugin's design is right.
 
-**The gap is the fourth.** Harness's second failure mode is *"missing the
-relationships that create value."* The fleet manifest is a flat entity table —
+**The gap is a fifth, absent from that table.** Harness's second failure mode
+is *"missing the relationships that create value."* The fleet manifest is a flat entity table —
 `{node_id, name, full_name, default_branch, head_sha, pushed_at, archived,
 private}` per member, sorted by `node_id`. There is no edge field of any kind.
 
@@ -187,11 +189,12 @@ and its citation is machine-checked for traceability.
 What a relationship is not is **modeled**. Two consequences, both narrower than
 "uncited" and both real:
 
-- **No edge is diffable.** `diff-fleet.sh` cascades over membership and
-  `pushed_at`; the staleness clock stamps a `head_sha` per member and nothing
-  per edge. A relationship that quietly stops holding produces no `changed`
-  signal of its own — the member's sha moves, but nothing says *which claim
-  about it* that move invalidates.
+- **No edge is diffable.** `diff-fleet.sh` joins on `node_id` and buckets
+  membership events (added/removed/renamed) plus per-member content drift, and
+  that drift bucket keys on `head_sha` (`diff-fleet.sh:28-30`). Every key it has
+  is per *member*; there is none per edge. A relationship that quietly stops
+  holding produces no `changed` signal of its own — the member's sha moves, but
+  nothing says *which claim about it* that move invalidates.
 - **Traceable is not supported.** `validate-citations.sh` says so itself:
   *"Semantic support of the claim by the file is the behavioral/verifier layer's
   job, not this deterministic gate."* For a single-repo claim the cited file
