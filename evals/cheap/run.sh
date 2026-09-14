@@ -1426,22 +1426,26 @@ if not os.path.exists(sh):
     print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
 txt = open(sh).read()
 prob = []
-if "/api/v1/credits" not in txt:
-    prob.append("the probe never calls /api/v1/credits, so a drained ACCOUNT reads as healthy whenever this key's own cap still has headroom (the 2026-09-10 outage)")
-if "total_credits" not in txt or "total_usage" not in txt:
-    prob.append("the probe does not read total_credits/total_usage, so it cannot compute the account balance")
-# The account balance must be LOAD-BEARING, not merely printed. Anchor on the
-# credits request itself (ccode=), never on the first textual mention of the
-# endpoint — that appears in this probe's own comment header, and a segment
-# starting there sweeps in the key-cap block's failure and passes a probe whose
-# account branch has been neutered. That false pass was observed while writing
-# this guard.
+# The account balance must be LOAD-BEARING, not merely printed, and EVERY
+# assertion below is scoped to the credits request rather than to the file. A
+# file-wide substring check cannot tell a live request from prose: both this
+# guard's header and the probe's own block comment spell out the endpoint path
+# and the two field names, so repointing the request at another URL, or reading
+# different jq fields, left the whole check green while the account balance went
+# unread. Both false passes were observed by mutation while writing this guard —
+# the second after the first was thought fixed, which is why the anchor is now
+# the request and nothing else.
 ci = txt.find("ccode=")
-seg = txt[ci:] if ci != -1 else ""
+seg = txt[ci:ci + 400] if ci != -1 else ""
 if not seg:
     prob.append("no credits request found (expected the response code captured as ccode=), so the account balance is never fetched")
-elif not re.search(r"fail_balance=1", seg):
-    prob.append("the account balance is reported but never fails the check, so a zero balance still returns green")
+else:
+    if "openrouter.ai/api/v1/credits" not in seg:
+        prob.append("the credits request does not target openrouter.ai/api/v1/credits, so whatever it reads is not the ACCOUNT balance — a drained account then reads as healthy whenever this key's own cap still has headroom (the 2026-09-10 outage)")
+    if "total_credits" not in seg or "total_usage" not in seg:
+        prob.append("the credits response is not parsed for total_credits/total_usage, so the account balance is never computed")
+    if not re.search(r"fail_balance=1", txt[ci:]):
+        prob.append("the account balance is reported but never fails the check, so a zero balance still returns green")
 if "limit_remaining" not in txt:
     prob.append("the probe no longer reads the key's own spending cap, which fails independently of the account balance")
 if prob:
