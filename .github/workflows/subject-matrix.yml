@@ -113,6 +113,22 @@ jobs:
           evals/paid/pass-rate.sh "plugins/${{ matrix.plugin }}/evals/promptfoo/results.matrix.json" \
             --by-provider --baseline "${{ steps.overlay.outputs.baseline }}" --floor 0.6 --min-runs 2 --min-valid 2 | tee pass-rate.txt
           { echo "### subject matrix — ${{ matrix.plugin }}"; echo; echo '```'; cat pass-rate.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - name: record results checkout provenance
+        if: always()
+        working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
+        env:
+          PACK: ${{ matrix.plugin }}
+        run: |
+          python3 - <<'PYPROVENANCE'
+          import hashlib, json, os, pathlib, subprocess
+          result = pathlib.Path("results.matrix.json")
+          if result.is_file():
+              meta = {"checkout_sha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                      "repository": os.environ["GITHUB_REPOSITORY"], "run_id": os.environ["GITHUB_RUN_ID"],
+                      "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"], "pack": os.environ["PACK"],
+                      "result": result.name, "sha256": hashlib.sha256(result.read_bytes()).hexdigest()}
+              pathlib.Path("provenance.json").write_text(json.dumps(meta, indent=2) + "\n")
+          PYPROVENANCE
       - name: keep the results for #102
         if: always()
         uses: actions/upload-artifact@v4
@@ -120,5 +136,6 @@ jobs:
           name: subject-matrix-${{ matrix.plugin }}
           path: |
             plugins/${{ matrix.plugin }}/evals/promptfoo/results.matrix.json
+            plugins/${{ matrix.plugin }}/evals/promptfoo/provenance.json
             plugins/${{ matrix.plugin }}/evals/promptfoo/promptfooconfig.matrix.yaml
           if-no-files-found: warn
