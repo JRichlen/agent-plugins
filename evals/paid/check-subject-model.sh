@@ -167,34 +167,77 @@ if [ -z "${OPENROUTER_API_KEY:-}" ]; then
   exit 1
 fi
 
-# --- balance probe -----------------------------------------------------------
-# Advisory, and deliberately so. It reports what the account says about its own
-# credit so a 402 storm is diagnosable BEFORE the packs run, rather than after a
-# reviewer reads an empty transcript box. It never fails the run on a shape it
-# cannot parse: this repo does not own OpenRouter's response schema, and failing
-# closed on an unrecognised field would block CI on a vendor's rename. It DOES
-# fail closed on the one unambiguous signal — a remaining balance at or below 0.
+# --- funding probe -----------------------------------------------------------
+# TWO different numbers gate a request, and conflating them is the exact defect
+# this block exists to prevent:
+#
+#   * the KEY CAP      — /api/v1/key     -> data.limit_remaining
+#                        the spending ceiling on this one API key.
+#   * the ACCOUNT BALANCE — /api/v1/credits -> total_credits - total_usage
+#                        the money sitting behind EVERY key on the account.
+#
+# A request is refused when EITHER is exhausted, and the 402 body names which in
+# metadata.limit_source. From 2026-09-10 the key cap read 53% used — comfortably
+# healthy — while every row of every pack was refused with
+# `limit_source: openrouter_credits`, and PR #133 sat red for five days on a
+# diagnosis that read the key cap and concluded funding was fine.
+#
+# An earlier version of this probe read ONLY the key cap. In that outage it
+# would have printed "remaining=27.91" and passed: reassurance in precisely the
+# case it was built to catch, which is the same false-green this whole script
+# was written to remove. So: report both, name both, fail closed on either.
+#
+# Still advisory in shape — this repo does not own OpenRouter's response schema,
+# so an unparseable field warns rather than blocks, and the pings below remain
+# the load-bearing evidence. It DOES fail closed on the unambiguous signal:
+# either number at or below 0.
+fail_balance=0
+
+_is_num() { case "${1:-}" in ''|*[!0-9.eE+-]*) return 1 ;; *) return 0 ;; esac; }
+
+# -- the key's own spending ceiling --
 kb="$(mktemp)"
 kcode=$(curl -sS -o "$kb" -w '%{http_code}' https://openrouter.ai/api/v1/key \
   -H "Authorization: Bearer $OPENROUTER_API_KEY") || kcode=000
 if [ "$kcode" = "200" ]; then
-  remaining="$(jq -r '.data.limit_remaining // empty' "$kb" 2>/dev/null || true)"
+  key_remaining="$(jq -r '.data.limit_remaining // empty' "$kb" 2>/dev/null || true)"
   usage="$(jq -r '.data.usage // "?"' "$kb" 2>/dev/null || echo "?")"
   limit="$(jq -r '.data.limit // "unlimited/unknown"' "$kb" 2>/dev/null || echo "?")"
-  echo "credit: usage=$usage limit=$limit remaining=${remaining:-<not reported>}"
-  case "$remaining" in
-    ''|*[!0-9.eE+-]*)
-      echo "::warning::OpenRouter did not report a numeric remaining balance, so funding is UNVERIFIED. A pack run can still 402 with every ping below green." ;;
-    *)
-      if awk -v r="$remaining" 'BEGIN{exit !(r+0 <= 0)}'; then
-        echo "::error::OpenRouter reports $remaining credit remaining — the behavioral packs will 402 on every row. Add credit before spending a run."
-        fail_balance=1
-      fi ;;
-  esac
+  echo "key cap:         usage=$usage limit=$limit remaining=${key_remaining:-<not reported>}   <- this KEY's ceiling only"
+  if _is_num "$key_remaining"; then
+    if awk -v r="$key_remaining" 'BEGIN{exit !(r+0 <= 0)}'; then
+      echo "::error::this key's spending cap is exhausted ($key_remaining remaining) — requests will 402 with limit_source=openrouter_key_limit. Raise the key's limit, or use a key with headroom."
+      fail_balance=1
+    fi
+  else
+    echo "::warning::no numeric key cap reported, so the key's own ceiling is UNVERIFIED."
+  fi
 else
-  echo "::warning::could not read the OpenRouter key/credit endpoint (HTTP $kcode) — funding is UNVERIFIED; the pings below prove reachability only."
+  echo "::warning::could not read /api/v1/key (HTTP $kcode) — the key's spending cap is UNVERIFIED."
 fi
 rm -f "$kb"
+
+# -- the account's actual money, which the key cap says NOTHING about --
+cb="$(mktemp)"
+ccode=$(curl -sS -o "$cb" -w '%{http_code}' https://openrouter.ai/api/v1/credits \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY") || ccode=000
+if [ "$ccode" = "200" ]; then
+  granted="$(jq -r '.data.total_credits // empty' "$cb" 2>/dev/null || true)"
+  spent="$(jq -r '.data.total_usage // empty' "$cb" 2>/dev/null || true)"
+  if _is_num "$granted" && _is_num "$spent"; then
+    balance="$(awk -v g="$granted" -v s="$spent" 'BEGIN{printf "%.4f", g-s}')"
+    echo "account balance: credits=$granted usage=$spent balance=$balance   <- the money behind EVERY key"
+    if awk -v b="$balance" 'BEGIN{exit !(b+0 <= 0)}'; then
+      echo "::error::the OpenRouter ACCOUNT balance is $balance — every request will 402 with limit_source=openrouter_credits however much headroom the key cap above shows. Add credit at https://openrouter.ai/settings/credits."
+      fail_balance=1
+    fi
+  else
+    echo "::warning::/api/v1/credits reported no numeric total_credits/total_usage — the ACCOUNT balance is UNVERIFIED. A healthy key cap above does NOT imply the account is funded; the pings below are then the only funding evidence."
+  fi
+else
+  echo "::warning::could not read /api/v1/credits (HTTP $ccode) — the ACCOUNT balance is UNVERIFIED. A healthy key cap above does NOT imply the account is funded."
+fi
+rm -f "$cb"
 
 fail="${fail_balance:-0}"
 checked=0

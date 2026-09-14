@@ -1406,6 +1406,50 @@ print("  PASS evals.yml failing-transcript dump prints the provider error and di
 PYD
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 19a2c. The funding probe reads the ACCOUNT balance, not just the key cap -
+# Two different numbers gate an OpenRouter request and they fail independently:
+# the key's own spending cap (/api/v1/key -> limit_remaining) and the account
+# balance behind every key (/api/v1/credits -> total_credits - total_usage).
+# The 402 body says which via metadata.limit_source. From 2026-09-10 the key cap
+# read 53% USED while every row of every pack was refused with
+# `limit_source: openrouter_credits`; PR #133 sat red five days on a diagnosis
+# that read the key cap and concluded funding was fine. A probe reading only the
+# key cap prints reassurance in exactly the outage it exists to catch.
+# Coupled: drop the credits endpoint, or stop failing closed on the account
+# balance, and this goes red.
+group "subject preflight probes the account balance, not only the key's own cap"
+python3 - "$REPO_ROOT" <<'PYB'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+if "/api/v1/credits" not in txt:
+    prob.append("the probe never calls /api/v1/credits, so a drained ACCOUNT reads as healthy whenever this key's own cap still has headroom (the 2026-09-10 outage)")
+if "total_credits" not in txt or "total_usage" not in txt:
+    prob.append("the probe does not read total_credits/total_usage, so it cannot compute the account balance")
+# The account balance must be LOAD-BEARING, not merely printed. Anchor on the
+# credits request itself (ccode=), never on the first textual mention of the
+# endpoint — that appears in this probe's own comment header, and a segment
+# starting there sweeps in the key-cap block's failure and passes a probe whose
+# account branch has been neutered. That false pass was observed while writing
+# this guard.
+ci = txt.find("ccode=")
+seg = txt[ci:] if ci != -1 else ""
+if not seg:
+    prob.append("no credits request found (expected the response code captured as ccode=), so the account balance is never fetched")
+elif not re.search(r"fail_balance=1", seg):
+    prob.append("the account balance is reported but never fails the check, so a zero balance still returns green")
+if "limit_remaining" not in txt:
+    prob.append("the probe no longer reads the key's own spending cap, which fails independently of the account balance")
+if prob:
+    print("  FAIL subject preflight funding probe: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight probes BOTH the key cap and the account balance, and fails closed on either"); sys.exit(0)
+PYB
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
 # The gallery's whole supply chain runs through this script, and it silently
 # captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —

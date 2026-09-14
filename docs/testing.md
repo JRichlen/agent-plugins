@@ -371,9 +371,16 @@ that it is green because it did not run, never silently.
 - **What it proves.** That the model every behavioral pack actually tests is
   *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
   slug still exists. It reports the distinct HTTP causes separately (401 revoked
-  key, 402 no credit, 404 moved slug) so the fix is named rather than guessed,
-  and it separately probes the account's reported credit, failing closed when
-  that balance is at or below zero.
+  key, 402 no credit, 404 moved slug) so the fix is named rather than guessed.
+  It also probes **both** numbers that gate an OpenRouter request, because they
+  fail independently: this key's own spending cap (`/api/v1/key` →
+  `limit_remaining`) and the account balance behind every key (`/api/v1/credits`
+  → `total_credits - total_usage`). It fails closed when *either* is at or below
+  zero. Reading only the key cap is not sufficient and was not hypothetical:
+  from 2026-09-10 the key cap read 53% used — comfortably healthy — while every
+  row of every pack was refused with `metadata.limit_source:
+  openrouter_credits`, and PR #133 sat red for five days on a diagnosis that
+  read the key cap and concluded funding was fine.
 - **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
   never once checked the *subject*, so an unreachable subject was a blind spot:
   it would produce packs where every real-skill row fails with no signal
