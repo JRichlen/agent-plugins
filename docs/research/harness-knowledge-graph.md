@@ -99,16 +99,33 @@ This survives contact with Harness intact, and Harness's own material is the
 best argument for it. Their canonical-identity section — *"the same service is
 called something different in Git, Kubernetes, CloudWatch, and your runbook"* —
 names precisely the problem a graph solves. A fleet of GitHub repos has no such
-problem: GitHub hands you a stable `node_id`, `gh api orgs/<owner>/repos` is an
-authoritative read of membership, and the join key is not ambiguous. The graph
-is buying normalization nobody in this domain needs to buy.
+problem: GitHub hands you an opaque `node_id` that survives rename and transfer,
+`gh api orgs/<owner>/repos` is an authoritative read of membership, and the join
+key is not ambiguous. The graph is buying normalization nobody in this domain
+needs to buy.
 
 (Deliberately *authoritative*, not "strongly consistent" — GitHub publishes no
 consistency guarantee for REST list endpoints, and the argument does not need
 one. What carries it is that one surface is the system of record and its join
-key is stable. `fleet-playbook-curator`'s own prose calls that endpoint
+key is unambiguous. `fleet-playbook-curator`'s own prose calls that endpoint
 "strongly-consistent"; the defensible contrast it is reaching for is with the
 Search API, which documents its own indexing lag.)
+
+(And deliberately *opaque*, not "stable." An earlier draft of this note said
+GitHub hands you a "stable" `node_id`; GitHub does not say that. The GraphQL
+global-node-ID guide promises only that "it's best practice to persist the
+global node ID so you can easily reference objects across API versions," and the
+migration guide states plainly that "The legacy format will be closing down and
+replaced with a new format" — so the identifier's *string* is on the record as
+changing, with no published shutdown date. What the argument actually needs is
+weaker and does hold: within a single pass, `node_id` is opaque, unambiguous,
+and independent of the mutable `full_name`. What it does *not* license is
+joining a manifest captured before the format migration against one captured
+after — which is precisely what `diff-fleet.sh` does across passes. A fleet
+whose stored manifests straddle that boundary would see every member as
+`removed` plus `added` rather than `renamed`, and nothing in the plugin would
+say why. That is a dated, falsifiable failure mode, not a hypothetical, and it
+is the kind of thing an identity layer is supposed to absorb.)
 
 Net: keep the rejection, change the reason, and note that the reason is now
 domain-scoped rather than universal. If this marketplace ever spans
