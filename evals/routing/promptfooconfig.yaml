@@ -64,7 +64,22 @@ providers:
       showThinking: false
 
 evaluateOptions:
-  maxConcurrency: 3
+  # 3 -> 8 (measured, run 34920638978): this job took 15m06s, of which the
+  # routing step alone was 12m12s — 70 calls at concurrency 3 is ~23 serial
+  # waves of ~31s. Every other paid tier fans out across jobs; this one does
+  # not, so the whole tier waits on one queue. At 8 the same 70 calls are ~9
+  # waves, which projects the job to ~5.6 min.
+  #
+  # Why not also run this pack and trajectory/ in parallel: that models out at
+  # only ~1 min better (4.6 vs 5.6), and OpenRouter reserves credit against
+  # in-flight requests PER KEY, so two packs at 8 each share one budget rather
+  # than doubling throughput — it buys contention, not speed.
+  #
+  # If this proves too aggressive the failure is LOUD, not silent: in-flight
+  # 402s land as failureReason 2, which pass-rate.sh classifies as FAULTs and
+  # reports as STARVED rather than folding into the floor. Lower it back if a
+  # run comes back starved.
+  maxConcurrency: 8
   # Statistical rigor (gap #4): a stochastic router that passes a scenario ~55%
   # of the time is a coin-flip at n=1. Run each scenario 5x; evals/paid/pass-rate.sh
   # then enforces a per-scenario k-of-N floor so a single lucky pass can't stay
