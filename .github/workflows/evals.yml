@@ -567,6 +567,14 @@ jobs:
             | "=== SCENARIO ===\n" + ((.testCase.description // .description // "?") | tostring)
               + "\n--- request ---\n" + ((.vars.request // .testCase.vars.request) | tostring)
               + "\n--- model line ---\n" + (if $got == "" then "<no ROUTE: line in output>" else $got end)
+              + (if $got == "" then
+                   "\n--- transport (empty output is a FAULT, not a verdict) ---\n"
+                   + "  failureReason: " + ((.failureReason // "<unset>") | tostring)
+                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring
+                        | gsub("https?://[^\\s\"]+"; "<url-redacted>")
+                        | gsub("[0-9a-fA-F]{32,}"; "<hex-redacted>")
+                        | .[0:300])
+                 else "" end)
               + "\n--- per-slot expected vs got ---\n"
               + (["specialist", "envelope", "guards", "interaction_owner"]
                  | map(. as $k
@@ -603,6 +611,14 @@ jobs:
             | gotline(.response.output // .output) as $got
             | "=== CASE ===\n" + ((.testCase.description // .description // "?") | tostring)
               + "\n--- model line ---\n" + (if $got == "" then "<no STEP: line in output>" else $got end)
+              + (if $got == "" then
+                   "\n--- transport (empty output is a FAULT, not a verdict) ---\n"
+                   + "  failureReason: " + ((.failureReason // "<unset>") | tostring)
+                   + "\n  error: " + ((.error // .response.error // "<none>") | tostring
+                        | gsub("https?://[^\\s\"]+"; "<url-redacted>")
+                        | gsub("[0-9a-fA-F]{32,}"; "<hex-redacted>")
+                        | .[0:300])
+                 else "" end)
               + "\n--- per-slot expected vs got ---\n"
               + (["action", "gate", "disposition", "proceed"]
                  | map(. as $k
