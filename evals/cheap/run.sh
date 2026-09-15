@@ -43,6 +43,48 @@ while IFS= read -r j; do
     ok "$j"; else bad "$j (invalid JSON)"; fi
 done < <(find . -name '*.json' -not -path './node_modules/*' -type f | sort)
 
+# --- 2b. hooks.json handler paths resolve to real files ---------------------
+# Every `${CLAUDE_PLUGIN_ROOT}/<rel>` in a plugin's hooks.json must be a file
+# under plugins/<p>/<rel>, because ${CLAUDE_PLUGIN_ROOT} IS the plugin dir on an
+# installed plugin. Nothing checked this, and redgate shipped with both handlers
+# one directory too high (`hooks-handlers/` for files that live under
+# `hooks/hooks-handlers/`): the PreToolUse write guard — the hook that stops a
+# write reaching a ratified run's contract mid-round — silently never ran on any
+# installed copy, and the cheap tier stayed green throughout. Found by the
+# agentic framework in #115, fixed in its own PR so it does not wait on 76k
+# lines. voice's identical-looking path is CORRECT (its handler really is at
+# plugins/voice/hooks-handlers/), which is exactly why this is resolved against
+# the filesystem rather than pattern-matched.
+# Coupled: break any handler path, or make the walk find nothing, and this goes red.
+group "hooks.json handler paths resolve under their plugin root"
+hook_paths_seen=0
+while IFS=$'\t' read -r verdict plugin event rel; do
+  [ -n "$verdict" ] || continue
+  hook_paths_seen=$((hook_paths_seen+1))
+  if [ "$verdict" = "OK" ]; then ok "$plugin hooks.json $event -> $rel"
+  else bad "$plugin hooks.json $event -> \${CLAUDE_PLUGIN_ROOT}/$rel does not exist under plugins/$plugin/ — that hook never fires on an installed plugin"; fi
+done < <(python3 - "$REPO_ROOT" <<'PYH'
+import glob, json, os, re, sys
+root = sys.argv[1]
+for f in sorted(glob.glob(os.path.join(root, "plugins", "*", "hooks", "hooks.json"))):
+    plugin = f.split(os.sep)[-3]
+    try:
+        d = json.load(open(f))
+    except Exception:
+        continue  # section 2 already fails invalid JSON
+    for event, entries in (d.get("hooks") or {}).items():
+        for e in entries or []:
+            for h in e.get("hooks") or []:
+                for rel in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\s]+)", h.get("command", "")):
+                    p = os.path.join(root, "plugins", plugin, rel)
+                    print("\t".join(["OK" if os.path.isfile(p) else "BAD", plugin, event, rel]))
+PYH
+)
+# A pass must mean paths were actually resolved, not that the walk found nothing.
+if [ "$hook_paths_seen" -eq 0 ]; then
+  bad "hooks.json walk resolved ZERO handler paths — the check would be green without checking anything"
+fi
+
 # --- 3. Marketplace <-> plugin wiring --------------------------------------
 group "marketplace wiring"
 python3 - "$REPO_ROOT" <<'PY'
