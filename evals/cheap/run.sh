@@ -43,6 +43,112 @@ while IFS= read -r j; do
     ok "$j"; else bad "$j (invalid JSON)"; fi
 done < <(find . -name '*.json' -not -path './node_modules/*' -type f | sort)
 
+# --- 2b. hooks.json handler paths resolve to real files ---------------------
+# Every `${CLAUDE_PLUGIN_ROOT}/<rel>` in a plugin's hooks.json must be a file
+# under plugins/<p>/<rel>, because ${CLAUDE_PLUGIN_ROOT} IS the plugin dir on an
+# installed plugin. Nothing checked this, and redgate shipped with both handlers
+# one directory too high (`hooks-handlers/` for files that live under
+# `hooks/hooks-handlers/`): the PreToolUse write guard — the hook that stops a
+# write reaching a ratified run's contract mid-round — silently never ran on any
+# installed copy, and the cheap tier stayed green throughout. Found by the
+# agentic framework in #115, fixed in its own PR so it does not wait on 76k
+# lines. voice's identical-looking path is CORRECT (its handler really is at
+# plugins/voice/hooks-handlers/), which is exactly why this is resolved against
+# the filesystem rather than pattern-matched.
+# Coupled: break any handler path, or make the walk extract nothing from files
+# that exist, and this goes red. A root with NO hooks.json at all (the
+# counterfeit corpus's synthetic marketplace, for one) is legitimately "nothing
+# to check", same as every other section — its first push turned that root red.
+group "hooks.json handler paths resolve under their plugin root"
+# The scanner's exit status is CAPTURED, not discarded. It used to run in process
+# substitution, where a crash is invisible: a manifest containing something the
+# walk did not expect (`"command": null` — valid JSON, so section 2 is happy)
+# raised, the remaining manifests were never scanned, and because an EARLIER
+# manifest had already emitted records the zero-paths guard below stayed quiet.
+# Section 2b then reported no failure over files it never read. (Codex, PR #136)
+# Coupled: make the scanner exit nonzero — crash it, or delete its interpreter —
+# and this goes red instead of green-by-silence.
+hook_files_seen=0; hook_paths_seen=0
+hook_scan_out="$(mktemp "${TMPDIR:-/tmp}/cheap-hooks-scan.XXXXXX" 2>/dev/null || true)"
+if [ -z "$hook_scan_out" ] || [ ! -w "$hook_scan_out" ]; then
+  bad "hooks.json: could not create the handler-path scanner's output file — section 2b cannot run, and a section that cannot run is not a section that passed"
+else
+python3 - "$REPO_ROOT" >"$hook_scan_out" <<'PYH'
+import glob, json, os, re, sys
+root = sys.argv[1]
+
+def emit(verdict, plugin, event, rel):
+    # Fields are tab-separated and read back by a bash `read`; tab is IFS
+    # WHITESPACE there, so runs of tabs collapse and an empty field would shift
+    # every later one. Never emit an empty event/rel on a record the shell
+    # destructures past field 2.
+    print("\t".join([verdict, plugin, event, rel]))
+
+for f in sorted(glob.glob(os.path.join(root, "plugins", "*", "hooks", "hooks.json"))):
+    plugin = f.split(os.sep)[-3]
+    print("\t".join(["FILE", plugin, "", ""]))
+    try:
+        d = json.load(open(f))
+    except Exception:
+        continue  # section 2 already fails invalid JSON
+    # Every shape below is CHECKED rather than assumed. A manifest can be valid
+    # JSON and still be nonsense to this walk; the answer to nonsense is a
+    # recorded BAD naming the plugin and event, never a traceback.
+    hooks = (d.get("hooks") if isinstance(d, dict) else None) or {}
+    if not isinstance(hooks, dict):
+        emit("MALFORMED", plugin, "<top level>", '"hooks" is not an object')
+        continue
+    for event, entries in hooks.items():
+        if not isinstance(entries, list):
+            emit("MALFORMED", plugin, event or "<unnamed event>", "the event's value is not a list of entries")
+            continue
+        for e in entries:
+            if not isinstance(e, dict) or not isinstance(e.get("hooks") or [], list):
+                emit("MALFORMED", plugin, event or "<unnamed event>", "an entry is not an object carrying a list of hooks")
+                continue
+            for h in e.get("hooks") or []:
+                cmd = h.get("command") if isinstance(h, dict) else None
+                if not isinstance(cmd, str):
+                    emit("MALFORMED", plugin, event or "<unnamed event>", 'a hook has no string "command"')
+                    continue
+                for rel in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\s]+)", cmd):
+                    # Containment, not just existence: canonicalize and require the
+                    # target to sit INSIDE the plugin dir, as the link resolver does
+                    # further down. `../shared/x.sh` or a symlink out of the plugin
+                    # would otherwise pass isfile() while the installed command
+                    # resolves outside ${CLAUDE_PLUGIN_ROOT}. (Copilot, PR #136)
+                    pdir = os.path.realpath(os.path.join(root, "plugins", plugin))
+                    p = os.path.realpath(os.path.join(pdir, rel))
+                    inside = os.path.commonpath([pdir, p]) == pdir
+                    emit("OK" if (inside and os.path.isfile(p)) else "BAD", plugin, event, rel)
+PYH
+hook_scan_rc=$?
+while IFS=$'\t' read -r verdict plugin event rel; do
+  [ -n "$verdict" ] || continue
+  if [ "$verdict" = "FILE" ]; then hook_files_seen=$((hook_files_seen+1)); continue; fi
+  # A MALFORMED record counts here too: it still proves the walk reached this
+  # manifest's entries, which is what the zero-paths guard below is asking.
+  hook_paths_seen=$((hook_paths_seen+1))
+  if [ "$verdict" = "OK" ]; then ok "$plugin hooks.json $event -> $rel"
+  elif [ "$verdict" = "MALFORMED" ]; then bad "$plugin hooks.json $event — MALFORMED hook entry ($rel): valid JSON, but no handler path can be resolved from it, so this hook is unverifiable"
+  else bad "$plugin hooks.json $event -> \${CLAUDE_PLUGIN_ROOT}/$rel is not a file INSIDE plugins/$plugin/ — that hook never fires on an installed plugin, or fires something outside it"; fi
+done < "$hook_scan_out"
+rm -f "$hook_scan_out"
+if [ "$hook_scan_rc" -ne 0 ]; then
+  bad "hooks.json: the handler-path scanner exited $hook_scan_rc — it died partway through the walk, so an unknown number of manifests were never checked at all"
+fi
+# A pass must mean paths were actually resolved from the files that exist —
+# hooks.json present but zero ${CLAUDE_PLUGIN_ROOT} paths extracted means the
+# walk broke, not that the plugins are clean. No files at all is a different,
+# legitimate case. It lives INSIDE the scanner-ran branch: "no files" may only
+# be concluded from a walk that actually happened.
+if [ "$hook_files_seen" -eq 0 ]; then
+  ok "hooks.json: no plugin ships hooks in this root — nothing to check"
+elif [ "$hook_paths_seen" -eq 0 ]; then
+  bad "hooks.json: $hook_files_seen file(s) present but the walk extracted ZERO handler paths — the check would be green without checking anything"
+fi
+fi
+
 # --- 3. Marketplace <-> plugin wiring --------------------------------------
 group "marketplace wiring"
 python3 - "$REPO_ROOT" <<'PY'
