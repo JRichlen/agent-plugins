@@ -55,19 +55,24 @@ done < <(find . -name '*.json' -not -path './node_modules/*' -type f | sort)
 # lines. voice's identical-looking path is CORRECT (its handler really is at
 # plugins/voice/hooks-handlers/), which is exactly why this is resolved against
 # the filesystem rather than pattern-matched.
-# Coupled: break any handler path, or make the walk find nothing, and this goes red.
+# Coupled: break any handler path, or make the walk extract nothing from files
+# that exist, and this goes red. A root with NO hooks.json at all (the
+# counterfeit corpus's synthetic marketplace, for one) is legitimately "nothing
+# to check", same as every other section — its first push turned that root red.
 group "hooks.json handler paths resolve under their plugin root"
-hook_paths_seen=0
+hook_files_seen=0; hook_paths_seen=0
 while IFS=$'\t' read -r verdict plugin event rel; do
   [ -n "$verdict" ] || continue
+  if [ "$verdict" = "FILE" ]; then hook_files_seen=$((hook_files_seen+1)); continue; fi
   hook_paths_seen=$((hook_paths_seen+1))
   if [ "$verdict" = "OK" ]; then ok "$plugin hooks.json $event -> $rel"
-  else bad "$plugin hooks.json $event -> \${CLAUDE_PLUGIN_ROOT}/$rel does not exist under plugins/$plugin/ — that hook never fires on an installed plugin"; fi
+  else bad "$plugin hooks.json $event -> \${CLAUDE_PLUGIN_ROOT}/$rel is not a file INSIDE plugins/$plugin/ — that hook never fires on an installed plugin, or fires something outside it"; fi
 done < <(python3 - "$REPO_ROOT" <<'PYH'
 import glob, json, os, re, sys
 root = sys.argv[1]
 for f in sorted(glob.glob(os.path.join(root, "plugins", "*", "hooks", "hooks.json"))):
     plugin = f.split(os.sep)[-3]
+    print("\t".join(["FILE", plugin, "", ""]))
     try:
         d = json.load(open(f))
     except Exception:
@@ -76,13 +81,25 @@ for f in sorted(glob.glob(os.path.join(root, "plugins", "*", "hooks", "hooks.jso
         for e in entries or []:
             for h in e.get("hooks") or []:
                 for rel in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\s]+)", h.get("command", "")):
-                    p = os.path.join(root, "plugins", plugin, rel)
-                    print("\t".join(["OK" if os.path.isfile(p) else "BAD", plugin, event, rel]))
+                    # Containment, not just existence: canonicalize and require the
+                    # target to sit INSIDE the plugin dir, as the link resolver does
+                    # further down. `../shared/x.sh` or a symlink out of the plugin
+                    # would otherwise pass isfile() while the installed command
+                    # resolves outside ${CLAUDE_PLUGIN_ROOT}. (Copilot, PR #136)
+                    pdir = os.path.realpath(os.path.join(root, "plugins", plugin))
+                    p = os.path.realpath(os.path.join(pdir, rel))
+                    inside = os.path.commonpath([pdir, p]) == pdir
+                    print("\t".join(["OK" if (inside and os.path.isfile(p)) else "BAD", plugin, event, rel]))
 PYH
 )
-# A pass must mean paths were actually resolved, not that the walk found nothing.
-if [ "$hook_paths_seen" -eq 0 ]; then
-  bad "hooks.json walk resolved ZERO handler paths — the check would be green without checking anything"
+# A pass must mean paths were actually resolved from the files that exist —
+# hooks.json present but zero ${CLAUDE_PLUGIN_ROOT} paths extracted means the
+# walk broke, not that the plugins are clean. No files at all is a different,
+# legitimate case.
+if [ "$hook_files_seen" -eq 0 ]; then
+  ok "hooks.json: no plugin ships hooks in this root — nothing to check"
+elif [ "$hook_paths_seen" -eq 0 ]; then
+  bad "hooks.json: $hook_files_seen file(s) present but the walk extracted ZERO handler paths — the check would be green without checking anything"
 fi
 
 # --- 3. Marketplace <-> plugin wiring --------------------------------------
