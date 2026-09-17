@@ -1,0 +1,135 @@
+{
+  "schema_version": "adaptive-review-corpus/v1",
+  "frozen": true,
+  "tasks": [
+    {
+      "id": "dev-117",
+      "split": "development",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/117",
+      "title": "Adaptive behavior v1",
+      "input": "Control mechanisms have been exercised; user benefit and judge calibration remain unproven. Runtime expansion is paused. Freeze a small corpus around issues containing too much context. Compare a baseline and one concise-review candidate on held-out tasks, retain outputs, deterministic checks, blinded human labels and total usage, and calibrate an independent frontier judge against human labels. External grading requires separately authorized inputs and spending limits. Report improvement, regression or inconclusive evidence. Only a supported result advances to an approved, scoped install with demonstrated rollback.",
+      "required_facts": [
+        {"id": "runtime-paused", "text": "Runtime expansion is paused."},
+        {"id": "judge-authorization", "text": "External grading needs separate input authorization and a spending limit."}
+      ],
+      "required_actions": [
+        {"id": "compare-held-out", "text": "Compare baseline and candidate on held-out tasks."},
+        {"id": "classify-result", "text": "Report improvement, regression, or inconclusive evidence."},
+        {"id": "gate-install", "text": "Require approval, scoped installation, and rollback before advancement."}
+      ]
+    },
+    {
+      "id": "dev-084",
+      "split": "development",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/84",
+      "title": "Trigger semantics and description compression",
+      "input": "Skill descriptions currently blur implied triggers, explicit user triggers, dependency calls, state or risk gates, always-on invariants, and offer-only behavior. Descriptions should be compact routing indexes rather than miniature instruction sets. The design must separate routing eligibility, authorization, and workflow ownership; define precedence and overrides; generate harness-specific descriptions from one canonical declaration; and measure routing accuracy and context cost. It must also cover collisions, false positives, false negatives, opt-out, confirmation gates, and migration without inflating descriptions.",
+      "required_facts": [
+        {"id": "separate-concepts", "text": "Routing eligibility, authorization, and workflow ownership are distinct."},
+        {"id": "compact-index", "text": "Descriptions should be compact routing indexes."}
+      ],
+      "required_actions": [
+        {"id": "define-precedence", "text": "Define trigger precedence and overrides."},
+        {"id": "measure-routing", "text": "Measure routing quality and context cost."}
+      ]
+    },
+    {
+      "id": "holdout-101",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/101",
+      "title": "Portable agent request contract",
+      "input": "Define a small, versioned, portable contract that lets an external gateway identify an agent request, correlate it to durable work, and enforce coarse model and tool policy without ingesting the full prompt or hidden reasoning. Use opaque identifiers and bounded enums. Keep routing eligibility, authorization, workflow ownership, and approval state distinct. Unknown schema versions and malformed fields fail closed. The deliverable includes a schema, validator, transport mapping, capability taxonomy, threat model, counterfeit cases, and representative requests. Deploying Aperture, implementing an always-on dispatcher, granting connector access, and embedding prompt content in telemetry are explicitly out of scope.",
+      "required_facts": [
+        {"id": "no-prompt-metadata", "text": "The contract must not carry prompts or hidden reasoning."},
+        {"id": "separate-authority", "text": "Routing and model choice do not grant tool authority."},
+        {"id": "non-goals", "text": "Deployment and connector access are out of scope."}
+      ],
+      "required_actions": [
+        {"id": "deliver-contract", "text": "Produce the versioned schema and validator."},
+        {"id": "test-counterfeits", "text": "Cover spoofing, replay, malformed input, and privacy violations."}
+      ]
+    },
+    {
+      "id": "holdout-102",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/102",
+      "title": "Subject matrix and grader calibration",
+      "input": "The behavioral tier currently uses one subject model and one grader with three repeats, so its claims are narrow. Add an advisory subject-model matrix, a blind human calibration set keyed to stored output hashes, grader self-consistency and cross-family checks, then real-agent protocol runs. The offline harness can land without keys, but no new layer becomes required in the same pull request. A calibration stub that passes under a new subject is a rubric finding, not a green result. Record findings with run numbers and update testing documentation with any new job or pack.",
+      "required_facts": [
+        {"id": "current-limit", "text": "Current evidence is one subject, one grader, and three repeats."},
+        {"id": "advisory-first", "text": "New model legs are advisory first."},
+        {"id": "stub-failure", "text": "A passing calibration stub invalidates the rubric for that subject."}
+      ],
+      "required_actions": [
+        {"id": "blind-human", "text": "Create blind human labels tied to output hashes."},
+        {"id": "measure-agreement", "text": "Measure grader agreement and self-consistency."},
+        {"id": "update-docs", "text": "Update testing documentation with new jobs or packs."}
+      ]
+    },
+    {
+      "id": "holdout-089",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/89",
+      "title": "Agentic and composition testing",
+      "input": "Document every existing evaluation tier before extending the test architecture. Then add decision-point probes, plan audits, trajectory runs with deterministic artifact audit, and release-cadence cross-plugin composition runs. Test decisions rather than scripts, force protocol state onto disk, include a negative on both sides of every boundary, and preserve FAULT versus verdict separation. Any pull request that adds, removes, renames, or re-scopes an eval tier, workflow job, or per-plugin pack must update the testing document in the same pull request, with a cheap drift check enforcing both directions.",
+      "required_facts": [
+        {"id": "document-first", "text": "Document the existing architecture before extending it."},
+        {"id": "fault-verdict", "text": "Transport faults remain distinct from behavioral verdicts."},
+        {"id": "same-pr-docs", "text": "Testing inventory changes require same-PR documentation."}
+      ],
+      "required_actions": [
+        {"id": "layer-tests", "text": "Sequence decision probes, plan audits, trajectories, and composition runs."},
+        {"id": "negative-controls", "text": "Add negative controls on both sides of each boundary."},
+        {"id": "drift-check", "text": "Enforce documentation drift deterministically."}
+      ]
+    },
+    {
+      "id": "holdout-085",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/issues/85",
+      "title": "Minimal context experiment",
+      "input": "Compare baseline, taxonomy, recipe-aware, and full-agent-os context on the same six scenarios. Keep total spend below $0.05 with deterministic model resolution and conservative preflight. Preserve raw responses, blind judgments, per-call token and cost ledgers, aggregate and scenario deltas, hard failures, and representative examples. Do not make the experiment required CI and do not merge the design pull request. Prefer the smallest treatment within the useful-signal band without new hard failures.",
+      "required_facts": [
+        {"id": "four-arms", "text": "The experiment compares four named context treatments."},
+        {"id": "cost-cap", "text": "The maximum spend is $0.05."},
+        {"id": "not-required", "text": "The experiment must not become required CI."}
+      ],
+      "required_actions": [
+        {"id": "retain-evidence", "text": "Retain raw, blinded, usage, delta, and hard-failure evidence."},
+        {"id": "smallest-useful", "text": "Prefer the smallest useful treatment without new hard failures."}
+      ]
+    },
+    {
+      "id": "holdout-107",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/pull/107",
+      "title": "Offline agent-request core",
+      "input": "This draft adds an offline agent-request/v1 core with a closed schema, deterministic validation against separately supplied trusted context, exact approval and replay checks, bounded canonical HTTP and OpenAI header mapping, counterfeit fixtures, and safe role examples. The sender rejects unknown or free-form fields before encoding. The receiver rejects duplicate or noncanonical JSON, binds operational fields and dispatcher provenance to trusted context, and returns stable non-sensitive errors. It does not provide a live issuer, signatures, durable replay storage, verified Aperture integration, permissions, gateway deployment, or rollout.",
+      "required_facts": [
+        {"id": "offline-draft", "text": "The implementation is an offline draft."},
+        {"id": "trusted-context", "text": "Operational fields are validated against separate trusted context."},
+        {"id": "no-live-security", "text": "Live issuance, signatures, durable replay storage, and deployment are absent."}
+      ],
+      "required_actions": [
+        {"id": "reject-free-form", "text": "Reject unknown and free-form sender fields."},
+        {"id": "reject-noncanonical", "text": "Reject duplicate and noncanonical receiver input."}
+      ]
+    },
+    {
+      "id": "holdout-115",
+      "split": "held-out",
+      "source": "https://github.com/JRichlen/agent-plugins/pull/115",
+      "title": "Marketplace-wide agentic test framework",
+      "input": "The pull request proposes an offline agentic test framework, a red-team lane, a 52-entry catalog, a 75-card corpus, native adapters, approval-gated drivers, provenance controls, attempt accounting, clustered statistics, and model-pricing checks. Its own evidence says native and paid behavior remains blocked and corpus tests are framework evidence rather than empirical plugin findings. Review also found required-gate portability failures: one probe assumes installed CLIs, another cheap check assumes a host-local Promptfoo install, and several text reads rely on locale-default encoding.",
+      "required_facts": [
+        {"id": "framework-only", "text": "The corpus proves framework mechanics, not plugin benefit."},
+        {"id": "native-paid-blocked", "text": "Native and paid behavior is still blocked."},
+        {"id": "portability-findings", "text": "Review found clean-checkout and locale portability problems."}
+      ],
+      "required_actions": [
+        {"id": "fix-portability", "text": "Resolve portability failures before adopting the framework."},
+        {"id": "do-not-claim-benefit", "text": "Do not treat framework tests as behavioral benefit."}
+      ]
+    }
+  ]
+}
