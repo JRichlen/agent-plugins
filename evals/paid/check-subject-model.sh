@@ -46,6 +46,10 @@ cd "$ROOT" || exit 1
 
 # Fallback ceiling for a provider that declares no max_tokens of its own.
 DEFAULT_PING_TOKENS=8
+# A 429 is retried this many times before the check fails closed; the waits are
+# short because the tier behind it is about to spend forty minutes.
+RATE_LIMIT_RETRIES=3
+RATE_LIMIT_BACKOFF=(5 15 30)
 
 MODE="${1:-ping}"
 case "$MODE" in
@@ -253,17 +257,40 @@ while IFS="$(printf '\t')" read -r model mt; do
   tokens="${mt:-0}"
   [ "$tokens" -gt 0 ] 2>/dev/null || tokens="$DEFAULT_PING_TOKENS"
   body="$(mktemp)"
-  code=$(curl -sS -o "$body" -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
-    -H "Authorization: Bearer $OPENROUTER_API_KEY" \
-    -H "content-type: application/json" \
-    -d "{\"model\":\"$model\",\"max_tokens\":$tokens,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
+  # A 429 is retried, NOT waved through. Rationale, learned the hard way on run
+  # 35287312617: this check pinged at 23:32:49, got a 429, printed it as
+  # "::warning:: not conclusive" and exited 0 — and the behavioral tier then
+  # drowned, 6 of 9 rows in the packs that finished coming back as
+  # RateLimitExhaustedError or "timed out after 300000ms in queue", with
+  # pass-rate.sh correctly declaring the scenarios STARVED. The account was
+  # funded throughout (balance $47.54), so affordability was never the issue.
+  #
+  # A single 429 really can be transient, which is why the original warning was
+  # defensible. But a 429 that SURVIVES backoff is the best predictor available
+  # that the tier is about to starve, and a preflight that cannot predict the
+  # failure it exists to prevent is decoration. So: retry with backoff, and if
+  # it still 429s, fail — the whole point of this job is to spend six seconds
+  # here instead of forty minutes downstream.
+  attempt=0
+  while : ; do
+    code=$(curl -sS -o "$body" -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
+      -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+      -H "content-type: application/json" \
+      -d "{\"model\":\"$model\",\"max_tokens\":$tokens,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
+    [ "$code" = "429" ] || break
+    attempt=$((attempt+1))
+    [ "$attempt" -le "$RATE_LIMIT_RETRIES" ] || break
+    echo "subject model '$model': HTTP 429 on attempt $attempt — backing off ${RATE_LIMIT_BACKOFF[$((attempt-1))]}s and retrying."
+    sleep "${RATE_LIMIT_BACKOFF[$((attempt-1))]}"
+  done
   case "$code" in
     200) echo "subject model '$model' reachable AND affordable at max_tokens=$tokens — the ceiling the packs actually request." ;;
     401) echo "::error::subject model '$model': HTTP 401 — the OpenRouter key is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
     402) echo "::error::subject model '$model': HTTP 402 at max_tokens=$tokens — OpenRouter will not fund a request this size, so every real-skill row in every pack will fail the same way. Remedies, in the vendor's words: add credit, or lower max_tokens in the pack configs to fit the remaining balance."
          sed -e 's/^/    /' "$body" 2>/dev/null | head -3; fail=1 ;;
     404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
-    429) echo "::warning::subject model '$model': HTTP 429 — rate limited right now; not conclusive." ;;
+    429) echo "::error::subject model '$model': HTTP 429 after $RATE_LIMIT_RETRIES retries with backoff — this key cannot sustain even ONE request right now, so the behavioral tier's dozen concurrent legs will starve rather than fail honestly. Observed downstream as RateLimitExhaustedError and 300s queue timeouts, which pass-rate.sh reports as STARVED. This is a throughput limit, not a funding one: check the account balance printed above before adding credit. Remedies: wait for the limit to reset, lower maxConcurrency in the pack configs, or cap the matrix's max-parallel so fewer legs run at once."
+         sed -e 's/^/    /' "$body" 2>/dev/null | head -3; fail=1 ;;
     *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' "$body" 2>/dev/null | head -5; fail=1 ;;
   esac
   rm -f "$body"

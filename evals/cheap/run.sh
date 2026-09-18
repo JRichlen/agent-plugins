@@ -1560,6 +1560,47 @@ print("  PASS subject preflight probes BOTH the key cap and the account balance,
 PYB
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 19a2d. A rate-limited preflight fails closed, it does not shrug ---------
+# The subject preflight exists to spend six seconds predicting a forty-minute
+# failure. On run 35287312617 it pinged, got HTTP 429, printed
+# "::warning:: rate limited right now; not conclusive" and exited 0 — and the
+# behavioral tier then starved: RateLimitExhaustedError and 300s queue timeouts
+# across the packs, pass-rate.sh correctly reporting STARVED, no verdict from a
+# whole paid run, with the account funded the entire time. A 429 that survives
+# backoff is the strongest available predictor of exactly that, so it must fail
+# the check.
+# Coupled: turn the 429 branch back into a warning, drop fail=1 from it, or
+# remove the retry-with-backoff, and this goes red.
+group "subject preflight fails closed on a sustained 429"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+# The 429 arm of the case statement, up to its terminating ;;
+m = re.search(r"^\s*429\)(.*?);;", txt, re.S | re.M)
+if not m:
+    prob.append("no 429 branch found — an unhandled 429 falls to the catch-all, which is luck, not design")
+else:
+    arm = m.group(1)
+    if "fail=1" not in arm:
+        prob.append("the 429 branch does not set fail=1, so a rate-limited key reports the subject healthy and the tier starves downstream (run 35287312617)")
+    if "::warning::" in arm and "::error::" not in arm:
+        prob.append("the 429 branch still only warns; a 429 surviving backoff predicts a starved tier and must be an error")
+# Retry-with-backoff must exist, or a single transient 429 fails every run.
+if not re.search(r"RATE_LIMIT_RETRIES", txt):
+    prob.append("no RATE_LIMIT_RETRIES — failing on the FIRST 429 would make every run hostage to one transient blip")
+if not re.search(r"sleep\s+\"?\$\{?RATE_LIMIT_BACKOFF", txt):
+    prob.append("the retry loop does not actually back off between attempts, so three immediate retries prove nothing")
+if prob:
+    print("  FAIL subject preflight 429 handling: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight retries a 429 with backoff, then fails closed"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
 # The gallery's whole supply chain runs through this script, and it silently
 # captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —

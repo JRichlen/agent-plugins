@@ -371,7 +371,14 @@ that it is green because it did not run, never silently.
 - **What it proves.** That the model every behavioral pack actually tests is
   *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
   slug still exists. It reports the distinct HTTP causes separately (401 revoked
-  key, 402 no credit, 404 moved slug) so the fix is named rather than guessed.
+  key, 402 no credit, 404 moved slug, 429 rate limited) so the fix is named
+  rather than guessed. A **429 is retried with backoff and then FAILS the
+  job** — it used to warn and pass, and run 35287312617 showed what that cost:
+  the preflight saw a 429, called it "not conclusive", exited 0, and the
+  behavioral tier then starved on RateLimitExhaustedError and 300s queue
+  timeouts with the account funded the whole time. A 429 that survives backoff
+  is a throughput verdict, not a blip, and it is the cheapest available
+  prediction that the packs behind it will produce no verdict at all.
   It also probes **both** numbers that gate an OpenRouter request, because they
   fail independently: this key's own spending cap (`/api/v1/key` →
   `limit_remaining`) and the account balance behind every key (`/api/v1/credits`

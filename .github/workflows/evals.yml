@@ -306,6 +306,21 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Cap the burst. Every leg runs promptfoo at maxConcurrency 3, so an
+      # uncapped matrix of a dozen packs asks one OpenRouter key for ~36
+      # concurrent completions, and the routing tier's two packs pile on top in
+      # the same workflow. Run 35287312617 is what that looks like when the
+      # key's rate limit is below the demand: legs sat 38+ minutes, rows came
+      # back as RateLimitExhaustedError and "timed out after 300000ms in
+      # queue", and pass-rate.sh declared scenarios STARVED — a whole paid run
+      # yielding no verdict, with the account funded the entire time ($47.54).
+      #
+      # 4 is a starting point, not a measured optimum: it takes concurrent
+      # demand from ~36 to ~12, and the tier's wall-clock becomes three waves
+      # of legs rather than one. Tune it against the STARVED signal — that is
+      # the honest feedback channel here, since pass-rate.sh fails closed on
+      # FAULT-starved scenarios instead of scoring them.
+      max-parallel: 4
       matrix:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
