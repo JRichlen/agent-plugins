@@ -973,6 +973,35 @@ else:
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+# Token budget (run 35296766647): at max_tokens 4096 this pack truncated 30 of
+# its 70 rows — the model burned the whole completion budget on reasoning tokens
+# and returned an empty string, which the pack's own fail-closed ROUTE assertion
+# then scored as six failing scenarios. The sibling pack in the same tier
+# (trajectory/) was already at 8192 and truncated none, while asking LESS of the
+# model: this pack carries the full roster in context and a composition to pick.
+# So the rule is relative, not a magic number — routing's budget may never be
+# smaller than the pack it ships beside. Comments are stripped before matching,
+# because the prose above names both figures and a guard that reads prose proves
+# nothing (the third such hole found in this file).
+if [ -f evals/routing/trajectory/promptfooconfig.yaml ]; then
+python3 - "$REPO_ROOT" <<'PYT'
+import os, re, sys
+root = sys.argv[1]
+def budget(rel):
+    txt = open(os.path.join(root, rel)).read()
+    code = "\n".join(l for l in txt.splitlines() if not l.lstrip().startswith("#"))
+    m = re.search(r'^\s*max_tokens:\s*(\d+)', code, re.M)
+    return int(m.group(1)) if m else None
+r = budget("evals/routing/promptfooconfig.yaml")
+t = budget("evals/routing/trajectory/promptfooconfig.yaml")
+if r is None or t is None:
+    print(f"  FAIL routing: could not read max_tokens (routing={r}, trajectory={t}) — the truncation guard cannot see the budget"); sys.exit(1)
+if r < t:
+    print(f"  FAIL routing: max_tokens {r} is below the trajectory pack's {t} — routing carries strictly more context, and at a smaller budget it truncates (30/70 rows on run 35296766647) and reports the truncations as skill failures"); sys.exit(1)
+print(f"  PASS routing: max_tokens {r} is at least the sibling trajectory pack's {t} (truncation cliff, run 35296766647)")
+PYT
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 fi
 
 # --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
@@ -1056,6 +1085,31 @@ json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
 # read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
 def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
 json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
+# TRUNCATION (run 35296766647): the subject spent its whole completion budget on
+# reasoning tokens and emitted NO visible answer, so the pack's own fail-closed
+# structural assertion fired on the empty string. The row therefore looks like a
+# rubric failure (failureReason 1 + .error) but the provider states the cause:
+# finishReason "length" with an empty output. Those rows must be excluded as
+# FAULTs — scoring them drags real scenarios below the floor and fabricates a RED
+# verdict out of a token-budget defect (6 routing scenarios, run 35296766647).
+def trow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"length","tokenUsage":{"completion":4096,"completionDetails":{"reasoning":4096}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("F"),prow("F"),prow("F"),trow("F"),trow("F")]}}, open(d+"/trunc-ok.json","w"))
+# ...but an all-truncated scenario is "never tested", not "green": fail closed,
+# exactly as the 504 storm does.
+json.dump({"results":{"results": rows("A",3,3)+[trow("G"),trow("G"),trow("G")]}}, open(d+"/trunc-starved.json","w"))
+# ...and the truncation clause must stay NARROW. A non-pass with an empty body
+# and finishReason "stop" carries NO truncation signal — the model simply
+# answered with nothing and the grader failed it. That is a real FAIL; excusing
+# it would let any empty answer launder itself as weather (fail-open). 4/5 = 0.80
+# < 0.9 must fail.
+def erow_stop(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"stop"}}
+json.dump({"results":{"results": rows("H",4,4)+[erow_stop("H")]}}, open(d+"/empty-stop.json","w"))
+# ...and the EMPTY-body half of the clause is load-bearing too. A row that hit
+# the token cap but still emitted a judgeable answer gave the grader something
+# real to judge, and the grader rejected it: that is a FAIL. Dropping the
+# empty-body condition would excuse every wrong-but-long answer as weather.
+def trow_answered(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"ROUTE: specialist=wrong | envelope=none | guards=none","finishReason":"length"}}
+json.dump({"results":{"results": rows("I",4,4)+[trow_answered("I")]}}, open(d+"/trunc-answered.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -1102,6 +1156,38 @@ if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/d
   bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
 else
   ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
+fi
+# A row truncated at the token cap with no visible answer must be EXCLUDED, not
+# scored: scenario F is 3/3 on its valid samples with two truncations dropped ->
+# the run passes. Unfixed this reads 3/5 = 0.60 < 0.8 and fails, which is how run
+# 35296766647 reported six never-answered routing scenarios as skill failures.
+if bash "$_pr" "$_tmp/trunc-ok.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a row truncated at max_tokens with no answer is excluded, not scored as a failure"
+else
+  bad "pass-rate: a truncated (finishReason=length, empty output) row was counted as a rubric failure — a token-budget defect reads as a skill failure"
+fi
+# An all-truncated scenario has zero valid samples -> never actually tested ->
+# must fail CLOSED, same as a 504 storm.
+if bash "$_pr" "$_tmp/trunc-starved.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an all-truncated scenario passed — a truncation storm read as green (fail-open)"
+else
+  ok "pass-rate: an all-truncated scenario fails closed (never answered != green)"
+fi
+# The truncation clause must not widen into "any empty answer is weather": with
+# finishReason "stop" there is no truncation signal, so the row is a real FAIL.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/empty-stop.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an empty answer with finishReason=stop was excluded as a FAULT — the truncation clause laundered a real failure (fail-open)"
+else
+  ok "pass-rate: an empty answer is only a FAULT when the provider says it truncated; finishReason=stop stays a scored FAIL"
+fi
+# ...and a row that hit the cap but still produced an answer the grader rejected
+# is a real FAIL: the clause needs BOTH the stop reason and an empty body.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/trunc-answered.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a truncated row that DID emit an answer was excluded as a FAULT — the truncation clause no longer requires an empty body (fail-open)"
+else
+  ok "pass-rate: a truncated row that still emitted a judgeable answer is scored as a FAIL, not excluded"
 fi
 rm -rf "$_tmp"
 

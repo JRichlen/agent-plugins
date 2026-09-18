@@ -122,12 +122,45 @@ def output_text(r):
 #     shapes that predate the field: FAULT;
 #   * the row did not pass AND its body is nothing but repeated <think>/</think>
 #     control tokens (the truncation-degeneracy we actually observed, gap #4
-#     evidence table) — a 200 that returned no real answer: FAULT.
-# Deliberately NOT here: a non-pass with an empty-but-untagged body and no error.
-# With no error signal we must not GUESS infra — an empty answer the grader failed
-# is a real FAIL, and excusing it would let a broken model launder failures as
-# FAULTs. Only explicit error signals or the narrow degeneracy shape count.
+#     evidence table) — a 200 that returned no real answer: FAULT;
+#   * the row did not pass, its visible body is EMPTY, and the provider itself
+#     says the completion stopped at the token cap (finishReason "length" /
+#     "max_tokens") — the reasoning trace ate the whole completion budget and no
+#     answer was ever emitted: FAULT. Observed on run 35296766647, where 30 of
+#     routing's 70 rows came back with completion == completionDetails.reasoning
+#     == max_tokens, output "", finishReason "length". Those rows carry
+#     failureReason 1, because the pack's own fail-closed structural assertion
+#     ("no ROUTE: line found") fires on the empty string — so WITHOUT this clause
+#     a truncation storm reads as 30 genuine skill failures and drags six
+#     scenarios below the floor. That is the mirror image of the fail-open bug
+#     this file already warns about: it fabricates a RED verdict out of weather.
+#     Narrow on purpose: the provider's own stop reason is the signal, and the
+#     body must be empty. A truncated row that still emitted a judgeable answer
+#     stays a scored sample.
+# Deliberately NOT here: a non-pass with an empty-but-untagged body and NO stop
+# reason and no error. With no signal at all we must not GUESS infra — an empty
+# answer the grader failed is a real FAIL, and excusing it would let a broken
+# model launder failures as FAULTs. Only explicit error signals, an explicit
+# truncation stop reason, or the narrow degeneracy shape count.
 _DEGEN = re.compile(r'^(?:\s*</?think>\s*)+$', re.IGNORECASE)
+# Stop reasons that mean "the completion hit the token cap", across the shapes
+# promptfoo's providers report: OpenRouter/OpenAI say "length", the Anthropic and
+# Gemini shapes say max_tokens / max_output_tokens.
+_TRUNCATED = {"length", "max_tokens", "max_output_tokens", "maxtokens"}
+def finish_reason(r):
+    resp = r.get("response") or {}
+    for k in ("finishReason", "finish_reason", "stopReason", "stop_reason"):
+        v = resp.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip().lower()
+    return ""
+
+def is_truncated(r):
+    """Empty visible answer AND the provider says it stopped at the token cap."""
+    if r.get("success") is True:
+        return False
+    return not output_text(r).strip() and finish_reason(r) in _TRUNCATED
+
 def is_fault(r):
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
@@ -143,6 +176,8 @@ def is_fault(r):
         err = r.get("error")
         if isinstance(err, str) and err.strip():
             return True
+    if is_truncated(r):
+        return True
     if r.get("success") is not True:
         body = output_text(r).strip()
         if body and _DEGEN.match(body):
@@ -161,10 +196,12 @@ def provider_of(r):
 agg = {}
 for r in rows:
     k = (provider_of(r) if by_provider else "", key(r))
-    a = agg.setdefault(k, {"runs": 0, "valid": 0, "pass": 0, "fault": 0})
+    a = agg.setdefault(k, {"runs": 0, "valid": 0, "pass": 0, "fault": 0, "trunc": 0})
     a["runs"] += 1
     if is_fault(r):
         a["fault"] += 1
+        if is_truncated(r):
+            a["trunc"] += 1
     else:
         a["valid"] += 1
         if r.get("success") is True:
@@ -189,6 +226,7 @@ for prov in providers:
     for k in sorted(s for p, s in agg if p == prov):
         a = agg[(prov, k)]
         runs, valid, passes, fault = a["runs"], a["valid"], a["pass"], a["fault"]
+        trunc = a["trunc"]
         rate = passes / valid if valid else 0.0
         if runs < min_runs:
             tag = "UNDER-REPEATED"
@@ -205,6 +243,8 @@ for prov in providers:
         if not strict and tag != "OK":
             tag = "ADVISORY " + tag
         fnote = f"  ({fault} FAULT excluded)" if fault else ""
+        if trunc:
+            fnote += f" [{trunc} truncated at the token cap — raise max_tokens]"
         print(f"  [{tag}] {passes}/{valid} valid = {rate:.2f}  [{runs} rows]{fnote}  {k[:90]}")
 if advisory_below:
     print(f"pass-rate: advisory — {advisory_below} scenario(s) below the floor under a non-baseline subject; read the report before promoting that subject (#102)")
@@ -212,6 +252,9 @@ if advisory_below:
 if under_runs:
     print(f"pass-rate: FAIL — {under_runs} scenario(s) ran fewer than {min_runs} times; this was not a repeated run (fail-closed)", file=sys.stderr)
     sys.exit(1)
+total_trunc = sum(a["trunc"] for a in agg.values())
+if total_trunc:
+    print(f"pass-rate: {total_trunc} row(s) were excluded as TRUNCATED — the provider stopped the completion at max_tokens before any visible answer was emitted. That is a token-budget defect in the pack, not evidence about the skill; raise max_tokens (or cap the reasoning budget) and re-run.")
 if starved:
     print(f"pass-rate: FAIL — {starved} scenario(s) had fewer than {min_valid} VALID samples after excluding FAULTs; the model call kept erroring, so the scenario was never actually tested (fail-closed — a 504 storm is not a green)", file=sys.stderr)
     sys.exit(1)

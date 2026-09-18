@@ -529,6 +529,23 @@ uninterpretable n=1 and no required check goes red on the weather:
   assertion-failed row *also* carries `.error` (the assertion message).
   `.error` alone marks a FAULT only on legacy rows with no `failureReason`
   recorded.
+- **Truncation is a FAULT, not a failure** — a completion the provider cut off
+  at `max_tokens` returns HTTP **200** with an empty body, so promptfoo records
+  it as `failureReason` **1**: the pack's own fail-closed assertion firing on
+  the empty string. Read literally that is 30 skill failures; it is actually 30
+  unanswered calls. `pass-rate.sh` therefore excludes a row whose visible output
+  is empty **and** whose `finishReason` is `length`/`max_tokens` — both halves
+  required, so a truncated row that still emitted a judgeable answer stays a
+  scored FAIL, and an empty answer with `finishReason: stop` stays a scored FAIL
+  (no signal means no excuse). The report names the count and points at the
+  budget. Found on run 35296766647, where 30 of routing's 70 rows came back with
+  `completion == completionDetails.reasoning == max_tokens` and six scenarios
+  read as below-floor; two of them had never produced a single answer. Guarded
+  in `evals/cheap/run.sh` §18 by four fixtures, each mutation-tested.
+- **Routing's budget is relative, not a magic number** — `evals/routing/`
+  carries the full roster plus a composition to pick, so its `max_tokens` may
+  never be below the sibling `evals/routing/trajectory/` pack's. The cheap tier
+  compares the two configs (comments stripped) and fails if routing is smaller.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.

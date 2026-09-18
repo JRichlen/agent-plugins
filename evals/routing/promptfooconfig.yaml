@@ -55,7 +55,28 @@ prompts:
 providers:
   - id: openrouter:qwen/qwen3.8-flash
     config:
-      max_tokens: 4096
+      # 4096 -> 8192 (measured, run 35296766647). At 4096 this pack truncated 30
+      # of its 70 rows: completion == completionDetails.reasoning == 4096,
+      # finishReason "length", output "". The model spent its ENTIRE completion
+      # budget on reasoning tokens and never emitted a ROUTE: line, so rule 1 of
+      # route-contract.js fired on the empty string and six scenarios read as
+      # skill failures — S1 and prove-the-undo at 5/5 truncated, i.e. never
+      # answered once. The rows that DID answer confirm the cliff rather than a
+      # concurrency problem: every one finished with "stop", and their reasoning
+      # ran to 3780 tokens against a 4096 cap.
+      #
+      # 8192 is not a new budget, it is the one trajectory/promptfooconfig.yaml
+      # in this same tier already uses — and that pack truncated 0 of 25 rows on
+      # the same run with the same model. This pack asks strictly more of the
+      # model (the full roster.txt in context, a composition to pick, 1680 prompt
+      # tokens), so it needed the larger budget first, not last.
+      #
+      # Cost: OpenRouter reserves credit against max_tokens, so the in-flight
+      # reservation for this pack doubles. Actual spend rises only on rows that
+      # really use the room — and the 30 truncated rows were already burning a
+      # full 4096 completion each to return nothing, so that half of the spend
+      # buys samples now instead of buying blanks.
+      max_tokens: 8192
       # Grade the REPLY, not the reasoning trace. promptfoo's OpenRouter
       # provider otherwise prepends `Thinking: <reasoning>\n\n` to the graded
       # output when the model returns reasoning tokens, so a ROUTE: line the
@@ -79,6 +100,17 @@ evaluateOptions:
   # 402s land as failureReason 2, which pass-rate.sh classifies as FAULTs and
   # reports as STARVED rather than folding into the floor. Lower it back if a
   # run comes back starved.
+  #
+  # That claim was true but too narrow, and run 35296766647 found the gap: a
+  # request can also fail LOUDLY to the provider and QUIETLY to the gate. A
+  # completion truncated at max_tokens returns HTTP 200 with an empty body, so
+  # promptfoo records failureReason 1 (the pack's own ROUTE assertion failing on
+  # the empty string), not 2 — and 30 such rows read as skill failures. The fix
+  # was on both sides: max_tokens above, and an explicit truncation clause in
+  # pass-rate.sh that excludes an empty answer the provider says it cut off. So
+  # "concurrency failures are always visible as FAULTs" holds only for errors the
+  # provider reports AS errors; check the finishReason histogram before reading a
+  # red routing run as a routing verdict.
   maxConcurrency: 8
   # Statistical rigor (gap #4): a stochastic router that passes a scenario ~55%
   # of the time is a coin-flip at n=1. Run each scenario 5x; evals/paid/pass-rate.sh
