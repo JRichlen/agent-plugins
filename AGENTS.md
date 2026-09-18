@@ -60,8 +60,8 @@ each tier is a superset of the confidence of the one above it, so a deep change
 runs all three.
 
 **1. cheap — always, before every commit that touches `plugins/**` or `evals/**`.**
-Deterministic, offline, free. ~19s for 1290 checks across 25 plugins, measured
-2026-09-14 — it scales with the plugin count, so re-measure rather than trusting
+Deterministic, offline, free. ~14s for 1296 checks across 25 plugins, measured
+2026-09-18 — it scales with the plugin count, so re-measure rather than trusting
 this number:
 
 ```sh
