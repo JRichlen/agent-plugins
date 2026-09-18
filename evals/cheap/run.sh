@@ -1108,8 +1108,19 @@ json.dump({"results":{"results": rows("H",4,4)+[erow_stop("H")]}}, open(d+"/empt
 # the token cap but still emitted a judgeable answer gave the grader something
 # real to judge, and the grader rejected it: that is a FAIL. Dropping the
 # empty-body condition would excuse every wrong-but-long answer as weather.
-def trow_answered(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"ROUTE: specialist=wrong | envelope=none | guards=none","finishReason":"length"}}
+def trow_answered(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"ROUTE: specialist=wrong | envelope=none | guards=none","finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":7523}}}}
 json.dump({"results":{"results": rows("I",4,4)+[trow_answered("I")]}}, open(d+"/trunc-answered.json","w"))
+# ...and the no-answer shape that is NOT an empty body. promptfoo surfaces a
+# model's reasoning trace as the output, so a completion that spent every token
+# deliberating arrives as tens of KB of text that never resolves into an answer
+# — non-empty, and indistinguishable from a real answer by length alone. The
+# provider's own accounting is the discriminator: completion ==
+# completionDetails.reasoning means zero answer tokens were emitted.
+# (agent-compiler, run 35298840491: 36 KB of deliberation, completion ==
+# reasoning == 8192, cut off mid-sentence, and the grader said "there is no
+# final response here".)
+def trow_allthink(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rubric: the response never resolves into a final answer","response":{"output":"We need answer user request. Need produce final response only. Need analyze. " * 400,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("J"),prow("J"),prow("J"),trow_allthink("J"),trow_allthink("J")]}}, open(d+"/trunc-allthink.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -1188,6 +1199,16 @@ if bash "$_pr" "$_tmp/trunc-answered.json" --floor 0.9 --min-runs 2 --min-valid 
   bad "pass-rate: a truncated row that DID emit an answer was excluded as a FAULT — the truncation clause no longer requires an empty body (fail-open)"
 else
   ok "pass-rate: a truncated row that still emitted a judgeable answer is scored as a FAIL, not excluded"
+fi
+# A truncation whose output is a long reasoning trace with ZERO answer tokens is
+# still a no-answer truncation: scenario J is 3/3 on its valid samples with the
+# two reasoning-dumps dropped. Unfixed this reads 3/5 = 0.60 < 0.8 and fails,
+# which is how run 35298840491 reported agent-compiler's calibration floor as a
+# 1/3 skill failure when the model had never produced an answer to grade.
+if bash "$_pr" "$_tmp/trunc-allthink.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a truncation that spent every completion token on reasoning is excluded, even though its output is not empty"
+else
+  bad "pass-rate: a no-answer truncation with a reasoning-trace body was counted as a rubric failure — an empty-body check alone misses it, because promptfoo surfaces reasoning as the output"
 fi
 rm -rf "$_tmp"
 

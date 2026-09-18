@@ -538,7 +538,16 @@ uninterpretable n=1 and no required check goes red on the weather:
   required, so a truncated row that still emitted a judgeable answer stays a
   scored FAIL, and an empty answer with `finishReason: stop` stays a scored FAIL
   (no signal means no excuse). The report names the count and points at the
-  budget. Found on run 35296766647, where 30 of routing's 70 rows came back with
+  budget. "No answer" has a **second shape that is not an empty body**: promptfoo
+  surfaces a model's reasoning trace as the output, so a completion that spent
+  every token deliberating arrives as tens of KB of text that never resolves into
+  an answer. The provider's own accounting is the discriminator —
+  `completion == completionDetails.reasoning` means zero answer tokens were
+  emitted — and it is arithmetic, not a guess about the text, since a row with
+  even one answer token has `reasoning < completion`. Found on run 35298840491,
+  where agent-compiler's calibration floor read 1/3 against 36 KB of unresolved
+  deliberation cut off mid-sentence; the grader's own words were *"there is no
+  final response here."* The stop reason is still required for either shape. Found on run 35296766647, where 30 of routing's 70 rows came back with
   `completion == completionDetails.reasoning == max_tokens` and six scenarios
   read as below-floor; two of them had never produced a single answer. Guarded
   in `evals/cheap/run.sh` §18 by four fixtures, each mutation-tested.

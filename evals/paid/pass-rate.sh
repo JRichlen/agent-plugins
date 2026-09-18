@@ -134,9 +134,16 @@ def output_text(r):
 #     a truncation storm reads as 30 genuine skill failures and drags six
 #     scenarios below the floor. That is the mirror image of the fail-open bug
 #     this file already warns about: it fabricates a RED verdict out of weather.
-#     Narrow on purpose: the provider's own stop reason is the signal, and the
-#     body must be empty. A truncated row that still emitted a judgeable answer
-#     stays a scored sample.
+#     Narrow on purpose: the provider's own stop reason is always required. The
+#     no-answer half has two shapes — an empty body, or completion ==
+#     completionDetails.reasoning, which is the provider stating that EVERY
+#     completion token was reasoning and none was an answer. The second shape is
+#     what catches a truncation whose `output` is long but is only an unresolved
+#     reasoning trace, because promptfoo surfaces reasoning as the output
+#     (agent-compiler, run 35298840491: 36 KB of deliberation, cut off
+#     mid-sentence, zero answer tokens, and the grader said so in as many words).
+#     A truncated row that did emit answer tokens (reasoning < completion) gave
+#     the grader something real to judge and stays a scored sample.
 # Deliberately NOT here: a non-pass with an empty-but-untagged body and NO stop
 # reason and no error. With no signal at all we must not GUESS infra — an empty
 # answer the grader failed is a real FAIL, and excusing it would let a broken
@@ -155,11 +162,42 @@ def finish_reason(r):
             return v.strip().lower()
     return ""
 
+def zero_answer_tokens(r):
+    """The provider's own accounting says EVERY completion token was reasoning.
+
+    completion == completionDetails.reasoning means the model emitted no answer
+    tokens at all. This is arithmetic from the provider, not a guess about the
+    text: a row with even one answer token has reasoning < completion. It is the
+    discriminator that catches a no-answer truncation whose `output` is NOT empty
+    because promptfoo surfaces the reasoning trace as the output (observed on
+    agent-compiler, run 35298840491: 28-36 KB of unresolved deliberation,
+    completion == reasoning == 8192, cut off mid-sentence, and the grader's own
+    words were "there is no final response here").
+    """
+    resp = r.get("response") or {}
+    tu = resp.get("tokenUsage") or {}
+    cd = tu.get("completionDetails") or {}
+    comp, reas = tu.get("completion"), cd.get("reasoning")
+    if not isinstance(comp, int) or not isinstance(reas, int) or isinstance(comp, bool) or isinstance(reas, bool):
+        return False
+    return comp > 0 and comp == reas
+
 def is_truncated(r):
-    """Empty visible answer AND the provider says it stopped at the token cap."""
+    """No answer was produced AND the provider says it stopped at the token cap.
+
+    "No answer" has two shapes, and BOTH need the stop reason to count:
+      * the visible output is empty (routing, run 35296766647);
+      * the provider accounts every completion token as reasoning, so the text in
+        `output` is a reasoning trace rather than an answer (agent-compiler, run
+        35298840491).
+    A truncated row that did emit answer tokens gave the grader something real to
+    judge and stays a scored FAIL.
+    """
     if r.get("success") is True:
         return False
-    return not output_text(r).strip() and finish_reason(r) in _TRUNCATED
+    if finish_reason(r) not in _TRUNCATED:
+        return False
+    return (not output_text(r).strip()) or zero_answer_tokens(r)
 
 def is_fault(r):
     fr = r.get("failureReason")
