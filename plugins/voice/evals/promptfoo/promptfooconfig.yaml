@@ -42,7 +42,7 @@ providers:
   # Same model, so every rubric stays calibrated against identical behaviour.
   # Measured cost: ~22k prompt + ~6k completion tokens per run, about $0.04 at
   # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
 

@@ -27,6 +27,7 @@ structurally cannot.
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~1 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
+| [subject-model](#subject-model-reachability-advisory) | `evals/paid/check-subject-model.sh` | ~1 API ping per subject slug | every push/PR (needs secrets; skipped on fork PRs) **and** as a preflight in `refresh-examples.yml` | no — advisory in `evals.yml`; blocking in the refresh, which spends the budget |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
@@ -365,6 +366,84 @@ that it is green because it did not run, never silently.
   plugins/graveyard/evals/pier/run.sh                            # full roster in Docker
   ```
 
+## subject-model reachability (advisory)
+
+- **What it proves.** That the model every behavioral pack actually tests is
+  *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
+  slug still exists. It reports the distinct HTTP causes separately (401 revoked
+  key, 402 no credit, 404 moved slug, 429 rate limited) so the fix is named
+  rather than guessed. A **429 is retried with backoff and then FAILS the
+  job** — it used to warn and pass, and run 35287312617 showed what that cost:
+  the preflight saw a 429, called it "not conclusive", exited 0, and the
+  behavioral tier then starved on RateLimitExhaustedError and 300s queue
+  timeouts with the account funded the whole time. A 429 that survives backoff
+  is a throughput verdict, not a blip, and it is the cheapest available
+  prediction that the packs behind it will produce no verdict at all. The 429
+  message reads `limit_source` before assigning blame: an
+  `upstream_provider_shared_pool` limit is the provider's, and lowering our own
+  concurrency does nothing about it (measured: 36 → 12 concurrent moved FAULTs
+  6/9 → 7/9).
+- **What it prints.** The vendor's error body, because it names the affordable
+  `max_tokens` and carries `limit_source` — but piped through
+  `evals/paid/redact-vendor-ids.sh` first, which strips the workspace
+  key-management URL (its last segment is the key's id) and the `user_id`. The
+  same redactor guards all three failing-transcript dumps in `evals.yml`. Not
+  the API key, so low severity; but a public Actions log is permanent and no
+  part of the diagnosis needs an account identifier.
+  It also probes **both** numbers that gate an OpenRouter request, because they
+  fail independently: this key's own spending cap (`/api/v1/key` →
+  `limit_remaining`) and the account balance behind every key (`/api/v1/credits`
+  → `total_credits - total_usage`). It fails closed when *either* is at or below
+  zero. Reading only the key cap is not sufficient and was not hypothetical:
+  from 2026-09-10 the key cap read 53% used — comfortably healthy — while every
+  row of every pack was refused with `metadata.limit_source:
+  openrouter_credits`, and PR #133 sat red for five days on a diagnosis that
+  read the key cap and concluded funding was fine.
+- **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
+  never once checked the *subject*, so an unreachable subject was a blind spot:
+  it would produce packs where every real-skill row fails with no signal
+  anywhere. Two refresh runs (2026-09-01 and 2026-09-08) graded all 12 packs,
+  spent roughly 50 minutes of paid API time, captured nothing and reported
+  success — that is the evidence gap this check closes, **not** a diagnosis of
+  those runs. On its first run the check came back green, so a dead key or a
+  moved slug was ruled out. Two independent causes were then found: five packs
+  ship no calibration case, so no before/after pair can exist for them (see the
+  example-gallery section); and, separately, OpenRouter was answering
+  `402 Payment Required — this request would exceed your available credits given
+  your current in-flight requests` on the pack runs themselves.
+- **What it cannot prove.** That the model answers *well* — only that it
+  answers at all. A reachable model can still fail every rubric, so a green
+  here never means the packs are healthy; it only removes one explanation.
+- **What a green ping specifically does NOT prove: funding.** OpenRouter
+  reserves credit per request against the requests already in flight, and a CI
+  fan-out is roughly 12 packs at concurrency 3. So an 8-token ping can return
+  200 while every row of every pack returns 402. That is measured, not
+  theoretical: on 2026-09-09 this check reported all slugs reachable while 11 of
+  12 behavioral packs failed every row on exactly that 402. The credit probe
+  exists because of this; where the account reports no numeric remaining
+  balance, the check says outright that funding is **unverified** rather than
+  implying it is fine.
+- **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
+  workflow it is deliberately **not** in the behavioral gate's `needs`, so a
+  dead subject key reports in seconds instead of turning a required check red
+  across every open PR; promoting it to a gate there (adding it to the
+  behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is a
+  one-line change and an owner decision. In the **refresh** workflow it runs as
+  a hard preflight *before* the paid pack loop, because that is the workflow
+  that actually spends the budget — preflighting only `evals.yml` would leave
+  the expensive path unguarded. A cheap-tier guard fails if that preflight is
+  removed, reordered after the pack loop, or stops calling the script.
+- **Implementation.** `evals/paid/check-subject-model.sh`, shared by both
+  workflows so the two can never drift. It reads provider ids from the parsed
+  YAML `providers:` list rather than grepping the file, so a commented-out
+  historical slug left above the active one during a migration cannot be
+  reported green while promptfoo calls a different model. `--list` prints the
+  slugs it would ping and needs no network or key.
+- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
+  and at the start of every `refresh-examples.yml` run.
+- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
+
 ## example gallery (refresh + pages)
 
 - **What it proves.** The published before/after gallery is a *verification
@@ -450,6 +529,32 @@ uninterpretable n=1 and no required check goes red on the weather:
   assertion-failed row *also* carries `.error` (the assertion message).
   `.error` alone marks a FAULT only on legacy rows with no `failureReason`
   recorded.
+- **Truncation is a FAULT, not a failure** — a completion the provider cut off
+  at `max_tokens` returns HTTP **200** with an empty body, so promptfoo records
+  it as `failureReason` **1**: the pack's own fail-closed assertion firing on
+  the empty string. Read literally that is 30 skill failures; it is actually 30
+  unanswered calls. `pass-rate.sh` therefore excludes a row whose visible output
+  is empty **and** whose `finishReason` is `length`/`max_tokens` — both halves
+  required, so a truncated row that still emitted a judgeable answer stays a
+  scored FAIL, and an empty answer with `finishReason: stop` stays a scored FAIL
+  (no signal means no excuse). The report names the count and points at the
+  budget. "No answer" has a **second shape that is not an empty body**: promptfoo
+  surfaces a model's reasoning trace as the output, so a completion that spent
+  every token deliberating arrives as tens of KB of text that never resolves into
+  an answer. The provider's own accounting is the discriminator —
+  `completion == completionDetails.reasoning` means zero answer tokens were
+  emitted — and it is arithmetic, not a guess about the text, since a row with
+  even one answer token has `reasoning < completion`. Found on run 35298840491,
+  where agent-compiler's calibration floor read 1/3 against 36 KB of unresolved
+  deliberation cut off mid-sentence; the grader's own words were *"there is no
+  final response here."* The stop reason is still required for either shape. Found on run 35296766647, where 30 of routing's 70 rows came back with
+  `completion == completionDetails.reasoning == max_tokens` and six scenarios
+  read as below-floor; two of them had never produced a single answer. Guarded
+  in `evals/cheap/run.sh` §18 by four fixtures, each mutation-tested.
+- **Routing's budget is relative, not a magic number** — `evals/routing/`
+  carries the full roster plus a composition to pick, so its `max_tokens` may
+  never be below the sibling `evals/routing/trajectory/` pack's. The cheap tier
+  compares the two configs (comments stripped) and fails if routing is smaller.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.
@@ -531,6 +636,7 @@ job: build
 job: calibration sheet — draw and commit
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
+job: confirm subject model resolves (advisory)
 job: counterfeit tier
 job: counterfeit tier — detect
 job: counterfeit tier — run (corpus)

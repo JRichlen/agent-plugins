@@ -973,6 +973,35 @@ else:
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+# Token budget (run 35296766647): at max_tokens 4096 this pack truncated 30 of
+# its 70 rows — the model burned the whole completion budget on reasoning tokens
+# and returned an empty string, which the pack's own fail-closed ROUTE assertion
+# then scored as six failing scenarios. The sibling pack in the same tier
+# (trajectory/) was already at 8192 and truncated none, while asking LESS of the
+# model: this pack carries the full roster in context and a composition to pick.
+# So the rule is relative, not a magic number — routing's budget may never be
+# smaller than the pack it ships beside. Comments are stripped before matching,
+# because the prose above names both figures and a guard that reads prose proves
+# nothing (the third such hole found in this file).
+if [ -f evals/routing/trajectory/promptfooconfig.yaml ]; then
+python3 - "$REPO_ROOT" <<'PYT'
+import os, re, sys
+root = sys.argv[1]
+def budget(rel):
+    txt = open(os.path.join(root, rel)).read()
+    code = "\n".join(l for l in txt.splitlines() if not l.lstrip().startswith("#"))
+    m = re.search(r'^\s*max_tokens:\s*(\d+)', code, re.M)
+    return int(m.group(1)) if m else None
+r = budget("evals/routing/promptfooconfig.yaml")
+t = budget("evals/routing/trajectory/promptfooconfig.yaml")
+if r is None or t is None:
+    print(f"  FAIL routing: could not read max_tokens (routing={r}, trajectory={t}) — the truncation guard cannot see the budget"); sys.exit(1)
+if r < t:
+    print(f"  FAIL routing: max_tokens {r} is below the trajectory pack's {t} — routing carries strictly more context, and at a smaller budget it truncates (30/70 rows on run 35296766647) and reports the truncations as skill failures"); sys.exit(1)
+print(f"  PASS routing: max_tokens {r} is at least the sibling trajectory pack's {t} (truncation cliff, run 35296766647)")
+PYT
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+fi
 fi
 
 # --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
@@ -1056,6 +1085,42 @@ json.dump({"results":{"results": rows("D",5,4)}}, open(d+"/real-fail.json","w"))
 # read 4/4 = 1.00 (1 FAULT excluded) and passed a 0.9 floor (fail-open).
 def zrow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":0,"error":"Expected output to match regex \"X\"","response":{"output":"wrong answer"}}
 json.dump({"results":{"results": rows("E",4,4)+[zrow("E")]}}, open(d+"/fr0-error.json","w"))
+# TRUNCATION (run 35296766647): the subject spent its whole completion budget on
+# reasoning tokens and emitted NO visible answer, so the pack's own fail-closed
+# structural assertion fired on the empty string. The row therefore looks like a
+# rubric failure (failureReason 1 + .error) but the provider states the cause:
+# finishReason "length" with an empty output. Those rows must be excluded as
+# FAULTs — scoring them drags real scenarios below the floor and fabricates a RED
+# verdict out of a token-budget defect (6 routing scenarios, run 35296766647).
+def trow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"length","tokenUsage":{"completion":4096,"completionDetails":{"reasoning":4096}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("F"),prow("F"),prow("F"),trow("F"),trow("F")]}}, open(d+"/trunc-ok.json","w"))
+# ...but an all-truncated scenario is "never tested", not "green": fail closed,
+# exactly as the 504 storm does.
+json.dump({"results":{"results": rows("A",3,3)+[trow("G"),trow("G"),trow("G")]}}, open(d+"/trunc-starved.json","w"))
+# ...and the truncation clause must stay NARROW. A non-pass with an empty body
+# and finishReason "stop" carries NO truncation signal — the model simply
+# answered with nothing and the grader failed it. That is a real FAIL; excusing
+# it would let any empty answer launder itself as weather (fail-open). 4/5 = 0.80
+# < 0.9 must fail.
+def erow_stop(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"stop"}}
+json.dump({"results":{"results": rows("H",4,4)+[erow_stop("H")]}}, open(d+"/empty-stop.json","w"))
+# ...and the EMPTY-body half of the clause is load-bearing too. A row that hit
+# the token cap but still emitted a judgeable answer gave the grader something
+# real to judge, and the grader rejected it: that is a FAIL. Dropping the
+# empty-body condition would excuse every wrong-but-long answer as weather.
+def trow_answered(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"ROUTE: specialist=wrong | envelope=none | guards=none","finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":7523}}}}
+json.dump({"results":{"results": rows("I",4,4)+[trow_answered("I")]}}, open(d+"/trunc-answered.json","w"))
+# ...and the no-answer shape that is NOT an empty body. promptfoo surfaces a
+# model's reasoning trace as the output, so a completion that spent every token
+# deliberating arrives as tens of KB of text that never resolves into an answer
+# — non-empty, and indistinguishable from a real answer by length alone. The
+# provider's own accounting is the discriminator: completion ==
+# completionDetails.reasoning means zero answer tokens were emitted.
+# (agent-compiler, run 35298840491: 36 KB of deliberation, completion ==
+# reasoning == 8192, cut off mid-sentence, and the grader said "there is no
+# final response here".)
+def trow_allthink(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rubric: the response never resolves into a final answer","response":{"output":"We need answer user request. Need produce final response only. Need analyze. " * 400,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("J"),prow("J"),prow("J"),trow_allthink("J"),trow_allthink("J")]}}, open(d+"/trunc-allthink.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -1102,6 +1167,48 @@ if bash "$_pr" "$_tmp/fr0-error.json" --floor 0.9 --min-runs 2 --min-valid 2 >/d
   bad "pass-rate: a failureReason=0 non-pass carrying .error was excluded as a FAULT — .error overrides a present failureReason (fail-open)"
 else
   ok "pass-rate: .error alone FAULTs only when failureReason is absent; a present failureReason=0 non-pass is scored FAIL"
+fi
+# A row truncated at the token cap with no visible answer must be EXCLUDED, not
+# scored: scenario F is 3/3 on its valid samples with two truncations dropped ->
+# the run passes. Unfixed this reads 3/5 = 0.60 < 0.8 and fails, which is how run
+# 35296766647 reported six never-answered routing scenarios as skill failures.
+if bash "$_pr" "$_tmp/trunc-ok.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a row truncated at max_tokens with no answer is excluded, not scored as a failure"
+else
+  bad "pass-rate: a truncated (finishReason=length, empty output) row was counted as a rubric failure — a token-budget defect reads as a skill failure"
+fi
+# An all-truncated scenario has zero valid samples -> never actually tested ->
+# must fail CLOSED, same as a 504 storm.
+if bash "$_pr" "$_tmp/trunc-starved.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an all-truncated scenario passed — a truncation storm read as green (fail-open)"
+else
+  ok "pass-rate: an all-truncated scenario fails closed (never answered != green)"
+fi
+# The truncation clause must not widen into "any empty answer is weather": with
+# finishReason "stop" there is no truncation signal, so the row is a real FAIL.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/empty-stop.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an empty answer with finishReason=stop was excluded as a FAULT — the truncation clause laundered a real failure (fail-open)"
+else
+  ok "pass-rate: an empty answer is only a FAULT when the provider says it truncated; finishReason=stop stays a scored FAIL"
+fi
+# ...and a row that hit the cap but still produced an answer the grader rejected
+# is a real FAIL: the clause needs BOTH the stop reason and an empty body.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/trunc-answered.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a truncated row that DID emit an answer was excluded as a FAULT — the truncation clause no longer requires an empty body (fail-open)"
+else
+  ok "pass-rate: a truncated row that still emitted a judgeable answer is scored as a FAIL, not excluded"
+fi
+# A truncation whose output is a long reasoning trace with ZERO answer tokens is
+# still a no-answer truncation: scenario J is 3/3 on its valid samples with the
+# two reasoning-dumps dropped. Unfixed this reads 3/5 = 0.60 < 0.8 and fails,
+# which is how run 35298840491 reported agent-compiler's calibration floor as a
+# 1/3 skill failure when the model had never produced an answer to grade.
+if bash "$_pr" "$_tmp/trunc-allthink.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a truncation that spent every completion token on reasoning is excluded, even though its output is not empty"
+else
+  bad "pass-rate: a no-answer truncation with a reasoning-trace body was counted as a rubric failure — an empty-body check alone misses it, because promptfoo surfaces reasoning as the output"
 fi
 rm -rf "$_tmp"
 
@@ -1426,8 +1533,239 @@ if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
     print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
 if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
     print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
-print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
+# The refresh is the workflow that SPENDS the budget, so the subject-model
+# reachability preflight must run here and must run BEFORE the paid pack loop.
+# Preflighting only evals.yml left the expensive path unguarded (PR #131 review).
+pre = re.search(r"^\s*-\s*name:.*preflight.*subject model.*$", txt, re.M)
+loop = re.search(r"^\s*-\s*name:\s*run packs, capture real example snapshots\s*$", txt, re.M)
+if not pre:
+    print("  FAIL refresh-examples.yml has no subject-model preflight — a revoked key sends it straight into a ~40-minute paid loop"); sys.exit(1)
+if not loop:
+    print("  FAIL refresh-examples.yml no longer has the 'run packs' step the preflight is meant to guard"); sys.exit(1)
+if pre.start() > loop.start():
+    print("  FAIL refresh-examples.yml runs the subject-model preflight AFTER the paid pack loop — the money is already spent by then"); sys.exit(1)
+pre_step = txt[pre.end(): (re.search(r"^\s*-\s*name:", txt[pre.end():], re.M).start() + pre.end())]
+if "check-subject-model.sh" not in pre_step:
+    print("  FAIL refresh-examples.yml preflight does not invoke evals/paid/check-subject-model.sh"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before the cheap tier, fails closed on a zero-capture run, and preflights the subject model before spending"); sys.exit(0)
 PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2a. The subject preflight reserves what the PACKS reserve -------------
+# OpenRouter prices a request against max_tokens, not against what comes back,
+# so an 8-token ping is affordable in exactly the situation where every pack row
+# is refused. That is not theoretical: on 2026-09-10 this check reported the
+# subject reachable with $17.92 remaining while all 12 packs got
+# `402 ... you requested up to 8192 tokens, but can only afford 5385`. A
+# preflight that cannot predict the failure it exists to prevent is decoration.
+# Coupled: hard-code the ping size, or stop reading max_tokens from the pack
+# configs, and this goes red.
+group "subject preflight pings at the pack's max_tokens, not a token-sized ping"
+python3 - "$REPO_ROOT" <<'PYP'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+if "max_tokens" not in txt:
+    prob.append("the script never reads max_tokens from the pack configs, so the ping cannot match what the packs request")
+# the ping body must interpolate a variable, never a literal ceiling
+m = re.search(r'\\"max_tokens\\":([^,]+),', txt)
+if not m:
+    prob.append("no max_tokens field found in the ping request body")
+elif re.fullmatch(r"\d+", m.group(1).strip()):
+    prob.append(f"the ping hard-codes max_tokens={m.group(1).strip()} instead of using the ceiling the packs declare")
+if prob:
+    print("  FAIL subject preflight: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight reserves the pack-declared max_tokens, so a 402 surfaces before the packs run"); sys.exit(0)
+PYP
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2b. The failing-transcript dump surfaces the TRANSPORT error ----------
+# A provider error leaves .response.output EMPTY, so a dump that prints only the
+# output renders "the API refused us" as a blank box that reads like "the model
+# said nothing". On 2026-09-09 that cost two runs and a wrong public diagnosis:
+# every failing row carried `402 Payment Required — would exceed your available
+# credits given your current in-flight requests` in .error, while this dump
+# showed empty output and the write-up said "the endpoint returns empty
+# completions". The dump must print the error, and must NOT mislabel a rubric
+# failure as transport — promptfoo >= 0.122 puts assertion text in .error too,
+# so the discriminator is .failureReason, exactly as pass-rate.sh uses it.
+group "failing-transcript dump surfaces the provider error, not just empty output"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "evals.yml")
+if not os.path.exists(wf):
+    print("  PASS evals.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+m = re.search(r"^\s*-\s*name:\s*show failing transcripts\s*$", txt, re.M)
+if not m:
+    print("  FAIL evals.yml has no 'show failing transcripts' step — a failing pack would print nothing to diagnose"); sys.exit(1)
+nxt = re.search(r"^\s*-\s*name:", txt[m.end():], re.M)
+step = txt[m.end(): m.end() + (nxt.start() if nxt else len(txt))]
+prob = []
+if ".error" not in step:
+    prob.append("the dump never reads .error, so a transport failure prints as an empty output box (the 402 that was misdiagnosed as 'empty completions')")
+if "TRANSPORT ERROR" not in step:
+    prob.append("the dump has no labelled transport-error section, so a reader cannot tell a refused call from a silent model")
+if "failureReason" not in step:
+    prob.append("the dump does not consult .failureReason, so an assertion message (which promptfoo >= 0.122 also puts in .error) would be mislabelled as a transport error")
+if prob:
+    print("  FAIL evals.yml failing-transcript dump: " + "; ".join(prob)); sys.exit(1)
+print("  PASS evals.yml failing-transcript dump prints the provider error and distinguishes it from a rubric failure"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2c. The funding probe reads the ACCOUNT balance, not just the key cap -
+# Two different numbers gate an OpenRouter request and they fail independently:
+# the key's own spending cap (/api/v1/key -> limit_remaining) and the account
+# balance behind every key (/api/v1/credits -> total_credits - total_usage).
+# The 402 body says which via metadata.limit_source. From 2026-09-10 the key cap
+# read 53% USED while every row of every pack was refused with
+# `limit_source: openrouter_credits`; PR #133 sat red five days on a diagnosis
+# that read the key cap and concluded funding was fine. A probe reading only the
+# key cap prints reassurance in exactly the outage it exists to catch.
+# Coupled: drop the credits endpoint, or stop failing closed on the account
+# balance, and this goes red.
+group "subject preflight probes the account balance, not only the key's own cap"
+python3 - "$REPO_ROOT" <<'PYB'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+# The account balance must be LOAD-BEARING, not merely printed, and EVERY
+# assertion below is scoped to the credits request rather than to the file. A
+# file-wide substring check cannot tell a live request from prose: both this
+# guard's header and the probe's own block comment spell out the endpoint path
+# and the two field names, so repointing the request at another URL, or reading
+# different jq fields, left the whole check green while the account balance went
+# unread. Both false passes were observed by mutation while writing this guard —
+# the second after the first was thought fixed, which is why the anchor is now
+# the request and nothing else.
+ci = txt.find("ccode=")
+seg = txt[ci:ci + 400] if ci != -1 else ""
+if not seg:
+    prob.append("no credits request found (expected the response code captured as ccode=), so the account balance is never fetched")
+else:
+    if "openrouter.ai/api/v1/credits" not in seg:
+        prob.append("the credits request does not target openrouter.ai/api/v1/credits, so whatever it reads is not the ACCOUNT balance — a drained account then reads as healthy whenever this key's own cap still has headroom (the 2026-09-10 outage)")
+    if "total_credits" not in seg or "total_usage" not in seg:
+        prob.append("the credits response is not parsed for total_credits/total_usage, so the account balance is never computed")
+    if not re.search(r"fail_balance=1", txt[ci:]):
+        prob.append("the account balance is reported but never fails the check, so a zero balance still returns green")
+if "limit_remaining" not in txt:
+    prob.append("the probe no longer reads the key's own spending cap, which fails independently of the account balance")
+if prob:
+    print("  FAIL subject preflight funding probe: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight probes BOTH the key cap and the account balance, and fails closed on either"); sys.exit(0)
+PYB
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2d. A rate-limited preflight fails closed, it does not shrug ---------
+# The subject preflight exists to spend six seconds predicting a forty-minute
+# failure. On run 35287312617 it pinged, got HTTP 429, printed
+# "::warning:: rate limited right now; not conclusive" and exited 0 — and the
+# behavioral tier then starved: RateLimitExhaustedError and 300s queue timeouts
+# across the packs, pass-rate.sh correctly reporting STARVED, no verdict from a
+# whole paid run, with the account funded the entire time. A 429 that survives
+# backoff is the strongest available predictor of exactly that, so it must fail
+# the check.
+# Coupled: turn the 429 branch back into a warning, drop fail=1 from it, or
+# remove the retry-with-backoff, and this goes red.
+group "subject preflight fails closed on a sustained 429"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+# The 429 arm of the case statement, up to its terminating ;;
+m = re.search(r"^\s*429\)(.*?);;", txt, re.S | re.M)
+if not m:
+    prob.append("no 429 branch found — an unhandled 429 falls to the catch-all, which is luck, not design")
+else:
+    arm = m.group(1)
+    if "fail=1" not in arm:
+        prob.append("the 429 branch does not set fail=1, so a rate-limited key reports the subject healthy and the tier starves downstream (run 35287312617)")
+    if "::warning::" in arm and "::error::" not in arm:
+        prob.append("the 429 branch still only warns; a 429 surviving backoff predicts a starved tier and must be an error")
+# Retry-with-backoff must exist, or a single transient 429 fails every run.
+if not re.search(r"RATE_LIMIT_RETRIES", txt):
+    prob.append("no RATE_LIMIT_RETRIES — failing on the FIRST 429 would make every run hostage to one transient blip")
+if not re.search(r"sleep\s+\"?\$\{?RATE_LIMIT_BACKOFF", txt):
+    prob.append("the retry loop does not actually back off between attempts, so three immediate retries prove nothing")
+if prob:
+    print("  FAIL subject preflight 429 handling: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight retries a 429 with backoff, then fails closed"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2e. Vendor error bodies reach public logs redacted --------------------
+# OpenRouter's 402/429 bodies are echoed by the eval jobs on purpose — they name
+# the affordable max_tokens and carry limit_source, and a blank error box once
+# cost this repo two runs and two wrong public diagnoses. They also embed a
+# workspace key-management URL ending in the KEY'S ID and a user_id, which no
+# part of the diagnosis needs and which a public Actions log keeps forever.
+# So: printed, but redacted, through one shared script.
+# Coupled: delete the redactor, stop it stripping any of the three patterns,
+# echo "$body" in the preflight without it, or add a transcript dump that does
+# not pipe through it, and this goes red.
+group "vendor error bodies are redacted before public logs"
+python3 - "$REPO_ROOT" <<'PYE'
+import os, re, sys
+root = sys.argv[1]
+red = os.path.join(root, "evals", "paid", "redact-vendor-ids.sh")
+pre = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+wf  = os.path.join(root, ".github", "workflows", "evals.yml")
+prob = []
+if not os.path.exists(red):
+    prob.append("evals/paid/redact-vendor-ids.sh is gone — nothing strips the key id or user_id")
+else:
+    rt = open(red).read()
+    for pat, why in [
+        (r"openrouter\\\.ai/workspaces/", "the workspace key-management URL (its last segment is the key's id)"),
+        (r"0-9a-f\]\{32,\}", "long hex runs (the key id itself)"),
+        (r"user_\[A-Za-z0-9\]", "the account user_id"),
+    ]:
+        if not re.search(pat, rt):
+            prob.append(f"the redactor no longer strips {why}")
+# Every place the preflight prints the vendor body must go through redact.
+if os.path.exists(pre):
+    pt = open(pre).read()
+    for m in re.finditer(r'^.*"\$body".*$', pt, re.M):
+        line = m.group(0)
+        if line.lstrip().startswith("#"):
+            continue
+        if "redact" not in line and "rm -f" not in line and "mktemp" not in line and "-o " not in line:
+            prob.append(f"the preflight prints $body without redact(): {line.strip()[:70]}")
+# Every failing-transcript dump in the workflow must pipe through it.
+if os.path.exists(wf):
+    wt = open(wf).read()
+    dumps = [seg for seg in wt.split("- name:") if "jq parse fell through" in seg]
+    if not dumps:
+        prob.append("no failing-transcript dump found in evals.yml — the diagnostic that makes 402/429 readable is gone")
+    for seg in dumps:
+        # Anchor on the PIPE, never on a mention. The behavioral dump's own
+        # comment block names redact-vendor-ids.sh, so a substring check over
+        # the whole segment passes while that dump's actual pipe is gone —
+        # verified by mutation, and the third time this exact prose-vs-code
+        # confusion has bitten a guard in this file (see 19a2c).
+        code = "\n".join(l for l in seg.splitlines() if not l.lstrip().startswith("#"))
+        if not re.search(r"\|\s*\"?\$\{?GITHUB_WORKSPACE\}?/evals/paid/redact-vendor-ids\.sh", code):
+            name = seg.splitlines()[0].strip()[:48]
+            prob.append(f"transcript dump '{name}' does not PIPE through the redactor (a comment naming it is not a pipe)")
+if prob:
+    print("  FAIL vendor-body redaction: " + "; ".join(prob)); sys.exit(1)
+print("  PASS vendor bodies are printed but redacted, in the preflight and every transcript dump"); sys.exit(0)
+PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
@@ -1454,14 +1792,28 @@ else
     bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
     printf '%s\n' "$cap_out" | sed 's/^/    /'
   else
-    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
-import json, sys
+    python3 - "$CAP_TMP/scope-fence.json" "$CAP_FIX/promptfooconfig.yaml" <<'PYC'
+import json, re, sys
 s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+# Read what the fixture pack DECLARES and require the snapshot to match it.
+# This used to assert the literal string "nemotron", which tested the vendor of
+# the day rather than the invariant: that capture-example reads the models from
+# the pack config instead of hard-coding them. Switching the pinned subject then
+# broke a check that had no business caring which model it was.
+cfg = open(sys.argv[2]).read()
+def declared(prefix):
+    m = re.search(r"^\s*(?:-\s*)?(?:id:\s*)?[\"']?(" + prefix + r"[A-Za-z0-9/._:-]+)", cfg, re.M)
+    return m.group(1) if m else None
+want_subject, want_grader = declared("openrouter:"), declared("anthropic:")
 prob = []
 for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
     if not p.get(k): prob.append(f"provenance missing {k}")
-if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
-if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not want_subject: prob.append("fixture pack declares no openrouter: provider to compare against")
+elif want_subject not in str(p.get("subject_model")):
+    prob.append(f"subject_model {p.get('subject_model')!r} is not the provider the pack declares ({want_subject!r})")
+if not want_grader: prob.append("fixture pack declares no anthropic: grader to compare against")
+elif want_grader not in str(p.get("grader_model")):
+    prob.append(f"grader_model {p.get('grader_model')!r} was not read from the pack config ({want_grader!r})")
 if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
 if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
 print("  FAIL capture-example: " + "; ".join(prob) if prob else

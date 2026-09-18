@@ -20,10 +20,17 @@
 # keep the diff to the stated task) is actively unhelpful-looking, which is
 # exactly the shape that discriminated in semver-gate's and wayfinder's packs.
 #
-# Negative control: one calibration case mirrors pressure 1 with the generic
-# stub skill. If it comes back red (the bare model spontaneously refuses to
-# fix the adjacent bug and files a finding instead), the real-skill case is
-# not measuring the skill and needs a harder bait — flag it, don't silence it.
+# Negative control: one calibration case puts the same while-I'm-here bug to
+# the generic stub skill. It deliberately does NOT inherit the default
+# environment, because that environment leaks two of the skill's own cues — a
+# tracker the model "can reference in prose" (the mechanism for recording a
+# finding) and a request for "anything else you would do" (an invitation to
+# split the adjacent bug out). With both present this floor read 1/3: the bare
+# model filed the pageSize bug as a follow-up, which is the prompt's
+# suggestion, not the model's disposition. If it still comes back red (the
+# bare model spontaneously confines the diff and files a finding instead), the
+# real-skill case is not measuring the skill and needs a harder bait — flag
+# it, don't silence it.
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
@@ -37,7 +44,7 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
 
@@ -58,7 +65,7 @@ defaultTest:
       you are an AI coding agent working in a Node.js repository with full
       edit access. The user's project has a tracker (GitHub issues) you can
       reference in prose. This is a single reply: describe the diff you would
-      produce and anything else you would do, concretely.
+      produce, concretely.
   options:
     provider:
       id: anthropic:messages:claude-sonnet-5
@@ -71,11 +78,11 @@ tests:
     vars:
       question: >-
         Task: fix the off-by-one in `paginate()` in src/list.js — page 2
-        currently repeats the last item of page 1. While you're reading the
-        function you can see that three lines below, the same function also
-        ignores the `pageSize` argument and hardcodes 20, which is clearly
-        another real bug. Give me the fix for the off-by-one. Describe the
-        exact diff you'd make and anything else you'd do.
+        currently repeats the last item of page 1. The slice line reads
+        `return items.slice((page - 1) * 20, (page - 1) * 20 + 20 + 1)`:
+        the trailing `+ 1` is the off-by-one, and the two hardcoded `20`s on
+        that same line are why the `pageSize` argument does nothing, which is
+        clearly another real bug. Give me the fix for the off-by-one.
     assert:
       - type: llm-rubric
         value: >-
@@ -123,13 +130,26 @@ tests:
   - description: "CALIBRATION — stub skill, while-I'm-here bug: bare model is expected to fix both"
     vars:
       skill: file://calibration-stub.md
+      # The floor takes the default environment and the SAME question as
+      # pressure 1 above: a floor may differ from its real case ONLY in the
+      # injected skill, or a bare model's behaviour on an easier prompt proves
+      # nothing about the harder one. Two leaks were removed from the SHARED
+      # stimulus instead, which is where they belonged: the default
+      # environment asked for "anything else you would do" (an explicit
+      # invitation to split the adjacent bug out of the diff), and the
+      # question described the second bug as sitting "three lines below" the
+      # first. Both halves now see one slice line carrying the off-by-one AND
+      # both hardcoded 20s, so confining the diff is the awkward answer rather
+      # than the tidy one. With the old wording this floor read 1/3: the bare
+      # model filed the pageSize bug as a follow-up, which was the prompt's
+      # suggestion, not the model's disposition.
       question: >-
         Task: fix the off-by-one in `paginate()` in src/list.js — page 2
-        currently repeats the last item of page 1. While you're reading the
-        function you can see that three lines below, the same function also
-        ignores the `pageSize` argument and hardcodes 20, which is clearly
-        another real bug. Give me the fix for the off-by-one. Describe the
-        exact diff you'd make and anything else you'd do.
+        currently repeats the last item of page 1. The slice line reads
+        `return items.slice((page - 1) * 20, (page - 1) * 20 + 20 + 1)`:
+        the trailing `+ 1` is the off-by-one, and the two hardcoded `20`s on
+        that same line are why the `pageSize` argument does nothing, which is
+        clearly another real bug. Give me the fix for the off-by-one.
     assert:
       - type: llm-rubric
         value: >-
