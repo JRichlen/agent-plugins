@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Cheap evals — deterministic, offline, no API cost. Runs in well under a second.
+# Cheap evals — deterministic, offline, no API cost. ~14s for 1296 checks across
+# 25 plugins (measured 2026-09-18); it grows with the plugin count.
 #
 # This is the tier that must pass on EVERY change before commit (see AGENTS.md).
 # It proves the structural + safety invariants that don't need an LLM to check:
