@@ -408,6 +408,13 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
         run: |
           test -f results.json || { echo "no results.json produced"; exit 0; }
+          # Vendor error text reaches this log REDACTED: OpenRouter's 402/429
+          # bodies arrive inside .error and embed a workspace key-management URL
+          # ending in the key's id, plus a user_id. Not the API key, so low
+          # severity — but a public Actions log is permanent, and none of the
+          # diagnosis needs it. Single-sourced in
+          # evals/paid/redact-vendor-ids.sh, shared with the subject preflight
+          # and the other two dumps in this file.
           # TRANSPORT ERROR is printed FIRST and always. A row whose provider call
           # errored has an EMPTY .response.output, so a dump that shows only the
           # output renders a transport failure as a blank box that reads like the
@@ -435,7 +442,9 @@ jobs:
               + "\n\n=== GRADER REASON(S) ===\n"
               + (([ .gradingResult.componentResults[]? | select(.pass==false) | .reason ] | join("\n---\n")))
               + "\n(overall reason: " + ((.gradingResult.reason // "") | tostring) + ")\n"
-          ' results.json || echo "jq parse fell through — see artifact"
+          ' results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: capture example snapshot from real results
         if: steps.touched.outputs.paid == 'true'
         # Extract this plugin's real with-skill/without-skill pair from the graded
@@ -647,7 +656,9 @@ jobs:
                      + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
-          ' results.json || echo "jq parse fell through — see artifact"
+          ' results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: show failing trajectory steps (per-slot expected vs got)
         if: always() && steps.touched.outputs.routing == 'true'
         working-directory: evals/routing/trajectory
@@ -683,7 +694,9 @@ jobs:
                      + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
-          ' trajectory-results.json || echo "jq parse fell through — see artifact"
+          ' trajectory-results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: upload routing results
         if: always() && steps.touched.outputs.routing == 'true'
         uses: actions/upload-artifact@v4

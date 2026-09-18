@@ -51,6 +51,15 @@ DEFAULT_PING_TOKENS=8
 RATE_LIMIT_RETRIES=3
 RATE_LIMIT_BACKOFF=(5 15 30)
 
+# Vendor error bodies are echoed into PUBLIC CI logs, and OpenRouter's 402/429
+# bodies embed account identifiers: a workspace key-management URL ending in the
+# key's id, plus a user_id. None of it is the API key itself, so the severity is
+# low — but it is gratuitous, it is permanent once a public run is archived, and
+# nothing in the diagnosis needs it. Every path that prints "$body" goes through
+# this, so adding a new echo site without redacting is the thing the cheap tier
+# guard checks for.
+redact() { "$ROOT/evals/paid/redact-vendor-ids.sh"; }
+
 MODE="${1:-ping}"
 case "$MODE" in
   --list) MODE=list ;;
@@ -287,11 +296,11 @@ while IFS="$(printf '\t')" read -r model mt; do
     200) echo "subject model '$model' reachable AND affordable at max_tokens=$tokens — the ceiling the packs actually request." ;;
     401) echo "::error::subject model '$model': HTTP 401 — the OpenRouter key is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
     402) echo "::error::subject model '$model': HTTP 402 at max_tokens=$tokens — OpenRouter will not fund a request this size, so every real-skill row in every pack will fail the same way. Remedies, in the vendor's words: add credit, or lower max_tokens in the pack configs to fit the remaining balance."
-         sed -e 's/^/    /' "$body" 2>/dev/null | head -3; fail=1 ;;
+         redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -3; fail=1 ;;
     404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
-    429) echo "::error::subject model '$model': HTTP 429 after $RATE_LIMIT_RETRIES retries with backoff — this key cannot sustain even ONE request right now, so the behavioral tier's dozen concurrent legs will starve rather than fail honestly. Observed downstream as RateLimitExhaustedError and 300s queue timeouts, which pass-rate.sh reports as STARVED. This is a throughput limit, not a funding one: check the account balance printed above before adding credit. Remedies: wait for the limit to reset, lower maxConcurrency in the pack configs, or cap the matrix's max-parallel so fewer legs run at once."
-         sed -e 's/^/    /' "$body" 2>/dev/null | head -3; fail=1 ;;
-    *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; sed -e 's/^/    /' "$body" 2>/dev/null | head -5; fail=1 ;;
+    429) echo "::error::subject model '$model': HTTP 429 after $RATE_LIMIT_RETRIES retries with backoff — not one request is getting through, so the behavioral tier will starve rather than fail honestly — downstream this shows up as RateLimitExhaustedError and 300s queue timeouts, which pass-rate.sh reports as STARVED. Read the metadata below before acting: limit_source tells you WHOSE limit this is. On 2026-09-18 it was upstream_provider_shared_pool — the provider's shared non-BYOK pool, NOT this key and NOT the balance — and lowering our own concurrency did nothing (36 -> 12 concurrent moved FAULTs 6/9 -> 7/9). For a shared-pool limit the remedies are the vendor's: wait for contention to drop, add your own provider key so this repo accumulates its own limits (https://openrouter.ai/settings/integrations), or use provider routing to prefer a provider with headroom. Only if limit_source names THIS key is lowering maxConcurrency or max-parallel the right lever."
+         redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -3; fail=1 ;;
+    *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -5; fail=1 ;;
   esac
   rm -f "$body"
 done <<< "$subjects"

@@ -378,7 +378,18 @@ that it is green because it did not run, never silently.
   behavioral tier then starved on RateLimitExhaustedError and 300s queue
   timeouts with the account funded the whole time. A 429 that survives backoff
   is a throughput verdict, not a blip, and it is the cheapest available
-  prediction that the packs behind it will produce no verdict at all.
+  prediction that the packs behind it will produce no verdict at all. The 429
+  message reads `limit_source` before assigning blame: an
+  `upstream_provider_shared_pool` limit is the provider's, and lowering our own
+  concurrency does nothing about it (measured: 36 → 12 concurrent moved FAULTs
+  6/9 → 7/9).
+- **What it prints.** The vendor's error body, because it names the affordable
+  `max_tokens` and carries `limit_source` — but piped through
+  `evals/paid/redact-vendor-ids.sh` first, which strips the workspace
+  key-management URL (its last segment is the key's id) and the `user_id`. The
+  same redactor guards all three failing-transcript dumps in `evals.yml`. Not
+  the API key, so low severity; but a public Actions log is permanent and no
+  part of the diagnosis needs an account identifier.
   It also probes **both** numbers that gate an OpenRouter request, because they
   fail independently: this key's own spending cap (`/api/v1/key` →
   `limit_remaining`) and the account balance behind every key (`/api/v1/credits`

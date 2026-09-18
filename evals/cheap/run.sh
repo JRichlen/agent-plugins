@@ -1601,6 +1601,66 @@ print("  PASS subject preflight retries a 429 with backoff, then fails closed");
 PYD
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
+# --- 19a2e. Vendor error bodies reach public logs redacted --------------------
+# OpenRouter's 402/429 bodies are echoed by the eval jobs on purpose — they name
+# the affordable max_tokens and carry limit_source, and a blank error box once
+# cost this repo two runs and two wrong public diagnoses. They also embed a
+# workspace key-management URL ending in the KEY'S ID and a user_id, which no
+# part of the diagnosis needs and which a public Actions log keeps forever.
+# So: printed, but redacted, through one shared script.
+# Coupled: delete the redactor, stop it stripping any of the three patterns,
+# echo "$body" in the preflight without it, or add a transcript dump that does
+# not pipe through it, and this goes red.
+group "vendor error bodies are redacted before public logs"
+python3 - "$REPO_ROOT" <<'PYE'
+import os, re, sys
+root = sys.argv[1]
+red = os.path.join(root, "evals", "paid", "redact-vendor-ids.sh")
+pre = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+wf  = os.path.join(root, ".github", "workflows", "evals.yml")
+prob = []
+if not os.path.exists(red):
+    prob.append("evals/paid/redact-vendor-ids.sh is gone — nothing strips the key id or user_id")
+else:
+    rt = open(red).read()
+    for pat, why in [
+        (r"openrouter\\\.ai/workspaces/", "the workspace key-management URL (its last segment is the key's id)"),
+        (r"0-9a-f\]\{32,\}", "long hex runs (the key id itself)"),
+        (r"user_\[A-Za-z0-9\]", "the account user_id"),
+    ]:
+        if not re.search(pat, rt):
+            prob.append(f"the redactor no longer strips {why}")
+# Every place the preflight prints the vendor body must go through redact.
+if os.path.exists(pre):
+    pt = open(pre).read()
+    for m in re.finditer(r'^.*"\$body".*$', pt, re.M):
+        line = m.group(0)
+        if line.lstrip().startswith("#"):
+            continue
+        if "redact" not in line and "rm -f" not in line and "mktemp" not in line and "-o " not in line:
+            prob.append(f"the preflight prints $body without redact(): {line.strip()[:70]}")
+# Every failing-transcript dump in the workflow must pipe through it.
+if os.path.exists(wf):
+    wt = open(wf).read()
+    dumps = [seg for seg in wt.split("- name:") if "jq parse fell through" in seg]
+    if not dumps:
+        prob.append("no failing-transcript dump found in evals.yml — the diagnostic that makes 402/429 readable is gone")
+    for seg in dumps:
+        # Anchor on the PIPE, never on a mention. The behavioral dump's own
+        # comment block names redact-vendor-ids.sh, so a substring check over
+        # the whole segment passes while that dump's actual pipe is gone —
+        # verified by mutation, and the third time this exact prose-vs-code
+        # confusion has bitten a guard in this file (see 19a2c).
+        code = "\n".join(l for l in seg.splitlines() if not l.lstrip().startswith("#"))
+        if not re.search(r"\|\s*\"?\$\{?GITHUB_WORKSPACE\}?/evals/paid/redact-vendor-ids\.sh", code):
+            name = seg.splitlines()[0].strip()[:48]
+            prob.append(f"transcript dump '{name}' does not PIPE through the redactor (a comment naming it is not a pipe)")
+if prob:
+    print("  FAIL vendor-body redaction: " + "; ".join(prob)); sys.exit(1)
+print("  PASS vendor bodies are printed but redacted, in the preflight and every transcript dump"); sys.exit(0)
+PYE
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
 # The gallery's whole supply chain runs through this script, and it silently
 # captured NOTHING on two consecutive refresh runs (2026-09-01, 2026-09-08) —
