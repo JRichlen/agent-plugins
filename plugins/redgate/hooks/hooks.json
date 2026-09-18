@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/guard-redgate-paths.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/hooks-handlers/guard-redgate-paths.sh\""
           }
         ]
       }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks-handlers/session-start.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/hooks-handlers/session-start.sh\""
           }
         ]
       }
