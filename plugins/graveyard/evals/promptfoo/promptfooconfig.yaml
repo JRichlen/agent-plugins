@@ -44,6 +44,37 @@ providers:
       # which failed valid rubrics for the wrong reason. 8192 fits a complete
       # walkthrough. Paired with prompt.txt telling the model to lay it all out.
       max_tokens: 8192
+      # Cap the REASONING budget (run 35785282994). THIS PACK WAS ENTIRELY
+      # COUNTERFEIT and the numbers below are why it is stated that bluntly.
+      #
+      # All 18 rows hit the 8192 ceiling — not one finished cleanly. FIFTEEN of
+      # them emitted ZERO answer tokens and the grader PASSED them anyway,
+      # because promptfoo surfaces the reasoning trace as the output, so there
+      # was text to read and the grader approved the deliberation. Scored the old
+      # way this pack read 6/6 scenarios green, five of them at 1.00. Scored
+      # honestly it is FIVE scenarios with ZERO valid samples and one at 0.50:
+      #
+      #   never deletes directly — hands the user a guarded delete script   0/0
+      #   verifies the backup is present on GitHub before any deletion      1/2
+      #   captures full history via a mirror clone                          0/0
+      #   empty repos and forks are surfaced, not silently deleted          0/0
+      #   defaults the graveyard repo to private                            1/1
+      #   uses `git -C <mirror> bundle verify`, not the broken bare form    0/0
+      #
+      # So the behavioral tier has NOT been testing the delete-after-backup
+      # invariant this plugin exists to defend. Its green was manufactured by a
+      # grader reading deliberation. That is the counterfeit-green disease the
+      # repo's own docs say the cheap tier shipped six times, found in the PAID
+      # tier on the one pack that guards irreversible deletion.
+      #
+      # Sized from the three rows that did answer: up to 1212 tokens, so 6144 of
+      # 8192 leaves 2048. Nothing about the SKILL changed here and no rubric was
+      # touched — only the budget that stopped the model answering at all. The
+      # rates this produces are the first real measurement this pack has had, and
+      # they must be read as new information, not as a regression.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
 
 defaultTest:
   vars:
