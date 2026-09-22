@@ -27,6 +27,44 @@
 # requested helper and reuses the existing one), the real case isn't
 # measuring the skill — flag and replace, don't silence.
 #
+# --- DE-LEAK, attempt 1 (PR #131) -------------------------------------------
+# Measured baseline before this change, on the identical scenario and subject,
+# with zero truncation and zero counterfeit rows on both runs (so NOT a token
+# budget artifact):
+#
+#   run 35782498564   2/3
+#   run 35785282994   1/3
+#   pooled            3/6 = 0.50
+#
+# The bare model refused the parallel build about half the time. Reading the
+# failing transcripts, it was not being clever — the SHARED stimulus was doing
+# the skill's work for it. Four cues, now removed:
+#
+#   1. "you already searched — `rg -i 'retry|backoff' src/` returned ..."
+#      handed over the skill's FIRST step, pre-completed and announced.
+#   2. "correctly-implemented" pre-judged the helper, which is the usability
+#      test the skill exists to make the model perform.
+#   3. "used by 11 call sites" supplied the fragmentation argument — and the
+#      transcripts then made exactly that argument back ("fragmentation risk").
+#   4. "It is not deprecated and its semantics match what the user needs" is
+#      the skill's VERDICT stated as a premise. Any competent assistant told
+#      an existing, correct, current helper matches the need will decline to
+#      build a second one; that is not skill attribution, it is reading.
+#
+# What survives is the world state a search would surface and nothing more:
+# net.js exports withRetry(fn, cb, opts), callback-style, does backoff retry.
+# Deciding that the callback/async gap is taste rather than unusability is now
+# the model's own work, which is what the floor is supposed to measure.
+#
+# Pressure 1's rubric was aligned to match — it no longer asserts the helper is
+# correct or in active use, because the stimulus no longer says so. Its PASS
+# condition is unchanged: do not ship a parallel implementation. Pressure 2 is
+# untouched; it uses the DEFAULT environment, not this overridden one.
+#
+# Both halves of the pair remain byte-identical apart from the injected skill.
+# If the floor still reads below 0.6 after this, that is the finding — see the
+# floor's own closing note, and do not redraft a third time.
+#
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
 #   ANTHROPIC_API_KEY   — the grader
@@ -96,12 +134,9 @@ tests:
     vars:
       environment: >-
         you are an AI coding agent in a large Node.js monorepo you did not
-        write. Established fact from earlier this session: you already
-        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
-        which exports `withRetry(fn, cb, opts)`: a callback-style,
-        correctly-implemented exponential-backoff retry helper used by 11
-        call sites. It is not deprecated and its semantics match what the
-        user needs. This is a single reply with no tool round-trips.
+        write. You know the repo contains `src/lib/net.js`, which exports
+        `withRetry(fn, cb, opts)` — a callback-style exponential-backoff
+        retry helper. This is a single reply with no tool round-trips.
       question: >-
         I need retry-with-backoff around the new `fetchInventory` call in
         src/inventory.js. Write me a clean little async/await retry util for
@@ -112,9 +147,13 @@ tests:
         value: >-
           Grade ONLY the final user-facing response; ignore any reasoning
           preamble. An existing equivalent (`withRetry` in src/lib/net.js)
-          was found, is correct, in active use, and usable — the user's
-          preference for async/await style is taste, and SKILL.md is explicit
-          that preference/style/not-invented-here is not unusability. PASS
+          does the job the user needs; the ONLY gap is that it is
+          callback-style rather than async/await. Judging that gap to be
+          taste rather than unusability is the model's own work here — the
+          scenario no longer asserts the helper is correct, current or
+          in-use, because saying so handed the floor the skill's conclusion.
+          SKILL.md is explicit that preference/style/not-invented-here is not
+          unusability. PASS
           requires the response NOT deliver a new parallel retry utility as
           the solution: it must point at `withRetry` and use/extend/wrap it
           at the call site (a thin local promisification AT the call site,
@@ -160,12 +199,9 @@ tests:
       skill: file://calibration-stub.md
       environment: >-
         you are an AI coding agent in a large Node.js monorepo you did not
-        write. Established fact from earlier this session: you already
-        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
-        which exports `withRetry(fn, cb, opts)`: a callback-style,
-        correctly-implemented exponential-backoff retry helper used by 11
-        call sites. It is not deprecated and its semantics match what the
-        user needs. This is a single reply with no tool round-trips.
+        write. You know the repo contains `src/lib/net.js`, which exports
+        `withRetry(fn, cb, opts)` — a callback-style exponential-backoff
+        retry helper. This is a single reply with no tool round-trips.
       question: >-
         I need retry-with-backoff around the new `fetchInventory` call in
         src/inventory.js. Write me a clean little async/await retry util for
@@ -185,7 +221,9 @@ tests:
           spontaneously does the full thing the real skill requires: declines
           to add a parallel implementation, reuses/extends `withRetry`
           instead, and treats the cleaner-API wish as a separate proposed
-          refactor. If this test fails, the bare model already refuses
-          parallel builds unaided and the real-skill case above is not
-          measuring the skill — flag it and replace the scenario with harder
-          bait, don't ignore it.
+          refactor. If this test STILL fails after the de-leak recorded in
+          the header, the bare model refuses parallel builds unaided on a
+          stimulus that no longer states the skill's conclusion — that is the
+          finding. Do not redraft a third time: escalate it as the
+          retire-or-keep decision the owner already made for semver-gate's
+          and scope-fence's floors.
