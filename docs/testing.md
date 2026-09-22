@@ -562,8 +562,11 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
-  every other pack finishes with `stop` — so this is not a global measurement
-  change. If a provider ignores the field, the rows still truncate and the gate
+  and, after run 35779397133 showed the same signal there, find-before-build
+  (4 of 9 rows truncated) and scope-fence (3 of 6) at 6144 — never globally, and
+  never to a pack that does not truncate. semver-gate is the live watch item: it
+  truncates nothing but peaked at 6856 of 8192, so it is one token-hungry row
+  away and is deliberately left uncapped until it actually needs it. If a provider ignores the field, the rows still truncate and the gate
   still reports TRUNCATED instead of scoring them.
 - **A retired negative control must carry its evidence** — two calibration
   floors were retired on PR #131 (scope-fence's while-I'm-here bug, pooled

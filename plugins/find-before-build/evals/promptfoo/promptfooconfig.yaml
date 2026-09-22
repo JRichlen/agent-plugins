@@ -42,6 +42,29 @@ providers:
   - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35779397133).
+      #
+      # This pack truncated 4 of 9 rows on that run: finishReason "length"
+      # with reasoning pinned at the full 8192, so the model spent the whole
+      # budget deliberating. Two of those rows emitted ZERO answer tokens, which
+      # pass-rate.sh excludes as TRUNCATED; the rest were cut off mid-answer and
+      # are scored as failures, because a truncated row that still said something
+      # gave the grader something real to judge.
+      #
+      # Sized from this pack's own passing rows: their answers ran to 1190
+      # tokens, so capping reasoning at 6144 of 8192 leaves 2048 for the answer
+      # — comfortably clear of what a good answer here needs.
+      #
+      # The same cap on evals/routing/ took its truncation from 8/70 to 0/70 and
+      # its peak reasoning from 8008 to 1896, so the mechanism is not a clip: the
+      # model plans against the stated budget. Sent via `passthrough` because
+      # promptfoo splices that verbatim into the chat body (0.122.0), independent
+      # of its own reasoning-model detection. If a provider ignores it, the rows
+      # still truncate and the gate still reports TRUNCATED rather than scoring
+      # them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
