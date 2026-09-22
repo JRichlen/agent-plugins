@@ -564,7 +564,11 @@ uninterpretable n=1 and no required check goes red on the weather:
   number we picked. Applied only to the two packs that demonstrably truncated —
   and, after runs 35779397133 / 35782498564 showed the same signal there,
   find-before-build (4 of 9 rows truncated), scope-fence (3 of 6) and
-  fleet-playbook-curator (3 of 15) at 6144 — never globally, and
+  fleet-playbook-curator (3 of 15) and graveyard (18 of 18) at 6144, and redgate
+  at 5120 — redgate gets more headroom because its answers run to 2191 tokens,
+  every cap being sized from that pack's own passing rows rather than copied.
+  Packs measured clean stay uncapped: stop-rule peaks at 4722, verify-before-claim
+  at 6807, semver-gate at 6856, none of them truncating — never globally, and
   never to a pack that does not truncate. semver-gate is the live watch item: it
   truncates nothing but peaked at 6856 of 8192, so it is one token-hungry row
   away and is deliberately left uncapped until it actually needs it. If a provider ignores the field, the rows still truncate and the gate
