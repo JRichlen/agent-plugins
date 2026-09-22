@@ -12,11 +12,17 @@ set -euo pipefail
 diff="${1:?usage: gather-context.sh <diff.json> [prev_manifest.json]}"
 [ -f "$diff" ] || { echo "gather-context: no such file: $diff" >&2; exit 2; }
 
+# Carry node_id alongside full_name: node_id is the identity the manifest and the
+# diff are already joined on, and it is what the claim ledger must key citations on.
+# Dropping it here is what forced validate-citations.sh to match on the MUTABLE
+# full_name, so a reused repo name resolved a stale citation to the wrong repository.
 touched="$(jq -r '[.added[]?, .renamed[]?, .updated[]?]
-  | map(.full_name // .to) | unique | .[]' "$diff")"
+  | map({ node_id: (.node_id // ""), full_name: (.full_name // .to) })
+  | unique_by(.full_name)
+  | .[] | "\(.node_id)\t\(.full_name)"' "$diff")"
 
 bundle='[]'
-while read -r full; do
+while IFS=$'\t' read -r node_id full; do
   [ -n "$full" ] || continue
   readme="$(gh api "repos/${full}/readme" --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | head -c 4000 || true)"
   # Recursive so EVERY path a curator might cite is captured — validate-citations.sh
@@ -26,9 +32,9 @@ while read -r full; do
   from_sha="$(jq -r --arg f "$full" '(.updated[]? | select(.full_name==$f) | .from) // ""' "$diff")"
   log="$( [ -n "$from_sha" ] && gh api "repos/${full}/commits?per_page=20" \
             --jq '[.[].commit.message | split("\n")[0]] | join("\n")' 2>/dev/null || true )"
-  bundle="$(jq --arg full "$full" --arg readme "$readme" --arg tree "$tree" \
+  bundle="$(jq --arg full "$full" --arg nid "$node_id" --arg readme "$readme" --arg tree "$tree" \
               --arg wf "$workflows" --arg log "$log" \
-    '. + [{full_name:$full, readme_head:$readme, tree:$tree, workflows:$wf, recent_commits:$log}]' <<<"$bundle")"
+    '. + [{node_id:$nid, full_name:$full, readme_head:$readme, tree:$tree, workflows:$wf, recent_commits:$log}]' <<<"$bundle")"
 done <<<"$touched"
 
 # Removed members are emitted manifest-only with an explicit content_available:false
