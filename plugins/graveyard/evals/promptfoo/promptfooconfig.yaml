@@ -72,9 +72,26 @@ providers:
       # touched — only the budget that stopped the model answering at all. The
       # rates this produces are the first real measurement this pack has had, and
       # they must be read as new information, not as a regression.
+      # 6144 -> 2048 (run 35787505902). The cap is a RESERVATION, not a ceiling,
+      # and unused reasoning does NOT flow back to the answer: with max_tokens
+      # 8192 and the reasoning cap at 6144, the answer is limited to 2048 no
+      # matter how little the model actually thinks. Six of 18 rows proved it —
+      # they used only 197-326 reasoning tokens and still stopped at answer
+      # lengths of 2050, 2051, 2051, 2052, 2053, 2050, every one cut off
+      # mid-sentence with finishReason "length".
+      #
+      # This pack emits the longest answers in the repo — a guarded delete script,
+      # a phase table and a per-repo disposition list — so 2048 is far too tight.
+      # Observed reasoning peaks at 596, so 2048 of reasoning is already generous
+      # and leaves 6144 for the answer.
+      #
+      # Sizing rule this corrects, for every other pack: the answer ceiling is
+      # max_tokens MINUS the reasoning cap, so size the cap from the pack's ANSWER
+      # length first and give reasoning whatever is left over — not the other way
+      # round.
       passthrough:
         reasoning:
-          max_tokens: 6144
+          max_tokens: 2048
 
 defaultTest:
   vars:

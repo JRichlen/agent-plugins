@@ -562,6 +562,13 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
+  **The cap is a reservation, not a ceiling** — the answer is limited to
+  `max_tokens` minus the reasoning cap regardless of how little the model
+  actually thinks, so size the cap from the pack's ANSWER length first and give
+  reasoning the remainder. graveyard proved it on run 35787505902: six rows used
+  197–326 reasoning tokens yet every one stopped at ~2050 answer tokens
+  (= 8192 − 6144), cut off mid-sentence. Its cap is now 2048, leaving 6144 for
+  the long delete script it has to emit. Applied,
   and, after runs 35779397133 / 35782498564 showed the same signal there,
   find-before-build (4 of 9 rows truncated), scope-fence (3 of 6) and
   fleet-playbook-curator (3 of 15) and graveyard (18 of 18) at 6144, and redgate
