@@ -562,6 +562,15 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
+- **routing S1 is a measured sub-floor finding, not noise** — pooled **10/15 =
+  0.67** against the 0.80 floor across three capped, truncation-free runs
+  (35779397133, 35787505902, 35797062312). Every failing row gets three of four
+  slots right and misses only `guards`: `scope-fence` ×3, `none` ×2, where
+  `verify-before-claim` is expected. The router composes correctly but does not
+  reliably arm the guard that stops a fix being called done without evidence —
+  which is what that composition exists to catch, so the expectation stands and
+  the assertion is untouched. Any fix belongs in the roster/skill descriptions,
+  not in the floor or the regex.
   **The cap is a reservation, not a ceiling** — the answer is limited to
   `max_tokens` minus the reasoning cap regardless of how little the model
   actually thinks, so size the cap from the pack's ANSWER length first and give

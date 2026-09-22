@@ -270,6 +270,32 @@ tests:
   # verify-before-claim must be present in the sorted list, roster-valid extras
   # (the live run added scope-fence/stop-rule — both defensible here) are
   # allowed; route-contract.js still enforces sorted/deduped/roster-only.
+  # MEASURED SUB-FLOOR, and it is the guards slot alone (PR #131). Pooled over
+  # three runs that were all capped and all truncation-free — so neither n=3
+  # noise nor a budget artifact:
+  #
+  #   run 35779397133   3/5
+  #   run 35787505902   4/5
+  #   run 35797062312   3/5
+  #   pooled           10/15 = 0.67   against the 0.80 floor
+  #
+  # The router is NOT misrouting. Every failing row gets three of four slots
+  # right — specialist=diagnosing-bugs, envelope=redgate, interaction_owner=
+  # redgate — and misses only `guards`:
+  #
+  #   x3   guards=scope-fence   (instead of verify-before-claim)
+  #   x2   guards=none
+  #
+  # So the finding is narrow and real: on an evidence-warranted bug hunt the
+  # model composes the right specialist and envelope but does not reliably arm
+  # verify-before-claim, which is the guard that stops a fix being called done
+  # without evidence. That is exactly the failure this composition exists to
+  # catch, so the expectation is NOT too strict and the assertion below is
+  # deliberately left untouched.
+  #
+  # Do not lower the floor, relax the guards regex, or drop the scenario to get
+  # green. The fix, if one is wanted, belongs in the roster/skill descriptions
+  # that tell the router when verify-before-claim applies — not here.
   - description: "S1 COMPOSITION — evidence-warranted bug hunt → diagnosing-bugs wrapped in redgate"
     vars:
       request: >-
