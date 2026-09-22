@@ -551,6 +551,33 @@ uninterpretable n=1 and no required check goes red on the weather:
   `completion == completionDetails.reasoning == max_tokens` and six scenarios
   read as below-floor; two of them had never produced a single answer. Guarded
   in `evals/cheap/run.sh` §18 by four fixtures, each mutation-tested.
+- **The reasoning budget is capped where truncation was measured** — raising
+  `max_tokens` alone does not fix a model that spends the whole budget thinking:
+  routing still starved two scenarios at 8192, and agent-compiler's floor spent
+  8192/8192 on reasoning. Both packs now send an explicit
+  `passthrough: {reasoning: {max_tokens: N}}`, sized from the answer length
+  their own passing rows needed — routing 7680 of 8192 (its answers are one
+  `ROUTE:` line, 21–37 tokens), agent-compiler 6144 of 8192 (its answers ran to
+  1619). `passthrough` is used rather than `reasoning_effort` because promptfoo
+  splices it verbatim into the chat body regardless of its own reasoning-model
+  detection, and because effort maps to a vendor-chosen budget rather than a
+  number we picked. Applied only to the two packs that demonstrably truncated —
+  every other pack finishes with `stop` — so this is not a global measurement
+  change. If a provider ignores the field, the rows still truncate and the gate
+  still reports TRUNCATED instead of scoring them.
+- **A retired negative control must carry its evidence** — two calibration
+  floors were retired on PR #131 (scope-fence's while-I'm-here bug, pooled
+  **3/6**; semver-gate's pressure-3 permission denial, pooled **5/9**) because
+  the bare stub-only model produced the skilled behaviour about half the time,
+  so neither floor could clear a 0.6 bar at any wording. Retiring a control is
+  legitimate only as a *recorded finding*: each pack's header now carries the
+  pooled rate, the run ids, and the consequence — those packs' surviving greens
+  are only **about half** attributable to the skill. `evals/cheap/run.sh` §18a
+  couples the claim to the evidence: a pack whose `description:` announces a
+  retirement must record all three, and it reads comment lines only so the
+  one-line summary cannot stand in for the record. Mutation-tested three ways.
+  semver-gate keeps its pressure-1 floor (3/3), so pressure 1 keeps its
+  attribution; scope-fence now has none.
 - **Routing's budget is relative, not a magic number** — `evals/routing/`
   carries the full roster plus a composition to pick, so its `max_tokens` may
   never be below the sibling `evals/routing/trajectory/` pack's. The cheap tier

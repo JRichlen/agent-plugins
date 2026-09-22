@@ -1212,6 +1212,62 @@ else
 fi
 rm -rf "$_tmp"
 
+# --- 18a. A retired negative control must carry its evidence ----------------
+# PR #131 retired two calibration floors (scope-fence's while-I'm-here bug,
+# semver-gate's pressure-3 permission denial) because the bare stub-only model
+# produced the skilled behaviour about half the time, so the floors could not
+# clear a 0.6 bar at any wording. Retiring a negative control is legitimate ONLY
+# as a recorded finding: without the record it is indistinguishable from
+# deleting a failing test to go green, which is the one move this repo's eval
+# discipline exists to prevent.
+#
+# So the claim and the evidence are coupled. Any pack whose `description:`
+# announces a retired control must, in the same file, carry the pooled
+# measurement that justified it AND the consequence for the surviving cases
+# (their green is only partly skill-attributable). Drop either and this goes
+# red. This does NOT require every pack to own a negative control — several
+# never had one, which is a separate gap tracked outside this check.
+#
+# KNOWN LIMIT, stated so nobody mistakes this for more than it is: the check is
+# keyed on the description announcing a retirement, so it protects the evidence
+# for a DECLARED retirement. Delete the announcement along with the record and
+# the check goes quiet rather than red (verified by mutation). Catching an
+# UNdeclared missing control needs the separate per-pack negative-control
+# inventory, which would go red on the packs that never shipped one.
+group "retired negative controls carry their evidence"
+python3 - "$REPO_ROOT" <<'PYRC'
+import glob, os, re, sys
+root = sys.argv[1]
+fail = 0
+checked = 0
+for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
+    txt = open(cfg).read()
+    pack = cfg.split(os.sep)[-4]
+    m = re.search(r'^description:.*$', txt, re.M)
+    desc = m.group(0) if m else ""
+    if "retired" not in desc.lower():
+        continue
+    checked += 1
+    # Read the EVIDENCE, not the claim that cites it. The description already
+    # says "pooled 3/6", so searching the whole file would let the header
+    # record be deleted while that one-line summary keeps this green — the
+    # same wrong-text anchoring that has now bitten this file four times.
+    # The record lives in comments, so match comment lines only.
+    record = "\n".join(l for l in txt.splitlines() if l.lstrip().startswith("#"))
+    if not re.search(r'pooled\s+\d+/\d+', record):
+        print(f"  FAIL {pack}: description announces a retired control but the header records no 'pooled N/M' measurement"); fail += 1
+    elif not re.search(r'(half|partly|partially)\s+(attributable|attributed)', record, re.I):
+        print(f"  FAIL {pack}: header records the pooled rate but never states the consequence — that the surviving cases' green is only partly attributable to the skill"); fail += 1
+    elif not re.search(r'run\s+\d{8,}', record):
+        print(f"  FAIL {pack}: the retirement cites no run id, so the measurement cannot be checked"); fail += 1
+    else:
+        print(f"  PASS {pack}: retired control carries its pooled rate, its run ids, and the attribution caveat")
+if checked == 0:
+    print("  PASS no pack announces a retired negative control — nothing to verify")
+sys.exit(1 if fail else 0)
+PYRC
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 18b. Subject-model matrix and grader calibration (issue #102) ----------
 # The behavioral tier scores one subject model with one grader. #102 adds the
 # offline halves of working past that: pass-rate.sh --by-provider (score each

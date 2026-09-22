@@ -77,6 +77,33 @@ providers:
       # full 4096 completion each to return nothing, so that half of the spend
       # buys samples now instead of buying blanks.
       max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35300866961).
+      #
+      # 8192 fixed most of the truncation but not all: S4 and prove-the-undo
+      # still burned the entire budget deliberating and emitted nothing, so
+      # pass-rate.sh reported them STARVED — never answered, no verdict. Raising
+      # the ceiling again was the wrong lever; it doubles the reservation on all
+      # 70 calls to chase two scenarios, with no bound on where it stops.
+      #
+      # The right lever is the split, because this pack's answers are TINY. On
+      # the 56 passing rows of run 35300866961 the answer took 21-37 tokens
+      # (median 24) — it is one ROUTE: line. Reasoning on those same rows ran to
+      # 8008. So reserving 512 tokens for the answer costs the model almost
+      # nothing and guarantees the line fits: cap reasoning at 7680 of 8192.
+      #
+      # Sent via `passthrough` rather than `reasoning_effort` on purpose.
+      # promptfoo only emits reasoning_effort for models its own isReasoningModel
+      # check recognises, and it maps effort to a vendor-chosen budget rather
+      # than a number we picked. `passthrough` is spliced verbatim into the chat
+      # body (verified in promptfoo 0.122.0: the body literal ends with
+      # `...config.passthrough || {}`), so OpenRouter receives exactly this.
+      #
+      # If the upstream provider ignores reasoning.max_tokens, nothing gets
+      # worse: the rows still truncate and the gate still reports TRUNCATED
+      # instead of scoring them. That is the failure mode we want.
+      passthrough:
+        reasoning:
+          max_tokens: 7680
       # Grade the REPLY, not the reasoning trace. promptfoo's OpenRouter
       # provider otherwise prepends `Thinking: <reasoning>\n\n` to the graded
       # output when the model returns reasoning tokens, so a ROUTE: line the
