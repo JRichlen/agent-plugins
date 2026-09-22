@@ -49,6 +49,26 @@ providers:
   - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # REASONING CAP — sized from this pack's own rows in run 35797793874.
+      #
+      # Truncation measured there: 0 — worst row 6274 of 8192.
+      #
+      # The cap is a RESERVATION, not a ceiling: the answer can only ever use
+      # max_tokens minus the cap, however little the model actually thinks. So it
+      # is sized ANSWER-FIRST — this pack's observed answer max is 1987 tokens,
+      # doubled and rounded to 4096, leaving 4096 for reasoning.
+      #
+      # Clips 191 tokens off its worst answering row. This pack has the longest
+      # answers of the five (median 1215, max 1987), so it gets the widest answer
+      # reservation and the smallest reasoning cap.
+      #
+      # Sent via `passthrough` because promptfoo splices that verbatim into the
+      # chat body (0.122.0), independent of its own reasoning-model detection. If a
+      # provider ignores it the rows still truncate and evals/paid/pass-rate.sh
+      # still reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 4096
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a

@@ -1004,6 +1004,75 @@ if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
 fi
 
+# --- 17c. Every behavioral pack RESERVES answer room from its reasoning -------
+# Run 35797793874 is why this is structural and not a per-pack judgement call.
+# Five packs were uncapped there on the strength of a previous run's peak
+# reasoning, recorded in docs/testing.md as "measured clean". Two of them
+# produced zero-answer rows on the very next run:
+#
+#   wayfinder   peak 5853 -> pinned 8192; 1 zero-answer row, PASSED by the
+#               grader, inside a leg CI reported GREEN
+#   voice       peak 7198 -> pinned 8192; 2 zero-answer rows, both PASSED
+#   verify-before-claim   no truncation, and 162 tokens of headroom left
+#
+# A peak is not a bound. So the invariant is not "cap the packs that have been
+# seen to truncate" but "every pack declares its reservation", and the guard
+# checks the ARITHMETIC, not the presence of a key: the cap is a RESERVATION, so
+# the answer can only ever use max_tokens minus the cap however little the model
+# thinks, and a cap of 8191 would satisfy a presence check while starving every
+# answer to one token. Coupled three ways: delete a cap, raise one to within
+# 1024 of the ceiling, or add a new pack without one, and this goes red.
+MIN_ANSWER_TOKENS=1024
+group "behavioral packs reserve answer room from the reasoning budget"
+python3 - "$REPO_ROOT" "$MIN_ANSWER_TOKENS" <<'PYB'
+import glob, os, re, sys
+root, min_answer = sys.argv[1], int(sys.argv[2])
+
+def budgets(path):
+    """(max_tokens, reasoning_cap) for the SUBJECT provider — the first entry."""
+    txt = open(path).read()
+    try:
+        import yaml
+        doc = yaml.safe_load(txt) or {}
+        provs = doc.get("providers") or []
+        cfg = (provs[0] or {}).get("config") or {} if provs and isinstance(provs[0], dict) else {}
+        cap = ((cfg.get("passthrough") or {}).get("reasoning") or {}).get("max_tokens")
+        return cfg.get("max_tokens"), cap
+    except Exception:
+        # PyYAML absent. Strip comments first — the configs' prose names these
+        # very numbers, and a guard that reads prose proves nothing. That hole
+        # has now been found five times in this file.
+        code = "\n".join(l for l in txt.splitlines() if not l.lstrip().startswith("#"))
+        m = re.search(r'^\s*max_tokens:\s*(\d+)', code, re.M)
+        c = re.search(r'^\s*passthrough:\s*\n\s*reasoning:\s*\n\s*max_tokens:\s*(\d+)',
+                      code, re.M)
+        return (int(m.group(1)) if m else None), (int(c.group(1)) if c else None)
+
+packs = sorted(glob.glob(os.path.join(root, "plugins/*/evals/promptfoo/promptfooconfig.yaml")))
+if not packs:
+    print("  FAIL no behavioral packs found — the reservation guard cannot see anything"); sys.exit(1)
+fail = 0
+for p in packs:
+    name = p.split(os.sep)[-4]
+    mt, cap = budgets(p)
+    if not isinstance(mt, int):
+        print(f"  FAIL {name}: no subject max_tokens — the reservation cannot be checked"); fail += 1; continue
+    if not isinstance(cap, int):
+        print(f"  FAIL {name}: declares max_tokens {mt} but NO reasoning cap. Uncapped packs "
+              f"pin at the ceiling and emit zero-answer rows the grader passes "
+              f"(wayfinder and voice, run 35797793874)"); fail += 1; continue
+    if cap <= 0 or cap >= mt:
+        print(f"  FAIL {name}: reasoning cap {cap} is not inside (0, {mt})"); fail += 1; continue
+    answer = mt - cap
+    if answer < min_answer:
+        print(f"  FAIL {name}: reasoning cap {cap} of {mt} leaves only {answer} tokens for the "
+              f"answer (min {min_answer}). The cap is a reservation, not a ceiling — this "
+              f"starves the answer even when the model barely thinks"); fail += 1; continue
+    print(f"  PASS {name}: reasoning {cap} of {mt}, {answer} reserved for the answer")
+sys.exit(1 if fail else 0)
+PYB
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
 # --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
 # Gap #4: the routing pack runs each scenario repeat:5 times and pass-rate.sh
 # enforces a per-scenario floor so a lucky single pass can't read green. Guard

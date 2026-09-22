@@ -562,10 +562,11 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
-- **routing S1 is a measured sub-floor finding, not noise** — pooled **10/15 =
-  0.67** against the 0.80 floor across three capped, truncation-free runs
-  (35779397133, 35787505902, 35797062312). Every failing row gets three of four
-  slots right and misses only `guards`: `scope-fence` ×3, `none` ×2, where
+- **routing S1 is a measured sub-floor finding, not noise** — pooled **13/20 =
+  0.65** against the 0.80 floor across four capped, truncation-free runs
+  (35779397133 3/5, 35787505902 4/5, 35797062312 3/5, 35797793874 3/5 — pooled
+  13/20). Every failing row gets three of four
+  slots right and misses only `guards`: `scope-fence` ×3, `none` ×4, where
   `verify-before-claim` is expected. The router composes correctly but does not
   reliably arm the guard that stops a fix being called done without evidence —
   which is what that composition exists to catch, so the expectation stands and
@@ -585,13 +586,64 @@ uninterpretable n=1 and no required check goes red on the weather:
   every cap being sized from that pack's own passing rows rather than copied.
   and tailscale-wif at 4096 (its answers run to 2980). **Coverage is complete**:
   all twelve behavioral packs plus the routing pack have now been measured, not
-  just the ones that happened to go red. Packs measured clean stay uncapped —
-  stop-rule peaks at 4722, wayfinder at 5853, verify-before-claim at 6807,
-  semver-gate at 6856, voice at 7198, none of them truncating — never globally, and
-  never to a pack that does not truncate. semver-gate is the live watch item: it
-  truncates nothing but peaked at 6856 of 8192, so it is one token-hungry row
-  away and is deliberately left uncapped until it actually needs it. If a provider ignores the field, the rows still truncate and the gate
-  still reports TRUNCATED instead of scoring them.
+  just the ones that happened to go red. If a provider ignores the field, the
+  rows still truncate and the gate still reports TRUNCATED instead of scoring
+  them.
+- **EVERY pack is capped, because "measured clean" was never a bound** — this
+  supersedes an earlier rule in this document that said a pack measured clean
+  stays uncapped, and names the five packs it exempted (stop-rule 4722,
+  wayfinder 5853, verify-before-claim 6807, semver-gate 6856, voice 7198). That
+  rule was wrong, and run 35797793874 falsified it on the very next run after it
+  was written:
+
+  | pack | prior "clean" peak | run 35797793874 | zero-answer rows |
+  |---|---|---|---|
+  | wayfinder | 5853 | **pinned 8192** | **1, PASSED by the grader, in a leg CI called GREEN** |
+  | voice | 7198 | **pinned 8192** | **2, both PASSED by the grader** |
+  | verify-before-claim | 6807 | 8030 of 8192 | 0 — **162 tokens of headroom** |
+  | stop-rule | 4722 | 6274 of 8192 | 0 |
+  | semver-gate | 6856 | 4781 of 8192 | 0 |
+
+  A single run's peak does not bound the next run's peak, so exempting a pack on
+  one observation is not a measurement — it is a guess that reads like one. The
+  same run showed the other side: all seven capped packs came back with **zero**
+  truncated rows and at least 4969 tokens of headroom. The cap is what makes a
+  pack safe, not the pack's disposition.
+
+  So all twelve now declare a reservation, each sized answer-first from its own
+  rows (answer allowance = 2x that pack's observed answer max, rounded up to a
+  512 boundary; reasoning cap = the remainder):
+
+  | pack | reasoning cap | answer | clips its worst observed reasoning by |
+  |---|---|---|---|
+  | graveyard | 2048 | 6144 | — |
+  | stop-rule | 4096 | 4096 | 191 |
+  | tailscale-wif | 4096 | 4096 | — |
+  | verify-before-claim | 4608 | 3584 | **1990 — the one real trade-off** |
+  | redgate | 5120 | 3072 | — |
+  | agent-compiler, find-before-build, scope-fence, fleet-playbook-curator | 6144 | 2048 | — |
+  | voice | 6144 | 2048 | 898 |
+  | wayfinder | 6144 | 2048 | — |
+  | semver-gate | 6656 | 1536 | — |
+  | routing | 7680 | 512 | — |
+
+  Two clips are worth naming rather than burying. **voice** loses 898 tokens off
+  a row that had spent 7042 of 7106 completion tokens reasoning and then emitted
+  a 64-token answer with the facts wrong, so the clip removes deliberation that
+  was not buying answer quality. **verify-before-claim** loses ~1990 off its
+  worst row (6598 reasoning + 1432 answer = 8030); its median reasoning is 1373,
+  so this clips one outlier rather than the pack, but if that outlier matters the
+  alternative is raising that pack's `max_tokens` — a per-run budget decision,
+  not a gate change.
+
+  Machine-enforced by `evals/cheap/run.sh` §17c, which checks the ARITHMETIC and
+  not the presence of a key: a cap must sit inside `(0, max_tokens)` and leave at
+  least 1024 tokens for the answer, since a cap of 8191 would satisfy a presence
+  check while starving every answer to one token. Mutation-tested three ways
+  (delete a cap, raise one to 8000, set it equal to the ceiling) on both the
+  PyYAML and the comment-stripping fallback path — the latter because these
+  configs' own prose names these very numbers, and a guard that reads prose
+  proves nothing.
 - **A zero-answer truncation is excluded even when the grader PASSED it** — the
   worst shape found so far. promptfoo surfaces the reasoning trace as the output,
   so a row where the model emitted **no answer tokens at all** still has text for

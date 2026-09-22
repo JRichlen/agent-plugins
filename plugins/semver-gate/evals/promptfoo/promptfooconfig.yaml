@@ -228,6 +228,26 @@ providers:
       # completion. Smaller budgets truncate mid-response and fail a correct
       # answer for the wrong reason (see evals/templates/behavioral/README.md).
       max_tokens: 8192
+      # REASONING CAP — sized from this pack's own rows in run 35797793874.
+      #
+      # Truncation measured there: 0 — worst row 4781 of 8192.
+      #
+      # The cap is a RESERVATION, not a ceiling: the answer can only ever use
+      # max_tokens minus the cap, however little the model actually thinks. So it
+      # is sized ANSWER-FIRST — this pack's observed answer max is 539 tokens,
+      # doubled and rounded to 1536, leaving 6656 for reasoning.
+      #
+      # Nothing is clipped (worst answering row reasoned 4479). Prophylactic: this is
+      # the most comfortable of the five and is capped only so the whole tier shares
+      # one invariant rather than a per-pack judgement that has already been wrong.
+      #
+      # Sent via `passthrough` because promptfoo splices that verbatim into the
+      # chat body (0.122.0), independent of its own reasoning-model detection. If a
+      # provider ignores it the rows still truncate and evals/paid/pass-rate.sh
+      # still reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 6656
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
