@@ -192,9 +192,18 @@ def is_truncated(r):
         35298840491).
     A truncated row that did emit answer tokens gave the grader something real to
     judge and stays a scored FAIL.
+
+    DELIBERATELY NOT gated on `success`. A row with no answer is not evidence in
+    EITHER direction, so a "pass" on one is a counterfeit green: the grader read
+    the reasoning trace promptfoo surfaced as the output and approved the
+    deliberation. Ten such rows were found across five artifacts on runs
+    35779397133 / 35782498564 / 34924061800 — fleet-playbook-curator alone had
+    two, sitting inside an otherwise green leg. The first version of this clause
+    returned False for any passing row, which let every one of them through.
+    Excluding them can only LOWER a pass rate and can push a scenario to STARVED,
+    which is the fail-closed direction and the whole point: a scenario whose
+    passes came from ungraded reasoning traces was never tested.
     """
-    if r.get("success") is True:
-        return False
     if finish_reason(r) not in _TRUNCATED:
         return False
     return (not output_text(r).strip()) or zero_answer_tokens(r)

@@ -1121,6 +1121,16 @@ json.dump({"results":{"results": rows("I",4,4)+[trow_answered("I")]}}, open(d+"/
 # final response here".)
 def trow_allthink(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rubric: the response never resolves into a final answer","response":{"output":"We need answer user request. Need produce final response only. Need analyze. " * 400,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
 json.dump({"results":{"results": rows("A",3,3)+[prow("J"),prow("J"),prow("J"),trow_allthink("J"),trow_allthink("J")]}}, open(d+"/trunc-allthink.json","w"))
+# ...and a zero-answer truncation that the grader PASSED is a counterfeit green,
+# not a pass. promptfoo surfaces the reasoning trace as the output, so the grader
+# reads the deliberation and can approve it although the model never answered.
+# Ten such rows were found across five real artifacts. Excluding them can only
+# LOWER a rate and can push a scenario to STARVED — the fail-closed direction,
+# and the point: a scenario whose passes came from ungraded traces was never
+# tested. Two counterfeit passes + one real failure read 2/3 = 0.67 and cleared a
+# 0.6 floor before this; now the scenario has 1 valid sample and fails closed.
+def prow_allthink(desc): return {"testCase":{"description":desc},"success":True,"failureReason":0,"error":None,"response":{"output":"We need answer user request. Need analyze. " * 300,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow_allthink("K"),prow_allthink("K"),frow("K")]}}, open(d+"/counterfeit-pass.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -1209,6 +1219,16 @@ if bash "$_pr" "$_tmp/trunc-allthink.json" --floor 0.8 --min-runs 2 --min-valid 
   ok "pass-rate: a truncation that spent every completion token on reasoning is excluded, even though its output is not empty"
 else
   bad "pass-rate: a no-answer truncation with a reasoning-trace body was counted as a rubric failure — an empty-body check alone misses it, because promptfoo surfaces reasoning as the output"
+fi
+# A zero-answer truncation the grader PASSED must also be excluded: nothing was
+# graded, so it is evidence in neither direction. Scenario K is two such
+# "passes" plus one real failure — 2/3 = 0.67 clears a 0.6 floor if they count,
+# and 0/1 fails closed if they do not. Gating the truncation clause on `success`
+# (its first version did) lets every counterfeit green through.
+if bash "$_pr" "$_tmp/counterfeit-pass.json" --floor 0.6 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a scenario whose passes were zero-answer truncations read as green — an ungraded reasoning trace counted as a pass (fail-open)"
+else
+  ok "pass-rate: a zero-answer truncation is excluded even when the grader passed it; a scenario carried by ungraded traces fails closed"
 fi
 rm -rf "$_tmp"
 

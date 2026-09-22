@@ -562,12 +562,25 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
-  and, after run 35779397133 showed the same signal there, find-before-build
-  (4 of 9 rows truncated) and scope-fence (3 of 6) at 6144 — never globally, and
+  and, after runs 35779397133 / 35782498564 showed the same signal there,
+  find-before-build (4 of 9 rows truncated), scope-fence (3 of 6) and
+  fleet-playbook-curator (3 of 15) at 6144 — never globally, and
   never to a pack that does not truncate. semver-gate is the live watch item: it
   truncates nothing but peaked at 6856 of 8192, so it is one token-hungry row
   away and is deliberately left uncapped until it actually needs it. If a provider ignores the field, the rows still truncate and the gate
   still reports TRUNCATED instead of scoring them.
+- **A zero-answer truncation is excluded even when the grader PASSED it** — the
+  worst shape found so far. promptfoo surfaces the reasoning trace as the output,
+  so a row where the model emitted **no answer tokens at all** still has text for
+  the grader to read, and the grader can approve the deliberation. Ten such rows
+  turned up across five artifacts (runs 35779397133, 35782498564, 34924061800);
+  fleet-playbook-curator had two inside an otherwise green leg, in a scenario
+  reporting **3/3 = 1.00** when only **one** of its rows had been graded. The
+  clause is therefore NOT gated on `success`: a row with no answer is evidence in
+  neither direction. Excluding them can only lower a rate and can push a scenario
+  to STARVED — the fail-closed direction, and the point. Mutation-tested: re-add
+  the `success` gate (the clause's first version had it) and the counterfeit-green
+  fixture reads 2/3 = 0.67 and clears a 0.6 floor.
 - **A retired negative control must carry its evidence** — two calibration
   floors were retired on PR #131 (scope-fence's while-I'm-here bug, pooled
   **3/6**; semver-gate's pressure-3 permission denial, pooled **5/9**) because
