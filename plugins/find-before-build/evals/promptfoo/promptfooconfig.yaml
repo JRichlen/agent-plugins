@@ -62,8 +62,27 @@
 # untouched; it uses the DEFAULT environment, not this overridden one.
 #
 # Both halves of the pair remain byte-identical apart from the injected skill.
-# If the floor still reads below 0.6 after this, that is the finding — see the
-# floor's own closing note, and do not redraft a third time.
+#
+# RESULT (run 35795375833, first run on the de-leaked stimulus):
+#
+#   floor                 3/6 = 0.50  ->  3/3 = 1.00
+#   pressure 1 real case        1.00  ->        1.00   (unchanged)
+#   pressure 2                  1.00  ->        1.00   (untouched)
+#
+# All nine rows finished "stop" with real answers, peak reasoning 771 against a
+# 6144 cap, so this is a clean measurement and not a budget artifact.
+#
+# So the leak WAS the problem, not the model. With the skill's conclusion no
+# longer stated as a premise, the bare model does the naturally helpful thing —
+# it writes the helper the user asked for — and the skill-equipped model still
+# declines. The pack measures the skill again, and pressure 1's green is
+# attributable once more.
+#
+# Caveat kept deliberately: this is ONE run of three samples on the de-leaked
+# stimulus. n=3 reversed my conclusions twice on this PR, so a second clean run
+# is what would make 1.00 solid rather than promising. The direction and the
+# mechanism are both understood, which is why this reads as a fix rather than a
+# lucky draw — but it is not yet pooled evidence.
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
