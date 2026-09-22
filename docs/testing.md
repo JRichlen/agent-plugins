@@ -574,8 +574,11 @@ uninterpretable n=1 and no required check goes red on the weather:
   fleet-playbook-curator (3 of 15) and graveyard (18 of 18) at 6144, and redgate
   at 5120 — redgate gets more headroom because its answers run to 2191 tokens,
   every cap being sized from that pack's own passing rows rather than copied.
-  Packs measured clean stay uncapped: stop-rule peaks at 4722, verify-before-claim
-  at 6807, semver-gate at 6856, none of them truncating — never globally, and
+  and tailscale-wif at 4096 (its answers run to 2980). **Coverage is complete**:
+  all twelve behavioral packs plus the routing pack have now been measured, not
+  just the ones that happened to go red. Packs measured clean stay uncapped —
+  stop-rule peaks at 4722, wayfinder at 5853, verify-before-claim at 6807,
+  semver-gate at 6856, voice at 7198, none of them truncating — never globally, and
   never to a pack that does not truncate. semver-gate is the live watch item: it
   truncates nothing but peaked at 6856 of 8192, so it is one token-hungry row
   away and is deliberately left uncapped until it actually needs it. If a provider ignores the field, the rows still truncate and the gate
