@@ -94,6 +94,20 @@ providers:
       # of its own reasoning-model detection. If a provider ignores it, the rows
       # still truncate and the gate still reports TRUNCATED rather than scoring
       # them as skill failures.
+      # CONFIRMED on run 35782498564, and it went the unflattering way. Capped,
+      # this pack truncates nothing (peak reasoning 1445, all six rows "stop"
+      # with real answers) and the "vague clean it up" case reads 1/3 = 0.33.
+      # Uncapped it read 0.67 — but one of those three "passes" was a ZERO-ANSWER
+      # row the grader approved by reading the reasoning trace, and another was
+      # cut off mid-answer. So the cap did not regress this pack; it revealed the
+      # rate. The 0.67 was the measurement hazard this comment predicted, and
+      # 0.33 is the first fully-graded number this scenario has ever produced.
+      #
+      # That makes it a real finding and NOT something to fix here: with its
+      # calibration floor retired (see the header), this pack now has a red real
+      # case and no negative control. Three clean rows is thin — pool more before
+      # concluding how far below the floor it truly sits — but do not touch the
+      # floor or the rubric to make it green.
       passthrough:
         reasoning:
           max_tokens: 6144
