@@ -73,8 +73,8 @@ npx promptfoo@latest view      # browse graded transcripts
 ```
 
 The model under test is a cheap OpenRouter model
-(`nvidia/nemotron-3-ultra-550b-a55b:free`); the `llm-rubric` grader runs on Sonnet
-so pass/fail stays trustworthy without paying Opus prices. Swap the provider `id`
+(`nvidia/nemotron-3-ultra-550b-a55b:free`); the `llm-rubric` grader runs on Claude Haiku 4.5
+directly on the Anthropic API key (not OpenRouter), the cheapest Anthropic tier. Swap the provider `id`
 to test a different model.
 
 `promptfooconfig.yaml` injects the real `SKILL.md` text into the prompt, poses

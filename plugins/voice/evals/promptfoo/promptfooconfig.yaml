@@ -73,9 +73,9 @@ defaultTest:
       another model on your behalf.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
-        # 1024 (the provider default) is NOT enough. Sonnet spends much of
+        # 1024 (the provider default) is NOT enough. The grader spends much of
         # that budget reasoning before it emits the rubric JSON, so a long
         # transcript truncates mid-verdict and surfaces as 'No output' or
         # 'Could not extract JSON from llm-rubric response' — an infra flake

@@ -60,7 +60,7 @@ defaultTest:
       you would do and show any artifacts you would produce.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         max_tokens: 4096
 

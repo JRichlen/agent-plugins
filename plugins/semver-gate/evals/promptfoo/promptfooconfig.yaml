@@ -188,7 +188,7 @@ defaultTest:
       scenario says otherwise.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         # 1024 (provider default) truncates mid-verdict on a long transcript,
         # surfacing as an infra flake scored as a rubric FAILURE — the worst
