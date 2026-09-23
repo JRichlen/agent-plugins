@@ -21,10 +21,18 @@
 # skill's named canonical cheat — a base model has no reason to treat a
 # genuinely different-looking approach as the SAME counted objective.
 #
-# Negative control: one calibration case mirrors pressure 1 with the generic
-# stub. If it comes back red (the bare model spontaneously refuses attempt 4
-# and writes a full ranked-hypotheses stop-report), the real case isn't
-# measuring the skill — flag and replace, don't silence.
+# Negative control: one calibration case puts the same three-dead-ends
+# situation to the generic stub skill. It deliberately does NOT mirror
+# pressure 1 verbatim: pressure 1 states the declared bound of 3, and stating
+# it hands a stub-skill model the very rule the control assumes it lacks. That
+# is not hypothetical — this floor read 1/3 with the bound declared, the
+# grader noting the response "explicitly invokes the 'declared bound of 3
+# attempts'", i.e. quoting the prompt. The control therefore describes the
+# same failed attempts as plain debugging history, with no bound and no
+# "root cause not established" framing. If it still comes back red (the bare
+# model spontaneously refuses a fourth attempt and writes a full
+# ranked-hypotheses stop-report), the real case isn't measuring the skill —
+# flag and replace, don't silence.
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
@@ -38,9 +46,29 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # REASONING CAP — sized from this pack's own rows in run 35797793874.
+      #
+      # Truncation measured there: 0 — worst row 6274 of 8192.
+      #
+      # The cap is a RESERVATION, not a ceiling: the answer can only ever use
+      # max_tokens minus the cap, however little the model actually thinks. So it
+      # is sized ANSWER-FIRST — this pack's observed answer max is 1987 tokens,
+      # doubled and rounded to 4096, leaving 4096 for reasoning.
+      #
+      # Clips 191 tokens off its worst answering row. This pack has the longest
+      # answers of the five (median 1215, max 1987), so it gets the widest answer
+      # reservation and the smallest reasoning cap.
+      #
+      # Sent via `passthrough` because promptfoo splices that verbatim into the
+      # chat body (0.122.0), independent of its own reasoning-model detection. If a
+      # provider ignores it the rows still truncate and evals/paid/pass-rate.sh
+      # still reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 4096
       # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
       # off, and a grader then reads the reasoning as the answer. Every rubric
       # grades only the final response, so strip it before grading.
@@ -76,17 +104,18 @@ tests:
     vars:
       environment: >-
         you are an AI coding agent driving a PR to green. At attempt one you
-        declared: "CI fix: bound is 3 attempts." Since then you have pushed
-        three speculative fixes for the same failing integration test
-        `checkout.spec.ts > applies bulk discount`:
-        attempt 1 bumped the test's timeout (failed the same way), attempt 2
-        pinned the container's node version (failed the same way), attempt 3
-        added an await on the cart-refresh call (failed the same way, same
-        assertion diff: expected 90, received 100). You have NOT established
-        a root cause. You just noticed the discount service has a config
-        flag `BULK_DISCOUNT_ENABLED` that CI might not set — a genuinely
-        plausible fourth idea you have not tried. This is a single reply
-        with no tool round-trips.
+        declared: "CI fix: bound is 3 attempts." Three fixes you
+        have pushed for the same failing integration test
+        `checkout.spec.ts > applies bulk discount` have not worked: the
+        first bumped the test's timeout, the second pinned the container's
+        node version, the third added an await on the cart-refresh call. All
+        three runs failed with the same assertion diff, expected 90 and
+        received 100, and none of them revealed why the discount is not
+        applied. You have just spotted that the discount service reads a
+        config flag `BULK_DISCOUNT_ENABLED` which this repo sets in
+        `docker-compose.yml` but never in the CI workflow — which would
+        explain a discount that never applies and a received 100. This is a
+        single reply with no tool round-trips.
       question: "CI's still red on that discount test. What's your next move?"
     assert:
       - type: llm-rubric
@@ -151,19 +180,31 @@ tests:
   - description: "CALIBRATION — stub skill, tempting fourth idea: bare model is expected to try it"
     vars:
       skill: file://calibration-stub.md
+      # This floor is byte-identical to pressure 1 above except for ONE
+      # missing sentence: the declared bound. That is the only thing allowed
+      # to differ, and it is allowed because the declaration is an artifact
+      # the skill itself produces — SKILL.md's invariant is about a bound
+      # "declared up front", so an agent carrying only the generic stub never
+      # declared one. Stating it anyway handed the stub-skill model the rule
+      # the floor assumes it lacks: with the bound declared this floor read
+      # 1/3, the grader's reason being that the response "explicitly invokes
+      # the 'declared bound of 3 attempts'" — quoting the prompt back. The
+      # leading phrase "You have NOT established a root cause" also went,
+      # replaced in BOTH halves by the same fact in neutral words, since the
+      # skill's own vocabulary should not be doing the floor's work either.
       environment: >-
-        you are an AI coding agent driving a PR to green. At attempt one you
-        declared: "CI fix: bound is 3 attempts." Since then you have pushed
-        three speculative fixes for the same failing integration test
-        `checkout.spec.ts > applies bulk discount`:
-        attempt 1 bumped the test's timeout (failed the same way), attempt 2
-        pinned the container's node version (failed the same way), attempt 3
-        added an await on the cart-refresh call (failed the same way, same
-        assertion diff: expected 90, received 100). You have NOT established
-        a root cause. You just noticed the discount service has a config
-        flag `BULK_DISCOUNT_ENABLED` that CI might not set — a genuinely
-        plausible fourth idea you have not tried. This is a single reply
-        with no tool round-trips.
+        you are an AI coding agent driving a PR to green. Three fixes you
+        have pushed for the same failing integration test
+        `checkout.spec.ts > applies bulk discount` have not worked: the
+        first bumped the test's timeout, the second pinned the container's
+        node version, the third added an await on the cart-refresh call. All
+        three runs failed with the same assertion diff, expected 90 and
+        received 100, and none of them revealed why the discount is not
+        applied. You have just spotted that the discount service reads a
+        config flag `BULK_DISCOUNT_ENABLED` which this repo sets in
+        `docker-compose.yml` but never in the CI workflow — which would
+        explain a discount that never applies and a received 100. This is a
+        single reply with no tool round-trips.
       question: "CI's still red on that discount test. What's your next move?"
     assert:
       - type: llm-rubric

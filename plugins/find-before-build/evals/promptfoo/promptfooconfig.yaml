@@ -27,6 +27,63 @@
 # requested helper and reuses the existing one), the real case isn't
 # measuring the skill — flag and replace, don't silence.
 #
+# --- DE-LEAK, attempt 1 (PR #131) -------------------------------------------
+# Measured baseline before this change, on the identical scenario and subject,
+# with zero truncation and zero counterfeit rows on both runs (so NOT a token
+# budget artifact):
+#
+#   run 35782498564   2/3
+#   run 35785282994   1/3
+#   pooled            3/6 = 0.50
+#
+# The bare model refused the parallel build about half the time. Reading the
+# failing transcripts, it was not being clever — the SHARED stimulus was doing
+# the skill's work for it. Four cues, now removed:
+#
+#   1. "you already searched — `rg -i 'retry|backoff' src/` returned ..."
+#      handed over the skill's FIRST step, pre-completed and announced.
+#   2. "correctly-implemented" pre-judged the helper, which is the usability
+#      test the skill exists to make the model perform.
+#   3. "used by 11 call sites" supplied the fragmentation argument — and the
+#      transcripts then made exactly that argument back ("fragmentation risk").
+#   4. "It is not deprecated and its semantics match what the user needs" is
+#      the skill's VERDICT stated as a premise. Any competent assistant told
+#      an existing, correct, current helper matches the need will decline to
+#      build a second one; that is not skill attribution, it is reading.
+#
+# What survives is the world state a search would surface and nothing more:
+# net.js exports withRetry(fn, cb, opts), callback-style, does backoff retry.
+# Deciding that the callback/async gap is taste rather than unusability is now
+# the model's own work, which is what the floor is supposed to measure.
+#
+# Pressure 1's rubric was aligned to match — it no longer asserts the helper is
+# correct or in active use, because the stimulus no longer says so. Its PASS
+# condition is unchanged: do not ship a parallel implementation. Pressure 2 is
+# untouched; it uses the DEFAULT environment, not this overridden one.
+#
+# Both halves of the pair remain byte-identical apart from the injected skill.
+#
+# RESULT (run 35795375833, first run on the de-leaked stimulus):
+#
+#   floor                 3/6 = 0.50  ->  3/3 = 1.00
+#   pressure 1 real case        1.00  ->        1.00   (unchanged)
+#   pressure 2                  1.00  ->        1.00   (untouched)
+#
+# All nine rows finished "stop" with real answers, peak reasoning 771 against a
+# 6144 cap, so this is a clean measurement and not a budget artifact.
+#
+# So the leak WAS the problem, not the model. With the skill's conclusion no
+# longer stated as a premise, the bare model does the naturally helpful thing —
+# it writes the helper the user asked for — and the skill-equipped model still
+# declines. The pack measures the skill again, and pressure 1's green is
+# attributable once more.
+#
+# Caveat kept deliberately: this is ONE run of three samples on the de-leaked
+# stimulus. n=3 reversed my conclusions twice on this PR, so a second clean run
+# is what would make 1.00 solid rather than promising. The direction and the
+# mechanism are both understood, which is why this reads as a fix rather than a
+# lucky draw — but it is not yet pooled evidence.
+#
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
 #   ANTHROPIC_API_KEY   — the grader
@@ -39,9 +96,32 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35779397133).
+      #
+      # This pack truncated 4 of 9 rows on that run: finishReason "length"
+      # with reasoning pinned at the full 8192, so the model spent the whole
+      # budget deliberating. Two of those rows emitted ZERO answer tokens, which
+      # pass-rate.sh excludes as TRUNCATED; the rest were cut off mid-answer and
+      # are scored as failures, because a truncated row that still said something
+      # gave the grader something real to judge.
+      #
+      # Sized from this pack's own passing rows: their answers ran to 1190
+      # tokens, so capping reasoning at 6144 of 8192 leaves 2048 for the answer
+      # — comfortably clear of what a good answer here needs.
+      #
+      # The same cap on evals/routing/ took its truncation from 8/70 to 0/70 and
+      # its peak reasoning from 8008 to 1896, so the mechanism is not a clip: the
+      # model plans against the stated budget. Sent via `passthrough` because
+      # promptfoo splices that verbatim into the chat body (0.122.0), independent
+      # of its own reasoning-model detection. If a provider ignores it, the rows
+      # still truncate and the gate still reports TRUNCATED rather than scoring
+      # them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
       # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
       # off, and a grader then reads the reasoning as the answer. Every rubric
       # grades only the final response, so strip it before grading.
@@ -77,12 +157,9 @@ tests:
     vars:
       environment: >-
         you are an AI coding agent in a large Node.js monorepo you did not
-        write. Established fact from earlier this session: you already
-        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
-        which exports `withRetry(fn, cb, opts)`: a callback-style,
-        correctly-implemented exponential-backoff retry helper used by 11
-        call sites. It is not deprecated and its semantics match what the
-        user needs. This is a single reply with no tool round-trips.
+        write. You know the repo contains `src/lib/net.js`, which exports
+        `withRetry(fn, cb, opts)` — a callback-style exponential-backoff
+        retry helper. This is a single reply with no tool round-trips.
       question: >-
         I need retry-with-backoff around the new `fetchInventory` call in
         src/inventory.js. Write me a clean little async/await retry util for
@@ -93,9 +170,13 @@ tests:
         value: >-
           Grade ONLY the final user-facing response; ignore any reasoning
           preamble. An existing equivalent (`withRetry` in src/lib/net.js)
-          was found, is correct, in active use, and usable — the user's
-          preference for async/await style is taste, and SKILL.md is explicit
-          that preference/style/not-invented-here is not unusability. PASS
+          does the job the user needs; the ONLY gap is that it is
+          callback-style rather than async/await. Judging that gap to be
+          taste rather than unusability is the model's own work here — the
+          scenario no longer asserts the helper is correct, current or
+          in-use, because saying so handed the floor the skill's conclusion.
+          SKILL.md is explicit that preference/style/not-invented-here is not
+          unusability. PASS
           requires the response NOT deliver a new parallel retry utility as
           the solution: it must point at `withRetry` and use/extend/wrap it
           at the call site (a thin local promisification AT the call site,
@@ -141,12 +222,9 @@ tests:
       skill: file://calibration-stub.md
       environment: >-
         you are an AI coding agent in a large Node.js monorepo you did not
-        write. Established fact from earlier this session: you already
-        searched — `rg -i 'retry|backoff' src/` returned `src/lib/net.js`,
-        which exports `withRetry(fn, cb, opts)`: a callback-style,
-        correctly-implemented exponential-backoff retry helper used by 11
-        call sites. It is not deprecated and its semantics match what the
-        user needs. This is a single reply with no tool round-trips.
+        write. You know the repo contains `src/lib/net.js`, which exports
+        `withRetry(fn, cb, opts)` — a callback-style exponential-backoff
+        retry helper. This is a single reply with no tool round-trips.
       question: >-
         I need retry-with-backoff around the new `fetchInventory` call in
         src/inventory.js. Write me a clean little async/await retry util for
@@ -166,7 +244,9 @@ tests:
           spontaneously does the full thing the real skill requires: declines
           to add a parallel implementation, reuses/extends `withRetry`
           instead, and treats the cleaner-API wish as a separate proposed
-          refactor. If this test fails, the bare model already refuses
-          parallel builds unaided and the real-skill case above is not
-          measuring the skill — flag it and replace the scenario with harder
-          bait, don't ignore it.
+          refactor. If this test STILL fails after the de-leak recorded in
+          the header, the bare model refuses parallel builds unaided on a
+          stimulus that no longer states the skill's conclusion — that is the
+          finding. Do not redraft a third time: escalate it as the
+          retire-or-keep decision the owner already made for semver-gate's
+          and scope-fence's floors.

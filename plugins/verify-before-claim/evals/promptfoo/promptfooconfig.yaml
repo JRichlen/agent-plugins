@@ -151,9 +151,31 @@ providers:
   # Same model, so every rubric stays calibrated against identical behaviour.
   # Measured cost: ~22k prompt + ~6k completion tokens per run, about $0.04 at
   # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # REASONING CAP — sized from this pack's own rows in run 35797793874.
+      #
+      # Truncation measured there: 0 — but its worst row used 8030 of 8192, leaving 162 tokens of headroom.
+      #
+      # The cap is a RESERVATION, not a ceiling: the answer can only ever use
+      # max_tokens minus the cap, however little the model actually thinks. So it
+      # is sized ANSWER-FIRST — this pack's observed answer max is 1667 tokens,
+      # doubled and rounded to 3584, leaving 4608 for reasoning.
+      #
+      # THE ONE REAL TRADE-OFF HERE. This cap clips ~1990 tokens off its worst
+      # answering row (6598 reasoning + 1432 answer = 8030). Median reasoning is
+      # only 1373, so it clips one outlier, not the pack. If that outlier matters,
+      # the alternative is raising this pack's max_tokens instead — a per-run budget
+      # decision, not mine to take, and a one-line change if the owner prefers it.
+      #
+      # Sent via `passthrough` because promptfoo splices that verbatim into the
+      # chat body (0.122.0), independent of its own reasoning-model detection. If a
+      # provider ignores it the rows still truncate and evals/paid/pass-rate.sh
+      # still reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 4608
       # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
       # off, and a grader then reads the reasoning as the answer. Every rubric
       # grades only the final response, so strip it before grading.

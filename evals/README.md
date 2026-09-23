@@ -73,7 +73,7 @@ npx promptfoo@latest view      # browse graded transcripts
 ```
 
 The model under test is a cheap OpenRouter model
-(`nvidia/nemotron-3-ultra-550b-a55b:free`); the `llm-rubric` grader runs on Haiku
+(`qwen/qwen3.8-flash`); the `llm-rubric` grader runs on Haiku
 (`claude-haiku-4-5-20251001`) to keep every paid run cheap. Swap the provider `id`
 to test a different model.
 
