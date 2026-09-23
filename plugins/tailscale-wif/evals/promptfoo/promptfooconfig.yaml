@@ -33,7 +33,7 @@ defaultTest:
   # The skill is injected by prompt.js directly (no {{skill}} var — see above).
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         # 1024 (the provider default) is NOT enough. Sonnet spends much of
         # that budget reasoning before it emits the rubric JSON, so a long

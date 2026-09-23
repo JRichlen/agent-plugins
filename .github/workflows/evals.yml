@@ -191,7 +191,7 @@ jobs:
   grader-model:
     # Confirms the Anthropic grader model configured in promptfooconfig.yaml is a
     # real, reachable model id — a 200 confirms the slug, a 404 says it's wrong.
-    # This is the check that answers "is `claude-sonnet-5` the right id?" without
+    # This is the check that answers "is the grader slug a real, reachable id?" without
     # depending on the OpenRouter subject model at all.
     name: confirm grader model resolves
     runs-on: ubuntu-latest

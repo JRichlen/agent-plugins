@@ -61,7 +61,7 @@ defaultTest:
       produce and anything else you would do, concretely.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         max_tokens: 4096
 

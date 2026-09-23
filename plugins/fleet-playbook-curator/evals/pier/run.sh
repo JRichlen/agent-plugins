@@ -54,7 +54,7 @@ PIER_ENV="${PIER_ENV:-docker}"
 agent_config() {
   A_MODEL=""; A_KWARGS=(); A_EXPECT=1
   case "$1" in
-    claude-code) A_MODEL="claude-opus-4-8"; A_KWARGS=(--ak reasoning_effort=high) ;;
+    claude-code) A_MODEL="claude-haiku-4-5-20251001" ;;
     codex)       A_MODEL="gpt-5-codex" ;;
     gemini-cli)  A_MODEL="gemini-2.5-pro" ;;
     cursor-cli)  A_MODEL="claude-opus-4-8" ;;

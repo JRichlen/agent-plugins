@@ -47,7 +47,7 @@ defaultTest:
     # Grader for llm-rubric assertions. Kept on a strong model, NOT the cheap
     # model under test: a weak grader would flip pass/fail unreliably and hollow
     # out the whole tier. Sonnet is the cost/quality sweet spot for grading.
-    provider: anthropic:messages:claude-sonnet-5
+    provider: anthropic:messages:claude-haiku-4-5-20251001
 
 tests:
   # TODO: one test per behavior the prose must produce. Each asserts against the
