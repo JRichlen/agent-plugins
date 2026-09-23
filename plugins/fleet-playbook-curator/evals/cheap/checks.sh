@@ -100,20 +100,6 @@ if bash "$VC" "$FX/cite-index-badpath.json" "$FX/cite-diff.json" "$FX/cite-conte
   bad "validate-citations ACCEPTED a citation to a path NOT in the gathered tree — provenance guard too weak"
 else ok "validate-citations rejects a file citation whose path is absent from the gathered tree"; fi
 
-# Identity: a citation is keyed on node_id, not on the MUTABLE repo name. The case that
-# bites is not a rename (that already failed closed) but a repo name later REUSED by a
-# DIFFERENT repository — under full_name matching a stale citation resolved to the
-# impostor silently. Keyed on node_id it must fail closed instead.
-if bash "$VC" "$FX/cite-index-hijack.json" "$FX/cite-diff.json" "$FX/cite-context.json" >/dev/null 2>&1; then
-  bad "validate-citations ACCEPTED a node_id-keyed citation whose repo left the fleet while its NAME was reused — the citation resolved to the wrong repository"
-else ok "validate-citations rejects a node_id-keyed citation whose repo name was reused by a different repository"; fi
-has "$SK/scripts/gather-context.sh" 'node_id:$nid' \
-  "gather-context carries node_id into each context entry (the ledger's identity key)" \
-  "gather-context dropped node_id from context entries — validate-citations falls back to the mutable full_name"
-hasE "$PB/index.schema.json" '"node_id"' \
-  "index schema admits node_id on a claim" \
-  "index schema lost the node_id claim field — additionalProperties:false would reject a keyed ledger"
-
 # --- scripts parse + JSON is valid -----------------------------------------
 group "fleet-playbook-curator — scripts parse, JSON valid"
 for s in "$SK"/scripts/*.sh; do

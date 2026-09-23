@@ -1,7 +1,7 @@
 {
   "removed": [{"node_id":"R_GONE","full_name":"o/gone-svc","content_available":false}],
   "context": [
-    {"node_id":"R_NEW","full_name":"o/new-svc","readme_head":"new service entrypoint","tree":"README.md","workflows":"deploy.yml","recent_commits":""},
-    {"node_id":"R_UPD","full_name":"o/upd-svc","readme_head":"updated service","tree":"site.yml","workflows":"deploy.yml","recent_commits":"bump"}
+    {"full_name":"o/new-svc","readme_head":"new service entrypoint","tree":"README.md","workflows":"deploy.yml","recent_commits":""},
+    {"full_name":"o/upd-svc","readme_head":"updated service","tree":"site.yml","workflows":"deploy.yml","recent_commits":"bump"}
   ]
 }

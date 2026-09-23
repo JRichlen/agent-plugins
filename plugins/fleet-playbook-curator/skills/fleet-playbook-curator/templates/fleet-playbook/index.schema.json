@@ -13,8 +13,7 @@
         "required": ["repo", "path", "sha", "curated_at"],
         "additionalProperties": false,
         "properties": {
-          "node_id": { "type": "string", "minLength": 1, "description": "GitHub node_id of the source repo — the identity the manifest and diff are joined on. OPTIONAL for backward compatibility with ledgers written before this field existed; when present it is what validate-citations.sh matches on, which is what makes a citation survive a rename and refuse a reused name." },
-          "repo": { "type": "string", "minLength": 1, "description": "owner/name of the source repo AS OF curated_at — human-readable, and MUTABLE: a rename changes it and a reused name can point somewhere else entirely. Kept for readability; node_id is the key." },
+          "repo": { "type": "string", "minLength": 1, "description": "owner/name of the source repo" },
           "path": { "type": "string", "minLength": 1, "description": "file path within the repo the claim was read from" },
           "sha":  { "type": "string", "pattern": "^[0-9a-f]{7,40}$", "description": "the commit the claim was read at — no placeholders" },
           "curated_at": { "type": "string", "description": "ISO-8601 timestamp this claim was last verified" },
