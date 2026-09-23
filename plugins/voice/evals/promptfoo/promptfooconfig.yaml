@@ -42,9 +42,29 @@ providers:
   # Same model, so every rubric stays calibrated against identical behaviour.
   # Measured cost: ~22k prompt + ~6k completion tokens per run, about $0.04 at
   # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # REASONING CAP — sized from this pack's own rows in run 35797793874.
+      #
+      # Truncation measured there: 2 of 30 rows, both zero-answer and both PASSED by the grader.
+      #
+      # The cap is a RESERVATION, not a ceiling: the answer can only ever use
+      # max_tokens minus the cap, however little the model actually thinks. So it
+      # is sized ANSWER-FIRST — this pack's observed answer max is 864 tokens,
+      # doubled and rounded to 2048, leaving 6144 for reasoning.
+      #
+      # Its worst answering row spent 7042 of 7106 completion tokens on reasoning and
+      # emitted a 64-token answer that got the facts wrong, so the cap clips 898
+      # tokens off deliberation that was not buying answer quality.
+      #
+      # Sent via `passthrough` because promptfoo splices that verbatim into the
+      # chat body (0.122.0), independent of its own reasoning-model detection. If a
+      # provider ignores it the rows still truncate and evals/paid/pass-rate.sh
+      # still reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a

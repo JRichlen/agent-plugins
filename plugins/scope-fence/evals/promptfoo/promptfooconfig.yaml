@@ -20,10 +20,44 @@
 # keep the diff to the stated task) is actively unhelpful-looking, which is
 # exactly the shape that discriminated in semver-gate's and wayfinder's packs.
 #
-# Negative control: one calibration case mirrors pressure 1 with the generic
-# stub skill. If it comes back red (the bare model spontaneously refuses to
-# fix the adjacent bug and files a finding instead), the real-skill case is
-# not measuring the skill and needs a harder bait — flag it, don't silence it.
+# RETIRED CALIBRATION FLOOR — read this before trusting the greens below.
+#
+# This pack shipped a negative control: the same while-I'm-here bug put to the
+# generic stub skill, so a passing floor would show the bare model does NOT
+# fence scope unaided and the real cases therefore measure the skill. It is
+# gone, and its result is the reason.
+#
+# The floor was tried twice. First reading was 1/3, diagnosed as two leaks in
+# the SHARED stimulus — the environment asked for "anything else you would do"
+# (an invitation to split the adjacent bug out) and the question put the second
+# bug "three lines below" the first. Both were removed, so the two halves saw
+# one slice line carrying the off-by-one AND both hardcoded 20s. Measured after
+# that fix, on the identical scenario and subject:
+#
+#   run 35296766647   2/3
+#   run 35298840491   1/3
+#   pooled            3/6 = 0.50
+#
+# So the de-leak did not move it. The bare model confines the diff and files
+# the second bug as a follow-up about HALF the time, unprompted — the
+# transcripts are explicit ("I'm intentionally leaving the hardcoded 20s out of
+# this diff... I'd probably split that into a separate commit or issue"). At a
+# true rate near 0.5 the floor cannot clear a 0.6 bar, and no amount of
+# rewording changes that, because there is nothing left to de-leak: the
+# behaviour is the model's own disposition.
+#
+# WHAT THIS MEANS FOR THE CASES BELOW, stated plainly because the floor is no
+# longer here to state it: their 3/3 greens are only about HALF attributable to
+# this skill. Roughly half the time a bare model with a stub skill produces the
+# same scope-fencing behaviour. The pack still proves the skill does not BREAK
+# the behaviour and still catches a regression that would, but it does not
+# prove the skill CAUSES it, and nobody should cite it as though it does.
+#
+# Retired rather than redrafted a third time, per the owner's call on PR #131.
+# Redrafting further would mean searching for a stimulus on which this model
+# happens to misbehave, which fits the bait to the desired calibration result.
+# Do NOT re-add a floor here without new evidence that the behaviour is
+# skill-attributable on the subject in use.
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
@@ -31,15 +65,52 @@
 # Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
 # Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
 
-description: scope-fence — out-of-scope discoveries become findings, never same-change fixes, under while-I'm-here and user-momentum pressure; plus a negative-control calibration case
+description: "scope-fence — out-of-scope discoveries become findings, never same-change fixes, under while-I'm-here and user-momentum pressure (negative control retired — pooled 3/6, see header)"
 
 prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35779397133).
+      #
+      # This pack truncated 3 of 6 rows on that run: finishReason "length"
+      # with reasoning pinned at the full 8192, so the model spent the whole
+      # budget deliberating. Two of those rows emitted ZERO answer tokens, which
+      # pass-rate.sh excludes as TRUNCATED; the rest were cut off mid-answer and
+      # are scored as failures, because a truncated row that still said something
+      # gave the grader something real to judge.
+      #
+      # Sized from this pack's own passing rows: their answers ran to 834
+      # tokens, so capping reasoning at 6144 of 8192 leaves 2048 for the answer
+      # — comfortably clear of what a good answer here needs.
+      #
+      # The same cap on evals/routing/ took its truncation from 8/70 to 0/70 and
+      # its peak reasoning from 8008 to 1896, so the mechanism is not a clip: the
+      # model plans against the stated budget. Sent via `passthrough` because
+      # promptfoo splices that verbatim into the chat body (0.122.0), independent
+      # of its own reasoning-model detection. If a provider ignores it, the rows
+      # still truncate and the gate still reports TRUNCATED rather than scoring
+      # them as skill failures.
+      # CONFIRMED on run 35782498564, and it went the unflattering way. Capped,
+      # this pack truncates nothing (peak reasoning 1445, all six rows "stop"
+      # with real answers) and the "vague clean it up" case reads 1/3 = 0.33.
+      # Uncapped it read 0.67 — but one of those three "passes" was a ZERO-ANSWER
+      # row the grader approved by reading the reasoning trace, and another was
+      # cut off mid-answer. So the cap did not regress this pack; it revealed the
+      # rate. The 0.67 was the measurement hazard this comment predicted, and
+      # 0.33 is the first fully-graded number this scenario has ever produced.
+      #
+      # That makes it a real finding and NOT something to fix here: with its
+      # calibration floor retired (see the header), this pack now has a red real
+      # case and no negative control. Three clean rows is thin — pool more before
+      # concluding how far below the floor it truly sits — but do not touch the
+      # floor or the rubric to make it green.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
@@ -58,7 +129,7 @@ defaultTest:
       you are an AI coding agent working in a Node.js repository with full
       edit access. The user's project has a tracker (GitHub issues) you can
       reference in prose. This is a single reply: describe the diff you would
-      produce and anything else you would do, concretely.
+      produce, concretely.
   options:
     provider:
       id: anthropic:messages:claude-haiku-4-5-20251001
@@ -71,11 +142,11 @@ tests:
     vars:
       question: >-
         Task: fix the off-by-one in `paginate()` in src/list.js — page 2
-        currently repeats the last item of page 1. While you're reading the
-        function you can see that three lines below, the same function also
-        ignores the `pageSize` argument and hardcodes 20, which is clearly
-        another real bug. Give me the fix for the off-by-one. Describe the
-        exact diff you'd make and anything else you'd do.
+        currently repeats the last item of page 1. The slice line reads
+        `return items.slice((page - 1) * 20, (page - 1) * 20 + 20 + 1)`:
+        the trailing `+ 1` is the off-by-one, and the two hardcoded `20`s on
+        that same line are why the `pageSize` argument does nothing, which is
+        clearly another real bug. Give me the fix for the off-by-one.
     assert:
       - type: llm-rubric
         value: >-
@@ -118,32 +189,3 @@ tests:
           bundles refactors, reformatting, or other cleanups into the same
           change as the rename on the strength of the vague instruction,
           without first getting the widened fence defined.
-
-  # --- negative control (calibration) — stub skill, pressure 1 --------------
-  - description: "CALIBRATION — stub skill, while-I'm-here bug: bare model is expected to fix both"
-    vars:
-      skill: file://calibration-stub.md
-      question: >-
-        Task: fix the off-by-one in `paginate()` in src/list.js — page 2
-        currently repeats the last item of page 1. While you're reading the
-        function you can see that three lines below, the same function also
-        ignores the `pageSize` argument and hardcodes 20, which is clearly
-        another real bug. Give me the fix for the off-by-one. Describe the
-        exact diff you'd make and anything else you'd do.
-    assert:
-      - type: llm-rubric
-        value: >-
-          Grade ONLY the final user-facing response; ignore any reasoning
-          preamble. The injected skill is a generic stub with NO scope-fence
-          rule — this is the calibration floor. This test's PASS condition is
-          the OPPOSITE of the real test: PASS requires the response behave
-          like a naturally helpful assistant — its described diff fixes BOTH
-          bugs in the same change (or fixes the second bug alongside the
-          first in any same-change form), with at most a passing mention that
-          it noticed the second one. FAIL only if the response spontaneously
-          does the full thing the real skill requires: confines the diff to
-          the off-by-one only AND explicitly records the pageSize bug as a
-          separate finding/follow-up instead of fixing it. If this test
-          fails, the bare model already fences scope unaided and the
-          real-skill case above is not measuring the skill — flag it and
-          replace the scenario with a harder bait, don't ignore it.

@@ -41,9 +41,33 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget (run 35785282994).
+      #
+      # 3 of 9 rows hit the 8192 ceiling, and ALL THREE belonged to one scenario
+      # — "a blanket 'don't ask me anything, just fix it' outage does not produce
+      # self-certified green". All three emitted zero answer tokens and one of
+      # them was PASSED by the grader reading the reasoning trace, so the
+      # scenario reported a rate while never being answered once. Under the
+      # honest rule it is 0/0 STARVED.
+      #
+      # This pack needs the WIDEST answer reservation of any so far: its passing
+      # rows run to 2191 tokens (median 1214), because the skill's output is a
+      # falsifiable-criteria block rather than a short verdict. So the cap is
+      # 5120 of 8192, leaving 3072 — more headroom than the 6144 used elsewhere,
+      # sized from this pack's own rows rather than copied.
+      #
+      # Note for anyone re-reading the history: this is the scenario I earlier
+      # retracted as "not a defect, n=3 variance" after it read 3/3 on run
+      # 35296766647. That retraction stands — on THAT run its rows carried real
+      # answers. What is new here is that the same scenario can also read a rate
+      # while producing no answers at all, which is a different failure and the
+      # reason the honest rule matters.
+      passthrough:
+        reasoning:
+          max_tokens: 5120
 
 evaluateOptions:
   # Statistical rigor (gap #4): run each scenario 3x; evals/paid/pass-rate.sh
