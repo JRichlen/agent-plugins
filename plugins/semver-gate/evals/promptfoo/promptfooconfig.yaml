@@ -132,7 +132,7 @@
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
-#   ANTHROPIC_API_KEY   — the grader (kept strong so pass/fail is trustworthy)
+#   ANTHROPIC_API_KEY   — the grader (Haiku: a different family from the subject, chosen for cost)
 # Run:      npx promptfoo@latest eval -c promptfooconfig.yaml
 # Validate: npx promptfoo@latest validate -c promptfooconfig.yaml
 # View:     npx promptfoo@latest view

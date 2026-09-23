@@ -5,7 +5,7 @@
 # Copy this file (and prompt.template.txt) into your plugin's eval directory,
 # rename to promptfooconfig.yaml / prompt.txt, and fill in the three TODOs below.
 # See evals/templates/behavioral/README.md for the walkthrough and the rationale
-# behind each choice (why single-turn, why 8192 tokens, why a strong grader).
+# behind each choice (why single-turn, why 8192 tokens, why a separate-family grader).
 #
 # The cheap tier proves a plugin's *scripts* are safe. This tier proves the
 # *prose* actually steers a model toward that safe behavior: given a realistic
@@ -15,7 +15,7 @@
 #
 # Needs two keys:
 #   OPENROUTER_API_KEY  — the model under test (cheap, via OpenRouter)
-#   ANTHROPIC_API_KEY   — the grader (kept strong so pass/fail is trustworthy)
+#   ANTHROPIC_API_KEY   — the grader (Haiku: a different family from the subject, chosen for cost)
 # Run:  npx promptfoo@latest eval -c promptfooconfig.yaml
 # View: npx promptfoo@latest view
 description: TODO — <plugin> skill — behavioral safety evals

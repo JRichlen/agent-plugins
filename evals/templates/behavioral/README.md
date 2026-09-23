@@ -15,7 +15,7 @@ reference — read it alongside this template.
   skill text as `{{skill}}` and the user request as `{{question}}`, and tells the
   model to lay out its **complete** plan in one reply (no tool loop).
 - `promptfooconfig.template.yaml` — the config: cheap subject model under test, a
-  strong Anthropic grader, `max_tokens: 8192`, and one example `llm-rubric` test.
+  separate-family Anthropic grader (Haiku), `max_tokens: 8192`, and one example `llm-rubric` test.
 
 ## How to adopt it
 
