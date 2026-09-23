@@ -573,15 +573,24 @@ uninterpretable n=1 and no required check goes red on the weather:
   | 35797062312 | 3/5 | clean, capped |
   | 35797793874 | 3/5 | clean, capped |
   | 35800675314 | **5/5** | clean, capped |
-  | **pooled** | **18/25 = 0.72** | |
+  | 35804425107 | **5/5** | clean, capped (70/70 rows passing) |
+  | **pooled** | **23/30 = 0.767** | |
 
-  Against the 0.80 floor that still reads low, but 25 samples do not support
+  Against the 0.80 floor that still reads low, but 30 samples do not support
   calling it a defect:
 
   | statistic | value |
   |---|---|
-  | Wilson 95% CI | **[0.52, 0.86]** — **contains 0.80** |
-  | P(observing ≤ 18/25 if true p = 0.80) | **0.22** |
+  | Wilson 95% CI | **[0.59, 0.88]** — **contains 0.80** |
+  | P(observing ≤ 23/30 if true p = 0.80) | **0.39** |
+
+  One ordering oddity, recorded as a limitation and **not** as a finding: the
+  first four runs read 13/20 = 0.65 and the last two are 10/10, and
+  P(10/10 | p = 0.65) = 0.0135. That is mild tension with a single constant rate.
+  OpenRouter can rotate which upstream serves the subject without it appearing
+  anywhere in the artifact — rows carry only `cached`, `finishReason`, `output`
+  and `tokenUsage`, with no provider field — so an unobservable upstream change
+  cannot be ruled out, and neither can luck.
 
   So the data cannot separate "S1 sits below its floor" from "S1 sits at its
   floor and five runs of five sampled unluckily". The routing pack is BYTE-
@@ -658,14 +667,44 @@ uninterpretable n=1 and no required check goes red on the weather:
   | semver-gate | 6656 | 1536 | — |
   | routing | 7680 | 512 | — |
 
-  Two clips are worth naming rather than burying. **voice** loses 898 tokens off
-  a row that had spent 7042 of 7106 completion tokens reasoning and then emitted
-  a 64-token answer with the facts wrong, so the clip removes deliberation that
-  was not buying answer quality. **verify-before-claim** loses ~1990 off its
-  worst row (6598 reasoning + 1432 answer = 8030); its median reasoning is 1373,
-  so this clips one outlier rather than the pack, but if that outlier matters the
-  alternative is raising that pack's `max_tokens` — a per-run budget decision,
-  not a gate change.
+  Two clips were worth naming rather than burying, and both have since been
+  MEASURED rather than argued about. **voice** was expected to lose 898 tokens
+  off a row that had spent 7042 of 7106 completion tokens reasoning and then
+  emitted a 64-token answer with the facts wrong. **verify-before-claim** was
+  expected to lose ~1990 off its worst row (6598 reasoning + 1432 answer =
+  8030), against a median reasoning of only 1373.
+
+  **What actually happened**, on run 35804425107 — the first run with all twelve
+  packs capped:
+
+  | pack | cap | rows that hit the cap | outcome |
+  |---|---|---|---|
+  | verify-before-claim | 4608 | **1** | stopped at 4608, emitted an 834-token answer, **PASSED** |
+  | voice | 6144 | 0 | cap never binding (peak 2237) |
+  | stop-rule | 4096 | 0 | cap never binding (peak 1111) |
+  | find-before-build | 6144 | 0 | cap never binding (peak 4756) |
+
+  So the one clip anyone had reason to worry about bit exactly once and cost
+  nothing: the row stopped deliberating at the reservation, answered inside its
+  2× allowance, and the grader passed it. The alternative — raising that pack's
+  `max_tokens` — remains available but is not currently justified by evidence.
+
+  **The whole tier, measured on that run:** 13 packs, 223 rows, **zero truncated
+  and zero counterfeit rows anywhere**, every row finishing `stop`, and all
+  twelve behavioral legs plus routing passing under honest scoring. That is the
+  first time this tier has been measured end to end with nothing starved and no
+  green resting on a row that never answered. Two specific repairs landed:
+
+  | pack | before (run 35797793874) | after (run 35804425107) |
+  |---|---|---|
+  | voice | 2 zero-answer rows at 8192, both grader-PASSED; leg RED | 30/30 rows answered, leg green, peak reasoning 2237 |
+  | wayfinder | 1 zero-answer row grader-PASSED **inside a green leg** | 0 counterfeit rows, peak reasoning 8192 → 1154 |
+
+  voice's separate genuine failure — `authored prose ships without the tells` at
+  1/3, whose rows substituted `SIGINT` for the stimulus's `SIGTERM` — read
+  **3/3** on this run, pooling to 4/6. That is a pooled sample, not a repair:
+  nothing about that scenario changed, so it is recorded and left open rather
+  than declared fixed.
 
   Machine-enforced by `evals/cheap/run.sh` §17c, which checks the ARITHMETIC and
   not the presence of a key: a cap must sit inside `(0, max_tokens)` and leave at

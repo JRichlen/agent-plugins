@@ -280,12 +280,20 @@ tests:
   #   run 35797062312   3/5
   #   run 35797793874   3/5
   #   run 35800675314   5/5      <- the one that broke the claim
-  #   pooled           18/25 = 0.72   against the 0.80 floor
+  #   run 35804425107   5/5      (70/70 rows passing, zero truncation)
+  #   pooled           23/30 = 0.767  against the 0.80 floor
   #
-  # 0.72 reads low, but 25 samples cannot call it a defect:
+  # 0.767 reads low, but 30 samples cannot call it a defect:
   #
-  #   Wilson 95% CI              [0.52, 0.86]   <- CONTAINS the 0.80 floor
-  #   P(<= 18/25 | true p=0.80)  0.22
+  #   Wilson 95% CI              [0.59, 0.88]   <- CONTAINS the 0.80 floor
+  #   P(<= 23/30 | true p=0.80)  0.39
+  #
+  # Ordering oddity, a LIMITATION and not a finding: first four runs 13/20 =
+  # 0.65, last two 10/10, P(10/10 | p=0.65) = 0.0135. Mild tension with one
+  # constant rate. OpenRouter can rotate which upstream serves the subject with
+  # no trace in the artifact (rows carry only cached/finishReason/output/
+  # tokenUsage), so an unobservable upstream change cannot be ruled out, and
+  # neither can luck.
   #
   # So "S1 sits below its floor" and "S1 sits AT its floor and five runs of five
   # sampled unluckily" are not distinguishable from this data, and at repeat: 5
