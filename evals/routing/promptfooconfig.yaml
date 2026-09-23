@@ -53,9 +53,57 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
-      max_tokens: 4096
+      # 4096 -> 8192 (measured, run 35296766647). At 4096 this pack truncated 30
+      # of its 70 rows: completion == completionDetails.reasoning == 4096,
+      # finishReason "length", output "". The model spent its ENTIRE completion
+      # budget on reasoning tokens and never emitted a ROUTE: line, so rule 1 of
+      # route-contract.js fired on the empty string and six scenarios read as
+      # skill failures — S1 and prove-the-undo at 5/5 truncated, i.e. never
+      # answered once. The rows that DID answer confirm the cliff rather than a
+      # concurrency problem: every one finished with "stop", and their reasoning
+      # ran to 3780 tokens against a 4096 cap.
+      #
+      # 8192 is not a new budget, it is the one trajectory/promptfooconfig.yaml
+      # in this same tier already uses — and that pack truncated 0 of 25 rows on
+      # the same run with the same model. This pack asks strictly more of the
+      # model (the full roster.txt in context, a composition to pick, 1680 prompt
+      # tokens), so it needed the larger budget first, not last.
+      #
+      # Cost: OpenRouter reserves credit against max_tokens, so the in-flight
+      # reservation for this pack doubles. Actual spend rises only on rows that
+      # really use the room — and the 30 truncated rows were already burning a
+      # full 4096 completion each to return nothing, so that half of the spend
+      # buys samples now instead of buying blanks.
+      max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35300866961).
+      #
+      # 8192 fixed most of the truncation but not all: S4 and prove-the-undo
+      # still burned the entire budget deliberating and emitted nothing, so
+      # pass-rate.sh reported them STARVED — never answered, no verdict. Raising
+      # the ceiling again was the wrong lever; it doubles the reservation on all
+      # 70 calls to chase two scenarios, with no bound on where it stops.
+      #
+      # The right lever is the split, because this pack's answers are TINY. On
+      # the 56 passing rows of run 35300866961 the answer took 21-37 tokens
+      # (median 24) — it is one ROUTE: line. Reasoning on those same rows ran to
+      # 8008. So reserving 512 tokens for the answer costs the model almost
+      # nothing and guarantees the line fits: cap reasoning at 7680 of 8192.
+      #
+      # Sent via `passthrough` rather than `reasoning_effort` on purpose.
+      # promptfoo only emits reasoning_effort for models its own isReasoningModel
+      # check recognises, and it maps effort to a vendor-chosen budget rather
+      # than a number we picked. `passthrough` is spliced verbatim into the chat
+      # body (verified in promptfoo 0.122.0: the body literal ends with
+      # `...config.passthrough || {}`), so OpenRouter receives exactly this.
+      #
+      # If the upstream provider ignores reasoning.max_tokens, nothing gets
+      # worse: the rows still truncate and the gate still reports TRUNCATED
+      # instead of scoring them. That is the failure mode we want.
+      passthrough:
+        reasoning:
+          max_tokens: 7680
       # Grade the REPLY, not the reasoning trace. promptfoo's OpenRouter
       # provider otherwise prepends `Thinking: <reasoning>\n\n` to the graded
       # output when the model returns reasoning tokens, so a ROUTE: line the
@@ -64,7 +112,33 @@ providers:
       showThinking: false
 
 evaluateOptions:
-  maxConcurrency: 3
+  # 3 -> 8 (measured, run 34920638978): this job took 15m06s, of which the
+  # routing step alone was 12m12s — 70 calls at concurrency 3 is ~23 serial
+  # waves of ~31s. Every other paid tier fans out across jobs; this one does
+  # not, so the whole tier waits on one queue. At 8 the same 70 calls are ~9
+  # waves, which projects the job to ~5.6 min.
+  #
+  # Why not also run this pack and trajectory/ in parallel: that models out at
+  # only ~1 min better (4.6 vs 5.6), and OpenRouter reserves credit against
+  # in-flight requests PER KEY, so two packs at 8 each share one budget rather
+  # than doubling throughput — it buys contention, not speed.
+  #
+  # If this proves too aggressive the failure is LOUD, not silent: in-flight
+  # 402s land as failureReason 2, which pass-rate.sh classifies as FAULTs and
+  # reports as STARVED rather than folding into the floor. Lower it back if a
+  # run comes back starved.
+  #
+  # That claim was true but too narrow, and run 35296766647 found the gap: a
+  # request can also fail LOUDLY to the provider and QUIETLY to the gate. A
+  # completion truncated at max_tokens returns HTTP 200 with an empty body, so
+  # promptfoo records failureReason 1 (the pack's own ROUTE assertion failing on
+  # the empty string), not 2 — and 30 such rows read as skill failures. The fix
+  # was on both sides: max_tokens above, and an explicit truncation clause in
+  # pass-rate.sh that excludes an empty answer the provider says it cut off. So
+  # "concurrency failures are always visible as FAULTs" holds only for errors the
+  # provider reports AS errors; check the finishReason histogram before reading a
+  # red routing run as a routing verdict.
+  maxConcurrency: 8
   # Statistical rigor (gap #4): a stochastic router that passes a scenario ~55%
   # of the time is a coin-flip at n=1. Run each scenario 5x; evals/paid/pass-rate.sh
   # then enforces a per-scenario k-of-N floor so a single lucky pass can't stay
@@ -196,6 +270,55 @@ tests:
   # verify-before-claim must be present in the sorted list, roster-valid extras
   # (the live run added scope-fence/stop-rule — both defensible here) are
   # allowed; route-contract.js still enforces sorted/deduped/roster-only.
+  # RATE UNRESOLVED (PR #131). An earlier version of this note called it a
+  # "MEASURED SUB-FLOOR ... neither n=3 noise nor a budget artifact" at pooled
+  # 10/15. That was overstated and the next two runs broke it. Five runs, every
+  # one capped and truncation-free, this pack byte-identical throughout:
+  #
+  #   run 35779397133   3/5
+  #   run 35787505902   4/5
+  #   run 35797062312   3/5
+  #   run 35797793874   3/5
+  #   run 35800675314   5/5      <- the one that broke the claim
+  #   run 35804425107   5/5      (70/70 rows passing, zero truncation)
+  #   pooled           23/30 = 0.767  against the 0.80 floor
+  #
+  # 0.767 reads low, but 30 samples cannot call it a defect:
+  #
+  #   Wilson 95% CI              [0.59, 0.88]   <- CONTAINS the 0.80 floor
+  #   P(<= 23/30 | true p=0.80)  0.39
+  #
+  # Ordering oddity, a LIMITATION and not a finding: first four runs 13/20 =
+  # 0.65, last two 10/10, P(10/10 | p=0.65) = 0.0135. Mild tension with one
+  # constant rate. OpenRouter can rotate which upstream serves the subject with
+  # no trace in the artifact (rows carry only cached/finishReason/output/
+  # tokenUsage), so an unobservable upstream change cannot be ruled out, and
+  # neither can luck.
+  #
+  # So "S1 sits below its floor" and "S1 sits AT its floor and five runs of five
+  # sampled unluckily" are not distinguishable from this data, and at repeat: 5
+  # more runs of the same size will not distinguish them either. Do not cite a
+  # single run's number here as a verdict in either direction.
+  #
+  # What IS stable is the failure MODE, which is about HOW it fails rather than
+  # how often, and is unaffected by the rate question. The router is NOT
+  # misrouting: every failing row across all five runs gets three of four slots
+  # right — specialist=diagnosing-bugs, envelope=redgate, interaction_owner=
+  # redgate — and misses only `guards`:
+  #
+  #   x3   guards=scope-fence   (instead of verify-before-claim)
+  #   x4   guards=none
+  #
+  # On an evidence-warranted bug hunt the model composes the right specialist and
+  # envelope but does not always arm verify-before-claim, the guard that stops a
+  # fix being called done without evidence. That is exactly what this
+  # composition exists to catch, so the expectation is NOT too strict and the
+  # assertion below is deliberately left untouched.
+  #
+  # Do not lower the floor, relax the guards regex, or drop the scenario to get
+  # green — and equally, do not declare this fixed off a green run. The fix, if
+  # one is wanted, belongs in the roster/skill descriptions that tell the router
+  # when verify-before-claim applies — not here.
   - description: "S1 COMPOSITION — evidence-warranted bug hunt → diagnosing-bugs wrapped in redgate"
     vars:
       request: >-
