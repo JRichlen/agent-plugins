@@ -1049,8 +1049,45 @@ def budgets(path):
         return (int(m.group(1)) if m else None), (int(c.group(1)) if c else None)
 
 packs = sorted(glob.glob(os.path.join(root, "plugins/*/evals/promptfoo/promptfooconfig.yaml")))
+found = {p.split(os.sep)[-4] for p in packs}
+
+# CROSS-CHECK the glob against the repo's canonical pack discovery — the same
+# script CI uses to build the behavioral matrix. Two drafts of this guard were
+# wrong here and both were caught by mutation rather than by reading:
+#
+#   1. failing closed on an empty corpus took the COUNTERFEIT tier red, because
+#      it runs this file against a synthetic root holding one baseline plugin
+#      and no behavioral packs, where absence is legitimate;
+#   2. passing on an empty corpus then let the guard be BLINDED — repoint the
+#      glob at a filename that matches nothing and it reported "not applicable"
+#      in the real repo, with twelve uncapped packs sitting right there.
+#
+# Keying on a second, independent source of truth closes both: the two must
+# AGREE. Empty on both sides is the synthetic root and is not applicable; a
+# disagreement means this guard has lost sight of packs that exist, which is a
+# failure of the guard and is reported as one. Blinding it now requires editing
+# discover-paid-packs.sh too, and that script has its own self-test (counterfeit
+# 14-paid-discovery-broken).
+expected = None
+disco = os.path.join(root, "evals/paid/discover-paid-packs.sh")
+if os.path.exists(disco):
+    try:
+        import json as _json, subprocess
+        out = subprocess.run([disco, "promptfoo"], cwd=root, capture_output=True,
+                             text=True, timeout=60)
+        if out.returncode == 0:
+            expected = set(_json.loads(out.stdout.strip() or "[]"))
+    except Exception:
+        expected = None
+
+if expected is not None and expected != found:
+    only_disco = sorted(expected - found)
+    only_glob = sorted(found - expected)
+    print(f"  FAIL this guard and discover-paid-packs.sh disagree on which packs exist "
+          f"(missed by this guard: {only_disco or 'none'}; seen only here: {only_glob or 'none'}). "
+          f"A reservation guard that cannot see the packs is not a guard"); sys.exit(1)
 if not packs:
-    print("  FAIL no behavioral packs found — the reservation guard cannot see anything"); sys.exit(1)
+    print("  PASS no behavioral packs in this root — reservation check not applicable"); sys.exit(0)
 fail = 0
 for p in packs:
     name = p.split(os.sep)[-4]

@@ -639,11 +639,33 @@ uninterpretable n=1 and no required check goes red on the weather:
   Machine-enforced by `evals/cheap/run.sh` §17c, which checks the ARITHMETIC and
   not the presence of a key: a cap must sit inside `(0, max_tokens)` and leave at
   least 1024 tokens for the answer, since a cap of 8191 would satisfy a presence
-  check while starving every answer to one token. Mutation-tested three ways
-  (delete a cap, raise one to 8000, set it equal to the ceiling) on both the
-  PyYAML and the comment-stripping fallback path — the latter because these
-  configs' own prose names these very numbers, and a guard that reads prose
+  check while starving every answer to one token. Mutation-tested five ways on
+  both the PyYAML and the comment-stripping fallback path — the latter because
+  these configs' own prose names these very numbers, and a guard that reads prose
   proves nothing.
+
+  Two drafts of §17c were wrong, and neither was caught by reading it:
+
+  | draft | defect | caught by |
+  |---|---|---|
+  | fail closed when no packs are found | took the **counterfeit tier** red — it runs the cheap tier against a synthetic root holding one baseline plugin and no behavioral packs, where absence is legitimate | the corpus's own `baseline plugin is NOT green` calibration check |
+  | pass when no packs are found | the guard could be **blinded** — repoint its glob at a filename matching nothing and it reported "not applicable" with twelve uncapped packs sitting there | mutation M4 |
+
+  Both are closed by keying on a second, independent source of truth: §17c's glob
+  must AGREE with `evals/paid/discover-paid-packs.sh promptfoo`, the same script
+  CI uses to build the behavioral matrix. Empty on both sides is the synthetic
+  root and is not applicable; a disagreement means the guard has lost sight of
+  packs that exist and is reported as a failure of the guard. Blinding it now
+  means editing discovery too, and discovery has its own self-test (counterfeit
+  `14-paid-discovery-broken`). The mutations and their verdicts:
+
+  | mutation | verdict |
+  |---|---|
+  | delete a pack's cap (prose still names the number) | red |
+  | raise a cap to 8000 (answer = 192) | red |
+  | set the cap equal to the ceiling | red |
+  | blind the config glob | red (was green before the cross-check) |
+  | blind the pack-directory glob as well | red |
 - **A zero-answer truncation is excluded even when the grader PASSED it** — the
   worst shape found so far. promptfoo surfaces the reasoning trace as the output,
   so a row where the model emitted **no answer tokens at all** still has text for
