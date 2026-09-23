@@ -113,6 +113,12 @@ has "$SK/scripts/gather-context.sh" 'node_id:$nid' \
 hasE "$PB/index.schema.json" '"node_id"' \
   "index schema admits node_id on a claim" \
   "index schema lost the node_id claim field — additionalProperties:false would reject a keyed ledger"
+# The curator only ever sees PROMPT.md + context.json at runtime (fleet-sync.yml), not
+# SKILL.md — so the ledger field list there is what actually decides whether a fresh
+# claim is keyed. Without node_id in it, new claims validate on the mutable name.
+has "$SK/PROMPT.md" '`node_id`, `repo`, `path`, `sha`, `curated_at`' \
+  "PROMPT.md requires node_id on every ledger entry (the runtime curator's field list)" \
+  "PROMPT.md's ledger field list dropped node_id — the deployed curator writes unkeyed claims matched on the mutable repo name"
 
 # --- scripts parse + JSON is valid -----------------------------------------
 group "fleet-playbook-curator — scripts parse, JSON valid"
