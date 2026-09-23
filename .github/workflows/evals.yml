@@ -10,10 +10,19 @@ name: evals
 #   detect → run(matrix, path-filtered, never-required) → aggregate(always(),
 #   REQUIRED) fan-out, so an untouched or pack-less plugin costs nothing while the
 #   required status check is always emitted (never left hanging on a skipped leg).
+#
+#   SPEND GATE: on pull requests the paid legs (behavioral-run, routing-eval,
+#   deep-run) only execute when the PR carries the `paid-evals` label. Without
+#   it they skip and their aggregates report green, so an agent pushing fix after
+#   fix to a PR no longer re-buys the full paid suite on every push. Add the label
+#   when a PR is ready for a paid pass (adding it triggers a run); remove it again
+#   to stop paying for follow-up pushes. Pushes to main and manual dispatch are
+#   unaffected.
 on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 concurrency:
@@ -264,7 +273,8 @@ jobs:
     if: >-
       needs.behavioral-detect.outputs.plugins != '[]' &&
       (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'paid-evals')))
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -446,7 +456,8 @@ jobs:
     name: routing tier (roster trigger routing)
     if: >-
       github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.labels.*.name, 'paid-evals'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -714,7 +725,8 @@ jobs:
       needs.deep-detect.outputs.changed == 'true' &&
       needs.deep-detect.outputs.plugins != '[]' &&
       (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'paid-evals')))
     runs-on: ubuntu-latest
     # No `environment:` — the pier run no longer pauses on the protected
     # `deep-evals` environment for a maintainer to click Approve, so an
