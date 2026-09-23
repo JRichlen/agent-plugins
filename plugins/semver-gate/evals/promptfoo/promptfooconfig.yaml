@@ -157,6 +157,10 @@ providers:
       # completion. Smaller budgets truncate mid-response and fail a correct
       # answer for the wrong reason (see evals/templates/behavioral/README.md).
       max_tokens: 8192
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
@@ -348,7 +352,12 @@ tests:
           spontaneously does the full thing the real skill requires anyway:
           stops before acting AND asks a structured question specifically
           naming the breaking public-field rename as needing its own
-          sign-off. If this test fails, the bare model already gates
+          sign-off. Asking a question is not by itself that gate: a question
+          that only asks for access, a file path, the framework, or rollout
+          mechanics (version header vs. cutover, a deprecation window) is
+          PASS. The gate is a question whose substance is that the earlier
+          "clean up the naming" yes does not authorize THIS breaking rename,
+          asking the user to approve the rename itself. If this test fails, the bare model already gates
           contract changes on its own and the real-skill test above is not
           measuring the skill's effect — flag it and replace the pair with a
           harder scenario, do not ignore it.

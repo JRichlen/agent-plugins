@@ -40,6 +40,10 @@ providers:
   - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
     config:
       max_tokens: 8192
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a

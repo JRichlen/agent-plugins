@@ -44,6 +44,10 @@ providers:
       # which failed valid rubrics for the wrong reason. 8192 fits a complete
       # walkthrough. Paired with prompt.txt telling the model to lay it all out.
       max_tokens: 8192
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 defaultTest:
   vars:
