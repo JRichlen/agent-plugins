@@ -56,7 +56,9 @@ python3 sample-for-labelling.py results.json --n 1000000 --model-graded-only --s
 cfg="$(regrade.sh plugins/<pack>/evals/promptfoo results.json --grader <provider id> --label cross)"
 ( cd plugins/<pack>/evals/promptfoo && npx promptfoo@0.122.0 eval -c "$(basename "$cfg")" --output results.regrade.cross.json )
 python3 sample-for-labelling.py plugins/<pack>/evals/promptfoo/results.regrade.cross.json --n 1000000 --model-graded-only --sheet /dev/null --verdicts verdicts.cross.json
-python3 agreement.py verdicts.original.json verdicts.cross.json --name-a original --name-b cross
+python3 agreement.py verdicts.original.json verdicts.cross.json --name-a original --name-b cross --json report.cross.json
+# each disagreement's output and both graders' reasons, joined back on the sampler's hash
+python3 show-disagreements.py report.cross.json results.json plugins/<pack>/evals/promptfoo/results.regrade.cross.json --name-a original --name-b cross
 ```
 
 The assertions come from the results rows themselves, so the rubric that

@@ -1178,6 +1178,40 @@ if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/matrix.json" --n
 else
   bad "calibration: sample-for-labelling.py leaked a verdict or provider into the sheet, or wrote the wrong count"
 fi
+# show-disagreements.py joins an agreement report back to the rows it came
+# from. A report that only names a hash cannot be adjudicated; this one must
+# print the output and both graders' reasons, and must refuse a report whose
+# hashes are in neither results file.
+python3 - "$_mx" <<'PYD'
+import json, sys
+d = sys.argv[1]
+def row(desc, out, ok, reason):
+    return {"testCase": {"description": desc}, "success": ok, "failureReason": 0 if ok else 1,
+            "response": {"output": out},
+            "gradingResult": {"pass": ok, "componentResults": [{"assertion": {"type": "llm-rubric"}, "pass": ok, "reason": reason}]}}
+A = [row("S", "archive, verify, then hand over delete.sh", True, "a: archives first"),
+     row("S", "running gh repo delete --yes now", True, "a: looks fine")]
+B = [row("S", "archive, verify, then hand over delete.sh", True, "b: archives first"),
+     row("S", "running gh repo delete --yes now", False, "b: deletes without an archive")]
+json.dump({"results": {"results": A}}, open(d + "/dA.json", "w")); json.dump({"results": {"results": B}}, open(d + "/dB.json", "w"))
+json.dump({"disagreements": [{"hash": "0" * 64, "scenario": "S", "A": "pass", "B": "fail"}]}, open(d + "/dbad.json", "w"))
+PYD
+_cal="evals/paid/calibration"
+python3 "$_cal/sample-for-labelling.py" "$_mx/dA.json" --n 100 --model-graded-only --sheet "$_mx/dsa.json" --verdicts "$_mx/dva.json" >/dev/null 2>&1
+python3 "$_cal/sample-for-labelling.py" "$_mx/dB.json" --n 100 --model-graded-only --sheet "$_mx/dsb.json" --verdicts "$_mx/dvb.json" >/dev/null 2>&1
+python3 "$_ag" "$_mx/dva.json" "$_mx/dvb.json" --name-a original --name-b cross --json "$_mx/drep.json" >/dev/null 2>&1
+if python3 "$_cal/show-disagreements.py" "$_mx/drep.json" "$_mx/dA.json" "$_mx/dB.json" --name-a original --name-b cross > "$_mx/dshow.txt" 2>&1 \
+   && grep -q 'gh repo delete --yes now' "$_mx/dshow.txt" && grep -q 'a: looks fine' "$_mx/dshow.txt" \
+   && grep -q 'b: deletes without an archive' "$_mx/dshow.txt" && ! grep -q 'archives first' "$_mx/dshow.txt"; then
+  ok "calibration: show-disagreements.py prints only the disagreeing row, with its output and both graders' reasons"
+else
+  bad "calibration: show-disagreements.py did not print the disagreeing row's output and both reasons (or printed an agreeing row)"
+fi
+if python3 "$_cal/show-disagreements.py" "$_mx/dbad.json" "$_mx/dA.json" "$_mx/dB.json" >/dev/null 2>&1; then
+  bad "calibration: show-disagreements.py accepted a report whose hashes are in neither results file"
+else
+  ok "calibration: show-disagreements.py refuses a report that does not belong to the results it is given"
+fi
 _smt="$(evals/paid/subject-matrix.sh --self-test 2>&1)"; _smrc=$?
 if [ $_smrc -eq 0 ]; then
   ok "matrix: subject-matrix.sh overlay keeps the baseline first and copies its config to each subject"
