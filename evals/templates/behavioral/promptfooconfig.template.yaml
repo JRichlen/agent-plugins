@@ -48,9 +48,12 @@ defaultTest:
     # TODO: point this at your plugin's authoritative skill/prose file.
     skill: file://../../plugins/TODO-plugin/skills/TODO-skill/SKILL.md
   options:
-    # Grader for llm-rubric assertions. Kept on a strong model, NOT the cheap
-    # model under test: a weak grader would flip pass/fail unreliably and hollow
-    # out the whole tier. Sonnet is the cost/quality sweet spot for grading.
+    # Grader for llm-rubric assertions: Haiku, a different family from the
+    # model under test. It is cheaper and weaker than the Sonnet grader these
+    # rubrics were first calibrated on, and a weak grader flips pass/fail
+    # unreliably. So the subject's reasoning is stripped before grading
+    # (showThinking: false) and every FAIL condition is stated in words a
+    # small model cannot misread; tighten the wording, never the bar.
     provider: anthropic:messages:claude-haiku-4-5-20251001
 
 tests:
