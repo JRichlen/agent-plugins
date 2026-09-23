@@ -38,12 +38,15 @@ while IFS= read -r claim; do
   # Manifest-level citations (no file surface) are always allowed.
   case "$path" in ""|"(manifest)"|manifest|HEAD|head) continue ;; esac
   # (1) A FILE-path citation requires that repo to have been read this pass.
-  #     Prefer node_id: it is immutable across a rename, and a REUSED repo name
-  #     carries a different node_id, so a stale citation can no longer resolve to
-  #     the wrong repository. Fall back to full_name only when the ledger or the
-  #     context predates node_id, and say so in the summary.
-  if [ -n "$node_id" ] && [ -n "$read_node_ids" ]; then
-    if ! grep -qxF "$node_id" <<<"$read_node_ids"; then
+  #     A claim that carries node_id is matched on node_id ONLY: it survives a
+  #     rename, and a REUSED repo name carries a different node_id, so a stale
+  #     citation cannot resolve to the wrong repository. That holds even when
+  #     context.json has no node_ids at all — falling back to full_name there
+  #     would let the reused name through, so the lookup simply fails closed.
+  #     Only a claim that omits node_id (a legacy ledger) is matched on
+  #     full_name, and the summary says so.
+  if [ -n "$node_id" ]; then
+    if [ -z "$read_node_ids" ] || ! grep -qxF "$node_id" <<<"$read_node_ids"; then
       echo "FABRICATED CITATION: claim cites ${repo}@…:${path} (node_id ${node_id}) but that repository was not read this pass (no such node_id in context.json). A renamed member keeps its node_id; a REUSED name does not." >&2
       violations=$((violations + 1))
       continue

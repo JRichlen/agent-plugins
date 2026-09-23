@@ -107,6 +107,12 @@ else ok "validate-citations rejects a file citation whose path is absent from th
 if bash "$VC" "$FX/cite-index-hijack.json" "$FX/cite-diff.json" "$FX/cite-context.json" >/dev/null 2>&1; then
   bad "validate-citations ACCEPTED a node_id-keyed citation whose repo left the fleet while its NAME was reused — the citation resolved to the wrong repository"
 else ok "validate-citations rejects a node_id-keyed citation whose repo name was reused by a different repository"; fi
+# ...and that must not depend on the context's format: against a context with NO
+# node_ids (cite-context-legacy.json), a keyed claim used to fall back to full_name
+# and the reused name let it through. A keyed claim now matches on node_id only.
+if bash "$VC" "$FX/cite-index-hijack.json" "$FX/cite-diff.json" "$FX/cite-context-legacy.json" >/dev/null 2>&1; then
+  bad "validate-citations ACCEPTED a node_id-keyed citation against a context with no node_ids — it fell back to the mutable full_name and the reused name resolved"
+else ok "validate-citations fails a node_id-keyed citation closed even when context.json carries no node_ids"; fi
 has "$SK/scripts/gather-context.sh" 'node_id:$nid' \
   "gather-context carries node_id into each context entry (the ledger's identity key)" \
   "gather-context dropped node_id from context entries — validate-citations falls back to the mutable full_name"
