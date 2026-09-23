@@ -128,7 +128,7 @@ def provider_id(r):
 
 def family(model_id):
     """Vendor/family of a provider id: 'anthropic:messages:claude-x' -> anthropic;
-    'openrouter:nvidia/nemotron' -> nvidia; 'openrouter:anthropic/claude' -> anthropic."""
+    'openrouter:qwen/qwen3.8-flash' -> qwen; 'openrouter:anthropic/claude' -> anthropic."""
     m = str(model_id).lower()
     if m.startswith("openrouter:"):
         rest = m.split(":", 1)[1]

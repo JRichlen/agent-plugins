@@ -1,0 +1,314 @@
+#!/usr/bin/env bash
+#
+# check-subject-model.sh — confirm the model every behavioral pack actually
+# TESTS is callable right now.
+#
+# CI has always confirmed the Anthropic grader slug resolves and never once
+# checked the OpenRouter subject. A revoked key, an exhausted balance or a moved
+# slug therefore produces packs where every real-skill row fails, with no signal
+# anywhere — which is how two refresh runs (2026-09-01, 2026-09-08) graded all
+# 12 packs, spent ~50 minutes of paid API time, captured nothing, and reported
+# success.
+#
+# WHAT A GREEN HERE DOES NOT MEAN. A ping is a single 8-token request. OpenRouter
+# reserves credit per request against the ones already in flight, so it answers
+# 402 "would exceed your available credits given your current in-flight requests"
+# for a real pack run while still answering 200 for a ping — and a full CI fan-out
+# is ~12 packs x concurrency 3. That is not a hypothetical: on 2026-09-09 this
+# check returned 200 for every slug and 11 of 12 behavioral packs were
+# simultaneously failing every row with exactly that 402. So the ping proves the
+# key and the slug, and it proves NOTHING about whether the account can fund a
+# run. The balance probe below is what speaks to funding; it is advisory because
+# it depends on a response shape this repo does not control.
+#
+# It lives in a script rather than inline in a workflow because BOTH the evals
+# workflow and the refresh workflow must run it — the refresh is the one that
+# actually spends the budget, so preflighting only the former would leave the
+# expensive path unguarded (caught in review of PR #131).
+#
+# Provider ids are read from the parsed YAML `providers:` list, never grepped
+# out of the file: a commented-out historical slug left above the active one
+# during a migration would otherwise be picked up and reported green while
+# promptfoo called a different, broken model (also caught in that review).
+#
+# Fails closed. Every step that could yield nothing is asserted, and the run
+# refuses to exit 0 unless it actually pinged at least one model.
+#
+# Usage:
+#   check-subject-model.sh           # ping every distinct subject slug
+#   check-subject-model.sh --list    # print the slugs it WOULD ping; no network
+#
+# Env: OPENROUTER_API_KEY (required unless --list)
+set -uo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../.." && pwd)"
+cd "$ROOT" || exit 1
+
+# Fallback ceiling for a provider that declares no max_tokens of its own.
+DEFAULT_PING_TOKENS=8
+# A 429 is retried this many times before the check fails closed; the waits are
+# short because the tier behind it is about to spend forty minutes.
+RATE_LIMIT_RETRIES=3
+RATE_LIMIT_BACKOFF=(5 15 30)
+
+# Vendor error bodies are echoed into PUBLIC CI logs, and OpenRouter's 402/429
+# bodies embed account identifiers: a workspace key-management URL ending in the
+# key's id, plus a user_id. None of it is the API key itself, so the severity is
+# low — but it is gratuitous, it is permanent once a public run is archived, and
+# nothing in the diagnosis needs it. Every path that prints "$body" goes through
+# this, so adding a new echo site without redacting is the thing the cheap tier
+# guard checks for.
+redact() { "$ROOT/evals/paid/redact-vendor-ids.sh"; }
+
+MODE="${1:-ping}"
+case "$MODE" in
+  --list) MODE=list ;;
+  ping|"") MODE=ping ;;
+  *) echo "usage: check-subject-model.sh [--list]" >&2; exit 2 ;;
+esac
+
+if ! plugins="$(evals/paid/discover-paid-packs.sh promptfoo)"; then
+  echo "::error::discover-paid-packs.sh failed — cannot tell which packs exist, so nothing was verified." >&2
+  exit 1
+fi
+if [ "$plugins" = "[]" ]; then
+  echo "no promptfoo packs — nothing to resolve"
+  exit 0
+fi
+if ! names="$(printf '%s' "$plugins" | jq -r '.[]' 2>/dev/null)" || [ -z "$names" ]; then
+  echo "::error::could not parse the discovered pack list as JSON — nothing was verified." >&2
+  printf '%s\n' "$plugins" | head -5 >&2
+  exit 1
+fi
+
+# Extract every ACTIVE openrouter provider id from each pack's parsed YAML.
+subjects="$(python3 - $names <<'PY'
+import os, sys
+sys.dont_write_bytecode = True
+def ids_from(cfg):
+    """Active provider ids only, each paired with the max_tokens that provider
+    declares. The token count matters: OpenRouter reserves credit against
+    max_tokens, so a ping that asks for 8 tokens succeeds while the pack asking
+    for 8192 is refused. Pinging with the pack's own ceiling is what makes the
+    preflight predictive instead of merely reassuring."""
+    try:
+        import yaml
+        doc = yaml.safe_load(open(cfg)) or {}
+        out = []
+        for p in (doc.get("providers") or []):
+            pid = p.get("id") if isinstance(p, dict) else p
+            mt = ((p.get("config") or {}).get("max_tokens")
+                  if isinstance(p, dict) else None)
+            if isinstance(pid, str):
+                out.append((pid, mt if isinstance(mt, int) and mt > 0 else None))
+        return out
+    except ImportError:
+        pass
+    except Exception as e:
+        print(f"PARSE-ERROR {cfg}: {e}", file=sys.stderr)
+        return None
+    # PyYAML absent: walk the providers block by hand, skipping comment lines.
+    # max_tokens belongs to the id most recently seen.
+    out, in_block = [], False
+    for line in open(cfg):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if not in_block:
+            if line.rstrip() == "providers:":
+                in_block = True
+            continue
+        if line[:1] not in (" ", "\t", "-") and stripped:
+            break                      # dedented to the next top-level key
+        if stripped.startswith("- "):
+            v = stripped[2:].strip()
+            if v.startswith("id:"):
+                v = v[3:].strip()
+            out.append([v.strip("'\""), None])
+        elif stripped.startswith("id:"):
+            out.append([stripped[3:].strip().strip("'\""), None])
+        elif stripped.startswith("max_tokens:") and out:
+            try:
+                out[-1][1] = int(stripped.split(":", 1)[1].strip())
+            except ValueError:
+                pass
+    return [tuple(x) for x in out]
+
+bad = 0
+found = []
+for name in sys.argv[1:]:
+    cfg = os.path.join("plugins", name, "evals", "promptfoo", "promptfooconfig.yaml")
+    if not os.path.isfile(cfg):
+        print(f"MISSING {cfg}", file=sys.stderr); bad += 1; continue
+    ids = ids_from(cfg)
+    if ids is None:
+        bad += 1; continue
+    subs = [(i, mt) for (i, mt) in ids if i.startswith("openrouter:")]
+    if not subs:
+        print(f"NO-SUBJECT {name}: declares no 'openrouter:<model>' provider", file=sys.stderr); bad += 1; continue
+    found.extend((i.split(":", 1)[1], mt) for (i, mt) in subs)
+# Ping each slug at the LARGEST ceiling any pack asks for: that is the request
+# most likely to be refused, so it is the one worth proving affordable.
+worst = {}
+for slug, mt in found:
+    worst[slug] = max(worst.get(slug) or 0, mt or 0)
+for slug in sorted(worst):
+    print(f"{slug}\t{worst[slug] or 0}")
+sys.exit(1 if bad else 0)
+PY
+)" || { echo "::error::could not read subject providers from one or more packs (see above) — nothing was verified." >&2; exit 1; }
+
+if [ -z "$subjects" ]; then
+  echo "::error::no subject slugs extracted from $(printf '%s' "$names" | wc -w) pack(s) — nothing was verified." >&2
+  exit 1
+fi
+
+if [ "$MODE" = "list" ]; then
+  while IFS="$(printf '\t')" read -r slug mt; do
+    [ -n "$slug" ] || continue
+    if [ "${mt:-0}" -gt 0 ] 2>/dev/null; then
+      echo "$slug (ping reserves max_tokens=$mt, the largest any pack declares)"
+    else
+      echo "$slug (no max_tokens declared; ping reserves the default $DEFAULT_PING_TOKENS)"
+    fi
+  done <<< "$subjects"
+  exit 0
+fi
+
+if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+  echo "::error::OPENROUTER_API_KEY is not set — every behavioral pack would grade a model it cannot call." >&2
+  exit 1
+fi
+
+# --- funding probe -----------------------------------------------------------
+# TWO different numbers gate a request, and conflating them is the exact defect
+# this block exists to prevent:
+#
+#   * the KEY CAP      — /api/v1/key     -> data.limit_remaining
+#                        the spending ceiling on this one API key.
+#   * the ACCOUNT BALANCE — /api/v1/credits -> total_credits - total_usage
+#                        the money sitting behind EVERY key on the account.
+#
+# A request is refused when EITHER is exhausted, and the 402 body names which in
+# metadata.limit_source. From 2026-09-10 the key cap read 53% used — comfortably
+# healthy — while every row of every pack was refused with
+# `limit_source: openrouter_credits`, and PR #133 sat red for five days on a
+# diagnosis that read the key cap and concluded funding was fine.
+#
+# An earlier version of this probe read ONLY the key cap. In that outage it
+# would have printed "remaining=27.91" and passed: reassurance in precisely the
+# case it was built to catch, which is the same false-green this whole script
+# was written to remove. So: report both, name both, fail closed on either.
+#
+# Still advisory in shape — this repo does not own OpenRouter's response schema,
+# so an unparseable field warns rather than blocks, and the pings below remain
+# the load-bearing evidence. It DOES fail closed on the unambiguous signal:
+# either number at or below 0.
+fail_balance=0
+
+_is_num() { case "${1:-}" in ''|*[!0-9.eE+-]*) return 1 ;; *) return 0 ;; esac; }
+
+# -- the key's own spending ceiling --
+kb="$(mktemp)"
+kcode=$(curl -sS -o "$kb" -w '%{http_code}' https://openrouter.ai/api/v1/key \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY") || kcode=000
+if [ "$kcode" = "200" ]; then
+  key_remaining="$(jq -r '.data.limit_remaining // empty' "$kb" 2>/dev/null || true)"
+  usage="$(jq -r '.data.usage // "?"' "$kb" 2>/dev/null || echo "?")"
+  limit="$(jq -r '.data.limit // "unlimited/unknown"' "$kb" 2>/dev/null || echo "?")"
+  echo "key cap:         usage=$usage limit=$limit remaining=${key_remaining:-<not reported>}   <- this KEY's ceiling only"
+  if _is_num "$key_remaining"; then
+    if awk -v r="$key_remaining" 'BEGIN{exit !(r+0 <= 0)}'; then
+      echo "::error::this key's spending cap is exhausted ($key_remaining remaining) — requests will 402 with limit_source=openrouter_key_limit. Raise the key's limit, or use a key with headroom."
+      fail_balance=1
+    fi
+  else
+    echo "::warning::no numeric key cap reported, so the key's own ceiling is UNVERIFIED."
+  fi
+else
+  echo "::warning::could not read /api/v1/key (HTTP $kcode) — the key's spending cap is UNVERIFIED."
+fi
+rm -f "$kb"
+
+# -- the account's actual money, which the key cap says NOTHING about --
+cb="$(mktemp)"
+ccode=$(curl -sS -o "$cb" -w '%{http_code}' https://openrouter.ai/api/v1/credits \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY") || ccode=000
+if [ "$ccode" = "200" ]; then
+  granted="$(jq -r '.data.total_credits // empty' "$cb" 2>/dev/null || true)"
+  spent="$(jq -r '.data.total_usage // empty' "$cb" 2>/dev/null || true)"
+  if _is_num "$granted" && _is_num "$spent"; then
+    balance="$(awk -v g="$granted" -v s="$spent" 'BEGIN{printf "%.4f", g-s}')"
+    echo "account balance: credits=$granted usage=$spent balance=$balance   <- the money behind EVERY key"
+    if awk -v b="$balance" 'BEGIN{exit !(b+0 <= 0)}'; then
+      echo "::error::the OpenRouter ACCOUNT balance is $balance — every request will 402 with limit_source=openrouter_credits however much headroom the key cap above shows. Add credit at https://openrouter.ai/settings/credits."
+      fail_balance=1
+    fi
+  else
+    echo "::warning::/api/v1/credits reported no numeric total_credits/total_usage — the ACCOUNT balance is UNVERIFIED. A healthy key cap above does NOT imply the account is funded; the pings below are then the only funding evidence."
+  fi
+else
+  echo "::warning::could not read /api/v1/credits (HTTP $ccode) — the ACCOUNT balance is UNVERIFIED. A healthy key cap above does NOT imply the account is funded."
+fi
+rm -f "$cb"
+
+fail="${fail_balance:-0}"
+checked=0
+while IFS="$(printf '\t')" read -r model mt; do
+  [ -n "$model" ] || continue
+  checked=$((checked+1))
+  # Reserve what the packs reserve. OpenRouter prices a request against
+  # max_tokens, not against what the model actually returns, so an 8-token ping
+  # is affordable in situations where every pack row is refused. Observed on
+  # 2026-09-10: this check reported reachable with $17.92 remaining while all 12
+  # packs got `402 ... you requested up to 8192 tokens, but can only afford
+  # 5385`. The ceiling is a reservation, not spend: the reply is still one word.
+  tokens="${mt:-0}"
+  [ "$tokens" -gt 0 ] 2>/dev/null || tokens="$DEFAULT_PING_TOKENS"
+  body="$(mktemp)"
+  # A 429 is retried, NOT waved through. Rationale, learned the hard way on run
+  # 35287312617: this check pinged at 23:32:49, got a 429, printed it as
+  # "::warning:: not conclusive" and exited 0 — and the behavioral tier then
+  # drowned, 6 of 9 rows in the packs that finished coming back as
+  # RateLimitExhaustedError or "timed out after 300000ms in queue", with
+  # pass-rate.sh correctly declaring the scenarios STARVED. The account was
+  # funded throughout (balance $47.54), so affordability was never the issue.
+  #
+  # A single 429 really can be transient, which is why the original warning was
+  # defensible. But a 429 that SURVIVES backoff is the best predictor available
+  # that the tier is about to starve, and a preflight that cannot predict the
+  # failure it exists to prevent is decoration. So: retry with backoff, and if
+  # it still 429s, fail — the whole point of this job is to spend six seconds
+  # here instead of forty minutes downstream.
+  attempt=0
+  while : ; do
+    code=$(curl -sS -o "$body" -w '%{http_code}' https://openrouter.ai/api/v1/chat/completions \
+      -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+      -H "content-type: application/json" \
+      -d "{\"model\":\"$model\",\"max_tokens\":$tokens,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}") || code=000
+    [ "$code" = "429" ] || break
+    attempt=$((attempt+1))
+    [ "$attempt" -le "$RATE_LIMIT_RETRIES" ] || break
+    echo "subject model '$model': HTTP 429 on attempt $attempt — backing off ${RATE_LIMIT_BACKOFF[$((attempt-1))]}s and retrying."
+    sleep "${RATE_LIMIT_BACKOFF[$((attempt-1))]}"
+  done
+  case "$code" in
+    200) echo "subject model '$model' reachable AND affordable at max_tokens=$tokens — the ceiling the packs actually request." ;;
+    401) echo "::error::subject model '$model': HTTP 401 — the OpenRouter key is invalid or revoked. Every behavioral pack is grading a model it cannot call."; fail=1 ;;
+    402) echo "::error::subject model '$model': HTTP 402 at max_tokens=$tokens — OpenRouter will not fund a request this size, so every real-skill row in every pack will fail the same way. Remedies, in the vendor's words: add credit, or lower max_tokens in the pack configs to fit the remaining balance."
+         redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -3; fail=1 ;;
+    404) echo "::error::subject model '$model': HTTP 404 — the slug no longer exists on OpenRouter. Update it in each pack's promptfooconfig.yaml."; fail=1 ;;
+    429) echo "::error::subject model '$model': HTTP 429 after $RATE_LIMIT_RETRIES retries with backoff — not one request is getting through, so the behavioral tier will starve rather than fail honestly — downstream this shows up as RateLimitExhaustedError and 300s queue timeouts, which pass-rate.sh reports as STARVED. Read the metadata below before acting: limit_source tells you WHOSE limit this is. On 2026-09-18 it was upstream_provider_shared_pool — the provider's shared non-BYOK pool, NOT this key and NOT the balance — and lowering our own concurrency did nothing (36 -> 12 concurrent moved FAULTs 6/9 -> 7/9). For a shared-pool limit the remedies are the vendor's: wait for contention to drop, add your own provider key so this repo accumulates its own limits (https://openrouter.ai/settings/integrations), or use provider routing to prefer a provider with headroom. Only if limit_source names THIS key is lowering maxConcurrency or max-parallel the right lever."
+         redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -3; fail=1 ;;
+    *)   echo "::error::subject model '$model': HTTP $code — could not confirm the model is callable."; redact < "$body" 2>/dev/null | sed -e 's/^/    /' | head -5; fail=1 ;;
+  esac
+  rm -f "$body"
+done <<< "$subjects"
+
+# The load-bearing assertion: a pass must mean a model was actually pinged.
+if [ "$checked" -eq 0 ]; then
+  echo "::error::verified ZERO subject models despite discovering packs — this check would otherwise be green without checking anything." >&2
+  exit 1
+fi
+echo "verified $checked distinct subject model(s)."
+[ "$fail" -eq 0 ]
