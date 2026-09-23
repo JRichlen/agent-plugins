@@ -10,10 +10,19 @@ name: evals
 #   detect → run(matrix, path-filtered, never-required) → aggregate(always(),
 #   REQUIRED) fan-out, so an untouched or pack-less plugin costs nothing while the
 #   required status check is always emitted (never left hanging on a skipped leg).
+#
+#   SPEND GATE: on pull requests the paid legs (behavioral-run, routing-eval,
+#   deep-run) only execute when the PR carries the `paid-evals` label. Without
+#   it they skip and their aggregates report green, so an agent pushing fix after
+#   fix to a PR no longer re-buys the full paid suite on every push. Add the label
+#   when a PR is ready for a paid pass (adding it triggers a run); remove it again
+#   to stop paying for follow-up pushes. Pushes to main and manual dispatch are
+#   unaffected.
 on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
 
 concurrency:
@@ -235,6 +244,44 @@ jobs:
           done <<< "$graders"
           [ "$fail" -eq 0 ]
 
+  subject-model:
+    # The mirror of grader-model, for the model actually UNDER TEST. CI has always
+    # confirmed the Anthropic grader slug resolves and never once checked the
+    # OpenRouter subject — a blind spot, since an unreachable subject WOULD
+    # produce packs where every real-skill row fails with no signal anywhere.
+    # Two refresh runs (2026-09-01, 2026-09-08) did exactly that and reported
+    # success; this check closes the evidence gap those runs exposed rather than
+    # diagnosing them. It came back green on its first run, so a dead key and a
+    # moved slug were ruled out — a callable model can still fail every rubric.
+    #
+    # A green here is NOT a statement about funding. OpenRouter reserves credit
+    # per request against those already in flight, so an 8-token ping returns 200
+    # while a 12-pack fan-out at concurrency 3 returns `402 Payment Required —
+    # would exceed your available credits given your current in-flight requests`
+    # on every row. That combination was observed on 2026-09-09. Hence the credit
+    # probe in the script, and hence the wording: reachable, not funded.
+    #
+    # The check itself lives in evals/paid/check-subject-model.sh because the
+    # REFRESH workflow must run it too: that is the one that actually spends the
+    # budget, so preflighting only this workflow would leave the expensive path
+    # unguarded (caught in review of #131).
+    #
+    # ADVISORY here on purpose: deliberately NOT in the behavioral gate's
+    # `needs`, so a dead subject key reports in seconds instead of turning a
+    # required check red across every open PR. Promoting it to a gate (adding it
+    # to the behavioral aggregate's needs + assess, exactly as grader-model is)
+    # is a one-line change and an owner decision.
+    name: confirm subject model resolves (advisory)
+    runs-on: ubuntu-latest
+    # Secrets aren't available to fork PRs, so only run where they are.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - name: ping the configured subject model
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: evals/paid/check-subject-model.sh
+
   # ── behavioral tier (promptfoo) ───────────────────────────────────────────
   # Paid LLM-rubric tier. Discovery enumerates the plugins that ship a promptfoo
   # pack (fail-closed: a plugin that DECLARES a pack but ships a broken/missing
@@ -264,10 +311,26 @@ jobs:
     if: >-
       needs.behavioral-detect.outputs.plugins != '[]' &&
       (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'paid-evals')))
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Cap the burst. Every leg runs promptfoo at maxConcurrency 3, so an
+      # uncapped matrix of a dozen packs asks one OpenRouter key for ~36
+      # concurrent completions, and the routing tier's two packs pile on top in
+      # the same workflow. Run 35287312617 is what that looks like when the
+      # key's rate limit is below the demand: legs sat 38+ minutes, rows came
+      # back as RateLimitExhaustedError and "timed out after 300000ms in
+      # queue", and pass-rate.sh declared scenarios STARVED — a whole paid run
+      # yielding no verdict, with the account funded the entire time ($47.54).
+      #
+      # 4 is a starting point, not a measured optimum: it takes concurrent
+      # demand from ~36 to ~12, and the tier's wall-clock becomes three waves
+      # of legs rather than one. Tune it against the STARVED signal — that is
+      # the honest feedback channel here, since pass-rate.sh fails closed on
+      # FAULT-starved scenarios instead of scoring them.
+      max-parallel: 4
       matrix:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
@@ -355,15 +418,43 @@ jobs:
         working-directory: plugins/${{ matrix.plugin }}/evals/promptfoo
         run: |
           test -f results.json || { echo "no results.json produced"; exit 0; }
+          # Vendor error text reaches this log REDACTED: OpenRouter's 402/429
+          # bodies arrive inside .error and embed a workspace key-management URL
+          # ending in the key's id, plus a user_id. Not the API key, so low
+          # severity — but a public Actions log is permanent, and none of the
+          # diagnosis needs it. Single-sourced in
+          # evals/paid/redact-vendor-ids.sh, shared with the subject preflight
+          # and the other two dumps in this file.
+          # TRANSPORT ERROR is printed FIRST and always. A row whose provider call
+          # errored has an EMPTY .response.output, so a dump that shows only the
+          # output renders a transport failure as a blank box that reads like the
+          # model returned nothing. That is not hypothetical: it cost two runs and
+          # a wrong public diagnosis on PR #131 — the real cause, an OpenRouter
+          # `402 Payment Required: would exceed your available credits given your
+          # current in-flight requests`, was sitting in .error the whole time while
+          # this dump showed empty output and the diagnosis said "empty completions".
           jq -r '
             (.results.results // .results // [])[]
             | select(.success == false)
             | "=== QUESTION ===\n" + ((.vars.question // .testCase.vars.question) | tostring)
+              + "\n\n=== TRANSPORT ERROR ===\n"
+              + ( (.failureReason) as $fr
+                  | (.error // .response.error // "") as $e
+                  | ($e | if type=="string" then . else tojson end) as $et
+                  | if ($fr == 2 or ($fr | type=="string" and (ascii_downcase == "error")))
+                       or (($fr == null or ($fr | type=="string" and (gsub("\\s";"") == "")))
+                           and ($et != ""))
+                    then $et
+                    else "(none — the provider answered; this row failed on the RUBRIC below, not on transport)"
+                    end )
+              + "  [failureReason: " + ((.failureReason // "unset") | tostring) + "]"
               + "\n\n=== SUBJECT OUTPUT ===\n" + ((.response.output // .output // "") | if type=="string" then . else tojson end)
               + "\n\n=== GRADER REASON(S) ===\n"
               + (([ .gradingResult.componentResults[]? | select(.pass==false) | .reason ] | join("\n---\n")))
               + "\n(overall reason: " + ((.gradingResult.reason // "") | tostring) + ")\n"
-          ' results.json || echo "jq parse fell through — see artifact"
+          ' results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: capture example snapshot from real results
         if: steps.touched.outputs.paid == 'true'
         # Extract this plugin's real with-skill/without-skill pair from the graded
@@ -446,7 +537,8 @@ jobs:
     name: routing tier (roster trigger routing)
     if: >-
       github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.labels.*.name, 'paid-evals'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -583,7 +675,9 @@ jobs:
                      + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
-          ' results.json || echo "jq parse fell through — see artifact"
+          ' results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: show failing trajectory steps (per-slot expected vs got)
         if: always() && steps.touched.outputs.routing == 'true'
         working-directory: evals/routing/trajectory
@@ -627,7 +721,9 @@ jobs:
                      + (if slotmatch($e; $g) then "  [match]" else "  [DIFF]" end))
                  | join("\n"))
               + "\n"
-          ' trajectory-results.json || echo "jq parse fell through — see artifact"
+          ' trajectory-results.json \
+            | "$GITHUB_WORKSPACE/evals/paid/redact-vendor-ids.sh" \
+            || echo "jq parse fell through — see artifact"
       - name: upload routing results
         if: always() && steps.touched.outputs.routing == 'true'
         uses: actions/upload-artifact@v4
@@ -730,7 +826,8 @@ jobs:
       needs.deep-detect.outputs.changed == 'true' &&
       needs.deep-detect.outputs.plugins != '[]' &&
       (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.full_name == github.repository)
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'paid-evals')))
     runs-on: ubuntu-latest
     # No `environment:` — the pier run no longer pauses on the protected
     # `deep-evals` environment for a maintainer to click Approve, so an
