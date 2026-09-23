@@ -562,16 +562,47 @@ uninterpretable n=1 and no required check goes red on the weather:
   splices it verbatim into the chat body regardless of its own reasoning-model
   detection, and because effort maps to a vendor-chosen budget rather than a
   number we picked. Applied only to the two packs that demonstrably truncated —
-- **routing S1 is a measured sub-floor finding, not noise** — pooled **13/20 =
-  0.65** against the 0.80 floor across four capped, truncation-free runs
-  (35779397133 3/5, 35787505902 4/5, 35797062312 3/5, 35797793874 3/5 — pooled
-  13/20). Every failing row gets three of four
-  slots right and misses only `guards`: `scope-fence` ×3, `none` ×4, where
-  `verify-before-claim` is expected. The router composes correctly but does not
-  reliably arm the guard that stops a fix being called done without evidence —
-  which is what that composition exists to catch, so the expectation stands and
-  the assertion is untouched. Any fix belongs in the roster/skill descriptions,
-  not in the floor or the regex.
+- **routing S1 is UNRESOLVED, and an earlier entry here calling it settled was
+  wrong.** This supersedes a claim I wrote at 13/20 — *"a measured sub-floor
+  finding, not noise"*. The fifth clean run came back 5/5 and broke it:
+
+  | run | S1 | rows |
+  |---|---|---|
+  | 35779397133 | 3/5 | clean, capped |
+  | 35787505902 | 4/5 | clean, capped |
+  | 35797062312 | 3/5 | clean, capped |
+  | 35797793874 | 3/5 | clean, capped |
+  | 35800675314 | **5/5** | clean, capped |
+  | **pooled** | **18/25 = 0.72** | |
+
+  Against the 0.80 floor that still reads low, but 25 samples do not support
+  calling it a defect:
+
+  | statistic | value |
+  |---|---|
+  | Wilson 95% CI | **[0.52, 0.86]** — **contains 0.80** |
+  | P(observing ≤ 18/25 if true p = 0.80) | **0.22** |
+
+  So the data cannot separate "S1 sits below its floor" from "S1 sits at its
+  floor and five runs of five sampled unluckily". The routing pack is BYTE-
+  IDENTICAL across all five runs — nothing in `evals/routing/` was touched — so
+  the 0.60 → 1.00 swing is sampling, not a change. The honest verdict is
+  unresolved pending more samples, and at `repeat: 5` a scenario sitting near
+  0.80 cannot be resolved by more runs of the same size.
+
+  What IS stable is the failure MODE, which describes how it fails when it fails
+  and is unaffected by the rate question: every failing row across all five runs
+  gets three of four slots right and misses only `guards` — `scope-fence` ×3,
+  `none` ×4, where `verify-before-claim` is expected. The router composes
+  correctly but does not always arm the guard that stops a fix being called done
+  without evidence.
+
+  Nothing was weakened either way: the floor, the regex and the scenario are
+  untouched. This is the third time on this work that a pooled point estimate
+  looked like a finding and did not survive another sample — after redgate's
+  blanket-approval case and routing's own S2/S3 — which is the actual lesson,
+  and the reason `repeat: 3`/`repeat: 5` against an adjacent floor keeps
+  manufacturing verdicts that later dissolve.
   **The cap is a reservation, not a ceiling** — the answer is limited to
   `max_tokens` minus the reasoning cap regardless of how little the model
   actually thinks, so size the cap from the pack's ANSWER length first and give

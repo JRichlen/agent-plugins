@@ -270,32 +270,47 @@ tests:
   # verify-before-claim must be present in the sorted list, roster-valid extras
   # (the live run added scope-fence/stop-rule — both defensible here) are
   # allowed; route-contract.js still enforces sorted/deduped/roster-only.
-  # MEASURED SUB-FLOOR, and it is the guards slot alone (PR #131). Pooled over
-  # three runs that were all capped and all truncation-free — so neither n=3
-  # noise nor a budget artifact:
+  # RATE UNRESOLVED (PR #131). An earlier version of this note called it a
+  # "MEASURED SUB-FLOOR ... neither n=3 noise nor a budget artifact" at pooled
+  # 10/15. That was overstated and the next two runs broke it. Five runs, every
+  # one capped and truncation-free, this pack byte-identical throughout:
   #
   #   run 35779397133   3/5
   #   run 35787505902   4/5
   #   run 35797062312   3/5
-  #   pooled           10/15 = 0.67   against the 0.80 floor
+  #   run 35797793874   3/5
+  #   run 35800675314   5/5      <- the one that broke the claim
+  #   pooled           18/25 = 0.72   against the 0.80 floor
   #
-  # The router is NOT misrouting. Every failing row gets three of four slots
+  # 0.72 reads low, but 25 samples cannot call it a defect:
+  #
+  #   Wilson 95% CI              [0.52, 0.86]   <- CONTAINS the 0.80 floor
+  #   P(<= 18/25 | true p=0.80)  0.22
+  #
+  # So "S1 sits below its floor" and "S1 sits AT its floor and five runs of five
+  # sampled unluckily" are not distinguishable from this data, and at repeat: 5
+  # more runs of the same size will not distinguish them either. Do not cite a
+  # single run's number here as a verdict in either direction.
+  #
+  # What IS stable is the failure MODE, which is about HOW it fails rather than
+  # how often, and is unaffected by the rate question. The router is NOT
+  # misrouting: every failing row across all five runs gets three of four slots
   # right — specialist=diagnosing-bugs, envelope=redgate, interaction_owner=
   # redgate — and misses only `guards`:
   #
   #   x3   guards=scope-fence   (instead of verify-before-claim)
-  #   x2   guards=none
+  #   x4   guards=none
   #
-  # So the finding is narrow and real: on an evidence-warranted bug hunt the
-  # model composes the right specialist and envelope but does not reliably arm
-  # verify-before-claim, which is the guard that stops a fix being called done
-  # without evidence. That is exactly the failure this composition exists to
-  # catch, so the expectation is NOT too strict and the assertion below is
-  # deliberately left untouched.
+  # On an evidence-warranted bug hunt the model composes the right specialist and
+  # envelope but does not always arm verify-before-claim, the guard that stops a
+  # fix being called done without evidence. That is exactly what this
+  # composition exists to catch, so the expectation is NOT too strict and the
+  # assertion below is deliberately left untouched.
   #
   # Do not lower the floor, relax the guards regex, or drop the scenario to get
-  # green. The fix, if one is wanted, belongs in the roster/skill descriptions
-  # that tell the router when verify-before-claim applies — not here.
+  # green — and equally, do not declare this fixed off a green run. The fix, if
+  # one is wanted, belongs in the roster/skill descriptions that tell the router
+  # when verify-before-claim applies — not here.
   - description: "S1 COMPOSITION — evidence-warranted bug hunt → diagnosing-bugs wrapped in redgate"
     vars:
       request: >-
