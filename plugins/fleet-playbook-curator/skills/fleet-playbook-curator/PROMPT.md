@@ -40,7 +40,12 @@ single repo, it does **not** belong here; point at the repo instead.
 1. Update the relevant sections of `fleet-playbook/SKILL.md` (keep the banner and the
    `source-of-truth: false` frontmatter intact — never remove or soften them).
 2. Update `fleet-playbook/index.json` so every claim has an entry with
-   `repo`, `path`, `sha`, `curated_at`. No entry may have an empty/placeholder sha.
+   `node_id`, `repo`, `path`, `sha`, `curated_at`. No entry may have an empty/placeholder sha.
+   Copy `node_id` verbatim from the repo's entry in `context.json` (`context[]`, or
+   `removed[]` for a member that left). It is the key the citation check matches on;
+   `repo` is only the human-readable name, and a name can be reused by a different
+   repository. Never invent a `node_id` — if the repo has none in `context.json`, it
+   was not read this pass and gets no file citation.
 3. Append exactly **one** dated entry to `fleet-playbook/CHANGELOG.md` describing what
    changed and why it mattered. Membership changes (a repo added/renamed/archived/
    unreadable) are the most important entries — call them out.
