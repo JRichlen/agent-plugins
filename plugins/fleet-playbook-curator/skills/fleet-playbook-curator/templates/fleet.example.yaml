@@ -1,6 +1,6 @@
 # A fleet is DATA, not a skill: a named set of repos matched by an owner + glob.
 # The detector re-derives membership live from this on every run — never hand-edit
-# a member list. Members are joined on GitHub's stable node_id, so a rename is a
+# a member list. Members are joined on GitHub's opaque node_id, so a rename is a
 # rename, not a remove+add.
 name: __FLEET_NAME__
 owner: __OWNER__          # the GitHub org or user that owns the fleet members

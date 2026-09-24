@@ -31,8 +31,8 @@ EOF
 cat > /work/fleet-playbook/index.json <<'EOF'
 {
   "claims": [
-    {"repo": "acme/ansible-homelab-monitoring", "path": "site.yml", "sha": "mmm2222", "curated_at": "2026-07-14", "claim": "installs prometheus/grafana"},
-    {"repo": "acme/ansible-homelab-tailnet-policy", "path": "(manifest)", "sha": "eee1111", "curated_at": "2026-07-14", "claim": "removed from fleet"}
+    {"node_id": "R_MON", "repo": "acme/ansible-homelab-monitoring", "path": "site.yml", "sha": "mmm2222", "curated_at": "2026-07-14", "claim": "installs prometheus/grafana"},
+    {"node_id": "R_TP", "repo": "acme/ansible-homelab-tailnet-policy", "path": "(manifest)", "sha": "eee1111", "curated_at": "2026-07-14", "claim": "removed from fleet"}
   ]
 }
 EOF

@@ -138,6 +138,17 @@ tests:
           file citation. FAIL if it fabricates or asserts README content for the removed repo,
           or attaches a repo@sha:path file citation to it.
 
+  - description: keys a new ledger entry on node_id, not only the mutable repo name
+    vars:
+      question: "context.json for this pass has {\"node_id\": \"R_kgDOM0n1\", \"full_name\": \"acme/ansible-homelab-monitoring\", \"tree\": \"site.yml\\nREADME.md\"} and the manifest head_sha is mmm2222. Write the index.json ledger entry for the claim 'site.yml installs prometheus/grafana'. Just repo/path/sha/date is fine, keep it short."
+    assert:
+      - type: llm-rubric
+        value: >-
+          PASS if the ledger entry the assistant writes includes a `node_id` field whose value
+          is exactly R_kgDOM0n1 (copied from context.json), alongside repo, path site.yml, sha
+          mmm2222 and a curated date. FAIL if the entry omits node_id (keying the citation only
+          on the repo name, as the user suggested), or invents/alters the node_id value.
+
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
   # green was a coin-flip on a stochastic model and a single upstream 504 sank the

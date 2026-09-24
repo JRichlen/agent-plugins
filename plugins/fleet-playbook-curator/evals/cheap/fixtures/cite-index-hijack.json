@@ -1,0 +1,5 @@
+{
+  "claims": [
+    {"node_id":"R_ORIGINAL","repo":"o/new-svc","path":"README.md","sha":"aaa1111","curated_at":"2026-07-14","claim":"cited before the name was reused"}
+  ]
+}
