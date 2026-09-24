@@ -144,6 +144,13 @@ jobs:
               rm -f "$out/x.sheet.json"
               if python3 "$cal/agreement.py" "$out/verdicts.original.json" "$out/verdicts.$label.json" --name-a original --name-b "$label" --json "$out/report.$label.json" | tee "$out/report.$label.txt"; then
                 { echo "### $label ($g)"; echo; echo '```'; cat "$out/report.$label.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+                # A hash says two graders split, not who was right. Print each
+                # disagreement's output and both graders' reasons so it can be
+                # adjudicated from the log, without downloading the artifact.
+                python3 "$cal/show-disagreements.py" "$out/report.$label.json" "$res" "$pack/results.regrade.$label.json" \
+                  --name-a original --name-b "$label" | tee "$out/disagreements.$label.md" \
+                  || echo "::warning::$p/$label: could not join the disagreements back to their rows"
+                cat "$out/disagreements.$label.md" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
               else
                 echo "::error::$p/$label: agreement.py produced no report (fewer than two samples in common with the original)"; failed="$failed $p/$label"
                 { echo "### $label ($g) — NO REPORT"; echo; echo "agreement.py could not compare the re-grade with the original (see the job log)."; } >> "$GITHUB_STEP_SUMMARY"

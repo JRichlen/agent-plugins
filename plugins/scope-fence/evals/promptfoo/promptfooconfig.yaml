@@ -111,6 +111,10 @@ providers:
       passthrough:
         reasoning:
           max_tokens: 6144
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 evaluateOptions:
   # Statistical rigor (gap #4): the behavioral tier ran each scenario ONCE, so a
@@ -132,7 +136,7 @@ defaultTest:
       produce, concretely.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         max_tokens: 4096
 
