@@ -51,10 +51,13 @@ reference — read it alongside this template.
   budget on preamble and never reaches the step the rubric checks, failing a valid
   plan for the wrong reason. 8192 fits a complete walkthrough. Tune down only if
   your plans are genuinely short.
-- **Strong grader, cheap subject.** The subject is deliberately a cheap model —
+- **Cheap subject, cross-family grader.** The subject is deliberately a cheap model —
   the question is whether a model *given the skill* behaves safely. The grader is
-  kept strong (Sonnet) because a weak grader flips pass/fail unreliably and hollows
-  out the tier. Keep the grader an `anthropic:messages:` slug: the CI
+  Haiku (`claude-haiku-4-5-20251001`), which is cheaper and weaker than the Sonnet
+  grader the first packs were calibrated on. A weak grader flips pass/fail
+  unreliably, so strip the subject's reasoning before grading
+  (`showThinking: false` on the subject provider) and state every FAIL condition
+  in words a small model cannot misread. Tighten the wording, never the bar. Keep the grader an `anthropic:messages:` slug: the CI
   `grader-model` job resolves exactly that marker to confirm it's a real model id.
 - **Rubrics target invariants, not wording.** Grade the behavior the prose must
   produce, so the eval survives prose rewrites and only fails on real regressions.

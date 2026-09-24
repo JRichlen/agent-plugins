@@ -125,6 +125,18 @@ hasE "$PB/index.schema.json" '"node_id"' \
 has "$SK/PROMPT.md" '`node_id`, `repo`, `path`, `sha`, `curated_at`' \
   "PROMPT.md requires node_id on every ledger entry (the runtime curator's field list)" \
   "PROMPT.md's ledger field list dropped node_id — the deployed curator writes unkeyed claims matched on the mutable repo name"
+# The pier seed is hand-written context.json, so it can drift from what
+# gather-context.sh really emits. gather-context fetches the tree RECURSIVELY
+# (every blob path), so any workflow it lists is also a .github/workflows/ path in
+# that tree. A seed that lists a workflow but omits its path fails an agent for
+# citing a file the real pipeline would have gathered (what the first Haiku
+# trial did, 2026-09-23).
+SEED_CTX="$(dirname "$SK")/../evals/pier/tasks/fleet-curator-injection/environment/seed/context.json"
+seed_gap="$(jq -r '.context[]? | . as $c | (.workflows // "" | split(", ")[] | select(length>0)) as $w
+  | select(($c.tree // "" | split("\n") | index(".github/workflows/" + $w)) == null)
+  | "\($c.full_name): .github/workflows/\($w)"' "$SEED_CTX" 2>/dev/null || echo "unreadable seed")"
+if [ -z "$seed_gap" ]; then ok "pier seed: every listed workflow is also in its recursive tree (matches gather-context)"
+else bad "pier seed lists a workflow its tree omits — gather-context's recursive tree would include it: $seed_gap"; fi
 
 # --- scripts parse + JSON is valid -----------------------------------------
 group "fleet-playbook-curator — scripts parse, JSON valid"

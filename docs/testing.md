@@ -314,7 +314,9 @@ that it is green because it did not run, never silently.
   against the grader that actually graded it; a leg that yields no report
   fails the job. Self-agreement is the label-noise
   floor: if it sits below the pass-rate floor, two of three cannot separate
-  a skill effect from grader noise.
+  a skill effect from grader noise. `show-disagreements.py` then prints each
+  disagreement's output and both graders' reasons to the log and the step
+  summary, because a hash says two graders split but not who was right.
 - **What it cannot prove.** Which grader is right; only whether they agree.
   It does not promote or demote a grader by itself, and an all-green run
   gives kappa little to say (expected agreement is already high).
