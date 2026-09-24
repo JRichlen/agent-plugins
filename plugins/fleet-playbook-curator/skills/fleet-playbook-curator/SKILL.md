@@ -132,6 +132,11 @@ citation:
   resolves a stale citation to the wrong repository. `repo` is retained for readability
   and is explicitly mutable. Ledgers written before this field validate unchanged, on the
   old `full_name` match, and the validator says so on every run.
+- **A ledger entry holds real values, copied verbatim.** `node_id` and `repo` (the
+  `full_name`, unabridged) come from the repo's `context.json` entry; `sha` is that repo's
+  manifest `head_sha`. The `<sha>` in the examples here marks where the real sha goes — it
+  is never a value to write. An entry with a placeholder or empty sha is invalid; if you
+  do not have the sha, you do not have a citation.
 - **Every substantive claim carries `repo@sha:path`** and an as-of stamp, attached to
   that claim, not inherited from a document-level banner. An uncited claim is **omitted
   or flagged `STALE`, never asserted** — silence or an explicit stale-marker are the only

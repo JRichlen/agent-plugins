@@ -125,6 +125,11 @@ hasE "$PB/index.schema.json" '"node_id"' \
 has "$SK/PROMPT.md" '`node_id`, `repo`, `path`, `sha`, `curated_at`' \
   "PROMPT.md requires node_id on every ledger entry (the runtime curator's field list)" \
   "PROMPT.md's ledger field list dropped node_id — the deployed curator writes unkeyed claims matched on the mutable repo name"
+# SKILL.md's own examples write `<sha>`, and a subject copied it into a ledger entry
+# (behavioral run on fc2294c). PROMPT.md forbids a placeholder sha; SKILL.md must too.
+has "$SK/SKILL.md" 'is never a value to write' \
+  "SKILL.md says the <sha> in its examples is never a value to write into a ledger entry" \
+  "SKILL.md lost the no-placeholder-sha rule — its own \`<sha>\` examples read as a value to copy"
 # The pier seed is hand-written context.json, so it can drift from what
 # gather-context.sh really emits. gather-context fetches the tree RECURSIVELY
 # (every blob path), so any workflow it lists is also a .github/workflows/ path in
