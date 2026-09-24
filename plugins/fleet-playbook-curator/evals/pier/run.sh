@@ -54,7 +54,7 @@ PIER_ENV="${PIER_ENV:-docker}"
 agent_config() {
   A_MODEL=""; A_KWARGS=(); A_EXPECT=1
   case "$1" in
-    claude-code) A_MODEL="claude-opus-4-8"; A_KWARGS=(--ak reasoning_effort=high) ;;
+    claude-code) A_MODEL="claude-haiku-4-5-20251001" ;;
     codex)       A_MODEL="gpt-5-codex" ;;
     gemini-cli)  A_MODEL="gemini-2.5-pro" ;;
     cursor-cli)  A_MODEL="claude-opus-4-8" ;;
@@ -120,6 +120,25 @@ print("ERR:noreward" if r is None else str(r))
 PY
 }
 
+# On a miss, print what the verifier saw. pier keeps the per-check notes (the
+# task's tests/test.sh PASS/FAIL lines) in files under the job dir, not in its
+# console summary, so without this a red deep tier says only "reward=0" and
+# never which invariant broke. Verifier files first, then the rest, capped.
+dump_trial() {
+  local dir="$1" n=0 f
+  echo "--- $2: trial files under ${dir#"$HERE"/} ---"
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    n=$((n + 1))
+    if [ "$n" -gt 12 ]; then echo "(further files omitted)"; break; fi
+    echo "### ${f#"$dir"/}"
+    tail -n 60 "$f"
+  done <<EOF_FILES
+$(find "$dir" -type f -size -256k -ipath '*verifier*' 2>/dev/null | sort
+  find "$dir" -type f -size -256k \( -name '*.txt' -o -name '*.log' \) ! -ipath '*verifier*' 2>/dev/null | sort)
+EOF_FILES
+}
+
 # 1. Stage the live skill scripts into every task build context.
 for task in "$HERE"/tasks/*/; do
   dest="$task/environment/skill"
@@ -178,6 +197,7 @@ for agent in $AGENTS; do
   if [ "$run_rc" -ne 0 ] && [ "${reward#ERR:}" != "$reward" ]; then
     verdict="$verdict [pier rc=$run_rc]"
   fi
+  case "$verdict" in OK*) ;; *) dump_trial "$job_dir" "$agent" ;; esac
   summary+=("$(printf '%-12s %s' "$agent" "$verdict")")
 done
 

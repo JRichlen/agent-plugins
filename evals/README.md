@@ -73,8 +73,8 @@ npx promptfoo@latest view      # browse graded transcripts
 ```
 
 The model under test is a cheap OpenRouter model
-(`qwen/qwen3.8-flash`); the `llm-rubric` grader runs on Sonnet
-so pass/fail stays trustworthy without paying Opus prices. Swap the provider `id`
+(`qwen/qwen3.8-flash`); the `llm-rubric` grader runs on Haiku
+(`claude-haiku-4-5-20251001`) to keep every paid run cheap. Swap the provider `id`
 to test a different model.
 
 `promptfooconfig.yaml` injects the real `SKILL.md` text into the prompt, poses
