@@ -87,3 +87,32 @@ have done that anyway." This is the cheapest missing tier in most suites.
 Report cost per run beside the score. A configuration that wins on accuracy and
 costs 20× is not obviously better, and unreported cost is how suites quietly
 become unrunnable.
+
+### Count both arms, or say which one you counted
+
+When a change moves work somewhere cheaper instead of eliminating it, a metric
+scoped to the origin measures a relocation and calls it a saving. State the
+scope in the metric's own name, and put the unmeasured arm in the tier's
+"structurally cannot".
+
+Worked example — Spotify's `shunt` plugin routes large file reads from Claude
+to a cheaper worker model, and its
+[`evals/benchmarks.json`](https://github.com/spotify/portal-ai-plugins) is
+honest in its own header: it measures *"Claude context tokens with vs without
+shunt"*. The worker's tokens are not counted, so the headline "90%" is a
+statement about one arm, over four scenarios on three fixture files, using
+`chars / 4` as a token proxy — a proxy that also cannot separate a cache write
+from a cache read, which differ by 12.5× in price. Reconstructing it with real
+per-token rates happens to land near the same figure, but that is a fact about
+the price gap between the two models, not something the benchmark established.
+
+Two lessons generalize:
+
+- **A token count is not a cost.** Tokens priced differently (cached vs
+  uncached, worker vs frontier) do not sum into a number that predicts a bill.
+  If the claim is about money, measure money.
+- **The quality arm is usually the invisible one.** That suite measures
+  read-to-answer, so the accuracy cost of the cheaper worker — and the reads
+  that get paid twice because a summary carries no line numbers to edit
+  against — is structurally outside it. A green there is silent about whether
+  the answers got worse.
