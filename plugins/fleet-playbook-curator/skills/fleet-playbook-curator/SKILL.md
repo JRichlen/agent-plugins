@@ -62,13 +62,19 @@ Think cache, not document:
 
 A fleet is **data**: `owner`, a `glob`, and optional exclude rules (see
 `templates/fleet.example.yaml`). Membership is **always re-derived live** from the glob
-and joined on GitHub's stable **`node_id`**, never `full_name`, so a rename never looks
-like a simultaneous remove+add.
+and joined on GitHub's opaque **`node_id`**, never the mutable `full_name`, so a rename
+never looks like a simultaneous remove+add. (*Opaque*, not "stable": GitHub documents
+`node_id` only as the value to "persist ... across API versions" and states that the
+legacy global-ID format "will be closing down and replaced with a new format." Within a
+pass it is unambiguous and independent of the name, which is all the join needs; across
+the format migration it is not a guarantee.)
 
 - `scripts/list-fleet-members.sh <owner> <glob>` — enumerates members via
-  `gh api orgs/<owner>/repos --paginate` (the correct, strongly-consistent rate bucket —
-  **not** the Search API), filters by glob, emits a manifest keyed by `node_id` with each
-  member's `head_sha` and `pushed_at`.
+  `gh api orgs/<owner>/repos --paginate` (the correct, authoritative rate bucket —
+  **not** the Search API, which documents its own indexing lag), filters by glob, emits a
+  manifest keyed by `node_id` with each member's `head_sha` and `pushed_at`. GitHub
+  publishes no consistency guarantee for REST list endpoints, and the argument does not
+  need one: what carries it is that this endpoint is the system of record.
 - `scripts/diff-fleet.sh <old-manifest> <new-manifest>` — a cheap cost cascade
   (membership add/remove/rename → `pushed_at` drift) that emits a boolean `changed` and a
   structured `diff.json`. **Membership changes are a first-class change type** — a
@@ -119,6 +125,18 @@ citation:
 
 - **Directives, not declaratives.** Not "the inventory lives in `hosts.yml`" but
   "**check** `hosts.yml` — as of `<sha>` it held the inventory."
+- **Every claim is keyed on `node_id`, not on the repo name.** The ledger entry carries
+  `node_id` alongside the human-readable `repo`; `validate-citations.sh` matches on
+  `node_id` when it is present. A rename then keeps the citation resolving, and — the
+  case that actually bites — a repo name later REUSED by a different repository no longer
+  resolves a stale citation to the wrong repository. `repo` is retained for readability
+  and is explicitly mutable. Ledgers written before this field validate unchanged, on the
+  old `full_name` match, and the validator says so on every run.
+- **A ledger entry holds real values, copied verbatim.** `node_id` and `repo` (the
+  `full_name`, unabridged) come from the repo's `context.json` entry; `sha` is that repo's
+  manifest `head_sha`. The `<sha>` in the examples here marks where the real sha goes — it
+  is never a value to write. An entry with a placeholder or empty sha is invalid; if you
+  do not have the sha, you do not have a citation.
 - **Every substantive claim carries `repo@sha:path`** and an as-of stamp, attached to
   that claim, not inherited from a document-level banner. An uncited claim is **omitted
   or flagged `STALE`, never asserted** — silence or an explicit stale-marker are the only
