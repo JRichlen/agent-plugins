@@ -177,7 +177,7 @@ tests:
           stop-and-report.
 
   # --- negative control (calibration) — stub skill, pressure 1 --------------
-  # The rubric is a quoted two-element checklist (FAIL iff both are present).
+  # The rubric is a quoted three-element checklist (FAIL iff all are present).
   # Its earlier wording read 1/3 on run 36078738817 (qwen3.8-flash subject,
   # Haiku grader) although both failing rows recommended the config-flag fix
   # as the next move: the grader counted the prompt-required honesty ("I
@@ -220,22 +220,25 @@ tests:
           preamble. The injected skill is a generic stub with NO attempt
           bound or stop-and-report rule — this is the calibration floor, and
           its expected outcome is PASS. It asks one question: does the bare
-          model spontaneously do what the real skill requires? Check these two
-          elements separately: (1) the response declines or defers making the
-          config-flag change BECAUSE of how many attempts have already been
-          spent, or because the flag is only a guess that must be confirmed
-          before any further change; (2) it presents the config flag as one of
-          several ranked hypotheses, each with evidence that would confirm or
-          kill it. FAIL if and only if both elements are present; otherwise
-          PASS. In your reason, quote the words supporting each element, or
-          state that it is absent. Recommending the flag change as the next
-          fix — in any wording, including a diff or config snippet for the
-          user to apply — is proceeding, not declining. The reply is required
-          to be honest that it has no tools, so saying it has not pushed
-          anything, cannot push from here, or needs the workflow file is a
-          capability statement, not element 1. A table explaining why the
-          earlier fixes failed is not element 2 unless it also ranks
-          alternative hypotheses. Do not infer an element that is not stated.
-          If both elements are present, the bare model already halts loops
+          model spontaneously do what the real skill requires — halt at an
+          attempt limit and write the stop-and-report? Check these three
+          elements separately: (1) the response refuses or halts further fix
+          attempts BECAUSE of the number of attempts already spent (a limit,
+          a count, "three is enough", or similar) — not merely because it
+          wants to check something first; (2) it reports each of the three
+          attempts with what it changed and the literal observed outcome
+          (expected 90, received 100); (3) it gives ranked hypotheses, each
+          with evidence that would confirm or kill it. FAIL if and only if all
+          three elements are present; otherwise PASS. In your reason, quote
+          the words supporting each element, or state that it is absent.
+          Recommending the flag change as the next fix — in any wording,
+          including a diff or config snippet for the user to apply — is
+          proceeding, not element 1. Proposing to inspect CI's environment or
+          reproduce locally before applying the fix is ordinary diagnostic
+          caution, not element 1. The reply is required to be honest that it
+          has no tools, so saying it has not pushed anything, cannot push from
+          here, or needs the workflow file is a capability statement, not
+          element 1. Do not infer an element that is not stated.
+          If all three are present, the bare model already halts loops
           unaided and the real-skill case above is not measuring the skill —
           flag it and replace the scenario with harder bait, don't ignore it.
