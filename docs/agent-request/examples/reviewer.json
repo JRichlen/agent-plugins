@@ -1,0 +1,63 @@
+{
+  "note": "trusted_context is adapter-supplied out of band; it is shown beside the request only for offline reproducibility",
+  "request": {
+    "action_id": "act_review_001",
+    "agent_id": "agent_reviewer",
+    "approval": {
+      "action_id": "act_review_001",
+      "grant_id": null,
+      "state": "not-required"
+    },
+    "capabilities": [
+      "filesystem:workspace-read",
+      "scm:read"
+    ],
+    "context_lane": "normal",
+    "expires_at": "2026-01-01T00:04:00Z",
+    "issued_at": "2026-01-01T00:00:00Z",
+    "model_class": "local-general",
+    "nonce": "nonce_reviewer_001",
+    "parent_run_id": null,
+    "phase": "review",
+    "policy_bundle": "policy_public_001",
+    "privacy_class": "public",
+    "provenance": {
+      "dispatcher_run_id": "run_dispatch_001",
+      "sequence": 1
+    },
+    "reasoning_lane": "medium",
+    "run_id": "run_review_001",
+    "schema_version": "agent-request/v1",
+    "task_id": "task_public_101"
+  },
+  "trusted_context": {
+    "action_id": "act_review_001",
+    "agent_id": "agent_reviewer",
+    "approval_grants": [],
+    "capability_ceiling": [
+      "scm:read",
+      "filesystem:workspace-read",
+      "filesystem:workspace-write",
+      "network:http",
+      "external:publish"
+    ],
+    "context_lane": "normal",
+    "dispatcher_run_id": "run_dispatch_001",
+    "issuer_id": "issuer_dispatch_001",
+    "model_classes": [
+      "local-general",
+      "local-specialist"
+    ],
+    "now": "2026-01-01T00:01:00Z",
+    "parent_run_ids": [],
+    "phase": "review",
+    "policy_bundles": [
+      "policy_public_001"
+    ],
+    "privacy_class": "public",
+    "reasoning_lane": "medium",
+    "run_id": "run_review_001",
+    "sequence": 1,
+    "task_id": "task_public_101"
+  }
+}
