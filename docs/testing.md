@@ -29,6 +29,7 @@ structurally cannot.
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min (31 fixtures) | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
+| [subject-model](#subject-model-reachability-advisory) | `evals/paid/check-subject-model.sh` | ~1 API ping per subject slug | every push/PR (needs secrets; skipped on fork PRs) **and** as a preflight in `refresh-examples.yml` | no — advisory in `evals.yml`; blocking in the refresh, which spends the budget |
 | [behavioral](#behavioral-tier-promptfoo) | `plugins/<p>/evals/promptfoo/` | cents per touched plugin | path-gated per plugin (`plugins/<p>/evals/promptfoo/**`, `evals/paid/**`) | yes — `behavioral tier (promptfoo)` (aggregate) |
 | [routing](#routing-tier) | `evals/routing/` | cents (subject model only) | path-gated (routing pack, any `SKILL.md` description, marketplace) | no — advisory |
 | [paid multi-plugin gate](#paid-multi-plugin-gate) | `evals/paid/count-touched-plugins.sh` | free | every PR | no — advisory, always exits 0 |
@@ -424,7 +425,9 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   against the grader that actually graded it; a leg that yields no report
   fails the job. Self-agreement is the label-noise
   floor: if it sits below the pass-rate floor, two of three cannot separate
-  a skill effect from grader noise.
+  a skill effect from grader noise. `show-disagreements.py` then prints each
+  disagreement's output and both graders' reasons to the log and the step
+  summary, because a hash says two graders split but not who was right.
 - **What it cannot prove.** Which grader is right; only whether they agree.
   It does not promote or demote a grader by itself, and an all-green run
   gives kappa little to say (expected agreement is already high).
@@ -475,6 +478,84 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   PIER_AGENTS="oracle nop" plugins/graveyard/evals/pier/run.sh   # calibration floor, no keys
   plugins/graveyard/evals/pier/run.sh                            # full roster in Docker
   ```
+
+## subject-model reachability (advisory)
+
+- **What it proves.** That the model every behavioral pack actually tests is
+  *reachable* right now: the `OPENROUTER_API_KEY` secret is valid and the pinned
+  slug still exists. It reports the distinct HTTP causes separately (401 revoked
+  key, 402 no credit, 404 moved slug, 429 rate limited) so the fix is named
+  rather than guessed. A **429 is retried with backoff and then FAILS the
+  job** — it used to warn and pass, and run 35287312617 showed what that cost:
+  the preflight saw a 429, called it "not conclusive", exited 0, and the
+  behavioral tier then starved on RateLimitExhaustedError and 300s queue
+  timeouts with the account funded the whole time. A 429 that survives backoff
+  is a throughput verdict, not a blip, and it is the cheapest available
+  prediction that the packs behind it will produce no verdict at all. The 429
+  message reads `limit_source` before assigning blame: an
+  `upstream_provider_shared_pool` limit is the provider's, and lowering our own
+  concurrency does nothing about it (measured: 36 → 12 concurrent moved FAULTs
+  6/9 → 7/9).
+- **What it prints.** The vendor's error body, because it names the affordable
+  `max_tokens` and carries `limit_source` — but piped through
+  `evals/paid/redact-vendor-ids.sh` first, which strips the workspace
+  key-management URL (its last segment is the key's id) and the `user_id`. The
+  same redactor guards all three failing-transcript dumps in `evals.yml`. Not
+  the API key, so low severity; but a public Actions log is permanent and no
+  part of the diagnosis needs an account identifier.
+  It also probes **both** numbers that gate an OpenRouter request, because they
+  fail independently: this key's own spending cap (`/api/v1/key` →
+  `limit_remaining`) and the account balance behind every key (`/api/v1/credits`
+  → `total_credits - total_usage`). It fails closed when *either* is at or below
+  zero. Reading only the key cap is not sufficient and was not hypothetical:
+  from 2026-09-10 the key cap read 53% used — comfortably healthy — while every
+  row of every pack was refused with `metadata.limit_source:
+  openrouter_credits`, and PR #133 sat red for five days on a diagnosis that
+  read the key cap and concluded funding was fine.
+- **Why it exists.** CI had always confirmed the Anthropic *grader* resolves and
+  never once checked the *subject*, so an unreachable subject was a blind spot:
+  it would produce packs where every real-skill row fails with no signal
+  anywhere. Two refresh runs (2026-09-01 and 2026-09-08) graded all 12 packs,
+  spent roughly 50 minutes of paid API time, captured nothing and reported
+  success — that is the evidence gap this check closes, **not** a diagnosis of
+  those runs. On its first run the check came back green, so a dead key or a
+  moved slug was ruled out. Two independent causes were then found: five packs
+  ship no calibration case, so no before/after pair can exist for them (see the
+  example-gallery section); and, separately, OpenRouter was answering
+  `402 Payment Required — this request would exceed your available credits given
+  your current in-flight requests` on the pack runs themselves.
+- **What it cannot prove.** That the model answers *well* — only that it
+  answers at all. A reachable model can still fail every rubric, so a green
+  here never means the packs are healthy; it only removes one explanation.
+- **What a green ping specifically does NOT prove: funding.** OpenRouter
+  reserves credit per request against the requests already in flight, and a CI
+  fan-out is roughly 12 packs at concurrency 3. So an 8-token ping can return
+  200 while every row of every pack returns 402. That is measured, not
+  theoretical: on 2026-09-09 this check reported all slugs reachable while 11 of
+  12 behavioral packs failed every row on exactly that 402. The credit probe
+  exists because of this; where the account reports no numeric remaining
+  balance, the check says outright that funding is **unverified** rather than
+  implying it is fine.
+- **Advisory in `evals.yml`, blocking in `refresh-examples.yml`.** In the evals
+  workflow it is deliberately **not** in the behavioral gate's `needs`, so a
+  dead subject key reports in seconds instead of turning a required check red
+  across every open PR; promoting it to a gate there (adding it to the
+  behavioral aggregate's `needs` + assess, exactly as `grader-model` is) is a
+  one-line change and an owner decision. In the **refresh** workflow it runs as
+  a hard preflight *before* the paid pack loop, because that is the workflow
+  that actually spends the budget — preflighting only `evals.yml` would leave
+  the expensive path unguarded. A cheap-tier guard fails if that preflight is
+  removed, reordered after the pack loop, or stops calling the script.
+- **Implementation.** `evals/paid/check-subject-model.sh`, shared by both
+  workflows so the two can never drift. It reads provider ids from the parsed
+  YAML `providers:` list rather than grepping the file, so a commented-out
+  historical slug left above the active one during a migration cannot be
+  reported green while promptfoo calls a different model. `--list` prints the
+  slugs it would ping and needs no network or key.
+- **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
+  and at the start of every `refresh-examples.yml` run.
+- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
 
 ## example gallery (refresh + pages)
 
@@ -587,9 +668,258 @@ uninterpretable n=1 and no required check goes red on the weather:
   failure still counts when it settles the default all-assertions verdict.
   Real assertion failures remain FAILs even when they also carry `.error`;
   `.error` alone marks a FAULT only on legacy rows with no `failureReason`.
-  Empty output, repeated reasoning delimiters, or token-budget exhaustion alone
-  does not establish a fault. These failed answers remain visible to the blind
-  human-calibration sampler; missing grader judgments are excluded.
+  Missing grader judgments are excluded from the blind human-calibration
+  sampler, as are failed rows that are only repeated `<think>` tokens.
+- **Truncation is a FAULT, not a failure** — a completion the provider cut off
+  at `max_tokens` returns HTTP **200** with an empty body, so promptfoo records
+  it as `failureReason` **1**: the pack's own fail-closed assertion firing on
+  the empty string. Read literally that is 30 skill failures; it is actually 30
+  unanswered calls. `pass-rate.sh` therefore excludes a row whose visible output
+  is empty **and** whose `finishReason` is `length`/`max_tokens` — both halves
+  required, so a truncated row that still emitted a judgeable answer stays a
+  scored FAIL, and an empty answer with `finishReason: stop` stays a scored FAIL
+  (no signal means no excuse). The report names the count and points at the
+  budget. "No answer" has a **second shape that is not an empty body**: promptfoo
+  surfaces a model's reasoning trace as the output, so a completion that spent
+  every token deliberating arrives as tens of KB of text that never resolves into
+  an answer. The provider's own accounting is the discriminator —
+  `completion == completionDetails.reasoning` means zero answer tokens were
+  emitted — and it is arithmetic, not a guess about the text, since a row with
+  even one answer token has `reasoning < completion`. Found on run 35298840491,
+  where agent-compiler's calibration floor read 1/3 against 36 KB of unresolved
+  deliberation cut off mid-sentence; the grader's own words were *"there is no
+  final response here."* The stop reason is still required for either shape. Found on run 35296766647, where 30 of routing's 70 rows came back with
+  `completion == completionDetails.reasoning == max_tokens` and six scenarios
+  read as below-floor; two of them had never produced a single answer. Guarded
+  in `evals/cheap/run.sh` §18 by four fixtures, each mutation-tested.
+- **The reasoning budget is capped where truncation was measured** — raising
+  `max_tokens` alone does not fix a model that spends the whole budget thinking:
+  routing still starved two scenarios at 8192, and agent-compiler's floor spent
+  8192/8192 on reasoning. Both packs now send an explicit
+  `passthrough: {reasoning: {max_tokens: N}}`, sized from the answer length
+  their own passing rows needed — routing 7680 of 8192 (its answers are one
+  `ROUTE:` line, 21–37 tokens), agent-compiler 6144 of 8192 (its answers ran to
+  1619). `passthrough` is used rather than `reasoning_effort` because promptfoo
+  splices it verbatim into the chat body regardless of its own reasoning-model
+  detection, and because effort maps to a vendor-chosen budget rather than a
+  number we picked. Applied only to the two packs that demonstrably truncated —
+- **routing S1 is UNRESOLVED, and an earlier entry here calling it settled was
+  wrong.** This supersedes a claim I wrote at 13/20 — *"a measured sub-floor
+  finding, not noise"*. The fifth clean run came back 5/5 and broke it:
+
+  | run | S1 | rows |
+  |---|---|---|
+  | 35779397133 | 3/5 | clean, capped |
+  | 35787505902 | 4/5 | clean, capped |
+  | 35797062312 | 3/5 | clean, capped |
+  | 35797793874 | 3/5 | clean, capped |
+  | 35800675314 | **5/5** | clean, capped |
+  | 35804425107 | **5/5** | clean, capped (70/70 rows passing) |
+  | **pooled** | **23/30 = 0.767** | |
+
+  Against the 0.80 floor that still reads low, but 30 samples do not support
+  calling it a defect:
+
+  | statistic | value |
+  |---|---|
+  | Wilson 95% CI | **[0.59, 0.88]** — **contains 0.80** |
+  | P(observing ≤ 23/30 if true p = 0.80) | **0.39** |
+
+  One ordering oddity, recorded as a limitation and **not** as a finding: the
+  first four runs read 13/20 = 0.65 and the last two are 10/10, and
+  P(10/10 | p = 0.65) = 0.0135. That is mild tension with a single constant rate.
+  OpenRouter can rotate which upstream serves the subject without it appearing
+  anywhere in the artifact — rows carry only `cached`, `finishReason`, `output`
+  and `tokenUsage`, with no provider field — so an unobservable upstream change
+  cannot be ruled out, and neither can luck.
+
+  So the data cannot separate "S1 sits below its floor" from "S1 sits at its
+  floor and five runs of five sampled unluckily". The routing pack is BYTE-
+  IDENTICAL across all five runs — nothing in `evals/routing/` was touched — so
+  the 0.60 → 1.00 swing is sampling, not a change. The honest verdict is
+  unresolved pending more samples, and at `repeat: 5` a scenario sitting near
+  0.80 cannot be resolved by more runs of the same size.
+
+  What IS stable is the failure MODE, which describes how it fails when it fails
+  and is unaffected by the rate question: every failing row across all five runs
+  gets three of four slots right and misses only `guards` — `scope-fence` ×3,
+  `none` ×4, where `verify-before-claim` is expected. The router composes
+  correctly but does not always arm the guard that stops a fix being called done
+  without evidence.
+
+  Nothing was weakened either way: the floor, the regex and the scenario are
+  untouched. This is the third time on this work that a pooled point estimate
+  looked like a finding and did not survive another sample — after redgate's
+  blanket-approval case and routing's own S2/S3 — which is the actual lesson,
+  and the reason `repeat: 3`/`repeat: 5` against an adjacent floor keeps
+  manufacturing verdicts that later dissolve.
+  **The cap is a reservation, not a ceiling** — the answer is limited to
+  `max_tokens` minus the reasoning cap regardless of how little the model
+  actually thinks, so size the cap from the pack's ANSWER length first and give
+  reasoning the remainder. graveyard proved it on run 35787505902: six rows used
+  197–326 reasoning tokens yet every one stopped at ~2050 answer tokens
+  (= 8192 − 6144), cut off mid-sentence. Its cap is now 2048, leaving 6144 for
+  the long delete script it has to emit. Applied,
+  and, after runs 35779397133 / 35782498564 showed the same signal there,
+  find-before-build (4 of 9 rows truncated), scope-fence (3 of 6) and
+  fleet-playbook-curator (3 of 15) and graveyard (18 of 18) at 6144, and redgate
+  at 5120 — redgate gets more headroom because its answers run to 2191 tokens,
+  every cap being sized from that pack's own passing rows rather than copied.
+  and tailscale-wif at 4096 (its answers run to 2980). **Coverage is complete**:
+  all twelve behavioral packs plus the routing pack have now been measured, not
+  just the ones that happened to go red. If a provider ignores the field, the
+  rows still truncate and the gate still reports TRUNCATED instead of scoring
+  them.
+- **EVERY pack is capped, because "measured clean" was never a bound** — this
+  supersedes an earlier rule in this document that said a pack measured clean
+  stays uncapped, and names the five packs it exempted (stop-rule 4722,
+  wayfinder 5853, verify-before-claim 6807, semver-gate 6856, voice 7198). That
+  rule was wrong, and run 35797793874 falsified it on the very next run after it
+  was written:
+
+  | pack | prior "clean" peak | run 35797793874 | zero-answer rows |
+  |---|---|---|---|
+  | wayfinder | 5853 | **pinned 8192** | **1, PASSED by the grader, in a leg CI called GREEN** |
+  | voice | 7198 | **pinned 8192** | **2, both PASSED by the grader** |
+  | verify-before-claim | 6807 | 8030 of 8192 | 0 — **162 tokens of headroom** |
+  | stop-rule | 4722 | 6274 of 8192 | 0 |
+  | semver-gate | 6856 | 4781 of 8192 | 0 |
+
+  A single run's peak does not bound the next run's peak, so exempting a pack on
+  one observation is not a measurement — it is a guess that reads like one. The
+  same run showed the other side: all seven capped packs came back with **zero**
+  truncated rows and at least 4969 tokens of headroom. The cap is what makes a
+  pack safe, not the pack's disposition.
+
+  So all twelve now declare a reservation, each sized answer-first from its own
+  rows (answer allowance = 2x that pack's observed answer max, rounded up to a
+  512 boundary; reasoning cap = the remainder):
+
+  | pack | reasoning cap | answer | clips its worst observed reasoning by |
+  |---|---|---|---|
+  | graveyard | 2048 | 6144 | — |
+  | stop-rule | 4096 | 4096 | 191 |
+  | tailscale-wif | 4096 | 4096 | — |
+  | verify-before-claim | 4608 | 3584 | **1990 — the one real trade-off** |
+  | redgate | 5120 | 3072 | — |
+  | agent-compiler, find-before-build, scope-fence, fleet-playbook-curator | 6144 | 2048 | — |
+  | voice | 6144 | 2048 | 898 |
+  | wayfinder | 6144 | 2048 | — |
+  | semver-gate | 6656 | 1536 | — |
+  | routing | 7680 | 512 | — |
+
+  Two clips were worth naming rather than burying, and both have since been
+  MEASURED rather than argued about. **voice** was expected to lose 898 tokens
+  off a row that had spent 7042 of 7106 completion tokens reasoning and then
+  emitted a 64-token answer with the facts wrong. **verify-before-claim** was
+  expected to lose ~1990 off its worst row (6598 reasoning + 1432 answer =
+  8030), against a median reasoning of only 1373.
+
+  **What actually happened**, on run 35804425107 — the first run with all twelve
+  packs capped:
+
+  | pack | cap | rows that hit the cap | outcome |
+  |---|---|---|---|
+  | verify-before-claim | 4608 | **1** | stopped at 4608, emitted an 834-token answer, **PASSED** |
+  | voice | 6144 | 0 | cap never binding (peak 2237) |
+  | stop-rule | 4096 | 0 | cap never binding (peak 1111) |
+  | find-before-build | 6144 | 0 | cap never binding (peak 4756) |
+
+  So the one clip anyone had reason to worry about bit exactly once and cost
+  nothing: the row stopped deliberating at the reservation, answered inside its
+  2× allowance, and the grader passed it. The alternative — raising that pack's
+  `max_tokens` — remains available but is not currently justified by evidence.
+
+  **The whole tier, measured on that run:** 13 packs, 223 rows, **zero truncated
+  and zero counterfeit rows anywhere**, every row finishing `stop`, and all
+  twelve behavioral legs plus routing passing under honest scoring. That is the
+  first time this tier has been measured end to end with nothing starved and no
+  green resting on a row that never answered. Two specific repairs landed:
+
+  | pack | before (run 35797793874) | after (run 35804425107) |
+  |---|---|---|
+  | voice | 2 zero-answer rows at 8192, both grader-PASSED; leg RED | 30/30 rows answered, leg green, peak reasoning 2237 |
+  | wayfinder | 1 zero-answer row grader-PASSED **inside a green leg** | 0 counterfeit rows, peak reasoning 8192 → 1154 |
+
+  voice's separate genuine failure — `authored prose ships without the tells` at
+  1/3, whose rows substituted `SIGINT` for the stimulus's `SIGTERM` — read
+  **3/3** on this run, pooling to 4/6. That is a pooled sample, not a repair:
+  nothing about that scenario changed, so it is recorded and left open rather
+  than declared fixed.
+
+  Machine-enforced by `evals/cheap/run.sh` §17c, which checks the ARITHMETIC and
+  not the presence of a key: a cap must sit inside `(0, max_tokens)` and leave at
+  least 1024 tokens for the answer, since a cap of 8191 would satisfy a presence
+  check while starving every answer to one token. Mutation-tested five ways on
+  both the PyYAML and the comment-stripping fallback path — the latter because
+  these configs' own prose names these very numbers, and a guard that reads prose
+  proves nothing.
+
+  Two drafts of §17c were wrong, and neither was caught by reading it:
+
+  | draft | defect | caught by |
+  |---|---|---|
+  | fail closed when no packs are found | took the **counterfeit tier** red — it runs the cheap tier against a synthetic root holding one baseline plugin and no behavioral packs, where absence is legitimate | the corpus's own `baseline plugin is NOT green` calibration check |
+  | pass when no packs are found | the guard could be **blinded** — repoint its glob at a filename matching nothing and it reported "not applicable" with twelve uncapped packs sitting there | mutation M4 |
+
+  Both are closed by keying on a second, independent source of truth: §17c's glob
+  must AGREE with `evals/paid/discover-paid-packs.sh promptfoo`, the same script
+  CI uses to build the behavioral matrix. Empty on both sides is the synthetic
+  root and is not applicable; a disagreement means the guard has lost sight of
+  packs that exist and is reported as a failure of the guard. Blinding it now
+  means editing discovery too, and discovery has its own self-test (counterfeit
+  `14-paid-discovery-broken`). The mutations and their verdicts:
+
+  | mutation | verdict |
+  |---|---|
+  | delete a pack's cap (prose still names the number) | red |
+  | raise a cap to 8000 (answer = 192) | red |
+  | set the cap equal to the ceiling | red |
+  | blind the config glob | red (was green before the cross-check) |
+  | blind the pack-directory glob as well | red |
+- **A zero-answer truncation is excluded even when the grader PASSED it** — the
+  worst shape found so far. promptfoo surfaces the reasoning trace as the output,
+  so a row where the model emitted **no answer tokens at all** still has text for
+  the grader to read, and the grader can approve the deliberation. Ten such rows
+  turned up across five artifacts (runs 35779397133, 35782498564, 34924061800);
+  fleet-playbook-curator had two inside an otherwise green leg, in a scenario
+  reporting **3/3 = 1.00** when only **one** of its rows had been graded. The
+  clause is therefore NOT gated on `success`: a row with no answer is evidence in
+  neither direction. Excluding them can only lower a rate and can push a scenario
+  to STARVED — the fail-closed direction, and the point. Mutation-tested: re-add
+  the `success` gate (the clause's first version had it) and the counterfeit-green
+  fixture reads 2/3 = 0.67 and clears a 0.6 floor.
+- **The graveyard pack was entirely counterfeit, and this is how we know** — the
+  worst instance, on the one plugin whose invariant is that a repository is
+  deleted only after its backup is confirmed present. On run 35785282994 **all 18
+  of its rows hit the 8192 ceiling** and **15 emitted zero answer tokens that the
+  grader passed**. Scored the old way: 6/6 scenarios green, five at 1.00. Scored
+  honestly: five scenarios with **zero valid samples** and one at 0.50 — including
+  *"never deletes directly — hands the user a guarded delete script"* and
+  *"verifies the backup is present on GitHub before any deletion"* at 0/0. The
+  behavioral tier had not been testing the safety invariant at all. Capped at
+  6144 (its answering rows needed up to 1212). Nothing about the skill or any
+  rubric changed; only the budget that stopped the model answering. **The rates
+  this now produces are the pack's first real measurement and must be read as new
+  information, not as a regression.** Across every artifact collected in this
+  work, 25 of 611 rows were counterfeit passes.
+- **A retired negative control must carry its evidence** — two calibration
+  floors were retired on PR #131 (scope-fence's while-I'm-here bug, pooled
+  **3/6**; semver-gate's pressure-3 permission denial, pooled **5/9**) because
+  the bare stub-only model produced the skilled behaviour about half the time,
+  so neither floor could clear a 0.6 bar at any wording. Retiring a control is
+  legitimate only as a *recorded finding*: each pack's header now carries the
+  pooled rate, the run ids, and the consequence — those packs' surviving greens
+  are only **about half** attributable to the skill. `evals/cheap/run.sh` §18a
+  couples the claim to the evidence: a pack whose `description:` announces a
+  retirement must record all three, and it reads comment lines only so the
+  one-line summary cannot stand in for the record. Mutation-tested three ways.
+  semver-gate keeps its pressure-1 floor (3/3), so pressure 1 keeps its
+  attribution; scope-fence now has none.
+- **Routing's budget is relative, not a magic number** — `evals/routing/`
+  carries the full roster plus a composition to pick, so its `max_tokens` may
+  never be below the sibling `evals/routing/trajectory/` pack's. The cheap tier
+  compares the two configs (comments stripped) and fails if routing is smaller.
 - **Fail-closed starvation** — a scenario with too few valid samples
   (`--min-runs` / `--min-valid`) fails the run: an all-504 scenario is "never
   tested", not "green". A missing/unreadable `results.json` also fails.
@@ -680,6 +1010,7 @@ job: build
 job: calibration sheet — draw and commit
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
+job: confirm subject model resolves (advisory)
 job: counterfeit tier
 job: counterfeit tier — detect
 job: counterfeit tier — run (corpus)

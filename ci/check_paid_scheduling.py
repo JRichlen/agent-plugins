@@ -16,7 +16,15 @@ import shlex
 import sys
 
 WORKFLOW = pathlib.Path(".github/workflows/evals.yml")
-FORK_GATE = "github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository"
+# Same-repo PRs also need the paid-evals label before any paid call (#137).
+FORK_GATE = (
+    "github.event_name != 'pull_request' || "
+    "(github.event.pull_request.head.repo.full_name == github.repository && "
+    "contains(github.event.pull_request.labels.*.name, 'paid-evals'))"
+)
+# The matrix is capped, not serialized: 4 legs x --max-concurrency 1 bounds
+# in-flight subject calls at 4 (main's run 35287312617 sizing).
+MAX_PARALLEL = 4
 BEHAVIOR_GATE = (
     "!cancelled() && needs.behavioral-detect.result == 'success' && "
     "needs.grader-model.result == 'success' && "
@@ -76,8 +84,9 @@ def check_text(text: str) -> list[str]:
         if _expression(_field(routing, "if", 4)) != _expression(FORK_GATE):
             problems.append("routing fork filter changed")
         strategy = _block(behavior, r"    strategy:", "behavioral strategy")
-        if _field(strategy, "max-parallel", 6) != "1":
-            problems.append("behavioral max-parallel must be 1")
+        mp = _field(strategy, "max-parallel", 6)
+        if not mp.isdigit() or not 1 <= int(mp) <= MAX_PARALLEL:
+            problems.append(f"behavioral max-parallel must be between 1 and {MAX_PARALLEL}")
         if _field(strategy, "fail-fast", 6) != "false":
             problems.append("behavioral fail-fast must stay false so one failed pack cannot cancel others")
 
@@ -142,7 +151,8 @@ def self_test(text: str) -> list[str]:
         ("missing grader prerequisite", "needs.grader-model.result == 'success' &&", ""),
         ("empty matrix filter removed", "needs.behavioral-detect.outputs.plugins != '[]' &&", ""),
         ("fork filter removed", "github.event.pull_request.head.repo.full_name == github.repository", "true"),
-        ("parallel packs", "max-parallel: 1", "max-parallel: 3"),
+        ("uncapped packs", "max-parallel: 4", "max-parallel: 12"),
+        ("paid-evals label gate removed", "contains(github.event.pull_request.labels.*.name, 'paid-evals')", "true"),
         ("cancel other packs", "fail-fast: false", "fail-fast: true"),
     ]
     behavior = _job(text, "behavioral-run")
@@ -181,7 +191,7 @@ def main() -> int:
         for problem in problems:
             print(f"FAIL paid-scheduling drift: {problem}")
         return 1
-    print("PASS paid scheduling " + ("self-test: workflow regressions rejected" if args.self_test else "routing then serialized packs; all 3 subject commands capped at 1; selection preserved"))
+    print("PASS paid scheduling " + ("self-test: workflow regressions rejected" if args.self_test else "routing then at most 4 packs; all 3 subject commands capped at 1; selection preserved"))
     return 0
 
 

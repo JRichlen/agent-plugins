@@ -16,7 +16,8 @@ turns one or more results.json files into two files:
 
 Sampling is seeded (default seed 0) so a sheet is reproducible from the same
 results. Transport and grader FAULTs are excluded because they have no valid
-judgment. Empty/truncated subject answers remain visible failed samples.
+judgment, as is a failed row whose body is nothing but repeated <think>
+control tokens (the same degeneracy pass-rate.sh treats as a FAULT).
 
 Usage:
   sample-for-labelling.py RESULTS.json [RESULTS2.json ...] --n 20 [--seed 0]
@@ -29,7 +30,9 @@ when comparing grader against grader (measurement 3), so a deterministic
 assertion such as `icontains` cannot force the same verdict on both sides.
 Exit: 0 wrote both files; 2 nothing usable to sample.
 """
-import argparse, hashlib, json, random, sys
+import argparse, hashlib, json, random, re, sys
+
+_DEGEN = re.compile(r'^(?:\s*</?think>\s*)+$', re.IGNORECASE)
 
 def rows_of(doc):
     res = doc.get("results")
@@ -115,7 +118,8 @@ def is_fault(r, doc=None):
     no_reason = fr is None or (isinstance(fr, str) and not fr.strip())
     if no_reason and isinstance(r.get("error"), str) and r["error"].strip():
         return True
-    return False
+    body = output_text(r).strip()
+    return (r.get("success") is not True) and bool(body) and bool(_DEGEN.match(body))
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])

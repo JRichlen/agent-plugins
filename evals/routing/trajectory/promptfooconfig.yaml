@@ -35,15 +35,8 @@ prompts:
 
 providers:
   # Same subject model as the routing pack — one provider convention per tier.
-  - id: openrouter:z-ai/glm-5.3-flash
+  - id: openrouter:qwen/qwen3.8-flash
     config:
-      # Promptfoo 0.122.0 only forwards reasoning_effort for recognized reasoning
-      # names, so pass OpenRouter's native request body through explicitly. GLM
-      # requires reasoning; max preserves the prior quality posture. Lower effort
-      # has no local equivalence evidence.
-      passthrough:
-        reasoning:
-          effort: max
       # 8192, not the routing pack's 4096: this prompt injects the whole
       # redgate SKILL.md and the model reasons at length over it — PR #93 run
       # 33592810851 had a T2 row whose reply was empty because the reasoning
@@ -63,7 +56,15 @@ providers:
       showThinking: false
 
 evaluateOptions:
-  maxConcurrency: 3
+  # 3 -> 8, same reasoning as the routing pack next door (measured on run
+  # 34920638978: this pack was 2m42s of the job's 15m06s, 25 calls at
+  # concurrency 3). Both packs share the routing job, and OpenRouter reserves
+  # credit against in-flight requests per KEY, so they are deliberately left
+  # SEQUENTIAL — raising each pack's concurrency is the lever, running them
+  # side by side would only split one in-flight budget. An over-aggressive
+  # value surfaces as pass-rate.sh STARVED (in-flight 402s are FAULTs), never
+  # as a quiet green.
+  maxConcurrency: 8
   # Same statistical spine as the routing pack: 5 repeats per case,
   # evals/paid/pass-rate.sh enforces the 0.8 per-case floor over valid samples.
   repeat: 5

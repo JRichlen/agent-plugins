@@ -25,17 +25,37 @@ providers:
   # Same model, so every rubric stays calibrated against identical behaviour.
   # Measured cost: ~22k prompt + ~6k completion tokens per run, about $0.04 at
   # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget (run 35787505902), sized by the CORRECTED rule:
+      # the cap is a reservation, so the answer ceiling is max_tokens minus the
+      # cap regardless of how little the model thinks. Size from the ANSWER first.
+      #
+      # 3 of 9 rows hit the 8192 ceiling and TWO of those were zero-answer rows
+      # the grader PASSED — the counterfeit-green shape. The scenario "sets up
+      # Tailscale auth secretlessly (WIF), not a stored key" reported a rate off
+      # a single graded row; honestly scored it is 1/1 STARVED.
+      #
+      # This pack's answers are long — 2137 median, 2980 max, because the skill
+      # emits a full WIF setup with provider/binding config — so it needs 4096 of
+      # answer room, not the 2048 most packs get. Cap 4096 of 8192.
+      passthrough:
+        reasoning:
+          max_tokens: 4096
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 defaultTest:
   # The skill is injected by prompt.js directly (no {{skill}} var — see above).
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
-        # 1024 (the provider default) is NOT enough. Sonnet spends much of
+        # 1024 (the provider default) is NOT enough. The grader (measured on
+        # the earlier Sonnet grader) spends much of
         # that budget reasoning before it emits the rubric JSON, so a long
         # transcript truncates mid-verdict and surfaces as 'No output' or
         # 'Could not extract JSON from llm-rubric response' — an infra flake

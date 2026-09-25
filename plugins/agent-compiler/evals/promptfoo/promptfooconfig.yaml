@@ -38,9 +38,37 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       max_tokens: 8192
+      # Cap the REASONING budget so an answer always has room (run 35300866961).
+      #
+      # All three rows of this pack's calibration floor came back with
+      # completion == completionDetails.reasoning == 8192: every token went to
+      # deliberation and none to an answer. The `output` was 28-36 KB of
+      # unresolved planning cut off mid-sentence (promptfoo surfaces the
+      # reasoning trace as the output, which is why it does not look empty), and
+      # the grader said so directly: "there is no final response here".
+      #
+      # Unlike the routing pack, this one needs real answer room — its passing
+      # rows spent 937 tokens on the answer at the median and 1619 at the most,
+      # because the task is to emit a typed query and a file. So the split is
+      # wider: cap reasoning at 6144, leaving 2048 for the answer, comfortably
+      # above the 1619 observed. Passing rows used 2211 reasoning tokens at the
+      # least, so the cap stays well clear of what a good answer needs.
+      #
+      # Sent via `passthrough` because promptfoo splices it verbatim into the
+      # chat body (0.122.0: the body literal ends with `...config.passthrough ||
+      # {}`), independent of its own reasoning-model detection. If the upstream
+      # provider ignores it the rows still truncate and pass-rate.sh still
+      # reports TRUNCATED rather than scoring them as skill failures.
+      passthrough:
+        reasoning:
+          max_tokens: 6144
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 evaluateOptions:
   # Statistical rigor (gap #4): run each scenario 3x; evals/paid/pass-rate.sh
@@ -60,7 +88,7 @@ defaultTest:
       you would do and show any artifacts you would produce.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         max_tokens: 4096
 

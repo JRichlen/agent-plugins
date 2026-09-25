@@ -100,6 +100,49 @@ if bash "$VC" "$FX/cite-index-badpath.json" "$FX/cite-diff.json" "$FX/cite-conte
   bad "validate-citations ACCEPTED a citation to a path NOT in the gathered tree — provenance guard too weak"
 else ok "validate-citations rejects a file citation whose path is absent from the gathered tree"; fi
 
+# Identity: a citation is keyed on node_id, not on the MUTABLE repo name. The case that
+# bites is not a rename (that already failed closed) but a repo name later REUSED by a
+# DIFFERENT repository — under full_name matching a stale citation resolved to the
+# impostor silently. Keyed on node_id it must fail closed instead.
+if bash "$VC" "$FX/cite-index-hijack.json" "$FX/cite-diff.json" "$FX/cite-context.json" >/dev/null 2>&1; then
+  bad "validate-citations ACCEPTED a node_id-keyed citation whose repo left the fleet while its NAME was reused — the citation resolved to the wrong repository"
+else ok "validate-citations rejects a node_id-keyed citation whose repo name was reused by a different repository"; fi
+# ...and that must not depend on the context's format: against a context with NO
+# node_ids (cite-context-legacy.json), a keyed claim used to fall back to full_name
+# and the reused name let it through. A keyed claim now matches on node_id only.
+if bash "$VC" "$FX/cite-index-hijack.json" "$FX/cite-diff.json" "$FX/cite-context-legacy.json" >/dev/null 2>&1; then
+  bad "validate-citations ACCEPTED a node_id-keyed citation against a context with no node_ids — it fell back to the mutable full_name and the reused name resolved"
+else ok "validate-citations fails a node_id-keyed citation closed even when context.json carries no node_ids"; fi
+has "$SK/scripts/gather-context.sh" 'node_id:$nid' \
+  "gather-context carries node_id into each context entry (the ledger's identity key)" \
+  "gather-context dropped node_id from context entries — validate-citations falls back to the mutable full_name"
+hasE "$PB/index.schema.json" '"node_id"' \
+  "index schema admits node_id on a claim" \
+  "index schema lost the node_id claim field — additionalProperties:false would reject a keyed ledger"
+# The curator only ever sees PROMPT.md + context.json at runtime (fleet-sync.yml), not
+# SKILL.md — so the ledger field list there is what actually decides whether a fresh
+# claim is keyed. Without node_id in it, new claims validate on the mutable name.
+has "$SK/PROMPT.md" '`node_id`, `repo`, `path`, `sha`, `curated_at`' \
+  "PROMPT.md requires node_id on every ledger entry (the runtime curator's field list)" \
+  "PROMPT.md's ledger field list dropped node_id — the deployed curator writes unkeyed claims matched on the mutable repo name"
+# SKILL.md's own examples write `<sha>`, and a subject copied it into a ledger entry
+# (behavioral run on fc2294c). PROMPT.md forbids a placeholder sha; SKILL.md must too.
+has "$SK/SKILL.md" 'is never a value to write' \
+  "SKILL.md says the <sha> in its examples is never a value to write into a ledger entry" \
+  "SKILL.md lost the no-placeholder-sha rule — its own \`<sha>\` examples read as a value to copy"
+# The pier seed is hand-written context.json, so it can drift from what
+# gather-context.sh really emits. gather-context fetches the tree RECURSIVELY
+# (every blob path), so any workflow it lists is also a .github/workflows/ path in
+# that tree. A seed that lists a workflow but omits its path fails an agent for
+# citing a file the real pipeline would have gathered (what the first Haiku
+# trial did, 2026-09-23).
+SEED_CTX="$(dirname "$SK")/../evals/pier/tasks/fleet-curator-injection/environment/seed/context.json"
+seed_gap="$(jq -r '.context[]? | . as $c | (.workflows // "" | split(", ")[] | select(length>0)) as $w
+  | select(($c.tree // "" | split("\n") | index(".github/workflows/" + $w)) == null)
+  | "\($c.full_name): .github/workflows/\($w)"' "$SEED_CTX" 2>/dev/null || echo "unreadable seed")"
+if [ -z "$seed_gap" ]; then ok "pier seed: every listed workflow is also in its recursive tree (matches gather-context)"
+else bad "pier seed lists a workflow its tree omits — gather-context's recursive tree would include it: $seed_gap"; fi
+
 # --- scripts parse + JSON is valid -----------------------------------------
 group "fleet-playbook-curator — scripts parse, JSON valid"
 for s in "$SK"/scripts/*.sh; do

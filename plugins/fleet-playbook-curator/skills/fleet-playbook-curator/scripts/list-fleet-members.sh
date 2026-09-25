@@ -7,11 +7,12 @@
 # Emits (stdout) a JSON manifest:
 #   { "as_of": "<ISO8601 from gh, not local clock>", "members": [ {node_id, name,
 #     full_name, default_branch, head_sha, pushed_at, archived, private}, ... ] }
-# Members are joined logically on node_id (STABLE across renames) and sorted by
-# node_id so the output is byte-stable for identical upstream state.
+# Members are joined logically on node_id (survives a rename; GitHub calls it
+# opaque, not stable, and is migrating its format) and sorted by node_id so the
+# output is byte-stable for identical upstream state.
 #
-# Uses orgs/<owner>/repos, falling back to users/<owner>/repos (both strongly
-# consistent, correct rate bucket) — NOT the
+# Uses orgs/<owner>/repos, falling back to users/<owner>/repos (both
+# authoritative listings, correct rate bucket) — NOT the
 # Search API, which is eventually consistent and rate-limited differently.
 set -euo pipefail
 
@@ -27,7 +28,7 @@ pat="^$(printf '%s' "$glob" | sed -e 's/[.[\^$()+?{|]/\\&/g' -e 's/\*/.*/g')$"
 #    account, which previously made this script simply fail for any fleet owned
 #    by a user rather than an organization — an undocumented constraint, since
 #    both SKILL.md and the CLI advertise a generic "<owner>". Try the org
-#    endpoint first (it is the correct, strongly-consistent bucket for orgs) and
+#    endpoint first (it is the correct, authoritative bucket for orgs) and
 #    fall back to users/<owner>/repos. Neither is the Search API, which is
 #    eventually consistent and rate-limited differently.
 _fetch_repos() {

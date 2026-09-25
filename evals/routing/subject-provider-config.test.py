@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Offline regression guard for the shared OpenRouter subject config contract.
 
-Promptfoo 0.122.0 literal-merges config.passthrough into its OpenAI-compatible
-request body. GLM is not recognized by its reasoning-model-name classifier, so
-config.reasoning_effort would be silently omitted. This test checks the native passthrough configuration contract without making a
-request; it does not execute Promptfoo or a live transport.
+Every guarded pack uses the tier's one subject model. When a pack bounds
+reasoning, it does so with a numeric passthrough reasoning.max_tokens cap that
+leaves room for the answer, never with reasoning_effort: Promptfoo 0.122.0
+emits reasoning_effort only for model names its own classifier recognises, and
+it literal-merges config.passthrough into the request body. This test checks
+the configuration contract without making a request; it does not execute
+Promptfoo or a live transport.
 """
 from pathlib import Path
 import sys
@@ -20,21 +23,25 @@ CONFIGS = (
     ROOT / "evals/routing/promptfooconfig.yaml",
     ROOT / "evals/routing/trajectory/promptfooconfig.yaml",
 )
-MODEL = "openrouter:z-ai/glm-5.3-flash"
-EXPECTED = {"reasoning": {"effort": "max"}}
+MODEL = "openrouter:qwen/qwen3.8-flash"
+MIN_ANSWER = 512
 
 for path in CONFIGS:
     config = yaml.safe_load(path.read_text())["providers"][0]
     assert config["id"] == MODEL, (path, config["id"])
     provider = config["config"]
     assert "reasoning_effort" not in provider, (path, provider)
-    assert provider.get("passthrough") == EXPECTED, (path, provider.get("passthrough"))
+    ceiling = provider.get("max_tokens")
+    assert isinstance(ceiling, int) and ceiling > 0, (path, ceiling)
 
     # Equivalent to Promptfoo's getOpenAiBody: build normal fields first, then
     # literal-merge config.passthrough (chat.ts 0.122.0 lines 284-345).
-    body = {"model": MODEL, "messages": [{"role": "user", "content": "probe"}]}
-    if "max_tokens" in provider:
-        body["max_tokens"] = provider["max_tokens"]
-    body.update(provider["passthrough"])
-    assert body["reasoning"] == {"effort": "max"}, (path, body)
-    print(f"PASS {path.relative_to(ROOT)} contains native OpenRouter reasoning=max passthrough")
+    body = {"model": MODEL, "messages": [{"role": "user", "content": "probe"}], "max_tokens": ceiling}
+    body.update(provider.get("passthrough") or {})
+    reasoning = body.get("reasoning")
+    if reasoning is not None:
+        assert set(reasoning) == {"max_tokens"}, (path, reasoning)
+        cap = reasoning["max_tokens"]
+        assert isinstance(cap, int) and 0 < cap <= ceiling - MIN_ANSWER, (path, cap, ceiling)
+    print(f"PASS {path.relative_to(ROOT)} uses {MODEL}"
+          + (f" with a numeric reasoning cap {reasoning['max_tokens']}/{ceiling}" if reasoning else " with no reasoning override"))

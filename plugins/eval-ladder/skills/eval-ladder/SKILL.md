@@ -96,8 +96,10 @@ A tier that cannot answer #2 or #5 is decoration.
    model? If a model: TPR and TNR against held-out human labels, or it is an
    opinion. See [judge-alignment.md](references/judge-alignment.md).
 4. **What is the metric, and does it match the question?** Capability → pass@k.
-   Reliability, and anything irreversible → pass^k. See
-   [metric-choice.md](references/metric-choice.md).
+   Reliability, and anything irreversible → pass^k. When the change *moves*
+   work rather than removing it, check that the metric counts both sides: a
+   number measuring only the arm that got smaller reports a relocation as a
+   saving. See [metric-choice.md](references/metric-choice.md).
 5. **How would it go red?** Name a concrete change that turns it red. If you
    cannot, it is not a gate. Then check the twin: is there a must-not-fire
    control proving the green is not what the bare system does anyway?

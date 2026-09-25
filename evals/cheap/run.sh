@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Cheap evals — deterministic, offline, no API cost. Runs in well under a second.
+# Cheap evals — deterministic, offline, no API cost. ~14s for 1296 checks across
+# 25 plugins (measured 2026-09-18); it grows with the plugin count.
 #
 # This is the tier that must pass on EVERY change before commit (see AGENTS.md).
 # It proves the structural + safety invariants that don't need an LLM to check:
@@ -42,6 +43,112 @@ while IFS= read -r j; do
   if python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$j" 2>/dev/null; then
     ok "$j"; else bad "$j (invalid JSON)"; fi
 done < <(find . -name '*.json' -not -path './node_modules/*' -type f | sort)
+
+# --- 2b. hooks.json handler paths resolve to real files ---------------------
+# Every `${CLAUDE_PLUGIN_ROOT}/<rel>` in a plugin's hooks.json must be a file
+# under plugins/<p>/<rel>, because ${CLAUDE_PLUGIN_ROOT} IS the plugin dir on an
+# installed plugin. Nothing checked this, and redgate shipped with both handlers
+# one directory too high (`hooks-handlers/` for files that live under
+# `hooks/hooks-handlers/`): the PreToolUse write guard — the hook that stops a
+# write reaching a ratified run's contract mid-round — silently never ran on any
+# installed copy, and the cheap tier stayed green throughout. Found by the
+# agentic framework in #115, fixed in its own PR so it does not wait on 76k
+# lines. voice's identical-looking path is CORRECT (its handler really is at
+# plugins/voice/hooks-handlers/), which is exactly why this is resolved against
+# the filesystem rather than pattern-matched.
+# Coupled: break any handler path, or make the walk extract nothing from files
+# that exist, and this goes red. A root with NO hooks.json at all (the
+# counterfeit corpus's synthetic marketplace, for one) is legitimately "nothing
+# to check", same as every other section — its first push turned that root red.
+group "hooks.json handler paths resolve under their plugin root"
+# The scanner's exit status is CAPTURED, not discarded. It used to run in process
+# substitution, where a crash is invisible: a manifest containing something the
+# walk did not expect (`"command": null` — valid JSON, so section 2 is happy)
+# raised, the remaining manifests were never scanned, and because an EARLIER
+# manifest had already emitted records the zero-paths guard below stayed quiet.
+# Section 2b then reported no failure over files it never read. (Codex, PR #136)
+# Coupled: make the scanner exit nonzero — crash it, or delete its interpreter —
+# and this goes red instead of green-by-silence.
+hook_files_seen=0; hook_paths_seen=0
+hook_scan_out="$(mktemp "${TMPDIR:-/tmp}/cheap-hooks-scan.XXXXXX" 2>/dev/null || true)"
+if [ -z "$hook_scan_out" ] || [ ! -w "$hook_scan_out" ]; then
+  bad "hooks.json: could not create the handler-path scanner's output file — section 2b cannot run, and a section that cannot run is not a section that passed"
+else
+python3 - "$REPO_ROOT" >"$hook_scan_out" <<'PYH'
+import glob, json, os, re, sys
+root = sys.argv[1]
+
+def emit(verdict, plugin, event, rel):
+    # Fields are tab-separated and read back by a bash `read`; tab is IFS
+    # WHITESPACE there, so runs of tabs collapse and an empty field would shift
+    # every later one. Never emit an empty event/rel on a record the shell
+    # destructures past field 2.
+    print("\t".join([verdict, plugin, event, rel]))
+
+for f in sorted(glob.glob(os.path.join(root, "plugins", "*", "hooks", "hooks.json"))):
+    plugin = f.split(os.sep)[-3]
+    print("\t".join(["FILE", plugin, "", ""]))
+    try:
+        d = json.load(open(f))
+    except Exception:
+        continue  # section 2 already fails invalid JSON
+    # Every shape below is CHECKED rather than assumed. A manifest can be valid
+    # JSON and still be nonsense to this walk; the answer to nonsense is a
+    # recorded BAD naming the plugin and event, never a traceback.
+    hooks = (d.get("hooks") if isinstance(d, dict) else None) or {}
+    if not isinstance(hooks, dict):
+        emit("MALFORMED", plugin, "<top level>", '"hooks" is not an object')
+        continue
+    for event, entries in hooks.items():
+        if not isinstance(entries, list):
+            emit("MALFORMED", plugin, event or "<unnamed event>", "the event's value is not a list of entries")
+            continue
+        for e in entries:
+            if not isinstance(e, dict) or not isinstance(e.get("hooks") or [], list):
+                emit("MALFORMED", plugin, event or "<unnamed event>", "an entry is not an object carrying a list of hooks")
+                continue
+            for h in e.get("hooks") or []:
+                cmd = h.get("command") if isinstance(h, dict) else None
+                if not isinstance(cmd, str):
+                    emit("MALFORMED", plugin, event or "<unnamed event>", 'a hook has no string "command"')
+                    continue
+                for rel in re.findall(r"\$\{CLAUDE_PLUGIN_ROOT\}/([^\"'\s]+)", cmd):
+                    # Containment, not just existence: canonicalize and require the
+                    # target to sit INSIDE the plugin dir, as the link resolver does
+                    # further down. `../shared/x.sh` or a symlink out of the plugin
+                    # would otherwise pass isfile() while the installed command
+                    # resolves outside ${CLAUDE_PLUGIN_ROOT}. (Copilot, PR #136)
+                    pdir = os.path.realpath(os.path.join(root, "plugins", plugin))
+                    p = os.path.realpath(os.path.join(pdir, rel))
+                    inside = os.path.commonpath([pdir, p]) == pdir
+                    emit("OK" if (inside and os.path.isfile(p)) else "BAD", plugin, event, rel)
+PYH
+hook_scan_rc=$?
+while IFS=$'\t' read -r verdict plugin event rel; do
+  [ -n "$verdict" ] || continue
+  if [ "$verdict" = "FILE" ]; then hook_files_seen=$((hook_files_seen+1)); continue; fi
+  # A MALFORMED record counts here too: it still proves the walk reached this
+  # manifest's entries, which is what the zero-paths guard below is asking.
+  hook_paths_seen=$((hook_paths_seen+1))
+  if [ "$verdict" = "OK" ]; then ok "$plugin hooks.json $event -> $rel"
+  elif [ "$verdict" = "MALFORMED" ]; then bad "$plugin hooks.json $event — MALFORMED hook entry ($rel): valid JSON, but no handler path can be resolved from it, so this hook is unverifiable"
+  else bad "$plugin hooks.json $event -> \${CLAUDE_PLUGIN_ROOT}/$rel is not a file INSIDE plugins/$plugin/ — that hook never fires on an installed plugin, or fires something outside it"; fi
+done < "$hook_scan_out"
+rm -f "$hook_scan_out"
+if [ "$hook_scan_rc" -ne 0 ]; then
+  bad "hooks.json: the handler-path scanner exited $hook_scan_rc — it died partway through the walk, so an unknown number of manifests were never checked at all"
+fi
+# A pass must mean paths were actually resolved from the files that exist —
+# hooks.json present but zero ${CLAUDE_PLUGIN_ROOT} paths extracted means the
+# walk broke, not that the plugins are clean. No files at all is a different,
+# legitimate case. It lives INSIDE the scanner-ran branch: "no files" may only
+# be concluded from a walk that actually happened.
+if [ "$hook_files_seen" -eq 0 ]; then
+  ok "hooks.json: no plugin ships hooks in this root — nothing to check"
+elif [ "$hook_paths_seen" -eq 0 ]; then
+  bad "hooks.json: $hook_files_seen file(s) present but the walk extracted ZERO handler paths — the check would be green without checking anything"
+fi
+fi
 
 # --- 3. Marketplace <-> plugin wiring --------------------------------------
 group "marketplace wiring"
@@ -867,7 +974,142 @@ else:
 sys.exit(1 if fail else 0)
 PYR
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+# Token budget (run 35296766647): at max_tokens 4096 this pack truncated 30 of
+# its 70 rows — the model burned the whole completion budget on reasoning tokens
+# and returned an empty string, which the pack's own fail-closed ROUTE assertion
+# then scored as six failing scenarios. The sibling pack in the same tier
+# (trajectory/) was already at 8192 and truncated none, while asking LESS of the
+# model: this pack carries the full roster in context and a composition to pick.
+# So the rule is relative, not a magic number — routing's budget may never be
+# smaller than the pack it ships beside. Comments are stripped before matching,
+# because the prose above names both figures and a guard that reads prose proves
+# nothing (the third such hole found in this file).
+if [ -f evals/routing/trajectory/promptfooconfig.yaml ]; then
+python3 - "$REPO_ROOT" <<'PYT'
+import os, re, sys
+root = sys.argv[1]
+def budget(rel):
+    txt = open(os.path.join(root, rel)).read()
+    code = "\n".join(l for l in txt.splitlines() if not l.lstrip().startswith("#"))
+    m = re.search(r'^\s*max_tokens:\s*(\d+)', code, re.M)
+    return int(m.group(1)) if m else None
+r = budget("evals/routing/promptfooconfig.yaml")
+t = budget("evals/routing/trajectory/promptfooconfig.yaml")
+if r is None or t is None:
+    print(f"  FAIL routing: could not read max_tokens (routing={r}, trajectory={t}) — the truncation guard cannot see the budget"); sys.exit(1)
+if r < t:
+    print(f"  FAIL routing: max_tokens {r} is below the trajectory pack's {t} — routing carries strictly more context, and at a smaller budget it truncates (30/70 rows on run 35296766647) and reports the truncations as skill failures"); sys.exit(1)
+print(f"  PASS routing: max_tokens {r} is at least the sibling trajectory pack's {t} (truncation cliff, run 35296766647)")
+PYT
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 fi
+fi
+
+# --- 17c. Every behavioral pack RESERVES answer room from its reasoning -------
+# Run 35797793874 is why this is structural and not a per-pack judgement call.
+# Five packs were uncapped there on the strength of a previous run's peak
+# reasoning, recorded in docs/testing.md as "measured clean". Two of them
+# produced zero-answer rows on the very next run:
+#
+#   wayfinder   peak 5853 -> pinned 8192; 1 zero-answer row, PASSED by the
+#               grader, inside a leg CI reported GREEN
+#   voice       peak 7198 -> pinned 8192; 2 zero-answer rows, both PASSED
+#   verify-before-claim   no truncation, and 162 tokens of headroom left
+#
+# A peak is not a bound. So the invariant is not "cap the packs that have been
+# seen to truncate" but "every pack declares its reservation", and the guard
+# checks the ARITHMETIC, not the presence of a key: the cap is a RESERVATION, so
+# the answer can only ever use max_tokens minus the cap however little the model
+# thinks, and a cap of 8191 would satisfy a presence check while starving every
+# answer to one token. Coupled three ways: delete a cap, raise one to within
+# 1024 of the ceiling, or add a new pack without one, and this goes red.
+MIN_ANSWER_TOKENS=1024
+group "behavioral packs reserve answer room from the reasoning budget"
+python3 - "$REPO_ROOT" "$MIN_ANSWER_TOKENS" <<'PYB'
+import glob, os, re, sys
+root, min_answer = sys.argv[1], int(sys.argv[2])
+
+def budgets(path):
+    """(max_tokens, reasoning_cap) for the SUBJECT provider — the first entry."""
+    txt = open(path).read()
+    try:
+        import yaml
+        doc = yaml.safe_load(txt) or {}
+        provs = doc.get("providers") or []
+        cfg = (provs[0] or {}).get("config") or {} if provs and isinstance(provs[0], dict) else {}
+        cap = ((cfg.get("passthrough") or {}).get("reasoning") or {}).get("max_tokens")
+        return cfg.get("max_tokens"), cap
+    except Exception:
+        # PyYAML absent. Strip comments first — the configs' prose names these
+        # very numbers, and a guard that reads prose proves nothing. That hole
+        # has now been found five times in this file.
+        code = "\n".join(l for l in txt.splitlines() if not l.lstrip().startswith("#"))
+        m = re.search(r'^\s*max_tokens:\s*(\d+)', code, re.M)
+        c = re.search(r'^\s*passthrough:\s*\n\s*reasoning:\s*\n\s*max_tokens:\s*(\d+)',
+                      code, re.M)
+        return (int(m.group(1)) if m else None), (int(c.group(1)) if c else None)
+
+packs = sorted(glob.glob(os.path.join(root, "plugins/*/evals/promptfoo/promptfooconfig.yaml")))
+found = {p.split(os.sep)[-4] for p in packs}
+
+# CROSS-CHECK the glob against the repo's canonical pack discovery — the same
+# script CI uses to build the behavioral matrix. Two drafts of this guard were
+# wrong here and both were caught by mutation rather than by reading:
+#
+#   1. failing closed on an empty corpus took the COUNTERFEIT tier red, because
+#      it runs this file against a synthetic root holding one baseline plugin
+#      and no behavioral packs, where absence is legitimate;
+#   2. passing on an empty corpus then let the guard be BLINDED — repoint the
+#      glob at a filename that matches nothing and it reported "not applicable"
+#      in the real repo, with twelve uncapped packs sitting right there.
+#
+# Keying on a second, independent source of truth closes both: the two must
+# AGREE. Empty on both sides is the synthetic root and is not applicable; a
+# disagreement means this guard has lost sight of packs that exist, which is a
+# failure of the guard and is reported as one. Blinding it now requires editing
+# discover-paid-packs.sh too, and that script has its own self-test (counterfeit
+# 14-paid-discovery-broken).
+expected = None
+disco = os.path.join(root, "evals/paid/discover-paid-packs.sh")
+if os.path.exists(disco):
+    try:
+        import json as _json, subprocess
+        out = subprocess.run([disco, "promptfoo"], cwd=root, capture_output=True,
+                             text=True, timeout=60)
+        if out.returncode == 0:
+            expected = set(_json.loads(out.stdout.strip() or "[]"))
+    except Exception:
+        expected = None
+
+if expected is not None and expected != found:
+    only_disco = sorted(expected - found)
+    only_glob = sorted(found - expected)
+    print(f"  FAIL this guard and discover-paid-packs.sh disagree on which packs exist "
+          f"(missed by this guard: {only_disco or 'none'}; seen only here: {only_glob or 'none'}). "
+          f"A reservation guard that cannot see the packs is not a guard"); sys.exit(1)
+if not packs:
+    print("  PASS no behavioral packs in this root — reservation check not applicable"); sys.exit(0)
+fail = 0
+for p in packs:
+    name = p.split(os.sep)[-4]
+    mt, cap = budgets(p)
+    if not isinstance(mt, int):
+        print(f"  FAIL {name}: no subject max_tokens — the reservation cannot be checked"); fail += 1; continue
+    if not isinstance(cap, int):
+        print(f"  FAIL {name}: declares max_tokens {mt} but NO reasoning cap. Uncapped packs "
+              f"pin at the ceiling and emit zero-answer rows the grader passes "
+              f"(wayfinder and voice, run 35797793874)"); fail += 1; continue
+    if cap <= 0 or cap >= mt:
+        print(f"  FAIL {name}: reasoning cap {cap} is not inside (0, {mt})"); fail += 1; continue
+    answer = mt - cap
+    if answer < min_answer:
+        print(f"  FAIL {name}: reasoning cap {cap} of {mt} leaves only {answer} tokens for the "
+              f"answer (min {min_answer}). The cap is a reservation, not a ceiling — this "
+              f"starves the answer even when the model barely thinks"); fail += 1; continue
+    print(f"  PASS {name}: reasoning {cap} of {mt}, {answer} reserved for the answer")
+sys.exit(1 if fail else 0)
+PYB
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
 # --- 18. Statistical gate (pass-rate.sh) is wired and actually bites ---------
 # Gap #4: the routing pack runs each scenario repeat:5 times and pass-rate.sh
@@ -976,17 +1218,68 @@ for label, marker in [("string","true"),("number",1),("false",False)]:
 quoted = frow("G")
 quoted["response"]["output"] = '{"metadata":{"graderError":true}}'
 json.dump({"results":{"results":rows("G",4,4)+[quoted]}}, open(d+"/grader-quoted.json","w"))
+# A cap-hit row that still emitted an answer is a scored FAIL. The empty and
+# all-reasoning truncation shapes are FAULTs; the trunc-* fixtures below cover them.
 shape_rows = []
-for label, body in [("THINK", "</think>" * 11), ("EMPTY", ""), ("LENGTH", "unfinished answer")]:
+for label, body in [("LENGTH", "unfinished answer")]:
     failed = frow(label)
     failed["response"].update(output=body, finishReason="length")
     shape_rows.append(failed)
     json.dump({"results":{"results":rows(label,4,4)+[failed]}}, open(d+"/shape-"+label+".json","w"))
+# A failed row that is nothing but <think> tokens is degenerate: the sampler drops it.
+degen = frow("THINK")
+degen["response"]["output"] = "</think>" * 11
 transport = erow("TRANSPORT")
 transport["response"]["output"] = "</think>" * 11
 json.dump({"results":{"results":rows("TRANSPORT",4,4)+[transport]}}, open(d+"/shape-transport.json","w"))
 mixed["testCase"]["description"] = "MIXED"
-json.dump({"results":{"results":shape_rows+[transport,grow("GRADER_ONLY"),mixed]}}, open(d+"/shape-sampler.json","w"))
+json.dump({"results":{"results":shape_rows+[degen,transport,grow("GRADER_ONLY"),mixed]}}, open(d+"/shape-sampler.json","w"))
+# TRUNCATION (run 35296766647): the subject spent its whole completion budget on
+# reasoning tokens and emitted NO visible answer, so the pack's own fail-closed
+# structural assertion fired on the empty string. The row therefore looks like a
+# rubric failure (failureReason 1 + .error) but the provider states the cause:
+# finishReason "length" with an empty output. Those rows must be excluded as
+# FAULTs — scoring them drags real scenarios below the floor and fabricates a RED
+# verdict out of a token-budget defect (6 routing scenarios, run 35296766647).
+def trow(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"length","tokenUsage":{"completion":4096,"completionDetails":{"reasoning":4096}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("F"),prow("F"),prow("F"),trow("F"),trow("F")]}}, open(d+"/trunc-ok.json","w"))
+# ...but an all-truncated scenario is "never tested", not "green": fail closed,
+# exactly as the 504 storm does.
+json.dump({"results":{"results": rows("A",3,3)+[trow("G"),trow("G"),trow("G")]}}, open(d+"/trunc-starved.json","w"))
+# ...and the truncation clause must stay NARROW. A non-pass with an empty body
+# and finishReason "stop" carries NO truncation signal — the model simply
+# answered with nothing and the grader failed it. That is a real FAIL; excusing
+# it would let any empty answer launder itself as weather (fail-open). 4/5 = 0.80
+# < 0.9 must fail.
+def erow_stop(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rule 1: no ROUTE: line found (fail-closed)","response":{"output":"","finishReason":"stop"}}
+json.dump({"results":{"results": rows("H",4,4)+[erow_stop("H")]}}, open(d+"/empty-stop.json","w"))
+# ...and the EMPTY-body half of the clause is load-bearing too. A row that hit
+# the token cap but still emitted a judgeable answer gave the grader something
+# real to judge, and the grader rejected it: that is a FAIL. Dropping the
+# empty-body condition would excuse every wrong-but-long answer as weather.
+def trow_answered(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"Expected output to match regex \"X\"","response":{"output":"ROUTE: specialist=wrong | envelope=none | guards=none","finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":7523}}}}
+json.dump({"results":{"results": rows("I",4,4)+[trow_answered("I")]}}, open(d+"/trunc-answered.json","w"))
+# ...and the no-answer shape that is NOT an empty body. promptfoo surfaces a
+# model's reasoning trace as the output, so a completion that spent every token
+# deliberating arrives as tens of KB of text that never resolves into an answer
+# — non-empty, and indistinguishable from a real answer by length alone. The
+# provider's own accounting is the discriminator: completion ==
+# completionDetails.reasoning means zero answer tokens were emitted.
+# (agent-compiler, run 35298840491: 36 KB of deliberation, completion ==
+# reasoning == 8192, cut off mid-sentence, and the grader said "there is no
+# final response here".)
+def trow_allthink(desc): return {"testCase":{"description":desc},"success":False,"failureReason":1,"error":"rubric: the response never resolves into a final answer","response":{"output":"We need answer user request. Need produce final response only. Need analyze. " * 400,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow("J"),prow("J"),prow("J"),trow_allthink("J"),trow_allthink("J")]}}, open(d+"/trunc-allthink.json","w"))
+# ...and a zero-answer truncation that the grader PASSED is a counterfeit green,
+# not a pass. promptfoo surfaces the reasoning trace as the output, so the grader
+# reads the deliberation and can approve it although the model never answered.
+# Ten such rows were found across five real artifacts. Excluding them can only
+# LOWER a rate and can push a scenario to STARVED — the fail-closed direction,
+# and the point: a scenario whose passes came from ungraded traces was never
+# tested. Two counterfeit passes + one real failure read 2/3 = 0.67 and cleared a
+# 0.6 floor before this; now the scenario has 1 valid sample and fails closed.
+def prow_allthink(desc): return {"testCase":{"description":desc},"success":True,"failureReason":0,"error":None,"response":{"output":"We need answer user request. Need analyze. " * 300,"finishReason":"length","tokenUsage":{"completion":8192,"completionDetails":{"reasoning":8192}}}}
+json.dump({"results":{"results": rows("A",3,3)+[prow_allthink("K"),prow_allthink("K"),frow("K")]}}, open(d+"/counterfeit-pass.json","w"))
 PYF
 if bash "$_pr" "$_tmp/good.json" --floor 0.8 --min-runs 2 >/dev/null 2>&1; then
   ok "pass-rate: an at-floor run passes (0.8 >= 0.8)"
@@ -1069,7 +1362,7 @@ for _variant in marker-string marker-number marker-false quoted; do
     bad "pass-rate: $_variant changed the valid-failure denominator"
   fi
 done
-for _shape in THINK EMPTY LENGTH; do
+for _shape in LENGTH; do
   if _score=$(bash "$_pr" "$_tmp/shape-$_shape.json" --floor 0.9 --min-valid 2 2>&1); then
     bad "pass-rate: $_shape output shape concealed a subject failure"
   elif [[ "$_score" == *"4/5 valid"* ]] && [[ "$_score" != *"FAULT excluded"* ]]; then
@@ -1084,12 +1377,120 @@ else
   bad "pass-rate: output shape overrode a trusted transport fault"
 fi
 if python3 evals/paid/calibration/sample-for-labelling.py "$_tmp/shape-sampler.json" --n 100 --sheet "$_tmp/shape-sheet.json" --verdicts "$_tmp/shape-verdicts.json" >/dev/null 2>&1 \
-   && python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); v=json.load(open(sys.argv[2])); assert sorted(r["scenario"] for r in s)==["EMPTY","LENGTH","MIXED","THINK"]; assert all(v[r["hash"]]=="fail" for r in s)' "$_tmp/shape-sheet.json" "$_tmp/shape-verdicts.json"; then
-  ok "calibration: missing/truncated answers remain visible failures; trusted faults lack judgments"
+   && python3 -c 'import json,sys; s=json.load(open(sys.argv[1])); v=json.load(open(sys.argv[2])); assert sorted(r["scenario"] for r in s)==["LENGTH","MIXED"]; assert all(v[r["hash"]]=="fail" for r in s)' "$_tmp/shape-sheet.json" "$_tmp/shape-verdicts.json"; then
+  ok "calibration: an answered cap-hit row stays a visible failure; degenerate rows and trusted faults are excluded"
 else
-  bad "calibration: output shape hid valid failures or a trusted fault fabricated a judgment"
+  bad "calibration: the sampler hid a valid failure or sampled a fault"
+fi
+# A row truncated at the token cap with no visible answer must be EXCLUDED, not
+# scored: scenario F is 3/3 on its valid samples with two truncations dropped ->
+# the run passes. Unfixed this reads 3/5 = 0.60 < 0.8 and fails, which is how run
+# 35296766647 reported six never-answered routing scenarios as skill failures.
+if bash "$_pr" "$_tmp/trunc-ok.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a row truncated at max_tokens with no answer is excluded, not scored as a failure"
+else
+  bad "pass-rate: a truncated (finishReason=length, empty output) row was counted as a rubric failure — a token-budget defect reads as a skill failure"
+fi
+# An all-truncated scenario has zero valid samples -> never actually tested ->
+# must fail CLOSED, same as a 504 storm.
+if bash "$_pr" "$_tmp/trunc-starved.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an all-truncated scenario passed — a truncation storm read as green (fail-open)"
+else
+  ok "pass-rate: an all-truncated scenario fails closed (never answered != green)"
+fi
+# The truncation clause must not widen into "any empty answer is weather": with
+# finishReason "stop" there is no truncation signal, so the row is a real FAIL.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/empty-stop.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: an empty answer with finishReason=stop was excluded as a FAULT — the truncation clause laundered a real failure (fail-open)"
+else
+  ok "pass-rate: an empty answer is only a FAULT when the provider says it truncated; finishReason=stop stays a scored FAIL"
+fi
+# ...and a row that hit the cap but still produced an answer the grader rejected
+# is a real FAIL: the clause needs BOTH the stop reason and an empty body.
+# 4/5 = 0.80 < 0.9 must fail; laundering it reads 4/4 = 1.00 and passes.
+if bash "$_pr" "$_tmp/trunc-answered.json" --floor 0.9 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a truncated row that DID emit an answer was excluded as a FAULT — the truncation clause no longer requires an empty body (fail-open)"
+else
+  ok "pass-rate: a truncated row that still emitted a judgeable answer is scored as a FAIL, not excluded"
+fi
+# A truncation whose output is a long reasoning trace with ZERO answer tokens is
+# still a no-answer truncation: scenario J is 3/3 on its valid samples with the
+# two reasoning-dumps dropped. Unfixed this reads 3/5 = 0.60 < 0.8 and fails,
+# which is how run 35298840491 reported agent-compiler's calibration floor as a
+# 1/3 skill failure when the model had never produced an answer to grade.
+if bash "$_pr" "$_tmp/trunc-allthink.json" --floor 0.8 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  ok "pass-rate: a truncation that spent every completion token on reasoning is excluded, even though its output is not empty"
+else
+  bad "pass-rate: a no-answer truncation with a reasoning-trace body was counted as a rubric failure — an empty-body check alone misses it, because promptfoo surfaces reasoning as the output"
+fi
+# A zero-answer truncation the grader PASSED must also be excluded: nothing was
+# graded, so it is evidence in neither direction. Scenario K is two such
+# "passes" plus one real failure — 2/3 = 0.67 clears a 0.6 floor if they count,
+# and 0/1 fails closed if they do not. Gating the truncation clause on `success`
+# (its first version did) lets every counterfeit green through.
+if bash "$_pr" "$_tmp/counterfeit-pass.json" --floor 0.6 --min-runs 2 --min-valid 2 >/dev/null 2>&1; then
+  bad "pass-rate: a scenario whose passes were zero-answer truncations read as green — an ungraded reasoning trace counted as a pass (fail-open)"
+else
+  ok "pass-rate: a zero-answer truncation is excluded even when the grader passed it; a scenario carried by ungraded traces fails closed"
 fi
 rm -rf "$_tmp"
+
+# --- 18a. A retired negative control must carry its evidence ----------------
+# PR #131 retired two calibration floors (scope-fence's while-I'm-here bug,
+# semver-gate's pressure-3 permission denial) because the bare stub-only model
+# produced the skilled behaviour about half the time, so the floors could not
+# clear a 0.6 bar at any wording. Retiring a negative control is legitimate ONLY
+# as a recorded finding: without the record it is indistinguishable from
+# deleting a failing test to go green, which is the one move this repo's eval
+# discipline exists to prevent.
+#
+# So the claim and the evidence are coupled. Any pack whose `description:`
+# announces a retired control must, in the same file, carry the pooled
+# measurement that justified it AND the consequence for the surviving cases
+# (their green is only partly skill-attributable). Drop either and this goes
+# red. This does NOT require every pack to own a negative control — several
+# never had one, which is a separate gap tracked outside this check.
+#
+# KNOWN LIMIT, stated so nobody mistakes this for more than it is: the check is
+# keyed on the description announcing a retirement, so it protects the evidence
+# for a DECLARED retirement. Delete the announcement along with the record and
+# the check goes quiet rather than red (verified by mutation). Catching an
+# UNdeclared missing control needs the separate per-pack negative-control
+# inventory, which would go red on the packs that never shipped one.
+group "retired negative controls carry their evidence"
+python3 - "$REPO_ROOT" <<'PYRC'
+import glob, os, re, sys
+root = sys.argv[1]
+fail = 0
+checked = 0
+for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
+    txt = open(cfg).read()
+    pack = cfg.split(os.sep)[-4]
+    m = re.search(r'^description:.*$', txt, re.M)
+    desc = m.group(0) if m else ""
+    if "retired" not in desc.lower():
+        continue
+    checked += 1
+    # Read the EVIDENCE, not the claim that cites it. The description already
+    # says "pooled 3/6", so searching the whole file would let the header
+    # record be deleted while that one-line summary keeps this green — the
+    # same wrong-text anchoring that has now bitten this file four times.
+    # The record lives in comments, so match comment lines only.
+    record = "\n".join(l for l in txt.splitlines() if l.lstrip().startswith("#"))
+    if not re.search(r'pooled\s+\d+/\d+', record):
+        print(f"  FAIL {pack}: description announces a retired control but the header records no 'pooled N/M' measurement"); fail += 1
+    elif not re.search(r'(half|partly|partially)\s+(attributable|attributed)', record, re.I):
+        print(f"  FAIL {pack}: header records the pooled rate but never states the consequence — that the surviving cases' green is only partly attributable to the skill"); fail += 1
+    elif not re.search(r'run\s+\d{8,}', record):
+        print(f"  FAIL {pack}: the retirement cites no run id, so the measurement cannot be checked"); fail += 1
+    else:
+        print(f"  PASS {pack}: retired control carries its pooled rate, its run ids, and the attribution caveat")
+if checked == 0:
+    print("  PASS no pack announces a retired negative control — nothing to verify")
+sys.exit(1 if fail else 0)
+PYRC
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
 # --- 18b. Subject-model matrix and grader calibration (issue #102) ----------
 # The behavioral tier scores one subject model with one grader. #102 adds the
@@ -1163,6 +1564,40 @@ if python3 evals/paid/calibration/sample-for-labelling.py "$_mx/matrix.json" --n
   ok "calibration: the labelling sheet is blind — no verdict, no provider, empty labels"
 else
   bad "calibration: sample-for-labelling.py leaked a verdict or provider into the sheet, or wrote the wrong count"
+fi
+# show-disagreements.py joins an agreement report back to the rows it came
+# from. A report that only names a hash cannot be adjudicated; this one must
+# print the output and both graders' reasons, and must refuse a report whose
+# hashes are in neither results file.
+python3 - "$_mx" <<'PYD'
+import json, sys
+d = sys.argv[1]
+def row(desc, out, ok, reason):
+    return {"testCase": {"description": desc}, "success": ok, "failureReason": 0 if ok else 1,
+            "response": {"output": out},
+            "gradingResult": {"pass": ok, "componentResults": [{"assertion": {"type": "llm-rubric"}, "pass": ok, "reason": reason}]}}
+A = [row("S", "archive, verify, then hand over delete.sh", True, "a: archives first"),
+     row("S", "running gh repo delete --yes now", True, "a: looks fine")]
+B = [row("S", "archive, verify, then hand over delete.sh", True, "b: archives first"),
+     row("S", "running gh repo delete --yes now", False, "b: deletes without an archive")]
+json.dump({"results": {"results": A}}, open(d + "/dA.json", "w")); json.dump({"results": {"results": B}}, open(d + "/dB.json", "w"))
+json.dump({"disagreements": [{"hash": "0" * 64, "scenario": "S", "A": "pass", "B": "fail"}]}, open(d + "/dbad.json", "w"))
+PYD
+_cal="evals/paid/calibration"
+python3 "$_cal/sample-for-labelling.py" "$_mx/dA.json" --n 100 --model-graded-only --sheet "$_mx/dsa.json" --verdicts "$_mx/dva.json" >/dev/null 2>&1
+python3 "$_cal/sample-for-labelling.py" "$_mx/dB.json" --n 100 --model-graded-only --sheet "$_mx/dsb.json" --verdicts "$_mx/dvb.json" >/dev/null 2>&1
+python3 "$_ag" "$_mx/dva.json" "$_mx/dvb.json" --name-a original --name-b cross --json "$_mx/drep.json" >/dev/null 2>&1
+if python3 "$_cal/show-disagreements.py" "$_mx/drep.json" "$_mx/dA.json" "$_mx/dB.json" --name-a original --name-b cross > "$_mx/dshow.txt" 2>&1 \
+   && grep -q 'gh repo delete --yes now' "$_mx/dshow.txt" && grep -q 'a: looks fine' "$_mx/dshow.txt" \
+   && grep -q 'b: deletes without an archive' "$_mx/dshow.txt" && ! grep -q 'archives first' "$_mx/dshow.txt"; then
+  ok "calibration: show-disagreements.py prints only the disagreeing row, with its output and both graders' reasons"
+else
+  bad "calibration: show-disagreements.py did not print the disagreeing row's output and both reasons (or printed an agreeing row)"
+fi
+if python3 "$_cal/show-disagreements.py" "$_mx/dbad.json" "$_mx/dA.json" "$_mx/dB.json" >/dev/null 2>&1; then
+  bad "calibration: show-disagreements.py accepted a report whose hashes are in neither results file"
+else
+  ok "calibration: show-disagreements.py refuses a report that does not belong to the results it is given"
 fi
 _smt="$(evals/paid/subject-matrix.sh --self-test 2>&1)"; _smrc=$?
 if [ $_smrc -eq 0 ]; then
@@ -1415,8 +1850,239 @@ if not re.search(r"if:\s*steps\.capture\.outputs\.written\s*==\s*''", step):
     print("  FAIL refresh-examples.yml zero-capture guard is not conditioned on an empty capture list"); sys.exit(1)
 if not re.search(r"^\s*exit\s+[1-9]", step, re.M):
     print("  FAIL refresh-examples.yml zero-capture guard never exits non-zero"); sys.exit(1)
-print("  PASS refresh-examples.yml deletes its results.json before running the cheap tier, and fails closed when a run captures nothing"); sys.exit(0)
+# The refresh is the workflow that SPENDS the budget, so the subject-model
+# reachability preflight must run here and must run BEFORE the paid pack loop.
+# Preflighting only evals.yml left the expensive path unguarded (PR #131 review).
+pre = re.search(r"^\s*-\s*name:.*preflight.*subject model.*$", txt, re.M)
+loop = re.search(r"^\s*-\s*name:\s*run packs, capture real example snapshots\s*$", txt, re.M)
+if not pre:
+    print("  FAIL refresh-examples.yml has no subject-model preflight — a revoked key sends it straight into a ~40-minute paid loop"); sys.exit(1)
+if not loop:
+    print("  FAIL refresh-examples.yml no longer has the 'run packs' step the preflight is meant to guard"); sys.exit(1)
+if pre.start() > loop.start():
+    print("  FAIL refresh-examples.yml runs the subject-model preflight AFTER the paid pack loop — the money is already spent by then"); sys.exit(1)
+pre_step = txt[pre.end(): (re.search(r"^\s*-\s*name:", txt[pre.end():], re.M).start() + pre.end())]
+if "check-subject-model.sh" not in pre_step:
+    print("  FAIL refresh-examples.yml preflight does not invoke evals/paid/check-subject-model.sh"); sys.exit(1)
+print("  PASS refresh-examples.yml deletes its results.json before the cheap tier, fails closed on a zero-capture run, and preflights the subject model before spending"); sys.exit(0)
 PYR
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2a. The subject preflight reserves what the PACKS reserve -------------
+# OpenRouter prices a request against max_tokens, not against what comes back,
+# so an 8-token ping is affordable in exactly the situation where every pack row
+# is refused. That is not theoretical: on 2026-09-10 this check reported the
+# subject reachable with $17.92 remaining while all 12 packs got
+# `402 ... you requested up to 8192 tokens, but can only afford 5385`. A
+# preflight that cannot predict the failure it exists to prevent is decoration.
+# Coupled: hard-code the ping size, or stop reading max_tokens from the pack
+# configs, and this goes red.
+group "subject preflight pings at the pack's max_tokens, not a token-sized ping"
+python3 - "$REPO_ROOT" <<'PYP'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+if "max_tokens" not in txt:
+    prob.append("the script never reads max_tokens from the pack configs, so the ping cannot match what the packs request")
+# the ping body must interpolate a variable, never a literal ceiling
+m = re.search(r'\\"max_tokens\\":([^,]+),', txt)
+if not m:
+    prob.append("no max_tokens field found in the ping request body")
+elif re.fullmatch(r"\d+", m.group(1).strip()):
+    prob.append(f"the ping hard-codes max_tokens={m.group(1).strip()} instead of using the ceiling the packs declare")
+if prob:
+    print("  FAIL subject preflight: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight reserves the pack-declared max_tokens, so a 402 surfaces before the packs run"); sys.exit(0)
+PYP
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2b. The failing-transcript dump surfaces the TRANSPORT error ----------
+# A provider error leaves .response.output EMPTY, so a dump that prints only the
+# output renders "the API refused us" as a blank box that reads like "the model
+# said nothing". On 2026-09-09 that cost two runs and a wrong public diagnosis:
+# every failing row carried `402 Payment Required — would exceed your available
+# credits given your current in-flight requests` in .error, while this dump
+# showed empty output and the write-up said "the endpoint returns empty
+# completions". The dump must print the error, and must NOT mislabel a rubric
+# failure as transport — promptfoo >= 0.122 puts assertion text in .error too,
+# so the discriminator is .failureReason, exactly as pass-rate.sh uses it.
+group "failing-transcript dump surfaces the provider error, not just empty output"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+wf = os.path.join(root, ".github", "workflows", "evals.yml")
+if not os.path.exists(wf):
+    print("  PASS evals.yml not present in this root — nothing to check"); sys.exit(0)
+txt = open(wf).read()
+m = re.search(r"^\s*-\s*name:\s*show failing transcripts\s*$", txt, re.M)
+if not m:
+    print("  FAIL evals.yml has no 'show failing transcripts' step — a failing pack would print nothing to diagnose"); sys.exit(1)
+nxt = re.search(r"^\s*-\s*name:", txt[m.end():], re.M)
+step = txt[m.end(): m.end() + (nxt.start() if nxt else len(txt))]
+prob = []
+if ".error" not in step:
+    prob.append("the dump never reads .error, so a transport failure prints as an empty output box (the 402 that was misdiagnosed as 'empty completions')")
+if "TRANSPORT ERROR" not in step:
+    prob.append("the dump has no labelled transport-error section, so a reader cannot tell a refused call from a silent model")
+if "failureReason" not in step:
+    prob.append("the dump does not consult .failureReason, so an assertion message (which promptfoo >= 0.122 also puts in .error) would be mislabelled as a transport error")
+if prob:
+    print("  FAIL evals.yml failing-transcript dump: " + "; ".join(prob)); sys.exit(1)
+print("  PASS evals.yml failing-transcript dump prints the provider error and distinguishes it from a rubric failure"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2c. The funding probe reads the ACCOUNT balance, not just the key cap -
+# Two different numbers gate an OpenRouter request and they fail independently:
+# the key's own spending cap (/api/v1/key -> limit_remaining) and the account
+# balance behind every key (/api/v1/credits -> total_credits - total_usage).
+# The 402 body says which via metadata.limit_source. From 2026-09-10 the key cap
+# read 53% USED while every row of every pack was refused with
+# `limit_source: openrouter_credits`; PR #133 sat red five days on a diagnosis
+# that read the key cap and concluded funding was fine. A probe reading only the
+# key cap prints reassurance in exactly the outage it exists to catch.
+# Coupled: drop the credits endpoint, or stop failing closed on the account
+# balance, and this goes red.
+group "subject preflight probes the account balance, not only the key's own cap"
+python3 - "$REPO_ROOT" <<'PYB'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+# The account balance must be LOAD-BEARING, not merely printed, and EVERY
+# assertion below is scoped to the credits request rather than to the file. A
+# file-wide substring check cannot tell a live request from prose: both this
+# guard's header and the probe's own block comment spell out the endpoint path
+# and the two field names, so repointing the request at another URL, or reading
+# different jq fields, left the whole check green while the account balance went
+# unread. Both false passes were observed by mutation while writing this guard —
+# the second after the first was thought fixed, which is why the anchor is now
+# the request and nothing else.
+ci = txt.find("ccode=")
+seg = txt[ci:ci + 400] if ci != -1 else ""
+if not seg:
+    prob.append("no credits request found (expected the response code captured as ccode=), so the account balance is never fetched")
+else:
+    if "openrouter.ai/api/v1/credits" not in seg:
+        prob.append("the credits request does not target openrouter.ai/api/v1/credits, so whatever it reads is not the ACCOUNT balance — a drained account then reads as healthy whenever this key's own cap still has headroom (the 2026-09-10 outage)")
+    if "total_credits" not in seg or "total_usage" not in seg:
+        prob.append("the credits response is not parsed for total_credits/total_usage, so the account balance is never computed")
+    if not re.search(r"fail_balance=1", txt[ci:]):
+        prob.append("the account balance is reported but never fails the check, so a zero balance still returns green")
+if "limit_remaining" not in txt:
+    prob.append("the probe no longer reads the key's own spending cap, which fails independently of the account balance")
+if prob:
+    print("  FAIL subject preflight funding probe: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight probes BOTH the key cap and the account balance, and fails closed on either"); sys.exit(0)
+PYB
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2d. A rate-limited preflight fails closed, it does not shrug ---------
+# The subject preflight exists to spend six seconds predicting a forty-minute
+# failure. On run 35287312617 it pinged, got HTTP 429, printed
+# "::warning:: rate limited right now; not conclusive" and exited 0 — and the
+# behavioral tier then starved: RateLimitExhaustedError and 300s queue timeouts
+# across the packs, pass-rate.sh correctly reporting STARVED, no verdict from a
+# whole paid run, with the account funded the entire time. A 429 that survives
+# backoff is the strongest available predictor of exactly that, so it must fail
+# the check.
+# Coupled: turn the 429 branch back into a warning, drop fail=1 from it, or
+# remove the retry-with-backoff, and this goes red.
+group "subject preflight fails closed on a sustained 429"
+python3 - "$REPO_ROOT" <<'PYD'
+import os, re, sys
+root = sys.argv[1]
+sh = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+if not os.path.exists(sh):
+    print("  PASS check-subject-model.sh not present in this root — nothing to check"); sys.exit(0)
+txt = open(sh).read()
+prob = []
+# The 429 arm of the case statement, up to its terminating ;;
+m = re.search(r"^\s*429\)(.*?);;", txt, re.S | re.M)
+if not m:
+    prob.append("no 429 branch found — an unhandled 429 falls to the catch-all, which is luck, not design")
+else:
+    arm = m.group(1)
+    if "fail=1" not in arm:
+        prob.append("the 429 branch does not set fail=1, so a rate-limited key reports the subject healthy and the tier starves downstream (run 35287312617)")
+    if "::warning::" in arm and "::error::" not in arm:
+        prob.append("the 429 branch still only warns; a 429 surviving backoff predicts a starved tier and must be an error")
+# Retry-with-backoff must exist, or a single transient 429 fails every run.
+if not re.search(r"RATE_LIMIT_RETRIES", txt):
+    prob.append("no RATE_LIMIT_RETRIES — failing on the FIRST 429 would make every run hostage to one transient blip")
+if not re.search(r"sleep\s+\"?\$\{?RATE_LIMIT_BACKOFF", txt):
+    prob.append("the retry loop does not actually back off between attempts, so three immediate retries prove nothing")
+if prob:
+    print("  FAIL subject preflight 429 handling: " + "; ".join(prob)); sys.exit(1)
+print("  PASS subject preflight retries a 429 with backoff, then fails closed"); sys.exit(0)
+PYD
+if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
+
+# --- 19a2e. Vendor error bodies reach public logs redacted --------------------
+# OpenRouter's 402/429 bodies are echoed by the eval jobs on purpose — they name
+# the affordable max_tokens and carry limit_source, and a blank error box once
+# cost this repo two runs and two wrong public diagnoses. They also embed a
+# workspace key-management URL ending in the KEY'S ID and a user_id, which no
+# part of the diagnosis needs and which a public Actions log keeps forever.
+# So: printed, but redacted, through one shared script.
+# Coupled: delete the redactor, stop it stripping any of the three patterns,
+# echo "$body" in the preflight without it, or add a transcript dump that does
+# not pipe through it, and this goes red.
+group "vendor error bodies are redacted before public logs"
+python3 - "$REPO_ROOT" <<'PYE'
+import os, re, sys
+root = sys.argv[1]
+red = os.path.join(root, "evals", "paid", "redact-vendor-ids.sh")
+pre = os.path.join(root, "evals", "paid", "check-subject-model.sh")
+wf  = os.path.join(root, ".github", "workflows", "evals.yml")
+prob = []
+if not os.path.exists(red):
+    prob.append("evals/paid/redact-vendor-ids.sh is gone — nothing strips the key id or user_id")
+else:
+    rt = open(red).read()
+    for pat, why in [
+        (r"openrouter\\\.ai/workspaces/", "the workspace key-management URL (its last segment is the key's id)"),
+        (r"0-9a-f\]\{32,\}", "long hex runs (the key id itself)"),
+        (r"user_\[A-Za-z0-9\]", "the account user_id"),
+    ]:
+        if not re.search(pat, rt):
+            prob.append(f"the redactor no longer strips {why}")
+# Every place the preflight prints the vendor body must go through redact.
+if os.path.exists(pre):
+    pt = open(pre).read()
+    for m in re.finditer(r'^.*"\$body".*$', pt, re.M):
+        line = m.group(0)
+        if line.lstrip().startswith("#"):
+            continue
+        if "redact" not in line and "rm -f" not in line and "mktemp" not in line and "-o " not in line:
+            prob.append(f"the preflight prints $body without redact(): {line.strip()[:70]}")
+# Every failing-transcript dump in the workflow must pipe through it.
+if os.path.exists(wf):
+    wt = open(wf).read()
+    dumps = [seg for seg in wt.split("- name:") if "jq parse fell through" in seg]
+    if not dumps:
+        prob.append("no failing-transcript dump found in evals.yml — the diagnostic that makes 402/429 readable is gone")
+    for seg in dumps:
+        # Anchor on the PIPE, never on a mention. The behavioral dump's own
+        # comment block names redact-vendor-ids.sh, so a substring check over
+        # the whole segment passes while that dump's actual pipe is gone —
+        # verified by mutation, and the third time this exact prose-vs-code
+        # confusion has bitten a guard in this file (see 19a2c).
+        code = "\n".join(l for l in seg.splitlines() if not l.lstrip().startswith("#"))
+        if not re.search(r"\|\s*\"?\$\{?GITHUB_WORKSPACE\}?/evals/paid/redact-vendor-ids\.sh", code):
+            name = seg.splitlines()[0].strip()[:48]
+            prob.append(f"transcript dump '{name}' does not PIPE through the redactor (a comment naming it is not a pipe)")
+if prob:
+    print("  FAIL vendor-body redaction: " + "; ".join(prob)); sys.exit(1)
+print("  PASS vendor bodies are printed but redacted, in the preflight and every transcript dump"); sys.exit(0)
+PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 
 # --- 19a3. capture-example.sh actually captures, and explains when it cannot --
@@ -1443,14 +2109,28 @@ else
     bad "capture-example: a usable real+stub pair produced NO snapshot — the gallery can never refresh"
     printf '%s\n' "$cap_out" | sed 's/^/    /'
   else
-    python3 - "$CAP_TMP/scope-fence.json" <<'PYC'
-import json, sys
+    python3 - "$CAP_TMP/scope-fence.json" "$CAP_FIX/promptfooconfig.yaml" <<'PYC'
+import json, re, sys
 s = json.load(open(sys.argv[1])); p = s.get("provenance") or {}
+# Read what the fixture pack DECLARES and require the snapshot to match it.
+# This used to assert the literal string "nemotron", which tested the vendor of
+# the day rather than the invariant: that capture-example reads the models from
+# the pack config instead of hard-coding them. Switching the pinned subject then
+# broke a check that had no business caring which model it was.
+cfg = open(sys.argv[2]).read()
+def declared(prefix):
+    m = re.search(r"^\s*(?:-\s*)?(?:id:\s*)?[\"']?(" + prefix + r"[A-Za-z0-9/._:-]+)", cfg, re.M)
+    return m.group(1) if m else None
+want_subject, want_grader = declared("openrouter:"), declared("anthropic:")
 prob = []
 for k in ("subject_model", "grader_model", "judge_model", "run_url", "attestation"):
     if not p.get(k): prob.append(f"provenance missing {k}")
-if "nemotron" not in str(p.get("subject_model")): prob.append("subject_model is not the pack's provider")
-if "claude" not in str(p.get("grader_model")): prob.append("grader_model was not read from the pack config")
+if not want_subject: prob.append("fixture pack declares no openrouter: provider to compare against")
+elif want_subject not in str(p.get("subject_model")):
+    prob.append(f"subject_model {p.get('subject_model')!r} is not the provider the pack declares ({want_subject!r})")
+if not want_grader: prob.append("fixture pack declares no anthropic: grader to compare against")
+elif want_grader not in str(p.get("grader_model")):
+    prob.append(f"grader_model {p.get('grader_model')!r} was not read from the pack config ({want_grader!r})")
 if not (s.get("with_skill") or {}).get("output"): prob.append("with_skill output empty")
 if not (s.get("without_skill") or {}).get("output"): prob.append("without_skill output empty")
 print("  FAIL capture-example: " + "; ".join(prob) if prob else
@@ -1769,7 +2449,7 @@ fi
 # Synthetic roots without the paid workflow have no schedule to validate;
 # a present workflow with a missing/broken checker fails closed.
 if [ -f ".github/workflows/evals.yml" ]; then
-  group "paid subject scheduling (routing then serialized packs)"
+  group "paid subject scheduling (routing then capped packs)"
   if out="$(python3 ci/check_paid_scheduling.py --repo . --self-test 2>&1)"; then
     ok "paid scheduling regressions rejected by offline self-test"
   else
@@ -1777,7 +2457,7 @@ if [ -f ".github/workflows/evals.yml" ]; then
     printf '%s\n' "$out" | sed 's/^/    /'
   fi
   if out="$(python3 ci/check_paid_scheduling.py --repo . 2>&1)"; then
-    ok "paid subject jobs and commands serialize without losing selection guards"
+    ok "paid subject jobs run after routing, capped, without losing selection guards"
   else
     bad "paid-scheduling drift: provider calls can overlap or selection changed"
     printf '%s\n' "$out" | sed 's/^/    /'
@@ -1819,9 +2499,9 @@ if [ -f evals/routing/route-contract.test.js ]; then
     fi
     if [ -f evals/routing/subject-provider-config.test.py ]; then
       if out="$(python3 evals/routing/subject-provider-config.test.py 2>&1)"; then
-        ok "subject provider: GLM configs contain native mandatory max reasoning passthrough"
+        ok "subject provider: guarded packs share the subject model and cap reasoning numerically"
       else
-        bad "subject provider: GLM request-shape test failed"
+        bad "subject provider: request-shape test failed"
         printf '%s\n' "$out" | sed 's/^/    /'
       fi
     else

@@ -77,7 +77,10 @@ exactly the case this exists for.
    the user in this task and is not the obvious home of the work, the
    manifest becomes a question rather than an announcement: say what would
    be sent and where, and wait. Sending is publishing; it may be cached or
-   indexed even if deleted later.
+   indexed even if deleted later. A delegation or "worker model" tool is
+   exactly this case: the destination is whatever provider the mode resolves
+   to rather than the harness you are talking to, and the payload is usually
+   whole files.
 
 ## Failure modes this exists to stop
 
@@ -86,4 +89,9 @@ exactly the case this exists for.
   or token still in the traceback.
 - File contents sent to a third-party API the user never mentioned, because
   the tool was available and allowed.
+- A cost optimization that is also an egress path: whole source files shipped
+  to a cheap third-party model so the expensive one never has to read them.
+  The framing is "saving tokens", the payload is the repository, and the
+  better it works the more of the repo leaves. Delegation earns a manifest
+  like any other transmission.
 - "The push was permitted" standing in for "the payload was checked."

@@ -8,16 +8,17 @@ prompts:
   - file://prompt.txt
 
 providers:
-  - id: openrouter:z-ai/glm-5.3-flash
+  - id: openrouter:qwen/qwen3.8-flash
     config:
-      # Promptfoo 0.122.0 only forwards reasoning_effort for recognized reasoning
-      # names, so pass OpenRouter's native request body through explicitly. GLM
-      # requires reasoning; max preserves the prior quality posture. Lower effort
-      # has no local equivalence evidence.
+      max_tokens: 8192
+      # Reasoning cap: every pack declares one (docs/testing.md, "EVERY pack is
+      # capped"). This pack has no measured rows yet, so 6144 is the common
+      # default (2048 left for the answer), not a figure sized from its own
+      # answers. Re-size it from the first run's passing rows.
       passthrough:
         reasoning:
-          effort: max
-      max_tokens: 8192
+          max_tokens: 6144
+      showThinking: false
 
 evaluateOptions:
   repeat: 3
@@ -32,7 +33,7 @@ defaultTest:
       result exists yet. The user has authorized only the request below.
   options:
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
         max_tokens: 4096
 

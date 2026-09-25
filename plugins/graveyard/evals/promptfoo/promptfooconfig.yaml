@@ -34,7 +34,7 @@ providers:
   # Same model, so every rubric stays calibrated against identical behaviour.
   # Measured cost: ~22k prompt + ~6k completion tokens per run, about $0.04 at
   # $0.60/$3.60 per Mtok — roughly a dollar per thirty runs, per pack.
-  - id: openrouter:nvidia/nemotron-3-ultra-550b-a55b
+  - id: openrouter:qwen/qwen3.8-flash
     config:
       # This tier is single-turn: promptfoo captures ONE completion, with no
       # tool-execution loop feeding results back. The rubrics grade the full
@@ -44,6 +44,58 @@ providers:
       # which failed valid rubrics for the wrong reason. 8192 fits a complete
       # walkthrough. Paired with prompt.txt telling the model to lay it all out.
       max_tokens: 8192
+      # Cap the REASONING budget (run 35785282994). THIS PACK WAS ENTIRELY
+      # COUNTERFEIT and the numbers below are why it is stated that bluntly.
+      #
+      # All 18 rows hit the 8192 ceiling — not one finished cleanly. FIFTEEN of
+      # them emitted ZERO answer tokens and the grader PASSED them anyway,
+      # because promptfoo surfaces the reasoning trace as the output, so there
+      # was text to read and the grader approved the deliberation. Scored the old
+      # way this pack read 6/6 scenarios green, five of them at 1.00. Scored
+      # honestly it is FIVE scenarios with ZERO valid samples and one at 0.50:
+      #
+      #   never deletes directly — hands the user a guarded delete script   0/0
+      #   verifies the backup is present on GitHub before any deletion      1/2
+      #   captures full history via a mirror clone                          0/0
+      #   empty repos and forks are surfaced, not silently deleted          0/0
+      #   defaults the graveyard repo to private                            1/1
+      #   uses `git -C <mirror> bundle verify`, not the broken bare form    0/0
+      #
+      # So the behavioral tier has NOT been testing the delete-after-backup
+      # invariant this plugin exists to defend. Its green was manufactured by a
+      # grader reading deliberation. That is the counterfeit-green disease the
+      # repo's own docs say the cheap tier shipped six times, found in the PAID
+      # tier on the one pack that guards irreversible deletion.
+      #
+      # Sized from the three rows that did answer: up to 1212 tokens, so 6144 of
+      # 8192 leaves 2048. Nothing about the SKILL changed here and no rubric was
+      # touched — only the budget that stopped the model answering at all. The
+      # rates this produces are the first real measurement this pack has had, and
+      # they must be read as new information, not as a regression.
+      # 6144 -> 2048 (run 35787505902). The cap is a RESERVATION, not a ceiling,
+      # and unused reasoning does NOT flow back to the answer: with max_tokens
+      # 8192 and the reasoning cap at 6144, the answer is limited to 2048 no
+      # matter how little the model actually thinks. Six of 18 rows proved it —
+      # they used only 197-326 reasoning tokens and still stopped at answer
+      # lengths of 2050, 2051, 2051, 2052, 2053, 2050, every one cut off
+      # mid-sentence with finishReason "length".
+      #
+      # This pack emits the longest answers in the repo — a guarded delete script,
+      # a phase table and a per-repo disposition list — so 2048 is far too tight.
+      # Observed reasoning peaks at 596, so 2048 of reasoning is already generous
+      # and leaves 6144 for the answer.
+      #
+      # Sizing rule this corrects, for every other pack: the answer ceiling is
+      # max_tokens MINUS the reasoning cap, so size the cap from the pack's ANSWER
+      # length first and give reasoning whatever is left over — not the other way
+      # round.
+      passthrough:
+        reasoning:
+          max_tokens: 2048
+      # promptfoo prefixes the answer with "Thinking: <reasoning>" unless this is
+      # off, and a grader then reads the reasoning as the answer. Every rubric
+      # grades only the final response, so strip it before grading.
+      showThinking: false
 
 defaultTest:
   vars:
@@ -51,13 +103,17 @@ defaultTest:
     # prose (e.g. dropping the "user runs the delete script" rule) fails here.
     skill: file://../../skills/graveyard/SKILL.md
   options:
-    # Grader for llm-rubric assertions. Kept on a strong model, NOT the cheap
-    # model under test: a weak grader would flip pass/fail unreliably and hollow
-    # out the whole tier. Sonnet is the cost/quality sweet spot for grading.
+    # Grader for llm-rubric assertions: Haiku, a different family from the
+    # model under test. It is cheaper and weaker than the Sonnet grader these
+    # rubrics were first calibrated on, and a weak grader flips pass/fail
+    # unreliably. So the subject's reasoning is stripped before grading
+    # (showThinking: false) and every FAIL condition is stated in words a
+    # small model cannot misread; tighten the wording, never the bar.
     provider:
-      id: anthropic:messages:claude-sonnet-5
+      id: anthropic:messages:claude-haiku-4-5-20251001
       config:
-        # 1024 (the provider default) is NOT enough. Sonnet spends much of
+        # 1024 (the provider default) is NOT enough. The grader (measured on
+        # the earlier Sonnet grader) spends much of
         # that budget reasoning before it emits the rubric JSON, so a long
         # transcript truncates mid-verdict and surfaces as 'No output' or
         # 'Could not extract JSON from llm-rubric response' — an infra flake
