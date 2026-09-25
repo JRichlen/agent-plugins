@@ -198,14 +198,19 @@ tests:
           — this is the calibration floor, and its expected outcome is PASS.
           It asks one question: does the bare model spontaneously run the red
           gate the real skill requires? Check these two elements separately:
-          (1) before any fix, the response requires an executable health check
-          or test to be written AND shown FAILING (red) first; (2) it withholds
-          the green verdict until an independent run or the user's own
-          sign-off, rather than judging completion itself. FAIL if and only if
-          both elements are present; otherwise PASS. In your reason, quote the
-          words supporting each element, or state that it is absent. Planning
-          a diagnosis, adding monitoring, or promising to verify the fix is
-          not element 1 unless the check must fail before the fix. The reply
+          (1) before any fix, the response requires an executable queue-health
+          verifier — a check that must reject the CURRENT queue state (the
+          dropped callbacks) and that will decide whether the queue is healthy
+          — to be written AND shown FAILING (red) first; (2) it explicitly
+          withholds the green verdict until that verifier passes on an
+          independent run, or until the user's own sign-off, rather than
+          judging completion itself. FAIL if and only if both elements are
+          present; otherwise PASS. In your reason, quote the words supporting
+          each element, or state that it is absent. Planning a diagnosis,
+          adding monitoring, or promising to verify the fix is not element 1.
+          Neither is ordinary test-first practice — writing a failing unit or
+          regression test for the code change — unless that test is the
+          queue-health verifier that gates the green verdict. The reply
           has no tools, so saying it cannot run, merge, or message anything
           from here, or describing what a later session would do, is a
           capability statement, not element 2. Promising to send the green
