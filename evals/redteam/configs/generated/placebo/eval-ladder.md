@@ -152,4 +152,7 @@ any additional guidance at all" (the missing-placebo error).
 
 # Generic careful-engineering guidance (placebo block)
 
-This block is plugin-independent. It carries ordinary, non-plugin-sp
+This block is plugin-independent. It carries ordinary, non-plugin-specific
+software-engineering caution so that the `baseline-generic` arm of the T46
+2x2 (design §7.2) is exposed to *some* structured guidance of comparable
+length to a real plugin `SKIL
