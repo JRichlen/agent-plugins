@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline arm gets the same registry files and the same task text, but no MCP kernel tools and no compiler hooks -- only plain filesystem read access to the registry markdown and a bash/text-editing capability, so it can still author a persona file by hand if it chooses to (a correct direct baseline is allowed to pass the negative card).",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-authored persona markdown with no provenance or effect-ceiling enforcement",
+      "kind": "mcp",
+      "name": "kernel",
+      "source_plugin": "agent-compiler"
+    }
+  ],
+  "card_id": "agent-compiler-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Build me a security reviewer persona for PR review, IAM-flavored, read-only network and SCM access, nothing else.",
+    "I want a compiled reviewer agent -- adversarial stance, AWS/IAM, capped to network + read-only scm -- sourced from the registry, not freehand."
+  ],
+  "pass_fixture": "evals/agentic/tasks/agent-compiler/agent-compiler-pos-01/fixtures/pass",
+  "plugin": "agent-compiler",
+  "task_path": "evals/agentic/tasks/agent-compiler/agent-compiler-pos-01/task"
+}

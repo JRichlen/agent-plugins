@@ -1,0 +1,12 @@
+{
+  "context": [
+    {
+      "full_name": "o/new-svc",
+      "readme_head": "entrypoint docs",
+      "recent_commits": "add readme",
+      "tree": "README.md",
+      "workflows": "deploy.yml"
+    }
+  ],
+  "removed": []
+}

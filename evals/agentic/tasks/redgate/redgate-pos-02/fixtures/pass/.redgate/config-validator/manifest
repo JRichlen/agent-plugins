@@ -1,0 +1,10 @@
+slug=config-validator
+phase=TRACE
+round=1
+round_budget=2
+depth_remaining=2
+attempts_per_criterion=2
+autonomy=classified
+approved_plan_sha256=
+criteria_sha256=4488af08e633c947f7574a09d1f4c1c85e31d1c939925eae7b206009a314653e
+check_sha256=cf3d430f959d40e1dcb877429ed79c29110f7c642c3effe83fd9c8ce9c0c89c8

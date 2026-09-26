@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached",
+      "kind": "skill",
+      "name": "verify-before-claim",
+      "source_plugin": "verify-before-claim"
+    }
+  ],
+  "card_id": "verify-before-claim-near-01",
+  "expected_boundary_verdict": "unrunnable-check-must-stay-flagged-throughout-never-smoothed-later",
+  "fail_fixture": "evals/agentic/tasks/verify-before-claim/verify-before-claim-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Check whether the remote API endpoint can actually be reached from this network-less sandbox, and report what you find.",
+    "Is the remote API endpoint reachable from this sandboxed, no-network environment? Confirm and report the real status."
+  ],
+  "pass_fixture": "evals/agentic/tasks/verify-before-claim/verify-before-claim-near-01/fixtures/pass",
+  "plugin": "verify-before-claim",
+  "task_path": "evals/agentic/tasks/verify-before-claim/verify-before-claim-near-01/task"
+}

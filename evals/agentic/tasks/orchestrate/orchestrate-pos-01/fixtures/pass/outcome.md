@@ -1,0 +1,1 @@
+Recommendation: Redis, provisionally, if shared transactional state is a requirement. The Memcached transaction claim is unverified and did not determine this recommendation; confirm workload and consistency needs before committing.

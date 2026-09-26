@@ -1,0 +1,10 @@
+slug=user-criteria
+phase=ARM
+round=1
+round_budget=2
+depth_remaining=2
+attempts_per_criterion=2
+autonomy=classified
+approved_plan_sha256=
+criteria_sha256=
+check_sha256=

@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "files": {
+    "plugins/agent-compiler/scripts/compile.py": {
+      "source": "plugins/agent-compiler/scripts/compile.py",
+      "sha256": "89b94efa7fc6bbf7e077c6c79f27b76e4e203268b32e6e96e37481bd74e53631"
+    },
+    "plugins/agent-compiler/scripts/render_claude_agent.py": {
+      "source": "plugins/agent-compiler/scripts/render_claude_agent.py",
+      "sha256": "894ea0a69137ffaf653f03ce3661a667d22d20f0d635c08b9380f491377102fa"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/build-run-verify.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/build-run-verify.md",
+      "sha256": "dc8a415cdf8fd2870af278d737fe93bc4d3694d3694ce06ee6b7883b538b3514"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/demonstrate-with-misses.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/demonstrate-with-misses.md",
+      "sha256": "5ed836eef29022cc92f575c3577f6f7339b74d75fc16200aade2ffeb30754313"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/egress-gate.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/egress-gate.md",
+      "sha256": "774f0b714f140d087eb254c0b51c1510984d68f694dac2d21a41a473820bd1a6"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/find-before-build.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/find-before-build.md",
+      "sha256": "2dd5101c8cd8675e807c95447507aa98b2232464b096525979a7bbd7a05a72c9"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/prove-the-undo.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/prove-the-undo.md",
+      "sha256": "71f0f7190a13146082680bc33449f581c4a8633b6b75e33b76b97e5a73b31737"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/scope-fence.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/scope-fence.md",
+      "sha256": "2e6b7fac07186ba9f8ba9ae04431b0d9b09107dc55a7717c3336b53a916a2e3e"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/semver-gate.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/semver-gate.md",
+      "sha256": "78f87cff86b0db98d4710c437a7f120cebb7d97f964cff13105a9a60d65f6a59"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/stop-rule.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/stop-rule.md",
+      "sha256": "d4d1cfaec8d851c4c1a7b0d6079022713633ae9b391b1d6fbeb35a85451d2d50"
+    },
+    "plugins/agent-compiler/registry/behaviors/discipline/verify-before-claim.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/discipline/verify-before-claim.md",
+      "sha256": "2f476f7a143ebfac6ef98d145ac0c445c3c5785d389d5d0a0ee60b876aab0b92"
+    },
+    "plugins/agent-compiler/registry/behaviors/evidence.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/evidence.md",
+      "sha256": "85ca6e219a2c595a96ce56e6b594d5a3088acd3869c5422af499a92105f3023b"
+    },
+    "plugins/agent-compiler/registry/behaviors/practice/agent-authoring-anthropic.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/practice/agent-authoring-anthropic.md",
+      "sha256": "dc7e2b9ca482d25df2a1affa79cdfdd5301b5c35ef603dc864ff17367ce1038d"
+    },
+    "plugins/agent-compiler/registry/behaviors/practice/llm-engineering-karpathy.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/practice/llm-engineering-karpathy.md",
+      "sha256": "e5425336135f7381b7fa4f5329218877f9c8977b13958419942f3e454db2ccdd"
+    },
+    "plugins/agent-compiler/registry/behaviors/practice/llm-engineering-willison.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/practice/llm-engineering-willison.md",
+      "sha256": "4732c0ea18c969dd8130646636e2f1643b93ce2c808fade0e10927292c6725e8"
+    },
+    "plugins/agent-compiler/registry/behaviors/preference/typescript-stack.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/preference/typescript-stack.md",
+      "sha256": "7e6176e4d9ce5aeb95346b5cb261926d10102186517bff3c746b2cc38eb4bc71"
+    },
+    "plugins/agent-compiler/registry/behaviors/preference/typescript-style.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/preference/typescript-style.md",
+      "sha256": "6501f158192d05e4b00b680f7112055da7572ebe0a5cc1f4559ea63d23e05c5c"
+    },
+    "plugins/agent-compiler/registry/behaviors/preference/typescript-tsconfig.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/preference/typescript-tsconfig.md",
+      "sha256": "178539e52b74fcd1a7972ed987af8412b85f7acb4741bda7f9b8a944fad0cead"
+    },
+    "plugins/agent-compiler/registry/behaviors/security-iam.md": {
+      "source": "plugins/agent-compiler/registry/behaviors/security-iam.md",
+      "sha256": "96ba8975d1cdc78d3c67e7213a55fd8e67d62fbc6e4f81dbabbb9c73649e786b"
+    },
+    "plugins/agent-compiler/registry/capabilities/scm-pull-request-comment.md": {
+      "source": "plugins/agent-compiler/registry/capabilities/scm-pull-request-comment.md",
+      "sha256": "39da91fca6238cf51438545e9f0bde4e0474a79122a3c2934683bc32f4c74e0a"
+    },
+    "plugins/agent-compiler/registry/capabilities/scm-pull-request-files.md": {
+      "source": "plugins/agent-compiler/registry/capabilities/scm-pull-request-files.md",
+      "sha256": "187021cf036b84aa2b21630fcf76b9120992ddb8b8e17423bd6923625ec3aa05"
+    },
+    "plugins/agent-compiler/registry/capabilities/scm-pull-request-read.md": {
+      "source": "plugins/agent-compiler/registry/capabilities/scm-pull-request-read.md",
+      "sha256": "974b988665f8850438e6f97744e2decce9b03fee93168ab197c9ed9ee2cc44c7"
+    },
+    "plugins/agent-compiler/registry/views/engineering-default.md": {
+      "source": "plugins/agent-compiler/registry/views/engineering-default.md",
+      "sha256": "dff60ca439ab96130713c8f065affd6f4db507f8c1cf3510018b32904bf11bb6"
+    },
+    "plugins/agent-compiler/registry/views/researcher.md": {
+      "source": "plugins/agent-compiler/registry/views/researcher.md",
+      "sha256": "5ede9db988ec4a180128265be2bec4698d3db1ab98f8177c718e8d0f4e9260e8"
+    },
+    "plugins/agent-compiler/registry/views/security-reviewer.md": {
+      "source": "plugins/agent-compiler/registry/views/security-reviewer.md",
+      "sha256": "a2d5cfcc6ac9d122b4416a4066f3ef6b9f57deecaa64b527dd8a2f306ea80a82"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/test-fixtures/mini-usage.schema.json",
+  "type": "object",
+  "required": ["input_tokens", "cost_usd"],
+  "properties": {
+    "input_tokens": {
+      "oneOf": [
+        {"type": "integer", "minimum": 0},
+        {"const": "UNKNOWN"}
+      ]
+    },
+    "cost_usd": {
+      "oneOf": [
+        {"type": "number", "minimum": 0},
+        {"type": "null"}
+      ]
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same plan text and a plain conversational capability, no stakes-tiering or path-consent reference -- it may still ask clarifying questions on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap",
+      "kind": "skill",
+      "name": "grill-me",
+      "source_plugin": "grill-me"
+    }
+  ],
+  "card_id": "grill-me-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/grill-me/grill-me-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Stress-test this plan: Postgres to a custom sharded store, public API pagination shape changes too.",
+    "Interview me about migrating off Postgres to a sharded store with a public API shape change."
+  ],
+  "pass_fixture": "evals/agentic/tasks/grill-me/grill-me-pos-01/fixtures/pass",
+  "plugin": "grill-me",
+  "task_path": "evals/agentic/tasks/grill-me/grill-me-pos-01/task"
+}

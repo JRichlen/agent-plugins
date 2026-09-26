@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent-plugins — a cross-harness agent plugin marketplace</title>
-<meta name="description" content="25 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
+<meta name="description" content="26 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
 <style>
   :root {
     --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5f5e5a; --card:#ffffff; --line:#e3e1dc; --line-strong:#cfccc4;
@@ -93,9 +93,9 @@
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A marketplace of 25 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
+  <p class="sub">A marketplace of 26 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
   (Codex, Cursor, Gemini, …) through standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points. Every plugin is gated by evals;
-  15 of them have a published before/after example with the models disclosed; 12 are graded by a model in CI on every change.</p>
+  15 of them have a published before/after example with the models disclosed; 13 are graded by a model in CI on every change.</p>
 </header>
 
 <div class="install">
@@ -215,6 +215,14 @@
     </div>
     <p>Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch&#x27;s stakes (reversibility x blast radius) while offering a recommendation at almost every step. Use on phrases like grill me, interview me about this plan, stress-test this plan, or before starting a nontrivial multi-step change whose design isn&#x27;t yet settled.</p>
     <p class="p-links"><code>/plugin install grill-me@jrichlen</code></p>
+  </li>
+  <li class="plugin" data-q="jori coordinate complex work with bounded agents, evidence, and proportional dashboards. orchestration multi-agent coordination evidence dashboards">
+    <div class="p-head">
+      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/jori">jori</a> <span class="ver">v0.0.1</span></h3>
+      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span></div>
+    </div>
+    <p>Coordinate complex work with bounded agents, evidence, and proportional dashboards.</p>
+    <p class="p-links"><code>/plugin install jori@jrichlen</code></p>
   </li>
   <li class="plugin" data-q="orchestrate two reusable multi-agent orchestration templates for research-and-verify work on claude code&#x27;s workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don&#x27;t survive. ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example. orchestration multi-agent workflow research verification subagents">
     <div class="p-head">

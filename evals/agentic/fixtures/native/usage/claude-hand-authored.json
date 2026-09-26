@@ -1,0 +1,20 @@
+{
+  "PROVENANCE": "HAND-AUTHORED, NOT RECORDED. Field names follow the Anthropic Messages API usage object as documented (input_tokens, output_tokens, cache_read_input_tokens, cache_creation_input_tokens), which is the vocabulary the Claude Code CLI reports against. NOT PINNED BY ANY SOURCE AVAILABLE HERE: (a) whether the CLI's stream-json envelope nests usage under a 'message' key or reports it top-level, (b) whether a reasoning/thinking token count is reported at all, (c) whether wall_clock_ms or cost is reported by the CLI rather than computed by the caller. Those three are exactly why load_grammar() raises.",
+  "note": "'record' is the shape a stream record would take under the synthetic offline grammar; only the fields present here are read, and every absent field must parse as UNKNOWN.",
+  "record": {
+    "kind": "usage",
+    "model": "claude-hand-authored-model",
+    "usage": {
+      "input_tokens": 1024,
+      "output_tokens": 256,
+      "cache_read_input_tokens": 4096
+    }
+  },
+  "expected_unknown_fields": [
+    "cache_creation_input_tokens",
+    "reasoning_tokens",
+    "total_tokens",
+    "wall_clock_ms"
+  ],
+  "expected_cost_usd": null
+}

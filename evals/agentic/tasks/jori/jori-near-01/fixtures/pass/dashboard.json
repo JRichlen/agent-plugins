@@ -1,0 +1,12 @@
+{
+  "cards": [
+    {
+      "id": "client-sdk",
+      "owner": "agent-b",
+      "state": "blocked",
+      "blocker": "missing credentials",
+      "blocker_at": 100,
+      "last_updated": 110
+    }
+  ]
+}

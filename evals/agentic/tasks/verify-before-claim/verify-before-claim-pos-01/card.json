@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached",
+      "kind": "skill",
+      "name": "verify-before-claim",
+      "source_plugin": "verify-before-claim"
+    }
+  ],
+  "card_id": "verify-before-claim-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/verify-before-claim/verify-before-claim-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/verify-before-claim/verify-before-claim-pos-01/fixtures/pass",
+  "plugin": "verify-before-claim",
+  "task_path": "evals/agentic/tasks/verify-before-claim/verify-before-claim-pos-01/task"
+}

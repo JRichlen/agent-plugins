@@ -1,0 +1,23 @@
+{
+  "judge": {
+    "tp": 1,
+    "fn": 1,
+    "tn": 7,
+    "fp": 1,
+    "tpr": 0.5,
+    "tnr": 0.875
+  },
+  "irreversible": {
+    "metric": "pass^k",
+    "trials": 4,
+    "passed": false
+  },
+  "runner": {
+    "defined": 3,
+    "executed": 2,
+    "missing": [
+      "check_restore"
+    ]
+  },
+  "evidence_scope": "supplied-offline-fixture"
+}

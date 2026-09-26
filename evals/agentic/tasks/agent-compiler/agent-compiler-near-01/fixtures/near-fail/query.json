@@ -1,0 +1,11 @@
+{
+  "domains": [
+    "aws",
+    "iam"
+  ],
+  "environment": "production",
+  "name": "security-pr-reviewer",
+  "risk": "high",
+  "role": "reviewer",
+  "task": "pull-request-review"
+}

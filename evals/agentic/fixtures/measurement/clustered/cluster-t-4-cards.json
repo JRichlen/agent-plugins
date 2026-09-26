@@ -1,0 +1,12 @@
+{
+  "description": "benchmark-spec §6.2 worked example A: the four §4.1 cards, d = +0.40, +0.20, -0.20, +0.15. d-bar=0.1375 s=0.249583 SE=0.124791 t(0.975,3)=3.182446 CI=(-0.2596,+0.5346). With min_clusters=8 default, C=4 must render 'insufficient clusters: 4 < 8'.",
+  "cluster_means": [0.40, 0.20, -0.20, 0.15],
+  "expected": {
+    "mean": 0.1375,
+    "s": 0.249583,
+    "se": 0.124791,
+    "t_crit": 3.182446,
+    "lo": -0.2596,
+    "hi": 0.5346
+  }
+}

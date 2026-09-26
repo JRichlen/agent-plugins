@@ -1,0 +1,10 @@
+{
+  "cards": [
+    {
+      "id": "rename-tmp",
+      "owner": "agent-a",
+      "state": "verified",
+      "evidence": "n/a"
+    }
+  ]
+}

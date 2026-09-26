@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same day's raw materials and a plain editing/git capability, no journal template or redaction reference -- it may still write a journal entry on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "no journal; work summarized ad hoc if at all, with no redaction pass or house style",
+      "kind": "skill",
+      "name": "dev-diary",
+      "source_plugin": "dev-diary"
+    }
+  ],
+  "card_id": "dev-diary-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/dev-diary/dev-diary-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "End of day -- log what happened: shipped the retry fix in #58, dropped the redundant health-check endpoint.",
+    "Capture today's work in the journal: PR #58 landed, and we cut a duplicate health-check."
+  ],
+  "pass_fixture": "evals/agentic/tasks/dev-diary/dev-diary-pos-01/fixtures/pass",
+  "plugin": "dev-diary",
+  "task_path": "evals/agentic/tasks/dev-diary/dev-diary-pos-01/task"
+}

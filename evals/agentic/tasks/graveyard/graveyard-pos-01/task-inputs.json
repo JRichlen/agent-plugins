@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "files": {
+    "plugins/graveyard/skills/graveyard/scripts/generate-delete-script.sh": {
+      "source": "plugins/graveyard/skills/graveyard/scripts/generate-delete-script.sh",
+      "sha256": "02e6bd36ebc61e84726b6d5e92a0150787b29613a9322fffc730eefd876b3969"
+    }
+  }
+}

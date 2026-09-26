@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
+      "kind": "script",
+      "name": "scaffold-run.sh",
+      "source_plugin": "redgate"
+    }
+  ],
+  "card_id": "redgate-near-02",
+  "expected_boundary_verdict": "widen-flagged-major-not-folded-or-dropped",
+  "fail_fixture": "evals/agentic/tasks/redgate/redgate-near-02/fixtures/fail",
+  "holdout": false,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Mid-TRACE on notify-service, the user says 'while you're in there, also retry once on failure.' Does that ride along in the already-pinned round, or does it need its own WIDEN gate?",
+    "The notify-service round is pinned and green on its two criteria. A new mid-round ask ('also add a retry') comes in -- fold it into the current pass, silently skip it, or flag it as a separate WIDEN needing its own MAJOR confirmation?"
+  ],
+  "pass_fixture": "evals/agentic/tasks/redgate/redgate-near-02/fixtures/pass",
+  "plugin": "redgate",
+  "task_path": "evals/agentic/tasks/redgate/redgate-near-02/task"
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/usage.schema.json",
+  "title": "Usage",
+  "description": "Per-attempt token/cost usage as reported by a harness (contract.py Usage, §4). Every token-shaped field is either a non-negative integer or the literal string 'UNKNOWN' -- null is never allowed, so a careless consumer cannot coerce 'no value' to 0.",
+  "type": "object",
+  "required": [
+    "model_id",
+    "reported_by",
+    "input_tokens",
+    "output_tokens",
+    "cache_read_input_tokens",
+    "cache_creation_input_tokens",
+    "reasoning_tokens",
+    "total_tokens",
+    "wall_clock_ms",
+    "cost_usd"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "model_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The realized model id the harness reports for this attempt."
+    },
+    "reported_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The harness/tool that produced this Usage record, e.g. 'claude-cli/2.1.263'."
+    },
+    "input_tokens": { "$ref": "#/$defs/token_count" },
+    "output_tokens": { "$ref": "#/$defs/token_count" },
+    "cache_read_input_tokens": { "$ref": "#/$defs/token_count" },
+    "cache_creation_input_tokens": { "$ref": "#/$defs/token_count" },
+    "reasoning_tokens": { "$ref": "#/$defs/token_count" },
+    "total_tokens": { "$ref": "#/$defs/token_count" },
+    "wall_clock_ms": { "$ref": "#/$defs/token_count" },
+    "cost_usd": {
+      "oneOf": [
+        { "type": "number", "minimum": 0 },
+        { "type": "null" }
+      ],
+      "description": "USD. null means 'not computed' -- a renderer must print 'not computed', never $0.00."
+    }
+  },
+  "$defs": {
+    "token_count": {
+      "oneOf": [
+        { "type": "integer", "minimum": 0 },
+        { "const": "UNKNOWN" }
+      ]
+    }
+  }
+}

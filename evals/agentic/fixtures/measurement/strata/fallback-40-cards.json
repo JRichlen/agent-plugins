@@ -1,0 +1,15 @@
+{
+  "description": "benchmark-spec §2 worked example: 40 cards, one treatment and one baseline attempt each. 3 treatment attempts realized a different model (fallback_flags=(\"model\",)); 1 baseline attempt realized a different effort (fallback_flags=(\"effort\",)). Matched pairs = 40 - 3 - 1 = 36.",
+  "requested": {
+    "provider": "anthropic", "model": "claude-opus-5", "revision": "6d5342c",
+    "effort": "high", "harness": "claude-code/2.1.263"
+  },
+  "n_cards": 40,
+  "treatment_model_fallback_cards": ["card-01", "card-02", "card-03"],
+  "baseline_effort_fallback_cards": ["card-04"],
+  "expected": {
+    "matched_pairs": 36,
+    "unmatched_treatment": 3,
+    "unmatched_baseline": 1
+  }
+}

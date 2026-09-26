@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual self-edit pass against a banned-AI-tell checklist",
+      "kind": "skill",
+      "name": "human-voice",
+      "source_plugin": "voice"
+    }
+  ],
+  "card_id": "voice-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/voice/voice-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/voice/voice-pos-01/fixtures/pass",
+  "plugin": "voice",
+  "task_path": "evals/agentic/tasks/voice/voice-pos-01/task"
+}

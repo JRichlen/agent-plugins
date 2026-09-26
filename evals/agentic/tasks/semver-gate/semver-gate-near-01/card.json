@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask",
+      "kind": "skill",
+      "name": "semver-gate",
+      "source_plugin": "semver-gate"
+    }
+  ],
+  "card_id": "semver-gate-near-01",
+  "expected_boundary_verdict": "single-major-property-tie-breaks-whole-action-major",
+  "fail_fixture": "evals/agentic/tasks/semver-gate/semver-gate-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Add an optional --skip-checks config flag that, when set, turns off the pre-commit safety hook.",
+    "Introduce a new opt-in flag, --skip-checks, that disables the pre-commit safety hook when enabled."
+  ],
+  "pass_fixture": "evals/agentic/tasks/semver-gate/semver-gate-near-01/fixtures/pass",
+  "plugin": "semver-gate",
+  "task_path": "evals/agentic/tasks/semver-gate/semver-gate-near-01/task"
+}

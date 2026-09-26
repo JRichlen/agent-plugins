@@ -1,0 +1,11 @@
+{
+  "description": "benchmark-spec §7 worked example: card voice-neg-02, 5 attempts, all fault. valid=0 -> unavailable (no valid samples: 5/5 FAULT). Also covers the min_valid 'starved' rendering: a card with valid=2 < min_valid=3.",
+  "card_id": "voice-neg-02",
+  "all_fault_trials": ["fault", "fault", "fault", "fault", "fault"],
+  "starved_trials": ["pass", "fail"],
+  "expected": {
+    "all_fault_reason": "no valid samples: 5/5 FAULT",
+    "starved_min_valid": 3,
+    "starved_reason": "starved: 2 valid < min_valid 3"
+  }
+}

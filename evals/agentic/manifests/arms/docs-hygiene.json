@@ -1,0 +1,80 @@
+{
+  "plugin": "docs-hygiene",
+  "directory": "plugins/docs-hygiene",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "docs-hygiene",
+      "kind": "skill",
+      "source_plugin": "docs-hygiene",
+      "generic_equivalent": null
+    },
+    {
+      "name": "docs-hygiene",
+      "kind": "command",
+      "source_plugin": "docs-hygiene",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-docs-hygiene-ad3a2a0cca3b1e6b89bae1ca3297c341",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "docs-hygiene"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "docs-hygiene",
+        "kind": "skill",
+        "source_plugin": "docs-hygiene",
+        "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/docs-hygiene/SKILL.md": "66206ec7812b5cd7f59a2e115ef6a5e1f6ad5208bc7d174a476f0fbb2a078cb2",
+      "skills/docs-hygiene/references/refactoring-workflow.md": "4024bc6ec5ed6950a9d34e9c3948eed5783413811aee4f4d2f45c2635d3edc64"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-e0f87ead530047b4367304ce16d0900d",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "manual doc read with no systematic path/command staleness check and no in-place fix",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "0a53b129200853717104baff2c8379494c6d95faac9c664a1a62bd70ea2a645e"
+    }
+  },
+  "arm_source_card": "docs-hygiene-pos-01"
+}

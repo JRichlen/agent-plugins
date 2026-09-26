@@ -12,8 +12,8 @@
 #
 # FAULTs are not failures. A promptfoo row can be red for two very different
 # reasons: the grader judged the answer wrong (a real FAIL), or the subject-model
-# CALL itself never completed — a 504, an aborted request, an empty/truncated
-# body (a FAULT, in the redgate lexicon: a harness/transport error, not evidence
+# CALL itself never completed — a 504, an aborted request, or a typed grader
+# fault (a harness/transport error, not evidence
 # about the skill). Counting a 504 as a FAIL is exactly the n=1 fragility this
 # gate exists to remove: it makes a required check red on the weather. So this
 # script classifies each row as PASS / FAIL / INVALID(FAULT) and scores the floor
@@ -33,8 +33,11 @@
 #
 # It reads the SAME result shape the behavioral job's jq already relies on
 # (.results.results[].success + .description/.vars). FAULT classification keys
-# on .failureReason — the reliable discriminator: 1/"assert" = assertion failure
-# (a real FAIL, scored against the floor), 2/"error" = provider/transport error
+# on .failureReason: 1/"assert" normally means an assertion failure, while
+# typed gradingResult component metadata.graderError=true identifies a failed
+# grader call/parse even with failureReason=1. A separate mandatory assertion
+# failure stays a valid FAIL; otherwise an incomplete grade is a FAULT.
+# 2/"error" = provider/transport error
 # (a FAULT, excluded). .error ALONE marks a FAULT only when the row carries no
 # failureReason at all (legacy shapes that predate the field): under promptfoo
 # >= 0.122 EVERY assertion-failed row also carries .error (the assertion
@@ -113,8 +116,10 @@ def output_text(r):
 # discriminator (promptfoo enum: 0 none, 1 assertion failed, 2 error):
 #   * .failureReason == 2 or "error" — a provider/transport error (504, aborted
 #     request): FAULT;
-#   * .failureReason == 1 or "assert" — the grader judged a real answer wrong:
-#     a REAL FAIL, scored against the floor. Under promptfoo >= 0.122 these rows
+#   * typed grading metadata.graderError == true — the grader itself failed;
+#     FAULT unless another mandatory assertion independently proves failure;
+#   * .failureReason == 1 or "assert" without a grader fault — the grader judged
+#     a real answer wrong: a REAL FAIL. Under promptfoo >= 0.122 these rows
 #     ALSO carry .error (the assertion message), so .error must never promote
 #     them to FAULT — that scored real failures as weather and let a failing run
 #     read green (fail-open, the dangerous direction; observed on PR #93);
@@ -208,10 +213,45 @@ def is_truncated(r):
         return False
     return (not output_text(r).strip()) or zero_answer_tokens(r)
 
+def has_grader_fault(result):
+    """Only Promptfoo's typed grading evidence can identify a grader fault."""
+    if not isinstance(result, dict):
+        return False
+    metadata = result.get("metadata")
+    if isinstance(metadata, dict) and metadata.get("graderError") is True:
+        return True
+    components = result.get("componentResults")
+    return isinstance(components, list) and any(has_grader_fault(c) for c in components)
+
+def independent_assertion_failure(r):
+    # Promptfoo's default contract is conjunction: one ordinary failed
+    # assertion is decisive even if another grader never returned a judgment.
+    # Thresholds/custom scoring can override that rule. Flattened nested sets
+    # also lose which component was mandatory at the row level; do not guess.
+    config = doc.get("config") or {}
+    default = config.get("defaultTest") or {}
+    test = r.get("testCase") or {}
+    for scope in (default, test):
+        if scope.get("threshold") is not None or scope.get("assertScoringFunction") is not None:
+            return False
+    grading = r.get("gradingResult") or {}
+    components = grading.get("componentResults")
+    if not isinstance(components, list) or any(
+        not isinstance(c, dict) or "componentResults" in c or
+        (isinstance(c.get("metadata"), dict) and "assertionSet" in c["metadata"])
+        for c in components
+    ):
+        return False
+    return r.get("success") is not True and any(
+        c.get("pass") is False and not has_grader_fault(c) for c in components
+    )
+
 def is_fault(r):
     fr = r.get("failureReason")
     if fr == 2 or (isinstance(fr, str) and fr.strip().lower() == "error"):
         return True
+    if has_grader_fault(r.get("gradingResult")):
+        return not independent_assertion_failure(r)
     # Legacy fallback: ONLY a row with no failureReason recorded at all
     # (missing/None/blank) may be classified FAULT on .error alone. A present
     # failureReason that is neither 2/"error" nor 1/"assert" (e.g. 0 with a

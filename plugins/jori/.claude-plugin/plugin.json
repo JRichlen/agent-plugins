@@ -1,0 +1,20 @@
+{
+  "name": "jori",
+  "version": "0.0.1",
+  "description": "Coordinate complex work with bounded agents, evidence, and proportional dashboards.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/jori",
+  "license": "MIT",
+  "keywords": [
+    "orchestration",
+    "multi-agent",
+    "coordination",
+    "evidence",
+    "dashboards"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

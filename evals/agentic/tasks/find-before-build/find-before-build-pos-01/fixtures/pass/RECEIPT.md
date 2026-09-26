@@ -1,0 +1,2 @@
+- Searched `rg 'retry|backoff' .` -- found utils/retry.py, a usable with_backoff() helper.
+- Searched `package manifest for a retry dependency` -- none installed, none needed.

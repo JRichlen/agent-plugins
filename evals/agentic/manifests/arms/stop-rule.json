@@ -1,0 +1,79 @@
+{
+  "plugin": "stop-rule",
+  "directory": "plugins/stop-rule",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "stop-rule",
+      "kind": "skill",
+      "source_plugin": "stop-rule",
+      "generic_equivalent": null
+    },
+    {
+      "name": "stop-rule",
+      "kind": "command",
+      "source_plugin": "stop-rule",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-stop-rule-783ef389cf5044ae87934bd76426e7f8",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "stop-rule"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "stop-rule",
+        "kind": "skill",
+        "source_plugin": "stop-rule",
+        "generic_equivalent": "keep retrying on momentum with no declared bound and no stop-report"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/stop-rule/SKILL.md": "9acd489ffb588cf0800370b21a171c10aa39512ca7067013703025253d0b2017"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-6dd87581d0881d702985d3bc18aefdeb",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "keep retrying on momentum with no declared bound and no stop-report",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "94da9dd8d57d719716c2a43f3cf4d7424a42e70b0624703cf26dd4dbbcb104d7"
+    }
+  },
+  "arm_source_card": "stop-rule-pos-01"
+}

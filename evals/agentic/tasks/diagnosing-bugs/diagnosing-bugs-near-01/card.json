@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same repro/failure description and a plain editing capability, no hypothesis-list template -- it may still write ranked hypotheses on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "direct trial-and-error edits with no written hypothesis list, tag sweep, or gated regression test",
+      "kind": "skill",
+      "name": "diagnosing-bugs",
+      "source_plugin": "diagnosing-bugs"
+    }
+  ],
+  "card_id": "diagnosing-bugs-near-01",
+  "expected_boundary_verdict": "build-repro-before-hypotheses",
+  "fail_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Login intermittently fails for one user, no repro steps yet -- look into it.",
+    "We have a vague flaky-login report with nothing reproducible captured so far."
+  ],
+  "pass_fixture": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-near-01/fixtures/pass",
+  "plugin": "diagnosing-bugs",
+  "task_path": "evals/agentic/tasks/diagnosing-bugs/diagnosing-bugs-near-01/task"
+}

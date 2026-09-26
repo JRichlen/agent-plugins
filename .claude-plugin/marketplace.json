@@ -436,6 +436,15 @@
       ]
     },
     {
+      "name": "jori",
+      "description": "Coordinate complex work with bounded agents, evidence, and proportional dashboards.",
+      "version": "0.0.1",
+      "source": "./plugins/jori",
+      "author": { "name": "Jordan Richlen" },
+      "license": "MIT",
+      "keywords": ["orchestration", "multi-agent", "coordination", "evidence", "dashboards"]
+    },
+    {
       "name": "agent-compiler",
       "description": "Compile deterministic, content-hashed agents from small behavior modules: a skill turns fuzzy intent into a typed AgentQuery, a stdlib-only kernel resolves modules, expands dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage plus a rendered harness-native subagent — never inventing behavior text without provenance.",
       "version": "0.3.0",

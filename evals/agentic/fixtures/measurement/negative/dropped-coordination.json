@@ -1,0 +1,12 @@
+{
+  "description": "T32 negative control: the same 100-attempt run as conservation/100-attempts.json, but 5 coordination rows (worker spawns / verifier runs) were silently collapsed into their parent attempts before the ledger was built -- the failure mode T32's backlog entry names ('retries collapsed into their parent, hiding cost'). Only 95 rows actually exist in the ledger, while a naive report still claims the original run size.",
+  "rows": [
+    {"terminal_state": "delivered", "n": 63, "coordination_n": 0},
+    {"terminal_state": "incomplete", "n": 13, "coordination_n": 0},
+    {"terminal_state": "cancelled", "n": 9, "coordination_n": 0},
+    {"terminal_state": "fault", "n": 7, "coordination_n": 0},
+    {"terminal_state": "timeout-after-delivery", "n": 3, "coordination_n": 0}
+  ],
+  "claimed_total": 100,
+  "expected_actual_total": 95
+}

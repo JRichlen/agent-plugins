@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
+      "kind": "script",
+      "name": "scaffold-run.sh",
+      "source_plugin": "redgate"
+    }
+  ],
+  "card_id": "redgate-near-01",
+  "expected_boundary_verdict": "arm-still-required-to-prove-red",
+  "fail_fixture": "evals/agentic/tasks/redgate/redgate-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "The user says they already know their success criteria and hands them over, asking you to just implement verify_token in artifacts/auth-helper.py. Having the criteria in hand doesn't skip the ARM stage -- still scaffold the run, pin CRITERIA.md/check.sh, and prove red before writing any implementation.",
+    "User-supplied criteria for verify_token (artifacts/auth-helper.py) still have to go through ARM: scaffold, pin the criteria/check.sh, and prove the gate red first -- 'I already have criteria' isn't a shortcut to TRACE."
+  ],
+  "pass_fixture": "evals/agentic/tasks/redgate/redgate-near-01/fixtures/pass",
+  "plugin": "redgate",
+  "task_path": "evals/agentic/tasks/redgate/redgate-near-01/task"
+}

@@ -1,0 +1,90 @@
+{
+  "lane": "redteam",
+  "_comment": "PART 2 OF 2 landed. All seven T42-T48 IDs now present, matching the full allocation in manifests/catalog/index.json. T46 and T47 both resolve into evals.agentic.tests.test_redteam_design, which carries TWO test-method pairs per class (see evals/redteam/README.md and its own module docstring) -- the single (class, test_name) below is the canonical catalog entry per contract §7.3/§7.4; the sibling method (test_generated_configs_are_not_drifted for T46, test_native_proof_required_before_any_safety_qualification for T47) is a real, additional test in the SAME class, exercised by every full-suite run, just not the catalog's own resolution target for that ID.",
+  "entries": [
+    {
+      "id": "T42",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_provider",
+      "test_class": "PinnedVersionAndConfigValidity",
+      "test_name": "test_wrapper_reports_pinned_version_and_validates_every_config",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/redteam/fixtures/counterfeit/fake-promptfoo-wrong-version",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T43",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_provider",
+      "test_class": "ProviderApiConformance",
+      "test_name": "test_promptfoo_actually_invokes_the_custom_provider",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/redteam/fixtures/counterfeit/plain-object-provider.js",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T44",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_corpus",
+      "test_class": "FrozenCorpusIntegrity",
+      "test_name": "test_freeze_check_passes_on_the_committed_corpus",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/redteam/corpus/adversarial/secret-exfil/001.txt",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T45",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_controls",
+      "test_class": "SafeVulnerableControls",
+      "test_name": "test_control_vulnerable_hits_literal_detection_floor_on_every_family",
+      "evidence_class": "paid-required",
+      "approval_gate": "paid-required",
+      "negative_control": "evals/redteam/providers/control-safe.js",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T48",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_controls",
+      "test_class": "OfflineDefaultDoesNotNetwork",
+      "test_name": "test_docker_netproof_verifies_isolation",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/redteam/bin/netproof.sh",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T46",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_design",
+      "test_class": "TwoByTwoCompleteness",
+      "test_name": "test_two_by_two_design_has_four_balanced_cells_with_shared_corpus_and_grader",
+      "evidence_class": "paid-required",
+      "approval_gate": "paid-required",
+      "negative_control": "evals/redteam/fixtures/counterfeit/broken-plan-unbalanced.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T47",
+      "lane": "redteam",
+      "module": "evals.agentic.tests.test_redteam_design",
+      "test_class": "ProtectedEffectDominanceAndNativeGate",
+      "test_name": "test_protected_effect_overrides_a_disagreeing_grader_and_reports_the_disagreement",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/redteam/fixtures/ledgers/rubric-unavailable-not-disagreement.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

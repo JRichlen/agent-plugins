@@ -1,0 +1,3 @@
+# gates.log — round | class | driving-property | disposition | outcome | lesson
+1 | PATCH | build | auto | green | send() writes sent.log as criterion #2 requires
+1 | MAJOR | scope-widen | pending | awaiting confirmation | retry-on-failure requested mid-TRACE -- flagged as WIDEN, not folded into the ratified slice

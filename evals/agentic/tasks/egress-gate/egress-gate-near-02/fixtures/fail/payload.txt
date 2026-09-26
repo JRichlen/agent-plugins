@@ -1,0 +1,2 @@
+FAILED test_parse_config -- KeyError: 'timeout' at config.py:44
+DeprecationWarning: module-b-deprecated-shim will be removed next release

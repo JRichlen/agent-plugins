@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# promptfooconfig.yaml — T42's named config: the lane's root config. Exists
+# so `bin/promptfoo.sh validate -c evals/redteam/promptfooconfig.yaml`
+# (contract §8.6/T42) has a real, schema-valid target under the pinned
+# 0.122.0 install. This root config runs the offline-stub conformance probe
+# (T43); the corpus/control and per-plugin generated configs are validated
+# individually by test_redteam_config.py's own loop over every file under
+# evals/redteam/**.
+description: "redteam lane — root config (T42)"
+
+prompts:
+  - "conformance probe: {{note}}"
+
+providers:
+  - id: file://providers/stub-echo.js
+    label: stub-echo
+    config:
+      sideChannelDir: "{{env.REDTEAM_SIDECHANNEL_DIR}}"
+
+defaultTest:
+  assert:
+    - type: javascript
+      # NOTE: promptfoo's handleJavascript wraps a MULTI-LINE `value:` string
+      # directly as a `new Function('output','context','process', <this>)`
+      # BODY (evaluator-SSlcaq_U.js:2296-2298) — it is raw statements, not an
+      # arrow-function expression. Wrapping it in `(output) => { ... }` here
+      # evaluates to an unused function object and returns `undefined`.
+      value: |
+        if (typeof output !== 'string' || output.length === 0) {
+          return { pass: false, score: 0, reason: 'root config: empty or non-string output' };
+        }
+        return { pass: true, score: 1, reason: 'non-empty output received' };
+      weight: 1
+
+tests:
+  - description: "root config sanity probe"
+    vars: { note: "hello from promptfooconfig.yaml" }

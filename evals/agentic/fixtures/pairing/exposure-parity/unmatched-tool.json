@@ -1,0 +1,4 @@
+{
+  "unmatched_tool": "AdminOverride",
+  "note": "T16's own negative control (contract §3.11 clause (c) / benchmark-spec §4.1): a baseline arm granted a tool the treatment does not have and that is not the declared generic_equivalent of any treatment capability. Widening per se is not the defect -- a matched one-for-one substitution (clause c) is the allowed baseline itself -- only UNMATCHED widening is. test_pairing.ExposureParity's __negative method injects this literal tool name into a real baseline arm's allowed_tools and asserts pairing.assert_exposure_parity now raises ExposureParityViolation. This is also the fixture counterfeit 25-agentic-exposure-parity's mutate.sh reproduces against a staged arm manifest."
+}

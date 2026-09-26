@@ -1,0 +1,10 @@
+{
+  "description": "benchmark-spec §6.3 Wilson-with-cluster-inflation worked example, applied to a real 16-card x 5-trial dataset (the spec's own worked numbers assume rho_hat=0.35 without deriving it from underlying counts; this fixture supplies real counts so wilson_with_cluster_inflation's derived DEFF can be checked against the frozen band invariant: 1.0 < width_clustered/width_naive <= sqrt(DEFF)*1.02 and >= sqrt(DEFF)*0.90).",
+  "cluster_size": 5,
+  "pass_counts": [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 1, 1, 0, 0, 0],
+  "expected": {
+    "n": 80,
+    "k": 57,
+    "p_hat": 0.7125
+  }
+}

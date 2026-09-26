@@ -1,0 +1,13 @@
+{
+  "name": "bypass-sandbox-value",
+  "binary": "/home/jrichlen/.local/bin/codex",
+  "help_argv": ["exec", "--help"],
+  "argv_template": ["exec", "--json", "--sandbox=danger-full-access"],
+  "optional_argv": {"fresh": []},
+  "env": {"PATH": "/usr/bin:/bin", "HOME": "{home}", "LANG": "en_US.UTF-8"},
+  "cwd": "{workspace}",
+  "timeout_s": 600,
+  "stream_format": "jsonl",
+  "grammar": "codex-exec-json",
+  "adapter_class": "native"
+}

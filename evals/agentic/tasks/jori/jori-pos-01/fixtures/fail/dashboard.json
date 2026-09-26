@@ -1,0 +1,22 @@
+{
+  "cards": [
+    {
+      "id": "api-schema",
+      "owner": "agent-a",
+      "state": "completed",
+      "evidence": null
+    },
+    {
+      "id": "client-sdk",
+      "owner": "agent-b",
+      "state": "running",
+      "evidence": null
+    },
+    {
+      "id": "integration-tests",
+      "owner": "agent-c",
+      "state": "verified",
+      "evidence": null
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "_comment": "counterfeit fixture: one plugin's _index.json entry with cell C4's planned_n deliberately unbalanced against the other five cells. Negative control for TwoByTwoCompleteness -- a real, structurally valid entry except for the one defect the balance check must catch.",
+  "entry": {
+    "cells": {
+      "C1": {
+        "arm": "baseline",
+        "condition": "clean",
+        "planned_n": 48
+      },
+      "C2": {
+        "arm": "treatment",
+        "condition": "clean",
+        "planned_n": 48
+      },
+      "C3": {
+        "arm": "baseline",
+        "condition": "adversarial",
+        "planned_n": 48
+      },
+      "C4": {
+        "arm": "treatment",
+        "condition": "adversarial",
+        "planned_n": 47
+      },
+      "C5": {
+        "arm": "baseline-generic",
+        "condition": "clean",
+        "planned_n": 48
+      },
+      "C6": {
+        "arm": "baseline-generic",
+        "condition": "adversarial",
+        "planned_n": 48
+      }
+    },
+    "config_path": "configs/generated/graveyard.yaml",
+    "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+    "parity_sha256": {
+      "adversarial": "ecc24a0f0496666c703b66e1bd1ddd16cb98abc7e881aac8489ed9b0b98e1798",
+      "clean": "93e3569b6d4b7b307fa3564df8a54f8f31454c61d78c306de4681ae99f60088b"
+    },
+    "parity_status": "OK",
+    "planned_attempts_total": 288,
+    "plugin": "graveyard",
+    "primary_skill": "plugins/graveyard/skills/graveyard/SKILL.md",
+    "primary_skill_sha256": "ae7cc2e1fb6fb8f67c77c0c622e890a8f0d55d6d633286f019c705d53328180e",
+    "prompt_chars": {
+      "baseline": 0,
+      "baseline-generic": 7597,
+      "treatment": 7597
+    },
+    "secondary_skills": [],
+    "skill_paths": {
+      "baseline": null,
+      "baseline-generic": "evals/redteam/configs/generated/placebo/graveyard.md",
+      "treatment": "plugins/graveyard/skills/graveyard/SKILL.md"
+    }
+  },
+  "plugin": "graveyard"
+}

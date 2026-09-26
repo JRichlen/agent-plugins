@@ -1,0 +1,69 @@
+{
+  "adapter_class": "native",
+  "adoption": {
+    "evidence_digest": null,
+    "hack_class": null,
+    "passed": null,
+    "reason": "not evaluated: no verifier was run for this attempt",
+    "verifier_id": "none"
+  },
+  "arm_id": "arm-live-native",
+  "arrived_after_terminal": false,
+  "attempt_id": "attempt-live-T29",
+  "card_id": "live-native-smoke",
+  "control_kind": null,
+  "ended_at": "2026-09-08T00:07:36.383Z",
+  "event_ids": [
+    "f748ca03-27e4-4069-95e1-78bd8881c5a3",
+    "d9105b48-d7fb-4d85-bf6b-abbf12a62c1b",
+    "6e370c59-26e0-4e77-a7e5-4a244ea5c16d",
+    "453dad60-980a-41f8-961e-3af927035b7e",
+    "40a9e65f-0929-4352-a413-2f9a4409546d",
+    "af255321-c71d-41fa-9a11-97170b5f782c",
+    "aa293aff-c674-46d6-978b-f6fc7d2ddada",
+    "198beded-8086-46fc-999b-d38d7c4927a2",
+    "a7bc4ab6-e75e-4a1b-81d2-8958d20a2719"
+  ],
+  "evidence_class": "native-proven",
+  "fallback_flags": [],
+  "notes": "adapter=native evidence=native-proven ledger_witness=host-observed chain_ok=True host_observed=9 caller_asserted=0 observed_session_id='70ac5ebe-51c4-407e-b570-b546c10c0167'",
+  "outcome": {
+    "evidence_digest": null,
+    "hack_class": null,
+    "passed": null,
+    "reason": "not evaluated: no verifier was run for this attempt",
+    "verifier_id": "none"
+  },
+  "parent_attempt_id": null,
+  "realized": {
+    "effort": "default",
+    "harness": "claude-code/2.1.263 (Claude Code)",
+    "model": "claude-fable-5-1",
+    "provider": "anthropic",
+    "revision": "unknown"
+  },
+  "requested": {
+    "effort": "default",
+    "harness": "claude-code/2.1.263 (Claude Code)",
+    "model": "claude-fable-5-1",
+    "provider": "anthropic",
+    "revision": "unknown"
+  },
+  "role": "treatment",
+  "run_id": "run-live-T29-2026-09-07",
+  "session_id": "70ac5ebe-51c4-407e-b570-b546c10c0167",
+  "started_at": "2026-09-08T00:07:36.383Z",
+  "terminal_state": "delivered",
+  "usage": {
+    "cache_creation_input_tokens": 16185,
+    "cache_read_input_tokens": 10016,
+    "cost_usd": 0.32642400000000005,
+    "input_tokens": 2,
+    "model_id": "claude-fable-5-1",
+    "output_tokens": 4,
+    "reasoning_tokens": 0,
+    "reported_by": "native/claude-stream-json",
+    "total_tokens": "UNKNOWN",
+    "wall_clock_ms": 2386
+  }
+}

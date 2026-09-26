@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/test-fixtures/mini-misc.schema.json",
+  "type": "object",
+  "required": ["id", "at", "count", "tags"],
+  "properties": {
+    "id": {"type": "string", "format": "uuid"},
+    "at": {"type": "string", "format": "date-time"},
+    "count": {"type": "integer", "multipleOf": 5, "minimum": 0},
+    "tags": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "note": {"type": "string", "maxLength": 10}
+  },
+  "dependentRequired": {"note": ["id"]},
+  "additionalProperties": false
+}

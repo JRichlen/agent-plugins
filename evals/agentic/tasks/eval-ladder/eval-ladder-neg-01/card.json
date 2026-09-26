@@ -1,0 +1,25 @@
+{
+  "card_id": "eval-ladder-neg-01",
+  "plugin": "eval-ladder",
+  "kind": "negative",
+  "task_path": "evals/agentic/tasks/eval-ladder/eval-ladder-neg-01/task",
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "pass_fixture": "evals/agentic/tasks/eval-ladder/eval-ladder-neg-01/fixtures/pass",
+  "fail_fixture": "evals/agentic/tasks/eval-ladder/eval-ladder-neg-01/fixtures/fail",
+  "capabilities": [
+    {
+      "kind": "skill",
+      "name": "eval-ladder",
+      "source_plugin": "eval-ladder",
+      "generic_equivalent": "Read the supplied observations and use ordinary Python arithmetic to assess the requested evaluation results."
+    }
+  ],
+  "holdout": false,
+  "expected_boundary_verdict": "",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ]
+}

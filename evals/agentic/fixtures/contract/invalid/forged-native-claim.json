@@ -1,0 +1,8 @@
+{
+  "_comment": "T09 negative_control artifact: a hand-authored attempt claiming native execution with a plausible session_id and event_ids that the host ledger never wrote. assert_native_backed must raise ForgedProvenance on this shape; a reporting layer that trusts these fields because they are present and well-typed is exactly the defect T09 exists to catch.",
+  "attempt_id": "at-forged-1",
+  "native": true,
+  "session_id": "b7e1a6a0-6e1a-4a4a-9c1b-9f6a2f7c9c11",
+  "event_ids": ["e0a1c2d3-e4f5-4061-8a7b-c8d9e0f1a2b3", "1a2b3c4d-5e6f-4708-9091-a2b3c4d5e6f7"],
+  "evidence_class": "native-proven"
+}

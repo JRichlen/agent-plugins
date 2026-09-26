@@ -1,0 +1,80 @@
+{
+  "plugin": "semver-gate",
+  "directory": "plugins/semver-gate",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "semver-gate",
+      "kind": "skill",
+      "source_plugin": "semver-gate",
+      "generic_equivalent": null
+    },
+    {
+      "name": "semver-gate",
+      "kind": "command",
+      "source_plugin": "semver-gate",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-semver-gate-caceed2414d4caca07cbcc872da6bcb2",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "semver-gate"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "semver-gate",
+        "kind": "skill",
+        "source_plugin": "semver-gate",
+        "generic_equivalent": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/semver-gate/SKILL.md": "dfa527c02ee7cc90e35eb0b14fa36874d1c4e4a40d9bd2bf38b9a802f8d8cf71",
+      "skills/semver-gate/references/rubric.md": "bcb936351acee97a88cfc7c8cb64cbe7c60e128208af2bdc0d1f62510045c78f"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-2a9639bad1f1d96cb0d3c41b68ea45c3",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "act on the general instruction to 'merge it' with no separate blast-radius classification or sign-off ask",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "e6928596726a571c1c2b3b9da7f37711010717f05a24f4e52be78c4d06684d0c"
+    }
+  },
+  "arm_source_card": "semver-gate-pos-01"
+}

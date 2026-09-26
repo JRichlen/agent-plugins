@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/coverage.schema.json",
+  "title": "Coverage",
+  "description": "Per-plugin card-kind coverage report emitted by validate.py's --corpus CLI and (eventually) run.py coverage.",
+  "type": "object",
+  "$defs": {
+    "perPluginCounts": {
+      "type": "object",
+      "required": ["positive", "negative", "near-miss"],
+      "properties": {
+        "positive": { "type": "integer", "minimum": 0 },
+        "negative": { "type": "integer", "minimum": 0 },
+        "near-miss": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "missingEntry": {
+      "type": "object",
+      "required": ["plugin", "kind"],
+      "properties": {
+        "plugin": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "kind": { "enum": ["positive", "negative", "near-miss"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "generated_at",
+    "roster_size",
+    "total_cards",
+    "per_plugin",
+    "missing",
+    "complete"
+  ],
+  "properties": {
+    "generated_at": { "type": "string", "format": "date-time" },
+    "roster_size": { "type": "integer", "minimum": 0 },
+    "total_cards": { "type": "integer", "minimum": 0 },
+    "per_plugin": {
+      "type": "object",
+      "description": "One entry per roster plugin, derived not enumerated.",
+      "patternProperties": {
+        "^[a-z0-9-]+$": { "$ref": "#/$defs/perPluginCounts" }
+      },
+      "additionalProperties": false
+    },
+    "missing": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/missingEntry" }
+    },
+    "complete": { "type": "boolean" },
+    "measured_plugins": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Count of plugins carrying >= min_clusters cards (the measurement floor, distinct from the >=1-per-kind coverage floor). Optional: not part of the minimal contract §4 required-key set, but always emitted by validate.py's CLI."
+    }
+  },
+  "additionalProperties": false
+}

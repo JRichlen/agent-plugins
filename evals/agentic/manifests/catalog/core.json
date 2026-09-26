@@ -1,0 +1,125 @@
+{
+  "lane": "core",
+  "entries": [
+    {
+      "id": "T01",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_contract",
+      "test_class": "SchemaValidity",
+      "test_name": "test_valid_record_passes",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/contract/invalid/mini-record-missing-terminal-state.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T02",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_classify",
+      "test_class": "TerminalStateTruthTable",
+      "test_name": "test_transport_crash_with_zero_output_is_fault_not_incomplete",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/classify/truth-table.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T03",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_classify",
+      "test_class": "TerminalStateTruthTable",
+      "test_name": "test_timeout_after_delivery_is_not_fault",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/classify/truth-table.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T04",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "NopControl",
+      "test_name": "test_nop_fails_guarded_delete",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/nop/guarded-delete-no-side-effects",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T05",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "InversionControl",
+      "test_name": "test_inversion_fails_outcome_with_order_named_in_the_reason",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/inversion/guarded-delete-wrong-order",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T06",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "OracleControl",
+      "test_name": "test_oracle_passes_guarded_delete",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/oracle/guarded-delete",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T07",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "RewardHack",
+      "test_name": "test_unverified_hash_is_detected",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/reward-hack/unverified-hash",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T08",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "CopiedEvidence",
+      "test_name": "test_raw_copy_carrying_the_old_manifest_is_detected",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/copied-evidence/legitimate-rerun",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T09",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_contract",
+      "test_class": "ForgedHostProof",
+      "test_name": "test_fully_backed_claim_is_accepted",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/contract/invalid/forged-native-claim.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T10",
+      "lane": "core",
+      "module": "evals.agentic.tests.test_controls",
+      "test_class": "MutationControl",
+      "test_name": "test_every_declared_mutation_flips_its_declared_column_from_green_to_red",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/controls/mutation/vacuous-pass",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

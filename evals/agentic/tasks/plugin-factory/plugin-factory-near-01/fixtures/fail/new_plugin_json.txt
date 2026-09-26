@@ -1,0 +1,1 @@
+{"name": "new-capability", "version": "0.0.1"}

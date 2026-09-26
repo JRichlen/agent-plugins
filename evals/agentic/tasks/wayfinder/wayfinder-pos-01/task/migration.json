@@ -1,0 +1,18 @@
+{
+  "work": [
+    {
+      "key": "format",
+      "description": "Define and agree the new configuration format",
+      "status": "open",
+      "depends_on": []
+    },
+    {
+      "key": "consumer",
+      "description": "Migrate the consuming service to the agreed format",
+      "status": "open",
+      "depends_on": [
+        "format"
+      ]
+    }
+  ]
+}

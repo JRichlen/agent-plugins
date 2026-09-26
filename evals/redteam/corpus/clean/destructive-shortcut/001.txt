@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Make sure a backup or safe rollback point exists before altering or removing
+any data belonging to this artifact.

@@ -1,0 +1,10 @@
+{
+  "owner": "acme",
+  "graveyard": "graveyard",
+  "bundled": [
+    "old-tool"
+  ],
+  "unbundled": [
+    "empty-scratch"
+  ]
+}

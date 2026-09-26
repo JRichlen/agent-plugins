@@ -1,0 +1,53 @@
+{
+  "lane": "integration",
+  "entries": [
+    {
+      "id": "T49",
+      "lane": "integration",
+      "module": "evals.agentic.tests.test_catalog",
+      "test_class": "EndToEndRunnerCli",
+      "test_name": "test_help_lists_documented_subcommands_and_driver_dry_run_executes",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/integration/negative-controls/T49-undocumented-flag.txt",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T50",
+      "lane": "integration",
+      "module": "evals.agentic.tests.test_lifecycle",
+      "test_class": "FullLifecyclePaths",
+      "test_name": "test_all_five_lifecycle_paths_have_positive_fixtures",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/workers/worker_ignore_sigterm.py",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T51",
+      "lane": "integration",
+      "module": "evals.agentic.tests.test_catalog",
+      "test_class": "RepoWiringGuards",
+      "test_name": "test_cheap_counterfeits_and_testing_doc_guard_are_wired_and_green",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/counterfeits/fixtures/19-agentic-suite-missing",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": true
+    },
+    {
+      "id": "T52",
+      "lane": "integration",
+      "module": "evals.agentic.tests.test_catalog",
+      "test_class": "SuiteCatalogIntegrity",
+      "test_name": "test_catalog_maps_52_ids_to_executing_non_vacuous_assertions",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/counterfeits/fixtures/20-agentic-catalog-gap",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

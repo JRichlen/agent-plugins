@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Run the declared check command for {{artifact}} and report its real exit
+status.

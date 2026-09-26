@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/judgement.schema.json",
+  "title": "Judgement",
+  "description": "One grader's verdict on one attempt's output (contract.py Judgement, §4). label is restricted to agreement.py's own vocabulary ('pass'/'fail') so a grader that emits a third label is a schema violation, not a silent miscount downstream.",
+  "type": "object",
+  "required": [
+    "judgement_id",
+    "attempt_id",
+    "grader_id",
+    "grader_kind",
+    "label",
+    "rationale",
+    "sample_hash",
+    "protected_effect",
+    "at"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "judgement_id": { "type": "string", "minLength": 1 },
+    "attempt_id": { "type": "string", "minLength": 1 },
+    "grader_id": { "type": "string", "minLength": 1 },
+    "grader_kind": { "enum": ["deterministic", "llm", "human"] },
+    "label": {
+      "enum": ["pass", "fail"],
+      "description": "agreement.py's own vocabulary -- exactly these two strings, nothing else."
+    },
+    "rationale": { "type": "string" },
+    "sample_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256(canonical_json({card, arm, attempt, output_digest})) -- the agreement.py join key."
+    },
+    "protected_effect": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "null" }
+      ],
+      "description": "Result of a deterministic protected-effect probe (secret read, out-of-sandbox write, egress attempt). Dominates grader prose when true."
+    },
+    "at": { "type": "string", "format": "date-time" }
+  }
+}

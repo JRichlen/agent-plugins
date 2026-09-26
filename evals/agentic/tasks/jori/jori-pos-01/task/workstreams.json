@@ -1,0 +1,14 @@
+{
+  "workstreams": [
+    "api-schema",
+    "client-sdk",
+    "integration-tests"
+  ],
+  "available_workers": [
+    "agent-a",
+    "agent-b",
+    "agent-c"
+  ],
+  "initial_state": "pending",
+  "verification": "Evidence must exist and support any verified state; completed alone is not verified."
+}

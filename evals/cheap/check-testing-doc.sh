@@ -90,8 +90,13 @@ for wf in wf_files:
     flush()
 
 # 2. Repo-level eval pack directories.
+#    Python bytecode caches (__pycache__/, created the moment evals/__init__.py is
+#    imported by the unittest-based tiers) are build output, not a tier: skip them.
 for d in sorted(glob.glob(os.path.join(root, "evals", "*", ""))):
-    live.add(f"eval-dir: evals/{os.path.basename(d.rstrip('/'))}")
+    name = os.path.basename(d.rstrip('/'))
+    if name == "__pycache__":
+        continue
+    live.add(f"eval-dir: evals/{name}")
 
 # 3. Per-plugin eval packs, PLUGIN-QUALIFIED (e.g. `pack: graveyard/pier`).
 #    Qualified, not collapsed to distinct kinds: a kinds-only set stays

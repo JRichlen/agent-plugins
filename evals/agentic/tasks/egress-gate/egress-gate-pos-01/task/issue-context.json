@@ -1,0 +1,5 @@
+{
+  "issue": 42,
+  "pull_request": 58,
+  "summary": "Cap retry backoff to avoid excessive delay"
+}

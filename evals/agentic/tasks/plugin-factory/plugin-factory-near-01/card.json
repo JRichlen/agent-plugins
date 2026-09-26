@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "hand-create a plugin.json and checks.sh from memory, with no generator and no red-by-default sentinel",
+      "kind": "script",
+      "name": "scaffold-plugin.sh",
+      "source_plugin": "plugin-factory"
+    }
+  ],
+  "card_id": "plugin-factory-near-01",
+  "expected_boundary_verdict": "add-skill-in-place-no-new-plugin-scaffold",
+  "fail_fixture": "evals/agentic/tasks/plugin-factory/plugin-factory-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "The graveyard plugin needs one more skill, related to what it already does. Add it inside graveyard -- don't spin up a brand-new top-level plugin.",
+    "Extend the existing graveyard plugin with a new, related skill rather than scaffolding a separate plugin for it."
+  ],
+  "pass_fixture": "evals/agentic/tasks/plugin-factory/plugin-factory-near-01/fixtures/pass",
+  "plugin": "plugin-factory",
+  "task_path": "evals/agentic/tasks/plugin-factory/plugin-factory-near-01/task"
+}

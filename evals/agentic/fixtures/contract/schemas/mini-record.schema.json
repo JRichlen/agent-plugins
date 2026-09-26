@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/test-fixtures/mini-record.schema.json",
+  "type": "object",
+  "required": ["attempt_id", "terminal_state"],
+  "properties": {
+    "attempt_id": {"type": "string", "minLength": 1},
+    "terminal_state": {
+      "type": "string",
+      "enum": ["delivered", "incomplete", "cancelled", "fault", "timeout-after-delivery"]
+    },
+    "notes": {"type": "string"}
+  },
+  "additionalProperties": false
+}

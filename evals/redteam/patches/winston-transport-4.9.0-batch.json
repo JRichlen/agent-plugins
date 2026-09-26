@@ -1,0 +1,14 @@
+{
+  "name": "winston-transport",
+  "version": "4.9.0",
+  "source": "modern.js",
+  "source_sha256_before": "46113d9fd93016226787801a9522d1a5eaf80b180614089ec5305c4881f5f717",
+  "source_sha256_after": "43e0b29018295699b354020c9b0676ea51808e77fb82e6c29ec7ae60a33e368d",
+  "patch": "winston-transport-4.9.0-batch.patch",
+  "patch_sha256": "94d3bba12c495b9d28630c66ab46708c4b87acd4a3d76d9e9950db1656dac91a",
+  "upstream_issue": "https://github.com/winstonjs/winston-transport/issues/49",
+  "upstream_pr": "https://github.com/winstonjs/winston-transport/pull/50",
+  "upstream_head": "3fe62b8daa15280c35f3373d7a5e7688351f3954",
+  "upstream_status_at_review": "open and unmerged on 2026-09-09",
+  "adaptation": "Batch callback waits for all accepted log callbacks; retains empty-batch completion, propagates callback/format failures, and leaves individual callbacks to Writable."
+}

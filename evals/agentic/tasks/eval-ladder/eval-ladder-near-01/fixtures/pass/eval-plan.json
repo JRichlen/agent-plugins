@@ -1,0 +1,10 @@
+{
+  "tiers": [
+    {
+      "surface": "environment-state",
+      "rung": 2,
+      "blind_spot": "Synthetic examples cannot establish performance on unseen production traces.",
+      "red_control": "Change a restoration trial from success to failure and require the irreversible result to fail."
+    }
+  ]
+}

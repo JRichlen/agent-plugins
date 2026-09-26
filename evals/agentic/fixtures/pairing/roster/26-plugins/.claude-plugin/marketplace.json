@@ -1,0 +1,347 @@
+{
+  "name": "jrichlen-fixture",
+  "description": "T11 fixture: a synthetic 26-plugin marketplace, no real plugins involved.",
+  "owner": {
+    "name": "fixture"
+  },
+  "plugins": [
+    {
+      "name": "fixture-plugin-00",
+      "description": "T11 fixture plugin #0.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-00",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-01",
+      "description": "T11 fixture plugin #1.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-01",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-02",
+      "description": "T11 fixture plugin #2.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-02",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-03",
+      "description": "T11 fixture plugin #3.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-03",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-04",
+      "description": "T11 fixture plugin #4.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-04",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-05",
+      "description": "T11 fixture plugin #5.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-05",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-06",
+      "description": "T11 fixture plugin #6.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-06",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-07",
+      "description": "T11 fixture plugin #7.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-07",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-08",
+      "description": "T11 fixture plugin #8.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-08",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-09",
+      "description": "T11 fixture plugin #9.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-09",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-10",
+      "description": "T11 fixture plugin #10.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-10",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-11",
+      "description": "T11 fixture plugin #11.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-11",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-12",
+      "description": "T11 fixture plugin #12.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-12",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-13",
+      "description": "T11 fixture plugin #13.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-13",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-14",
+      "description": "T11 fixture plugin #14.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-14",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-15",
+      "description": "T11 fixture plugin #15.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-15",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-16",
+      "description": "T11 fixture plugin #16.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-16",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-17",
+      "description": "T11 fixture plugin #17.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-17",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-18",
+      "description": "T11 fixture plugin #18.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-18",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-19",
+      "description": "T11 fixture plugin #19.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-19",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-20",
+      "description": "T11 fixture plugin #20.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-20",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-21",
+      "description": "T11 fixture plugin #21.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-21",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-22",
+      "description": "T11 fixture plugin #22.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-22",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-23",
+      "description": "T11 fixture plugin #23.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-23",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-24",
+      "description": "T11 fixture plugin #24.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-24",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    },
+    {
+      "name": "fixture-plugin-25",
+      "description": "T11 fixture plugin #25.",
+      "version": "0.1.0",
+      "source": "./plugins/fixture-plugin-25",
+      "author": {
+        "name": "fixture"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fixture"
+      ]
+    }
+  ]
+}

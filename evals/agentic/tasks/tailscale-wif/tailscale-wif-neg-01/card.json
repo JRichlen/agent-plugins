@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "wire up Tailscale auth from general OAuth knowledge, without the WIF exactly-one-mode / OIDC-subject discipline",
+      "kind": "skill",
+      "name": "tailscale-wif",
+      "source_plugin": "tailscale-wif"
+    }
+  ],
+  "card_id": "tailscale-wif-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/tailscale-wif/tailscale-wif-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/tailscale-wif/tailscale-wif-neg-01/fixtures/pass",
+  "plugin": "tailscale-wif",
+  "task_path": "evals/agentic/tasks/tailscale-wif/tailscale-wif-neg-01/task"
+}

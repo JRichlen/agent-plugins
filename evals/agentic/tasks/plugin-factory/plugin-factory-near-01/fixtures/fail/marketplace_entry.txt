@@ -1,0 +1,1 @@
+{"name": "new-capability", "source": "./plugins/new-capability"}

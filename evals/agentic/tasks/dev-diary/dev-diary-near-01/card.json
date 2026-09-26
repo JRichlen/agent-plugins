@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same day's raw materials and a plain editing/git capability, no journal template or redaction reference -- it may still write a journal entry on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "no journal; work summarized ad hoc if at all, with no redaction pass or house style",
+      "kind": "skill",
+      "name": "dev-diary",
+      "source_plugin": "dev-diary"
+    }
+  ],
+  "card_id": "dev-diary-near-01",
+  "expected_boundary_verdict": "use-context-handoff-not-dev-diary",
+  "fail_fixture": "evals/agentic/tasks/dev-diary/dev-diary-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Get today's retry-policy progress ready for a colleague to continue in another repo tomorrow.",
+    "Someone else is picking this work up in a different repo next -- prep whatever they need to resume."
+  ],
+  "pass_fixture": "evals/agentic/tasks/dev-diary/dev-diary-near-01/fixtures/pass",
+  "plugin": "dev-diary",
+  "task_path": "evals/agentic/tasks/dev-diary/dev-diary-near-01/task"
+}

@@ -1,0 +1,7 @@
+{
+  "session_id": "22222222-2222-4222-8222-222222222222",
+  "transcript_path": "/tmp/agentic-fixture-transcript.jsonl",
+  "cwd": "/tmp/agentic-fixture-cwd",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "build me a security reviewer agent for this repo"
+}

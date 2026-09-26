@@ -1,0 +1,77 @@
+{
+  "lane": "protocol",
+  "entries": [
+    {
+      "id": "T19",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "HookDiscoveryAndExec",
+      "test_name": "test_discovers_exactly_the_live_marketplace_hooks",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/mutated-fourth-hook-root",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T20",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "AgentCompilerHooks",
+      "test_name": "test_four_real_subprocess_outcomes_inject_silent_deny_allow",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/mutants/guard-deny-everything.py",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T21",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "RedgateWriteGuard",
+      "test_name": "test_denies_ratified_contract_write_in_trace_phase",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/mutants/guard-redgate-path-only.sh",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T22",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "SessionStartInjection",
+      "test_name": "test_voice_emits_one_bounded_json_object_on_every_matcher",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/mutants/session-start-double-print.sh",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T23",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "McpInspectReadOnly",
+      "test_name": "test_handshake_tools_list_and_read_only_inspect",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/mutants/broken_mcp_server.py",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T24",
+      "lane": "protocol",
+      "module": "evals.agentic.tests.test_protocols",
+      "test_class": "SubprocessLifecycle",
+      "test_name": "test_coordination_order_independent_of_completion_order",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/protocols/workers/worker_ignore_sigterm.py",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

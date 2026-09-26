@@ -1,0 +1,19 @@
+{
+  "description": "benchmark-spec §1.2 worked example: 100 attempt rows, conservation identity 100 == 79 + 5 + 7 + 9",
+  "rows": [
+    {"terminal_state": "delivered", "n": 65, "coordination_n": 2},
+    {"terminal_state": "incomplete", "n": 15, "coordination_n": 2},
+    {"terminal_state": "cancelled", "n": 9, "coordination_n": 0},
+    {"terminal_state": "fault", "n": 7, "coordination_n": 0},
+    {"terminal_state": "timeout-after-delivery", "n": 4, "coordination_n": 1}
+  ],
+  "expected": {
+    "accounting": 100,
+    "scoring_valid": 84,
+    "scoring_trials": 79,
+    "coordination": 5,
+    "coordination_total": 5,
+    "faults": 7,
+    "cancels": 9
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "jori",
+  "version": "0.0.1",
+  "description": "Coordinate complex work with bounded agents, evidence, and proportional dashboards.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Jori",
+    "shortDescription": "Coordinate complex work with bounded agents",
+    "longDescription": "Jori coordinates complex work through bounded agents, evidence, and proportional dashboards.",
+    "developerName": "Jordan Richlen",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Use $jori to coordinate this complex task with bounded agents and evidence."
+  }
+}

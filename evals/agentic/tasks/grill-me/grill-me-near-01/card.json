@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same plan text and a plain conversational capability, no stakes-tiering or path-consent reference -- it may still ask clarifying questions on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "proceed on the plan directly with no stakes-tiered interview or recap",
+      "kind": "skill",
+      "name": "grill-me",
+      "source_plugin": "grill-me"
+    }
+  ],
+  "card_id": "grill-me-near-01",
+  "expected_boundary_verdict": "novelty-pushes-light-to-standard",
+  "fail_fixture": "evals/agentic/tasks/grill-me/grill-me-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "New caching approach, no precedent in this codebase, but internal-only and easily reverted.",
+    "Adding a novel (for us) caching pattern -- dev-only, cheap to undo, just never done here before."
+  ],
+  "pass_fixture": "evals/agentic/tasks/grill-me/grill-me-near-01/fixtures/pass",
+  "plugin": "grill-me",
+  "task_path": "evals/agentic/tasks/grill-me/grill-me-near-01/task"
+}

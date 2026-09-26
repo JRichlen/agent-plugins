@@ -1,0 +1,1 @@
+PR #58 caps exponential retry backoff at 30 seconds, preventing excessively long waits after repeated transient failures.

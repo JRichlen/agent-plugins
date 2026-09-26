@@ -1,0 +1,21 @@
+{
+  "description": "synthetic fixture plugin for T19 hook discovery — two of the tree's three hooks",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/handler.py"}
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {"type": "command", "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/handler.py"}
+        ]
+      }
+    ]
+  }
+}

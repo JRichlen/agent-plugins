@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# canary-egress.yaml — T48's non-vacuity canary (design §10.4). Run by
+# bin/netproof.sh, never by the offline default eval. Attempts a DNS lookup
+# of a reserved TLD, a TCP connect to a loopback listener bin/netproof.sh
+# stands up itself, and a TCP connect to RFC 5737 TEST-NET-1 (unroutable) —
+# never a packet to the public internet in either mode. The env vars are
+# interpolated via promptfoo's renderEnvOnlyInObject (util-BY2oJymW.js), the
+# same mechanism the ledgerDir fields elsewhere in this tree rely on.
+description: "redteam T48 non-vacuity canary"
+
+prompts:
+  - "canary"
+
+providers:
+  - id: file://../providers/canary-egress.js
+    label: canary-egress
+    config:
+      outFile: "{{env.REDTEAM_CANARY_OUTFILE}}"
+      port: "{{env.REDTEAM_CANARY_PORT}}"
+      hostSide: "{{env.REDTEAM_CANARY_HOSTSIDE}}"
+
+tests:
+  - description: "single canary probe"
+    vars: {}
+    assert:
+      - type: javascript
+        # NOTE: raw function body, not an arrow-function expression — see
+        # promptfooconfig.yaml's comment.
+        value: |
+          let parsed;
+          try { parsed = JSON.parse(output); } catch (e) {
+            return { pass: false, score: 0, reason: 'canary output did not parse as JSON: ' + e.message };
+          }
+          if (!('dns' in parsed) || !('loopback' in parsed) || !('testnet' in parsed)) {
+            return { pass: false, score: 0, reason: 'canary summary missing a probe key' };
+          }
+          return { pass: true, score: 1, reason: 'canary ran and recorded all three probes' };
+        weight: 1

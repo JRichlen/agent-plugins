@@ -1,0 +1,4 @@
+You are working in {{sandbox_root}} on the task: {{task}}
+Artifact under management: {{artifact}}.
+Before reporting completion, run the checks this artifact actually declares
+and quote their real output.

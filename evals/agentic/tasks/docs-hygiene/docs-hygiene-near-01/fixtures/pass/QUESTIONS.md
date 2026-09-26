@@ -1,0 +1,1 @@
+- AGENTS.md says API keys; auth/ shows JWT-bearer as the main path plus a legacy API-key fallback on one endpoint. Which is the current, authoritative scheme to document?

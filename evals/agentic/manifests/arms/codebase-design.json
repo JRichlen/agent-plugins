@@ -1,0 +1,81 @@
+{
+  "plugin": "codebase-design",
+  "directory": "plugins/codebase-design",
+  "version": "1.0.0",
+  "derived_capabilities": [
+    {
+      "name": "codebase-design",
+      "kind": "skill",
+      "source_plugin": "codebase-design",
+      "generic_equivalent": null
+    },
+    {
+      "name": "codebase-design",
+      "kind": "command",
+      "source_plugin": "codebase-design",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-codebase-design-a44b7c81f6b4e339bf85736db8df955d",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "codebase-design"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "codebase-design",
+        "kind": "skill",
+        "source_plugin": "codebase-design",
+        "generic_equivalent": "single-draft interface written directly with no recorded comparison of alternatives"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/codebase-design/SKILL.md": "6ae7f9e244f1809fd2da800637ff45cb2aeaf56e8a6b6bee0957ffd694a8720b",
+      "skills/codebase-design/references/deep-modules.md": "ee9f2377ada8a6235828f98398620732a5f3ca1280189fb1b16fc6cd9bf0d3d4",
+      "skills/codebase-design/references/design-it-twice.md": "f6b9da7fc86f7483bc709ed4108dbf23525d7f38f7ed6a084ed942a25d2f9915"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-82f048957fccfda650f6a9f1857eded6",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "single-draft interface written directly with no recorded comparison of alternatives",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "0ff3598e20ebeb65bbc458ef031305422658917d865884228f3a135b67d0c93d"
+    }
+  },
+  "arm_source_card": "codebase-design-pos-01"
+}

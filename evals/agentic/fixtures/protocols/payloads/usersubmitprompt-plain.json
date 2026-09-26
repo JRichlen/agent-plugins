@@ -1,0 +1,7 @@
+{
+  "session_id": "22222222-2222-4222-8222-222222222223",
+  "transcript_path": "/tmp/agentic-fixture-transcript.jsonl",
+  "cwd": "/tmp/agentic-fixture-cwd",
+  "hook_event_name": "UserPromptSubmit",
+  "prompt": "run the agent tests and tell me if anything is red"
+}

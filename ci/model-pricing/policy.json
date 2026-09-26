@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "models": ["z-ai/glm-5.3-flash", "qwen/qwen3.6-plus", "openai/gpt-5.4-mini", "nvidia/nemotron-3-ultra-550b-a55b", "openai/gpt-oss-20b"],
+  "current_subject": "z-ai/glm-5.3-flash",
+  "judge_watch_model": "anthropic/claude-sonnet-5",
+  "state_branch": "automation/model-pricing-state",
+  "material_fraction": 0.15,
+  "material_usd": 0.02,
+  "max_snapshot_age_hours": 48,
+  "workload": {"input_tokens": 496085, "output_tokens": 164797, "cache_read_tokens": 0, "description": "Historical subject-only token mix; hypothetical equal-token comparison, not billed or monthly savings."},
+  "agent": {
+    "enabled": false,
+    "model": "z-ai/glm-5.3-flash",
+    "provider": "",
+    "reasoning_effort": "max",
+    "per_run_usd": 0,
+    "monthly_usd": 0,
+    "max_output_tokens": 4096,
+    "max_input_bytes": 32768,
+    "max_prompt_price_per_million": 0.10,
+    "max_completion_price_per_million": 0.40
+  }
+}

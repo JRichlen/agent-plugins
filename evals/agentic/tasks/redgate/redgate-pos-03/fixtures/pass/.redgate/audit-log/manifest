@@ -1,0 +1,10 @@
+slug=audit-log
+phase=TRACE
+round=1
+round_budget=2
+depth_remaining=2
+attempts_per_criterion=2
+autonomy=classified
+approved_plan_sha256=
+criteria_sha256=346d92c15418a87cd9e6a84776ff726a9d79e47aaf6f5c670208938cfed1c39a
+check_sha256=cf3d430f959d40e1dcb877429ed79c29110f7c642c3effe83fd9c8ce9c0c89c8

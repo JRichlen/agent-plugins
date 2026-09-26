@@ -1,0 +1,30 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "baseline_framing": "The no-skill baseline gets the same instruction file and repo tree and a plain read/edit capability, no staleness heuristic -- it may still catch and fix the stale path on its own initiative.",
+  "capabilities": [
+    {
+      "generic_equivalent": "manual doc read with no systematic path/command staleness check and no in-place fix",
+      "kind": "skill",
+      "name": "docs-hygiene",
+      "source_plugin": "docs-hygiene"
+    }
+  ],
+  "card_id": "docs-hygiene-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "AGENTS.md points at scripts/deploy.sh -- verify that's still where the deploy script is.",
+    "Is the deploy-script path in AGENTS.md still accurate? Fix it if not."
+  ],
+  "pass_fixture": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/fixtures/pass",
+  "plugin": "docs-hygiene",
+  "task_path": "evals/agentic/tasks/docs-hygiene/docs-hygiene-pos-01/task"
+}

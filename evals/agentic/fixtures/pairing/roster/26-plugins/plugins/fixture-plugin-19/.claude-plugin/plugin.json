@@ -1,0 +1,7 @@
+{
+  "name": "fixture-plugin-19",
+  "version": "0.1.0",
+  "description": "T11 fixture plugin #19 (proves derive_roster is not hardcoded to 25).",
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

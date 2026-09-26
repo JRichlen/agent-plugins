@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "bash+gh manual guarded-delete checklist",
+      "kind": "script",
+      "name": "generate-delete-script.sh",
+      "source_plugin": "graveyard"
+    }
+  ],
+  "card_id": "graveyard-near-01",
+  "expected_boundary_verdict": "archive-fork-with-unique-commits",
+  "fail_fixture": "evals/agentic/tasks/graveyard/graveyard-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "acme/fork-with-one-commit forked a public template and has one unique commit not upstream -- archive first, or safe to delete directly like an empty repo?",
+    "That fork has exactly one real commit no one else has. Does it still need a backup bundle before deletion, or does being 'just a fork' let it skip that?"
+  ],
+  "pass_fixture": "evals/agentic/tasks/graveyard/graveyard-near-01/fixtures/pass",
+  "plugin": "graveyard",
+  "task_path": "evals/agentic/tasks/graveyard/graveyard-near-01/task"
+}

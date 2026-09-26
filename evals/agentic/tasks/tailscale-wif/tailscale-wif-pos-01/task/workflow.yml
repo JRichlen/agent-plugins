@@ -1,0 +1,2 @@
+with:
+  oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}

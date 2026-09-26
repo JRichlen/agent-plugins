@@ -1,0 +1,79 @@
+{
+  "plugin": "find-before-build",
+  "directory": "plugins/find-before-build",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "find-before-build",
+      "kind": "skill",
+      "source_plugin": "find-before-build",
+      "generic_equivalent": null
+    },
+    {
+      "name": "find-before-build",
+      "kind": "command",
+      "source_plugin": "find-before-build",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-find-before-build-5a5ac417d996610a22c39943c921dc6e",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "find-before-build"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "find-before-build",
+        "kind": "skill",
+        "source_plugin": "find-before-build",
+        "generic_equivalent": "write new code directly with no prior search or receipt of what was searched"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/find-before-build/SKILL.md": "f0e8ea49c0297c8cd61b1cd22248c1d01b79384904905132f4c8598d8ea02578"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-d30dd3e14c1923b889bda6b7334596a2",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "write new code directly with no prior search or receipt of what was searched",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "441f01c06fea9ab4cd7ebf9215d21b6fbc6c011de73b3baf6b1797038616a738"
+    }
+  },
+  "arm_source_card": "find-before-build-pos-01"
+}

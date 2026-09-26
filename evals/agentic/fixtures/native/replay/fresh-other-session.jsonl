@@ -1,0 +1,4 @@
+{"kind":"session","session":{"id":"harness-sess-CCCC"}}
+{"kind":"turn_ack","turn":{"index":0}}
+{"kind":"text","text":"I have no record of any prior conversation."}
+{"kind":"usage","model":"synthetic-model-a","usage":{"input_tokens":15,"output_tokens":9,"total_tokens":24,"wall_clock_ms":80}}

@@ -1,0 +1,11 @@
+{
+  "claims": [
+    {
+      "claim": "used to say X",
+      "curated_at": "2026-09-06",
+      "path": "README.md",
+      "repo": "o/gone-svc",
+      "sha": "ggg1111"
+    }
+  ]
+}

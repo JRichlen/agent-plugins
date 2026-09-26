@@ -1,0 +1,5 @@
+{
+  "PROVENANCE": "Stand-in for a real .claude/ state file. Named without the leading dot so ordinary tooling (and the cheap tier's JSON lint) sees it.",
+  "last_session_id": "harness-sess-AAAA",
+  "remembered_turns": 2
+}

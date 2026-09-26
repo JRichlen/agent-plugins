@@ -60,6 +60,13 @@ build_root() {
   cp "$REPO_ROOT/.github/workflows/grader-agreement.yml" "$root/.github/workflows/grader-agreement.yml"
   cp -R "$REPO_ROOT/ci/." "$root/ci/"
   cp -R "$REPO_ROOT/evals/paid" "$root/evals/paid"
+  # Agentic and red-team suites (contract §8.8): staged so section 22's
+  # `evals/agentic/run.sh --gate` / `evals/redteam/run.sh --gate` calls have
+  # something to run, and so fixtures 19-31 have a copy to mutate.
+  cp -R "$REPO_ROOT/evals/agentic" "$root/evals/agentic"
+  cp -R "$REPO_ROOT/evals/redteam" "$root/evals/redteam"
+  mkdir -p "$root/evals"
+  touch "$root/evals/__init__.py"
   # Stage a top-level README.md (§5b is guarded on its presence, same as the
   # gates above) so "README documents every registered plugin" fires here too;
   # fixture 16 mutates it to prove the gate bites.
@@ -67,8 +74,52 @@ build_root() {
   printf '%s' "$root"
 }
 
+# The synthetic root must never reach the network. Counterfeit mutations are
+# arbitrary shell edits to staged scripts, and one (fixture 26, first version)
+# once inserted an executable `npx promptfoo@latest` line that ran before the
+# gate it was meant to trip and upgraded the host's shared npx cache in place.
+# So every tier run in a synthetic root gets `npx` and `npm` shimmed out of
+# PATH: invoking either exits 99 loudly. The cheap tier itself uses neither.
+NO_NET_BIN="$(mktemp -d)"
+for shim in npx npm; do
+  printf '#!/usr/bin/env bash\necho "counterfeit sandbox: %s invoked inside the synthetic root -- network package managers are forbidden here" >&2\nexit 99\n' "$shim" > "$NO_NET_BIN/$shim"
+  chmod +x "$NO_NET_BIN/$shim"
+done
+
+# REPAIR F5: every build_root() copy (multi-megabyte: full ci/evals/plugins
+# trees) is tracked here the instant it exists, not just removed by the happy
+# path at the bottom of each loop iteration. Relying only on "reach the bottom
+# of the loop body" left temp dirs behind under an external SIGTERM (e.g. a
+# CI/harness `timeout` around this whole script): bash defers signal handling
+# until the currently running foreground command (a run_tier() subshell here)
+# returns, so a kill mid-run_tier skipped every per-iteration `rm -rf`. A
+# single top-level cleanup, run from EXIT and from explicit INT/TERM handlers
+# (which then re-raise so the script's own exit status still reflects the
+# signal), removes NO_NET_BIN and every root still in LIVE_ROOTS regardless of
+# how the script stops. `track_root`/`untrack_root` keep the array in sync;
+# cleanup tolerates already-removed paths (rm -rf on a missing dir is a no-op).
+LIVE_ROOTS=()
+track_root()   { LIVE_ROOTS+=("$1"); }
+untrack_root() {
+  local target="$1" kept=() r
+  for r in "${LIVE_ROOTS[@]}"; do
+    [ "$r" = "$target" ] || kept+=("$r")
+  done
+  LIVE_ROOTS=("${kept[@]}")
+}
+cleanup() {
+  rm -rf "$NO_NET_BIN"
+  local r
+  for r in "${LIVE_ROOTS[@]}"; do
+    [ -n "$r" ] && rm -rf "$r"
+  done
+}
+trap cleanup EXIT
+trap 'cleanup; trap - TERM; kill -TERM "$$"' TERM
+trap 'cleanup; trap - INT; kill -INT "$$"' INT
+
 run_tier() {  # <root> -> prints combined output, returns run.sh exit code
-  "$1/evals/cheap/run.sh" 2>&1
+  PATH="$NO_NET_BIN:$PATH" "$1/evals/cheap/run.sh" 2>&1
 }
 
 # The corpus historically drove ONLY run.sh. That is precisely the blind spot
@@ -77,7 +128,7 @@ run_tier() {  # <root> -> prints combined output, returns run.sh exit code
 # fixture may name a plugin via ALSO_RUN_ONE= in its DEFECT.md to be driven
 # through the isolated runner as well.
 run_tier_one() {  # <root> <plugin> -> prints combined output, returns run-one.sh exit code
-  "$1/evals/cheap/run-one.sh" "$2" 2>&1
+  PATH="$NO_NET_BIN:$PATH" "$1/evals/cheap/run-one.sh" "$2" 2>&1
 }
 
 # --- calibration: the baseline must be GREEN --------------------------------
@@ -85,6 +136,7 @@ run_tier_one() {  # <root> <plugin> -> prints combined output, returns run-one.s
 # a rejection could just mean the baseline itself is broken. Assert green first.
 group "calibration — baseline plugin passes the cheap tier"
 cal_root="$(build_root)"
+track_root "$cal_root"
 if cal_out="$(run_tier "$cal_root")"; then
   ok "baseline plugin is green (gate discriminates from a known-good starting point)"
 else
@@ -92,6 +144,7 @@ else
   printf '%s\n' "$cal_out" | sed 's/^/    /'
 fi
 rm -rf "$cal_root"
+untrack_root "$cal_root"
 
 # --- coverage: the repo-level gates must FIRE in the synthetic root ----------
 # §11/§11b/§12 are inert unless build_root stages their inputs. If it ever stops,
@@ -100,6 +153,7 @@ rm -rf "$cal_root"
 # (the "add a gate but leave it unexercised" drift the corpus exists to prevent).
 group "calibration — the baseline is green under run-one.sh too"
 cal_root_one="$(build_root)"
+track_root "$cal_root_one"
 cal_one_out="$(run_tier_one "$cal_root_one" sample-guard)"; cal_one_code=$?
 if [ "$cal_one_code" -eq 0 ]; then
   ok "baseline sample-guard passes run-one.sh (isolated runner calibrated)"
@@ -108,16 +162,34 @@ else
   printf '%s\n' "$cal_one_out" | grep -i fail | sed 's/^/    /'
 fi
 rm -rf "$cal_root_one"
+untrack_root "$cal_root_one"
 
 group "gate coverage — repo-level gates fire in the synthetic root"
-for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin"; do
+for g in "branch-protection lock" "paid-pack discovery self-test" "install-smoke coverage" "README documents every registered plugin" "agentic suite (offline)" "redteam suite (offline)"; do
   if grep -qF "$g" <<<"$cal_out"; then ok "gate fires in synthetic root: $g"; else bad "gate '$g' did NOT fire in the synthetic root — build_root staging regressed"; fi
 done
 
 # --- each counterfeit must be rejected by its expected gate -----------------
-group "counterfeits — each broken plugin is rejected for the right reason"
+# COUNTERFEIT_ONLY=<fixture-dir-name> restricts this loop to exactly one
+# fixture (default: unset, all fixtures run -- unchanged behavior). Added for
+# the bounded T51 test (coordinator's integration-cost-decisions.md decision
+# 1): T51 must exercise ONE fixture end to end without running the full
+# 31-fixture corpus (and, transitively, the full cheap tier 31 times) from
+# inside a single unittest method. Calibration and gate-coverage above are
+# unaffected -- they are cheap (reuse the one already-computed $cal_out) and
+# are part of what makes a single-fixture run trustworthy at all.
+if [ -n "${COUNTERFEIT_ONLY:-}" ]; then
+  group "counterfeits — single fixture (COUNTERFEIT_ONLY=$COUNTERFEIT_ONLY)"
+else
+  group "counterfeits — each broken plugin is rejected for the right reason"
+fi
+matched=0
 for dir in "$FIXTURES"/*/; do
   name="$(basename "$dir")"
+  if [ -n "${COUNTERFEIT_ONLY:-}" ] && [ "$name" != "$COUNTERFEIT_ONLY" ]; then
+    continue
+  fi
+  matched=$((matched + 1))
   defect="$dir/DEFECT.md"
   mutate="$dir/mutate.sh"
   if [ ! -f "$defect" ] || [ ! -f "$mutate" ]; then
@@ -129,8 +201,9 @@ for dir in "$FIXTURES"/*/; do
   fi
 
   root="$(build_root)"
+  track_root "$root"
   if ! bash "$mutate" "$root" >/dev/null 2>&1; then
-    bad "$name mutate.sh failed to apply"; rm -rf "$root"; continue
+    bad "$name mutate.sh failed to apply"; rm -rf "$root"; untrack_root "$root"; continue
   fi
 
   out="$(run_tier "$root")"; code=$?
@@ -158,7 +231,11 @@ for dir in "$FIXTURES"/*/; do
     fi
   fi
   rm -rf "$root"
+  untrack_root "$root"
 done
+if [ -n "${COUNTERFEIT_ONLY:-}" ] && [ "$matched" -eq 0 ]; then
+  bad "COUNTERFEIT_ONLY=$COUNTERFEIT_ONLY matched no fixture directory under $FIXTURES"
+fi
 
 # --- summary ----------------------------------------------------------------
 printf '\n\033[1msummary:\033[0m %d passed, %d failed\n' "$pass" "$fail"

@@ -1,0 +1,24 @@
+{
+  "branch": "main",
+  "author": {
+    "name": "Corpus fixture",
+    "email": "fixture@example.test",
+    "date": "2026-01-01T00:00:00+00:00"
+  },
+  "commits": [
+    {
+      "message": "Initial service",
+      "files": {
+        "app.py": "print(\"v1\")\n",
+        "credentials.txt": "DEMO_ONLY_LEAKED_TOKEN\n"
+      }
+    },
+    {
+      "message": "Improve service",
+      "files": {
+        "app.py": "print(\"v2\")\n",
+        "credentials.txt": "DEMO_ONLY_LEAKED_TOKEN\n"
+      }
+    }
+  ]
+}

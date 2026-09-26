@@ -1,0 +1,101 @@
+{
+  "lane": "registry",
+  "entries": [
+    {
+      "id": "T11",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_registry",
+      "test_class": "RosterDerivation",
+      "test_name": "test_roster_length_and_names_are_derived_from_marketplace",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/pairing/roster/26-plugins",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T12",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_registry",
+      "test_class": "TripletCompleteness",
+      "test_name": "test_reference_plugins_have_all_three_card_kinds",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/pairing/vacuous-cards/stub-identical-verifiers/card.json",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T13",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_corpus",
+      "test_class": "NegativeMustNotFire",
+      "test_name": "test_negative_cards_pass_direct_solution_and_fail_when_ritual_fires",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/tasks/graveyard/graveyard-neg-01/fixtures/pass",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T14",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_corpus",
+      "test_class": "NearMissDiscrimination",
+      "test_name": "test_near_miss_cards_discriminate_pass_from_both_adjacent_fixtures",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/tasks/graveyard/graveyard-near-01/fixtures/near-fail",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T15",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_corpus",
+      "test_class": "VerifierTwoSided",
+      "test_name": "test_every_card_verifier_is_two_sided_on_committed_fixtures",
+      "evidence_class": "real-fixture",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/tasks/voice/voice-pos-01/fixtures/pass",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T16",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_pairing",
+      "test_class": "ExposureParity",
+      "test_name": "test_baseline_arm_diverges_from_treatment_only_in_permitted_ways",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/pairing/exposure-parity",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T17",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_pairing",
+      "test_class": "EstimandArms",
+      "test_name": "test_four_estimands_are_distinct_and_correctly_shaped",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/pairing/estimand-arms",
+      "requires_real_marketplace": true,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T18",
+      "lane": "registry",
+      "module": "evals.agentic.tests.test_registry",
+      "test_class": "SamplingIntegrity",
+      "test_name": "test_scan_leakage_finds_zero_overlaps_against_real_plugin_surfaces",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/pairing/leakage/surface.md",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

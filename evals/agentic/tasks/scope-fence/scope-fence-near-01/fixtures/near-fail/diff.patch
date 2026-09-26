@@ -1,0 +1,10 @@
+--- a/parse_config.py
++++ b/parse_config.py
++import typing
++    if cfg is None:
+--- a/test_parse_config.py
++++ b/test_parse_config.py
++def test_none_cfg():
+--- a/unrelated.py
++++ b/unrelated.py
++    # reformatted for style

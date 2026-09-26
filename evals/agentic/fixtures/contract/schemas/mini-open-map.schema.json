@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://richlen.dev/agent-plugins/agentic/test-fixtures/mini-open-map.schema.json",
+  "type": "object",
+  "patternProperties": {
+    "^[a-z0-9-]+$": {"type": "integer"}
+  },
+  "additionalProperties": false
+}

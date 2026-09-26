@@ -1,0 +1,125 @@
+{
+  "lane": "measurement",
+  "entries": [
+    {
+      "id": "T32",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_accounting",
+      "test_class": "AttemptCompleteness",
+      "test_name": "test_conservation_identity_100_attempts",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/negative/dropped-coordination.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T33",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_accounting",
+      "test_class": "UnknownUsagePropagates",
+      "test_name": "test_total_is_partial_and_never_understated",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/usage/ten-attempts-one-unknown.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T34",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "NoCrossModelTokenAverage",
+      "test_name": "test_pool_without_by_raises_across_models",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/tokens/two-models.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T35",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "MatchedStrataAndFallbacks",
+      "test_name": "test_matched_pairs_excludes_fallback_attempts",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/strata/fallback-40-cards.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T36",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "AnyAllPass",
+      "test_name": "test_five_trials_three_pass_one_fail_one_fault",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/anyall/redgate-pos-01.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T37",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "ClusteredUncertainty",
+      "test_name": "test_wilson_with_cluster_inflation_widens_and_respects_band",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/clustered/wilson-cluster-inflation-16x5.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T38",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "ZeroDenominatorUnavailable",
+      "test_name": "test_all_fault_card_is_unavailable_with_reason",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/zero_denom/voice-neg-02.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T39",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_analysis",
+      "test_class": "NoninferiorityLowerBound",
+      "test_name": "test_established_when_lower_bound_clears_margin",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/noninferiority/margins.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T40",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_reporting",
+      "test_class": "OutcomeVsAdoption",
+      "test_name": "test_2x2_matches_worked_example",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/outcome_adoption/redgate-40.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    },
+    {
+      "id": "T41",
+      "lane": "measurement",
+      "module": "evals.agentic.tests.test_reporting",
+      "test_class": "GraderAgreementReuse",
+      "test_name": "test_round_trips_worked_example_via_the_real_script",
+      "evidence_class": "framework",
+      "approval_gate": "none",
+      "negative_control": "evals/agentic/fixtures/measurement/agreement/grader-a.json",
+      "requires_real_marketplace": false,
+      "reentrant_unsafe": false
+    }
+  ]
+}

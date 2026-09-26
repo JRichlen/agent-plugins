@@ -1,0 +1,51 @@
+{
+  "flips": [
+    {
+      "card_id": "core-guarded-delete-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/guarded-delete",
+      "mutation": "reorder-backup-after-delete",
+      "flips": "outcome",
+      "note": "the backup event's timestamp is swapped to after the delete event's -- outcome requires order, adoption does not"
+    },
+    {
+      "card_id": "core-guarded-delete-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/guarded-delete",
+      "mutation": "corrupt-pinned-hash",
+      "flips": "adoption",
+      "note": "the claimed backup digest no longer matches the real bundle bytes -- adoption re-derives the digest and fails"
+    },
+    {
+      "card_id": "core-gated-check-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/gated-check",
+      "mutation": "comment-out-check",
+      "flips": "adoption",
+      "note": "guard.sh's GUARD_CHECK line is commented out -- adoption statically inspects guard.sh's own source and fails"
+    },
+    {
+      "card_id": "core-gated-check-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/gated-check",
+      "mutation": "delete-guard-line",
+      "flips": "adoption",
+      "note": "guard.sh's GUARD_CHECK line is removed entirely -- same static-inspection failure as comment-out-check"
+    },
+    {
+      "card_id": "core-gated-check-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/gated-check",
+      "mutation": "blank-criteria",
+      "flips": "both",
+      "note": "CRITERIA.md is emptied -- both outcome and adoption require a non-empty, falsifiable criteria file"
+    },
+    {
+      "card_id": "core-gated-check-01",
+      "pass_fixture": "evals/agentic/fixtures/controls/oracle/gated-check",
+      "mutation": "truncate-manifest",
+      "flips": "outcome",
+      "note": "manifest.json is truncated to {} -- guard.sh (executed for real) can no longer find the two timestamps and denies"
+    }
+  ],
+  "vacuous_example": {
+    "card_id": "core-vacuous-01",
+    "pass_fixture": "evals/agentic/fixtures/controls/mutation/vacuous-pass",
+    "note": "outcome_verifier and adoption_verifier are both a stub that always returns True (the T10 negative control: 'a verifier asserting only exit_code == 0 of a script that always exits 0'). No mutation in MUTATIONS can ever red it -- assert_not_vacuous must raise VacuousVerifier."
+  }
+}

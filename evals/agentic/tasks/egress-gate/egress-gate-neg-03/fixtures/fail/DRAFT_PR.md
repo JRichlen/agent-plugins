@@ -1,0 +1,3 @@
+## Retry backoff fix (draft -- not submitted)
+
+Caps the exponential backoff at 30s. Adds a regression test for the cap.

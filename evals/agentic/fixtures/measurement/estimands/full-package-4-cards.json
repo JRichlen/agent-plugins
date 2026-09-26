@@ -1,0 +1,16 @@
+{
+  "description": "benchmark-spec §4.1's own worked example, verbatim: 4 cards, 5 trials per arm per card, card c4's treatment side carrying 1 fault (3/4 valid). Delta_full = (0.40+0.20-0.20+0.15)/4 = +0.1375. The interval reuses benchmark-spec §6.2 worked example A over these same 4 per-card deltas (cluster-t, C=4): CI=(-0.2596,+0.5346).",
+  "cards": {
+    "c1": {"treatment": ["pass", "pass", "pass", "pass", "fail"], "baseline": ["pass", "pass", "fail", "fail", "fail"]},
+    "c2": {"treatment": ["pass", "pass", "pass", "pass", "pass"], "baseline": ["pass", "pass", "pass", "pass", "fail"]},
+    "c3": {"treatment": ["pass", "pass", "fail", "fail", "fail"], "baseline": ["pass", "pass", "pass", "fail", "fail"]},
+    "c4": {"treatment": ["pass", "pass", "pass", "fail", "fault"], "baseline": ["pass", "pass", "pass", "fail", "fail"]}
+  },
+  "expected": {
+    "per_card_delta": {"c1": 0.40, "c2": 0.20, "c3": -0.20, "c4": 0.15},
+    "delta_full": 0.1375,
+    "lo": -0.2596,
+    "hi": 0.5346,
+    "n_clusters": 4
+  }
+}
