@@ -1,0 +1,66 @@
+{
+  "schema_version": "adaptive-review-experiment/v1",
+  "experiment_id": "issue-context-v1",
+  "status": "frozen",
+  "hypothesis": "A concise-review behavior reduces editing and improves comprehension without dropping required facts or actions.",
+  "feedback_signal": {
+    "shape": "Issue drafts contain enough context to obscure the decision and next action.",
+    "selected_by": "https://github.com/JRichlen/agent-plugins/issues/117",
+    "recurrence_threshold": 3,
+    "qualified_sightings": [],
+    "qualification": "explicit-user-directed experiment; no recurrence claim"
+  },
+  "preference": {
+    "statement": "For issue review, lead with the decision and retain only context needed to act.",
+    "scope": {
+      "task": "issue-review",
+      "repository": "JRichlen/agent-plugins"
+    },
+    "status": "candidate",
+    "inspect": "experiment.json#/preference",
+    "correct": "edit the candidate record and create a new experiment version",
+    "delete": "remove this experiment candidate; no hidden or remote preference state exists"
+  },
+  "corpus": "corpus.json",
+  "prompt_template": "prompt.template.txt",
+  "arms": {
+    "baseline": {
+      "query": "queries/baseline.json",
+      "image": "compiled/baseline.image.json",
+      "agent": "compiled/baseline.md"
+    },
+    "candidate": {
+      "query": "queries/candidate.json",
+      "image": "compiled/candidate.image.json",
+      "agent": "compiled/candidate.md"
+    }
+  },
+  "actor_qualification": {
+    "model_family": "Qwen 27B",
+    "model_digest_required": true,
+    "context_window": 32768,
+    "sequences": 1,
+    "external_fallback": false
+  },
+  "thresholds": {
+    "minimum_held_out_pairs": 6,
+    "candidate_wins": 4,
+    "baseline_wins_max": 1,
+    "mean_comprehension_lift": 0.75,
+    "median_edit_reduction": 1.0,
+    "candidate_acceptable_rate": 1.0,
+    "candidate_missing_required_max": 0,
+    "judge_candidate_missing_required_max": 0,
+    "judge_human_agreement": 0.8,
+    "judge_human_kappa": 0.6,
+    "judge_winner_agreement": 0.8,
+    "judge_candidate_wins": 4
+  },
+  "advancement": {
+    "automatic_install": false,
+    "eligible_scope": "issue-review only",
+    "approval_required": true,
+    "monitor": "repeat the held-out comparison after material feedback or model changes",
+    "rollback": "remove the scoped candidate agent and restore the recorded baseline image hash"
+  }
+}

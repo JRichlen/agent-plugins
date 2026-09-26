@@ -1,0 +1,9 @@
+{
+  "name": "issue-review-baseline",
+  "role": "reviewer",
+  "task": "issue-review",
+  "domains": [],
+  "views": ["view.issue-review-baseline"],
+  "stance": ["goal-aligned"],
+  "effectCeiling": ["filesystem:read"]
+}

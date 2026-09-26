@@ -1,0 +1,8 @@
+{
+  "experiment_id": "issue-context-v1",
+  "outcome": "inconclusive",
+  "evidence": "not-run",
+  "advance": false,
+  "reason": "No authorized pinned local Qwen 27B actor run, blinded human labels, or separately authorized independent frontier-judge run exists.",
+  "next_step": "Run the frozen two-arm experiment through the approved agent-request capability, retain the private artifacts, then evaluate them without changing the preregistered thresholds."
+}
