@@ -32,7 +32,9 @@ concurrency:
 jobs:
   cheap:
     name: cheap tier (deterministic, offline)
-    runs-on: ubuntu-latest
+    # Pinned: the agentic gate's bubblewrap sandbox cannot start on ubuntu-26.04
+    # (unprivileged user namespaces are restricted). Revisit before 24.04 retires.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,7 +135,9 @@ jobs:
     name: counterfeit tier — run (corpus)
     needs: [counterfeit-detect]
     if: needs.counterfeit-detect.outputs.changed == 'true'
-    runs-on: ubuntu-latest
+    # Pinned: the agentic gate's bubblewrap sandbox cannot start on ubuntu-26.04
+    # (unprivileged user namespaces are restricted). Revisit before 24.04 retires.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
