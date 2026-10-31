@@ -1,7 +1,7 @@
 {
   "name": "find-before-build",
   "version": "0.0.1",
-  "description": "Search for the existing implementation before writing a new one: name the searches you ran for an existing helper, abstraction, or pattern and what they returned, before introducing anything new. Use before adding a utility, wrapper, config knob, or dependency to a codebase you did not write end-to-end.",
+  "description": "Search for the existing implementation before writing a new one: name the searches run for an existing helper, abstraction, or pattern and what they returned.",
   "author": {
     "name": "Jordan Richlen"
   },

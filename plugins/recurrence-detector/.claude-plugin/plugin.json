@@ -1,7 +1,7 @@
 {
   "name": "recurrence-detector",
   "version": "0.0.1",
-  "description": "Close the growth loop's DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.",
+  "description": "Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, scope-fence findings, unmet criteria, diary entries) by failure shape and surface repeat shapes as named candidate invariants. Proposes; never scaffolds. Use when asking what keeps going wrong.",
   "author": {
     "name": "Jordan Richlen"
   },

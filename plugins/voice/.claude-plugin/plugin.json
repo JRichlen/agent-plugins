@@ -1,7 +1,7 @@
 {
   "name": "voice",
   "version": "0.1.0",
-  "description": "Route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus ai-writing-mistakes, a wording pass that strips the tells marking prose as machine-written, and second-opinion, an offer-only subagent validation pipeline that never runs unbidden.",
+  "description": "Route every response element to exactly one voice: prose to human-voice, machine-read artifacts to machine-voice; plus ai-writing-mistakes (wording pass) and second-opinion (offer-only validation).",
   "author": {
     "name": "Jordan Richlen"
   },
