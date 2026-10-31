@@ -49,7 +49,7 @@ multiple machines and want it to resolve identically every time.
 | [**jori**](plugins/jori/) | Coordinate complex work with bounded agents, evidence, and proportional dashboards. |
 | [**agent-compiler**](plugins/agent-compiler/) | Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, then a stdlib-only kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage with per-line provenance. |
 | [**eval-ladder**](plugins/eval-ladder/) | Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing, auditing, or defending a test/eval strategy for an agent, skill, or prompt; when adding an eval tier or LLM judge; or when a suite is all-green and you cannot say what it would catch. |
-| [**consolidation-map**](plugins/consolidation-map/) | Map a catalog consolidation by unit of work rather than by file, with one verb per entity and counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages. |
+| [**consolidation-map**](plugins/consolidation-map/) | Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry

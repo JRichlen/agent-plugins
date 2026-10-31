@@ -1,6 +1,6 @@
 # AGENTS.md — consolidation-map
 
-Map a catalog consolidation by unit of work rather than by file, with one verb per entity and counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages.
+Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages.
 
 ## How to use it
 

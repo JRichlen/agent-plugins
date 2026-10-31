@@ -114,4 +114,4 @@ any additional guidance at all" (the missing-placebo error).
 
 # Generic careful-engineering guidance (placebo block)
 
-This block is plugin-independent. It carries ordinary, non
+This block is plugin-independent. It carrie

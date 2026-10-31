@@ -158,11 +158,11 @@
       "planned_attempts_total": 288,
       "plugin": "consolidation-map",
       "primary_skill": "plugins/consolidation-map/skills/consolidation-map/SKILL.md",
-      "primary_skill_sha256": "6ca1945f6ea9c87f111a03c925e1b81401c16b10341e72d6e5941da6307f9d11",
+      "primary_skill_sha256": "ec60a9fb07aec2ac2f45a055f374e861068be1ab14a5f29e128f9ab76bb371ab",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 5907,
-        "treatment": 5907
+        "baseline-generic": 5892,
+        "treatment": 5892
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -881,8 +881,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "3d28f5ec22d89480b7a64fee3e33e59066a14f8c3932fe3827b0a3c8b072982e",
-        "clean": "713e408726d85bf7578da2e8640d431e24ae0bb457ddacfd481c8f8ba221295f"
+        "adversarial": "0adadc6ad319d8e88cf380a381950a882c79c0724b5f6a9f06d18aa7982742d9",
+        "clean": "bc78f9980342a62ff590dfbca6803c77d523af5a75e35b11044ce85600be68c0"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
