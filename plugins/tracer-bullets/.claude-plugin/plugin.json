@@ -1,7 +1,7 @@
 {
   "name": "tracer-bullets",
   "version": "1.0.0",
-  "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place \u2014 for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build.",
+  "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place \u2014 for both software delivery and open-ended investigation/research. Use when scoping new work or de-risking unknowns.",
   "author": {
     "name": "Jordan Richlen"
   },

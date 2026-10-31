@@ -1,7 +1,7 @@
 {
   "name": "semver-gate",
   "version": "1.1.0",
-  "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one \u2014 name the restore path and exercise it. Act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR; sign-off authorizes the action, the rehearsal proves the exit. Use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json's autoMode patterns don't enumerate.",
+  "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one \u2014 name the restore path and exercise it. Use mid-task when unsure how much autonomy to take.",
   "author": {
     "name": "Jordan Richlen"
   },

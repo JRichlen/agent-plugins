@@ -1,7 +1,7 @@
 {
   "name": "redgate",
   "version": "0.1.0",
-  "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates. Compose around the most-specific specialist skill or recipe; Redgate reinforces execution and verification rather than replacing the domain procedure.",
+  "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates.",
   "author": {
     "name": "Jordan Richlen"
   },

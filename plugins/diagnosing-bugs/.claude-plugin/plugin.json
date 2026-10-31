@@ -1,7 +1,7 @@
 {
   "name": "diagnosing-bugs",
   "version": "1.0.0",
-  "description": "Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing a bug, debugging a failure, triaging an error, or the user asks to diagnose/root-cause/troubleshoot an issue.",
+  "description": "Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing or root-causing a bug.",
   "author": {
     "name": "Jordan Richlen"
   },

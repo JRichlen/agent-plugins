@@ -43,7 +43,7 @@
     },
     {
       "name": "plugin-factory",
-      "description": "Scaffold a new marketplace plugin skeleton in one command: a deterministic generator emits a valid plugin.json, an invariant-first SKILL.md, cross-harness AGENTS.md symlinks, a command stub, and a red-by-default eval that fails closed until you implement real checks — then wires it into the marketplace lockfile.",
+      "description": "Scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first SKILL.md, AGENTS.md symlinks, command stub, and a red-by-default eval, wired into the marketplace.",
       "version": "1.1.0",
       "source": "./plugins/plugin-factory",
       "author": {
@@ -98,7 +98,7 @@
     },
     {
       "name": "dev-diary",
-      "description": "Keep a scannable developer journal that writes itself: discover a day's work from local Claude Code sessions, git commits, and prompt history; interview the user about what mattered and why; and record a tight, dated entry. Ships /dev-diary (write today) and /dev-diary-review (revise a past day). The journal is a separate private repo; this plugin is just the tool.",
+      "description": "Keep a scannable developer journal that writes itself: discover the day's work from sessions, commits and prompts, interview the user, record a dated entry. Ships /dev-diary and /dev-diary-review.",
       "version": "1.0.0",
       "source": "./plugins/dev-diary",
       "author": {
@@ -116,7 +116,7 @@
     },
     {
       "name": "voice",
-      "description": "Route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus ai-writing-mistakes, a wording pass that strips the tells marking prose as machine-written, and second-opinion, an offer-only subagent validation pipeline that never runs unbidden.",
+      "description": "Route every response element to exactly one voice: prose to human-voice, machine-read artifacts to machine-voice; plus ai-writing-mistakes (wording pass) and second-opinion (offer-only validation).",
       "version": "0.1.0",
       "source": "./plugins/voice",
       "author": {
@@ -140,7 +140,7 @@
     },
     {
       "name": "grill-me",
-      "description": "Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch's stakes (reversibility x blast radius) while offering a recommendation at almost every step. Use on phrases like grill me, interview me about this plan, stress-test this plan, or before starting a nontrivial multi-step change whose design isn't yet settled.",
+      "description": "Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch's stakes (reversibility x blast radius) while offering a recommendation at almost every step. Use on \"grill me\" or \"stress-test this plan\".",
       "version": "1.0.0",
       "source": "./plugins/grill-me",
       "author": {
@@ -157,7 +157,7 @@
     },
     {
       "name": "tracer-bullets",
-      "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work, de-risking unknowns, or planning how to explore an unfamiliar problem before committing to a full build.",
+      "description": "Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work or de-risking unknowns.",
       "version": "1.0.0",
       "source": "./plugins/tracer-bullets",
       "author": {
@@ -175,7 +175,7 @@
     },
     {
       "name": "semver-gate",
-      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR; sign-off authorizes the action, the rehearsal proves the exit. Use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json's autoMode patterns don't enumerate.",
+      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Use mid-task when unsure how much autonomy to take.",
       "version": "1.1.0",
       "source": "./plugins/semver-gate",
       "author": {
@@ -219,7 +219,7 @@
     },
     {
       "name": "diagnosing-bugs",
-      "description": "Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing a bug, debugging a failure, triaging an error, or the user asks to diagnose/root-cause/troubleshoot an issue.",
+      "description": "Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing or root-causing a bug.",
       "version": "1.0.0",
       "source": "./plugins/diagnosing-bugs",
       "author": {
@@ -237,7 +237,7 @@
     },
     {
       "name": "docs-hygiene",
-      "description": "Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files (root vs nested, SKILL.md vs its parent AGENTS.md) down to one explicit kept version instead of leaving both to stand. Use before trusting or propagating any instruction-file claim you haven't personally re-checked, whenever onboarding a repo's docs for the first time, right after a refactor/rename/policy change that could invalidate what's documented, or whenever two instruction files (or an instruction file and the actual repo) say different things about the same fact. Trigger phrases: 'audit the docs', 'is AGENTS.md still accurate', 'clean up CLAUDE.md', 'these instructions contradict each other', 'refactor the AGENTS.md files'.",
+      "description": "Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files. Use to audit docs or when instruction files contradict each other.",
       "version": "1.0.0",
       "source": "./plugins/docs-hygiene",
       "author": {
@@ -257,7 +257,7 @@
     },
     {
       "name": "context-handoff",
-      "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. Use this when the context window is getting full, you're wondering whether to clear or compact, you need to hand off to another harness, directory, or colleague, you've hit a phase boundary and aren't sure whether to keep going or start fresh, or you want to cache hard-won research before it's lost.",
+      "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline.",
       "version": "1.0.0",
       "source": "./plugins/context-handoff",
       "author": {
@@ -276,7 +276,7 @@
     },
     {
       "name": "codebase-design",
-      "description": "Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use on \"before committing to an interface\", \"design this API/module/class boundary\", \"how should this be structured\", \"compare interface designs\", \"is this the right abstraction\", \"design it twice\", reviewing a proposed interface shape in a PR — or self-trigger whenever about to write a new interface meeting that bar.",
+      "description": "Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use for \"design it twice\".",
       "version": "1.0.0",
       "source": "./plugins/codebase-design",
       "author": {
@@ -313,7 +313,7 @@
     },
     {
       "name": "scope-fence",
-      "description": "Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to 'fix it while I'm here', or when reviewing whether a diff crept beyond its mandate.",
+      "description": "Keep every hunk of the diff traceable to the stated task: out-of-scope discoveries become findings (ticket, note, diary entry), never same-change fixes.",
       "version": "0.0.1",
       "source": "./plugins/scope-fence",
       "author": {
@@ -331,7 +331,7 @@
     },
     {
       "name": "find-before-build",
-      "description": "Search for the existing implementation before writing a new one: name the searches you ran for an existing helper, abstraction, or pattern and what they returned, before introducing anything new. Use before adding a utility, wrapper, config knob, or dependency to a codebase you did not write end-to-end.",
+      "description": "Search for the existing implementation before writing a new one: name the searches run for an existing helper, abstraction, or pattern and what they returned.",
       "version": "0.0.1",
       "source": "./plugins/find-before-build",
       "author": {
@@ -349,7 +349,7 @@
     },
     {
       "name": "egress-gate",
-      "description": "Before any call that transmits repo or user content off-machine (posting a comment, pushing a branch, calling an external API with file contents in the payload), state what is being sent and to whom — permission modes gate the call, this gates the content. Use whenever output leaves the machine to a destination the user didn't name in this task.",
+      "description": "Before any call that transmits repo or user content off-machine (posting a comment, pushing a branch, calling an external API with file contents in the payload), state what is being sent and to whom — permission modes gate the call, this gates the content.",
       "version": "0.0.1",
       "source": "./plugins/egress-gate",
       "author": {
@@ -367,7 +367,7 @@
     },
     {
       "name": "stop-rule",
-      "description": "A halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report the state with hypotheses — never make attempt N+1 on momentum. Use when re-pushing to fix CI, retrying a flaky repro, or any loop where each retry is a guess rather than a diagnosis.",
+      "description": "A halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report state with hypotheses.",
       "version": "0.0.1",
       "source": "./plugins/stop-rule",
       "author": {
@@ -385,7 +385,7 @@
     },
     {
       "name": "redgate",
-      "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates. Compose around the most-specific specialist skill or recipe; Redgate reinforces execution and verification rather than replacing the domain procedure.",
+      "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates.",
       "version": "0.1.0",
       "source": "./plugins/redgate",
       "author": {
@@ -406,7 +406,7 @@
     },
     {
       "name": "recurrence-detector",
-      "description": "Close the growth loop's DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.",
+      "description": "Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, scope-fence findings, unmet criteria, diary entries) by failure shape and surface repeat shapes as named candidate invariants. Proposes; never scaffolds. Use when asking what keeps going wrong.",
       "version": "0.0.1",
       "source": "./plugins/recurrence-detector",
       "author": {
@@ -434,7 +434,7 @@
     },
     {
       "name": "agent-compiler",
-      "description": "Compile deterministic, content-hashed agents from small behavior modules: a skill turns fuzzy intent into a typed AgentQuery, a stdlib-only kernel resolves modules, expands dependencies, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage plus a rendered harness-native subagent — never inventing behavior text without provenance.",
+      "description": "Compile deterministic, content-hashed agents from small behavior modules: a typed AgentQuery in, an immutable AgentImage and rendered harness-native subagent out; fails closed on conflicts.",
       "version": "0.3.0",
       "source": "./plugins/agent-compiler",
       "author": {
@@ -453,7 +453,7 @@
     },
     {
       "name": "eval-ladder",
-      "description": "Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing, auditing, or defending a test/eval strategy for an agent, skill, or prompt; when adding an eval tier or LLM judge; or when a suite is all-green and you cannot say what it would catch.",
+      "description": "Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing or auditing a test/eval strategy.",
       "version": "0.0.1",
       "source": "./plugins/eval-ladder",
       "author": {
