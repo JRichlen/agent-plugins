@@ -1058,7 +1058,6 @@ pack: jori/cheap
 pack: jori/promptfoo
 pack: orchestrate/cheap
 pack: plugin-factory/cheap
-pack: prove-the-undo/cheap
 pack: recurrence-detector/cheap
 pack: redgate/cheap
 pack: redgate/promptfoo

@@ -27,7 +27,7 @@
     },
     "plugins/agent-compiler/registry/behaviors/discipline/prove-the-undo.md": {
       "source": "plugins/agent-compiler/registry/behaviors/discipline/prove-the-undo.md",
-      "sha256": "71f0f7190a13146082680bc33449f581c4a8633b6b75e33b76b97e5a73b31737"
+      "sha256": "f4dde7808414e777fcade16e7deb55d848a13e2a2243019f434ac8b9b8c63e9e"
     },
     "plugins/agent-compiler/registry/behaviors/discipline/scope-fence.md": {
       "source": "plugins/agent-compiler/registry/behaviors/discipline/scope-fence.md",

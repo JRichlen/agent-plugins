@@ -48,6 +48,21 @@ for f in glob.glob(os.path.join(root, "docs", "examples", "data", "*.json")):
     except Exception:
         pass
 
+# A skill can ship inside another plugin (prove-the-undo lives in semver-gate),
+# so a before/after snapshot keyed by skill name belongs on the card of the
+# plugin that hosts it when no plugin of that name exists.
+plugin_names = {p["name"] for p in plugins}
+hosted = {}
+for sk in glob.glob(os.path.join(root, "plugins", "*", "skills", "*", "SKILL.md")):
+    host, skill = sk.split(os.sep)[-4], sk.split(os.sep)[-2]
+    if skill != host and skill not in plugin_names:
+        hosted.setdefault(host, []).append(skill)
+
+def example_key(name):
+    if name in snaps:
+        return name
+    return next((sk for sk in sorted(hosted.get(name, [])) if sk in snaps), None)
+
 def has_pack(name):
     return os.path.isfile(os.path.join(root, "plugins", name, "evals", "promptfoo", "promptfooconfig.yaml"))
 def has_deep(name):
@@ -61,14 +76,15 @@ DEEP_BLURB = {
 rows = []
 for p in plugins:
     name = p["name"]
-    ex = snaps.get(name)
+    ex_key = example_key(name)
+    ex = snaps.get(ex_key) if ex_key else None
     if ex:
         tiers = ("stark", "strong", "moderate", "subtle")
         label = ex["div"] if ex["div"] in tiers else "example"
         title = (f'before/after example — judged divergence: {ex["div"]}; {ex["kind"]}'
                  if ex["div"] in tiers else
                  f'before/after example — {"described without a one-word grade" if ex["div"] == "untagged" else "divergence not judged"}; {ex["kind"]}')
-        ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(name)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
+        ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(ex_key)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
     else:
         ex_html = '<span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span>'
     pack_html = ('<span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span>'
@@ -85,7 +101,7 @@ for p in plugins:
     <p class="p-links"><code>/plugin install {esc(name)}@jrichlen</code>{deep_html}</p>
   </li>''')
 
-n_ex = sum(1 for p in plugins if p["name"] in snaps)
+n_ex = sum(1 for p in plugins if example_key(p["name"]))
 n_pack = sum(1 for p in plugins if has_pack(p["name"]))
 n_deep = sum(1 for p in plugins if has_deep(p["name"]))
 deep_cards = "".join(f'''

@@ -67,7 +67,7 @@ Redgate criteria and checks are subject deliverables and are never seeded.
 not imply grader ownership: negative cards often share the same correct
 answer, and injecting it would let an empty workspace pass.
 
-All 27 positive reference tasks expose their output interfaces and explicitly
+Every positive reference task exposes their output interfaces and explicitly
 declare any additional repository inputs. Input declarations cannot point at
 pass/fail fixtures or grading code. Hidden output filenames and ritual-only
 requirements must not become a utility criterion.
@@ -137,11 +137,10 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | jori | Work cards with IDs, owners, and states |
 | orchestrate | Claim-specific evidence and verdict artifact |
 | plugin-factory | Plugin/marketplace/invariant scaffold or an attempted new-plugin artifact |
-| prove-the-undo | Restore-path and rehearsal artifact |
 | recurrence-detector | Watched/promoted candidate and sightings |
 | redgate | Actual run directory and phase manifest |
 | scope-fence | Patch plus concrete out-of-scope findings |
-| semver-gate | Consequence classification and concrete question |
+| semver-gate | Consequence classification and concrete question; the `-02` cards exercise its second skill, `prove-the-undo`, and observe a restore-path and rehearsal artifact |
 | stop-rule | Objective, attempts, and next hypotheses |
 | tailscale-wif | WIF setup change compared with supplied workflow input |
 | tracer-bullets | Retained slice or prototype assessment and learnings |

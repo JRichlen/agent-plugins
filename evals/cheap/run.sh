@@ -1763,8 +1763,10 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
             prob.append("a seed cannot claim a GitHub attestation — only the refresh workflow signs snapshots")
     else:
         prob.append(f"unknown provenance.source '{src}' (expected promptfoo* or *seed*)")
-    # a plugin snapshot must name a real installed plugin
-    if s.get("plugin") and not os.path.isdir(os.path.join(root, "plugins", s["plugin"])):
+    # a plugin snapshot must name a real installed plugin — or a skill that
+    # ships inside one (prove-the-undo is the second skill of semver-gate)
+    if s.get("plugin") and not (os.path.isdir(os.path.join(root, "plugins", s["plugin"]))
+                                or glob.glob(os.path.join(root, "plugins", "*", "skills", s["plugin"], "SKILL.md"))):
         prob.append(f"plugin '{s['plugin']}' is not installed")
     if prob:
         print(f"  FAIL examples/{name}: " + "; ".join(prob)); fail += 1

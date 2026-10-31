@@ -8,8 +8,8 @@ risks: [high, critical]
 
 # Prove the undo
 
-Derived from the `prove-the-undo` plugin invariant
-(`plugins/prove-the-undo/AGENTS.md`). Applicability-scoped: selected only for
+Derived from the `prove-the-undo` skill invariant
+(`plugins/semver-gate/AGENTS.md`). Applicability-scoped: selected only for
 high/critical-risk queries.
 
 <rule id="exercise-the-restore" strength="must">

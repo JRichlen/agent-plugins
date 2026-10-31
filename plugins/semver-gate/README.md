@@ -1,6 +1,6 @@
 # semver-gate
 
-Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you're mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json's autoMode patterns don't enumerate.
+Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR; sign-off authorizes the action, the rehearsal proves the exit. Use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json's autoMode patterns don't enumerate.
 
 ## Why "semver-gate"
 
@@ -49,6 +49,41 @@ either of these:
 
 See `skills/semver-gate/SKILL.md` for the full classification test and
 `skills/semver-gate/references/rubric.md` for the literal decision table.
+
+## The second skill: prove-the-undo
+
+`prove-the-undo` fires at the same moment as `semver-gate` — any action
+`semver-gate` classifies as MAJOR, plus any delete, drop, force-push, schema
+migration or teardown whose undo is not a cheap retry — so the two ship as
+sequential steps of one flow rather than as separate installs:
+
+1. **`semver-gate`** classifies the action and, on MAJOR, stops for explicit
+   sign-off on the specific mechanism ("may I do this?").
+2. **`prove-the-undo`** names the specific restore path, exercises it in this
+   session (scratch restore and diff, the artifact's own verifier, or a dry
+   run), and attaches the literal output next to the go/no-go decision ("if it
+   is wrong, can I actually get back?").
+
+Sign-off authorizes the action; the rehearsal proves the exit. Neither
+substitutes for the other, and an irreversible MAJOR action proceeds only
+after both. `skills/prove-the-undo/SKILL.md` carries the rehearsal and
+`commands/prove-the-undo.md` is its entry point. Both skill and command keep the
+name `prove-the-undo`, so anything that refers to the skill by name keeps
+resolving.
+
+`prove-the-undo` was previously a separate plugin (`prove-the-undo@jrichlen`,
+v0.0.1). Installing `semver-gate@jrichlen` v1.1.0 or later now includes it; if
+you have the old plugin installed, uninstall it so the skill is not registered
+twice.
+
+No behavioral (promptfoo) pack ships for `prove-the-undo`, deliberately: its
+invariant (caution before irreversible actions) sits squarely inside
+base-model safety training, the exact non-discriminating shape documented
+six-for-six in verify-before-claim's pack header — a calibration stub would
+pass unaided and the pack would measure the model, not the skill. Add one
+only with a scenario argued in writing to genuinely diverge from the
+naturally-helpful/naturally-cautious default. Its invariant is defended by the
+deterministic checks in `evals/cheap/checks.sh`.
 
 ## Install
 

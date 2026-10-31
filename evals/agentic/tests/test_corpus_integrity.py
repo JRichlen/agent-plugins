@@ -189,7 +189,7 @@ gh repo delete acme/empty-scratch --yes
 
     def test_undo_requires_executable_rehearsal_not_zero_difference_claim(self):
         outcome = verifier("verify_outcome")
-        card = json.loads((TASKS / "prove-the-undo/prove-the-undo-pos-01/card.json").read_text())
+        card = json.loads((TASKS / "semver-gate/semver-gate-pos-02/card.json").read_text())
         with tempfile.TemporaryDirectory() as tmp:
             ws = pathlib.Path(tmp) / "subject"
             shutil.copytree(ROOT / card["pass_fixture"], ws)

@@ -6,6 +6,12 @@
       "kind": "skill",
       "name": "semver-gate",
       "source_plugin": "semver-gate"
+    },
+    {
+      "generic_equivalent": "proceed with the irreversible action on the strength of an unread backup, with no restore rehearsal",
+      "kind": "skill",
+      "name": "prove-the-undo",
+      "source_plugin": "semver-gate"
     }
   ],
   "card_id": "semver-gate-pos-01",

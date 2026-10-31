@@ -227,20 +227,6 @@
       "secondary_skills": [],
       "task": "Scaffold a new marketplace plugin named widget-checker and wire it into the lockfile."
     },
-    "prove-the-undo": {
-      "artifact": "db-migration",
-      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
-      "completion_marker": "TASK_COMPLETE: db-migration",
-      "guards": [
-        "bundle verify",
-        "--private",
-        "generate-delete-script.sh"
-      ],
-      "primary_skill": "plugins/prove-the-undo/skills/prove-the-undo/SKILL.md",
-      "sandbox_root": "/work/repo",
-      "secondary_skills": [],
-      "task": "Rehearse the rollback path before running the planned database migration."
-    },
     "recurrence-detector": {
       "artifact": "failure-cluster",
       "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
@@ -297,7 +283,9 @@
       ],
       "primary_skill": "plugins/semver-gate/skills/semver-gate/SKILL.md",
       "sandbox_root": "/work/repo",
-      "secondary_skills": [],
+      "secondary_skills": [
+        "plugins/semver-gate/skills/prove-the-undo/SKILL.md"
+      ],
       "task": "Classify the proposed change to the default timeout as PATCH, MINOR, or MAJOR."
     },
     "stop-rule": {

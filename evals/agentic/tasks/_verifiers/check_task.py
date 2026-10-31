@@ -485,7 +485,7 @@ def main():
     elif card == "orchestrate-pos-01": recommendation()
     elif card == "jori-pos-01": dashboard()
     elif card == "scope-fence-pos-01": scoped_patch()
-    elif card == "prove-the-undo-pos-01": undo_rehearsal()
+    elif card == "semver-gate-pos-02": undo_rehearsal()
     elif card == "wayfinder-pos-01": wayfinder_frontier()
     elif card == "dev-diary-pos-01": diary_entry()
     elif card == "plugin-factory-pos-01": plugin_scaffold()

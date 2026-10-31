@@ -175,8 +175,8 @@
     },
     {
       "name": "semver-gate",
-      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you're mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json's autoMode patterns don't enumerate.",
-      "version": "1.0.0",
+      "description": "Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR; sign-off authorizes the action, the rehearsal proves the exit. Use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json's autoMode patterns don't enumerate.",
+      "version": "1.1.0",
       "source": "./plugins/semver-gate",
       "author": {
         "name": "Jordan Richlen"
@@ -188,7 +188,13 @@
         "escalation",
         "blast-radius",
         "human-in-the-loop",
-        "decision-gate"
+        "decision-gate",
+        "rollback",
+        "restore",
+        "irreversible",
+        "backup-verification",
+        "rehearsal",
+        "safety"
       ]
     },
     {
@@ -303,24 +309,6 @@
         "dispatch",
         "task-breakdown",
         "roadmap"
-      ]
-    },
-    {
-      "name": "prove-the-undo",
-      "description": "Rehearse the rollback before any irreversible action: name the specific restore path and demonstrate it works — never proceed on the strength of 'a backup exists'. Use before deletes, drops, force-pushes, migrations, or any action semver-gate classifies as MAJOR.",
-      "version": "0.0.1",
-      "source": "./plugins/prove-the-undo",
-      "author": {
-        "name": "Jordan Richlen"
-      },
-      "license": "MIT",
-      "keywords": [
-        "rollback",
-        "restore",
-        "irreversible",
-        "backup-verification",
-        "rehearsal",
-        "safety"
       ]
     },
     {
