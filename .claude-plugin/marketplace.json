@@ -486,6 +486,25 @@
         "reconciliation",
         "unit-of-work"
       ]
+    },
+    {
+      "name": "wave-research",
+      "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups.",
+      "version": "0.0.1",
+      "source": "./plugins/wave-research",
+      "author": {
+        "name": "Jordan Richlen"
+      },
+      "license": "MIT",
+      "keywords": [
+        "research",
+        "adversarial",
+        "falsifiable",
+        "hypotheses",
+        "ach-matrix",
+        "checkpoints",
+        "thesis"
+      ]
     }
   ]
 }

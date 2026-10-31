@@ -1075,6 +1075,7 @@ pack: verify-before-claim/cheap
 pack: verify-before-claim/promptfoo
 pack: voice/cheap
 pack: voice/promptfoo
+pack: wave-research/cheap
 pack: wayfinder/cheap
 pack: wayfinder/promptfoo
 workflow: calibration-sheet.yml

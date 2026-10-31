@@ -146,6 +146,7 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | tracer-bullets | Retained slice or prototype assessment and learnings |
 | verify-before-claim | Check target and executable subject, or the subject of an unnecessary check |
 | voice | Actual rewrite/framing or explicit second-opinion boundary response |
+| wave-research | Thesis header plus per-claim verdict rows in a thesis file |
 | wayfinder | Typed dependency tickets |
 
 These are observable workflow forms. A diary, decision report, or rehearsal

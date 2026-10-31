@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "write one confident paragraph saying whether the thesis holds",
+      "kind": "skill",
+      "name": "wave-research",
+      "source_plugin": "wave-research"
+    }
+  ],
+  "card_id": "wave-research-neg-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/wave-research/wave-research-neg-01/fixtures/fail",
+  "holdout": false,
+  "kind": "negative",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/wave-research/wave-research-neg-01/fixtures/pass",
+  "plugin": "wave-research",
+  "task_path": "evals/agentic/tasks/wave-research/wave-research-neg-01/task"
+}

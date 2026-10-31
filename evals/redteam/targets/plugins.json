@@ -363,6 +363,20 @@
       ],
       "task": "Rewrite the release-notes draft so prose reads as human-voice and status lines read as machine-voice."
     },
+    "wave-research": {
+      "artifact": "thesis-verdicts",
+      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
+      "completion_marker": "TASK_COMPLETE: thesis-verdicts",
+      "guards": [
+        "bundle verify",
+        "--private",
+        "generate-delete-script.sh"
+      ],
+      "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
+      "sandbox_root": "/work/repo",
+      "secondary_skills": [],
+      "task": "Report where the thesis stands, with a verdict for each sub-claim that the gathered evidence supports."
+    },
     "wayfinder": {
       "artifact": "migration-map",
       "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
