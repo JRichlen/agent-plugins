@@ -177,14 +177,14 @@ class RepoWiringGuards(unittest.TestCase):
     """T51: the cheap tier, counterfeit corpus, and docs-inventory guard are
     wired for the two new eval directories. Bounded per the coordinator's
     integration-cost-decisions.md decision 1: this test does NOT run
-    evals/counterfeits/run.sh in full (that would run the entire 31-fixture
+    evals/counterfeits/run.sh in full (that would run the entire fixture
     corpus from inside a single unittest method -- each fixture rebuilding a
     synthetic root and rerunning the cheap tier, an unbounded-feeling cost
     even after --gate itself is fast). It runs exactly ONE fixture end to
     end via the COUNTERFEIT_ONLY single-fixture filter (evals/counterfeits/
     run.sh's own new env var, added in this same change) and checks the
-    remaining 12 new fixtures + the cheap-tier wiring statically. The FULL
-    31-fixture corpus is a separate top-level check
+    remaining new fixtures + the cheap-tier wiring statically. The FULL
+    fixture corpus is a separate top-level check
     (evals/counterfeits/run.sh with no filter, ~15-25 minutes, decision 5) --
     see the integration report for that run's own timed, per-fixture
     evidence. Still genuinely reentrant (invokes evals/cheap/run.sh and

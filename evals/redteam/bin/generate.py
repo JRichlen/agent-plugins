@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""bin/generate.py — emits configs/generated/<plugin>.yaml for all 25
-marketplace plugins (T46, design §7.4).
+"""bin/generate.py — emits configs/generated/<plugin>.yaml for every
+marketplace plugin (T46, design §7.4).
 
 Python 3.12 standard library only.
 
@@ -13,7 +13,7 @@ three providers (`baseline`, `baseline-generic`, `treatment` -- distinct
 `file://` ids so promptfoo never pools the arms, §7.3) crossed with 32 test
 rows (16 clean, 16 adversarial corpus items) and `evaluateOptions.repeat: 3`,
 giving the six cells C1-C6 (3 arms x 2 conditions) and 288 planned attempts
-per plugin -- 7200 across all 25.
+per plugin -- the total scales with the plugin count.
 
 What differs between the three arms lives ENTIRELY in each provider's
 `config.skillPath` (null / targets/generic-guidance.md / this plugin's real

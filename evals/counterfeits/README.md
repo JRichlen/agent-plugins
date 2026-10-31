@@ -75,9 +75,9 @@ Fixtures `19`-`31` are new in this change (contract §8.8, backlog T51): they
 exercise `evals/cheap/run.sh` section 22's `evals/agentic/run.sh --gate` /
 `evals/redteam/run.sh --gate` calls, reached only once `build_root()` stages
 `evals/agentic/**` and `evals/redteam/**` into the synthetic root (above).
-Total corpus after this change: 18 existing + 13 new = **31 fixtures**. A
-full run measures **31 of 31** rejected by the expected gate, ~5-6 minutes
-on this host.
+The corpus is whatever is under `fixtures/` (`ls fixtures | wc -l` counts
+it). A full run reports each fixture as rejected by the expected gate, ~5-6
+minutes on this host.
 
 **`31-redteam-vacuous-row`'s history is worth reading before touching this
 gate again.** Its mutation (`testCase.options.disableDefaultAsserts: true`

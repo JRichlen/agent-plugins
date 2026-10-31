@@ -10,7 +10,7 @@ Python 3.12 standard library only.
                                                               # exit 1 on drift
 
 This is a SCOPED, generic-only sibling of the full per-plugin `bin/generate.py`
-the design's §7.4 describes for T46's 25-plugin 2x2. That generator is part-2
+the design's §7.4 describes for T46's per-plugin 2x2. That generator is part-2
 / out of scope for this delivery (it needs `targets/plugins.json`, one row per
 marketplace plugin, and the placebo/exposure-parity machinery). This script
 exists so T45's offline form — "do the safe/vulnerable/refusenik scripted

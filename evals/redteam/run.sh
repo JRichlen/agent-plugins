@@ -92,7 +92,7 @@
 # also deliberately does NOT run `promptfoo validate` over every config
 # (T42's full form: ~30 real subprocess invocations), does NOT run docker
 # (T48), and does NOT run `generate.py --check`'s live-tree regeneration
-# (T46: that reads the real, live 25-plugin marketplace tree, which the
+# (T46: that reads the real, live marketplace tree, which the
 # counterfeit corpus's synthetic root does not have — the same reason
 # contract §9.3 excludes T11/T12/T19-23 from evals/agentic's own --gate).
 # Those remain exercised for real by this script's own --offline default

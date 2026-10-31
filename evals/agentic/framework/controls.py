@@ -3,7 +3,7 @@ and the reward-hack / copied-evidence / vacuous-verifier detectors (core lane,
 contract §3.4).
 
 This module owns two small, self-contained toy scenarios that stand in for
-the real per-plugin corpus (the real 75-card corpus with real plugin scripts
+the real per-plugin corpus (the real card corpus with real plugin scripts
 belongs to the registry lane, T11-T18/T15). Each models one of the invariant
 shapes the backlog names concretely:
 
@@ -120,7 +120,7 @@ def _resolve_verifier(spec: str, *, card_id: str | None = None) -> Callable[[pat
 
     Two forms exist (contract §7): "module:function" -- this lane's own two
     toy scenarios -- and "path/to/script.py", the form every one of the real
-    75-card corpus's cards actually uses (evals/agentic/tasks/**/card.json).
+    corpus's cards actually uses (evals/agentic/tasks/**/card.json).
     REVIEW FINDING CV-08: only the first form was ever supported here, so
     assert_not_vacuous (and every run_control call) could never be pointed at
     a real card -- only at this module's own toy fixtures. The path form is

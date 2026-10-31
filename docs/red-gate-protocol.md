@@ -25,7 +25,7 @@ mapping for research, planning, docs, ops, and judged work.
 
 ## The problem this solves
 
-The marketplace has 24 skills across 21 plugins. Each is a single-invariant
+Each of the marketplace's skills is a single-invariant
 discipline that works alone. Nothing composes them — there is no answer to
 "I have an idea, now run the right skills in the right order and prove you
 finished." Red Gate is that answer: a self-similar three-stage process where
