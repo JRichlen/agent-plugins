@@ -53,8 +53,10 @@ for f in glob.glob(os.path.join(root, "docs", "examples", "data", "*.json")):
 # plugin that hosts it when no plugin of that name exists.
 plugin_names = {p["name"] for p in plugins}
 hosted = {}
+shipped = {}   # every skill a plugin ships, hosted or not: the card's search text
 for sk in glob.glob(os.path.join(root, "plugins", "*", "skills", "*", "SKILL.md")):
     host, skill = sk.split(os.sep)[-4], sk.split(os.sep)[-2]
+    shipped.setdefault(host, set()).add(skill)
     if skill != host and skill not in plugin_names:
         hosted.setdefault(host, []).append(skill)
 
@@ -91,8 +93,11 @@ for p in plugins:
                  if has_pack(name) else '<span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span>')
     deep_html = f' · <a href="{esc(name)}/">deep dive</a>' if has_deep(name) else ""
     kw = " ".join(p.get("keywords") or [])
+    # The filter matches data-q only, so a skill the card does not name (a
+    # hosted one such as prove-the-undo) is unfindable unless it is listed here.
+    skills = " ".join(sorted(shipped.get(name, set()) - {name}))
     rows.append(f'''
-  <li class="plugin" data-q="{esc((name + ' ' + p.get('description','') + ' ' + kw).lower())}">
+  <li class="plugin" data-q="{esc((name + ' ' + p.get('description','') + ' ' + kw + (' ' + skills if skills else '')).lower())}">
     <div class="p-head">
       <h3><a href="{REPO}/tree/main/plugins/{esc(name)}">{esc(name)}</a> <span class="ver">v{esc(p.get("version","?"))}</span></h3>
       <div class="tags">{ex_html}{pack_html}</div>

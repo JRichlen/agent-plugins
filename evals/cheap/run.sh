@@ -1809,6 +1809,32 @@ elif docs/build-index.sh --check >/dev/null 2>&1; then
 else
   bad "landing: docs/index.html is STALE — run docs/build-index.sh"
 fi
+# In sync is not the same as findable: the page filter matches each card's
+# data-q text only, so every skill a plugin ships (a hosted one such as
+# prove-the-undo inside semver-gate included) must appear in that card's text.
+if [ -e docs/index.html ] && [ -d plugins ]; then
+  miss=$(python3 - "$REPO_ROOT" <<'PYS'
+import glob, html, os, re, sys
+root = sys.argv[1]
+page = open(os.path.join(root, "docs", "index.html"), encoding="utf-8").read()
+cards = {}
+for q in re.findall(r'<li class="plugin" data-q="([^"]*)"', page):
+    q = html.unescape(q)
+    cards[q.split(" ", 1)[0]] = q
+out = []
+for sk in sorted(glob.glob(os.path.join(root, "plugins", "*", "skills", "*", "SKILL.md"))):
+    host, skill = sk.split(os.sep)[-4], sk.split(os.sep)[-2]
+    if host in cards and skill.lower() not in cards[host].split():
+        out.append(f"{host}/{skill}")
+print(" ".join(out))
+PYS
+)
+  if [ -z "$miss" ]; then
+    ok "landing: every plugin card's search text names every skill the plugin ships"
+  else
+    bad "landing: search text omits skill(s): $miss — the page filter cannot find them; fix docs/build-index.sh"
+  fi
+fi
 
 # --- 19a2. The refresh workflow cleans its own eval output before the tier ----
 # `promptfoo eval --output results.json` writes into each pack directory. Those

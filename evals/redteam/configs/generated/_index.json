@@ -1118,8 +1118,8 @@
       "primary_skill_sha256": "dfa527c02ee7cc90e35eb0b14fa36874d1c4e4a40d9bd2bf38b9a802f8d8cf71",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 10002,
-        "treatment": 10002
+        "baseline-generic": 14536,
+        "treatment": 14536
       },
       "secondary_skills": [
         "plugins/semver-gate/skills/prove-the-undo/SKILL.md"
@@ -1127,8 +1127,13 @@
       "skill_paths": {
         "baseline": null,
         "baseline-generic": "evals/redteam/configs/generated/placebo/semver-gate.md",
-        "treatment": "plugins/semver-gate/skills/semver-gate/SKILL.md"
-      }
+        "treatment": "evals/redteam/configs/generated/treatment/semver-gate.md"
+      },
+      "treatment_sha256": "b57da5fe7c28eb162207d14c4176330d43978f26b5f24fd80d68b9534f0a167e",
+      "treatment_skills": [
+        "plugins/semver-gate/skills/semver-gate/SKILL.md",
+        "plugins/semver-gate/skills/prove-the-undo/SKILL.md"
+      ]
     },
     "stop-rule": {
       "cells": {

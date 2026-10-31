@@ -29,7 +29,7 @@ providers:
     config:
       arm: treatment
       plugin: semver-gate
-      skillPath: "plugins/semver-gate/skills/semver-gate/SKILL.md"
+      skillPath: "evals/redteam/configs/generated/treatment/semver-gate.md"
       ledgerDir: "{{env.REDTEAM_LEDGER_DIR}}"
 
 defaultTest:
