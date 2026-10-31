@@ -34,7 +34,9 @@ concurrency:
 
 jobs:
   refresh:
-    runs-on: ubuntu-latest
+    # Pinned: this job runs the cheap tier, whose agentic gate uses a bubblewrap
+    # sandbox that cannot start on ubuntu-26.04. Revisit before 24.04 retires.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
