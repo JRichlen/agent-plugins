@@ -20,7 +20,7 @@ mkt = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
 for p in sorted(mkt["plugins"], key=lambda x: x["name"]):
     desc = " ".join((p.get("description") or "").split())
     # first sentence, capped — enough to route on, short enough to keep the
-    # roster prompt lean across all 23 entries.
+    # roster prompt lean across every entry.
     first = re.split(r'(?<=[.:])\s', desc)[0] if desc else ""
     if len(first) > 200:
         first = first[:197].rstrip() + "..."

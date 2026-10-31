@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Cheap evals — deterministic, offline, no API cost. ~14s for 1296 checks across
-# 25 plugins (measured 2026-09-18); it grows with the plugin count.
+# Cheap evals — deterministic, offline, no API cost. Takes tens of seconds and
+# grows with the plugin count; the final `summary:` line prints the live total.
 #
 # This is the tier that must pass on EVERY change before commit (see AGENTS.md).
 # It proves the structural + safety invariants that don't need an LLM to check:
@@ -2580,7 +2580,7 @@ fi
 # Both new eval dirs run their own offline suite here so a broken framework reds the
 # always-on tier. Fail-closed: a MISSING runner is a failure, not a skip — the same rule
 # section 10 applies to per-plugin packs. The gate runs `--gate`, the root-portable
-# subset (see the contract's 9.3): tests that need the real 25-plugin marketplace, and
+# subset (see the contract's 9.3): tests that need the real full marketplace, and
 # any test that itself invokes evals/cheap/run.sh, are excluded so this cannot recurse.
 group "agentic suite (offline)"
 if [ -f "evals/agentic/run.sh" ]; then

@@ -2,8 +2,9 @@
 
 The registry discovers `tasks/<plugin>/<card_id>/card.json`. Each card names
 its task input, passing and failing workspaces, and independent outcome and
-adoption verifiers. The current corpus contains 90 cards across 25 plugins;
-coverage is not a claim that every plugin is effective.
+adoption verifiers. The corpus covers every registered plugin
+(`python3 -m evals.agentic.framework.validate --corpus` prints the live roster
+size and card count); coverage is not a claim that every plugin is effective.
 
 ```
 tasks/<plugin>/<card_id>/
@@ -187,7 +188,7 @@ python3 -m unittest evals.agentic.tests.test_corpus evals.agentic.tests.test_cor
 python3 -m unittest evals.agentic.tests.test_controls evals.agentic.tests.test_registry
 ```
 
-The integrity tests cover generic ledger forgery across all 25 plugins,
+The integrity tests cover generic ledger forgery across every registered plugin,
 empty-workspace helper injection, unsupported voice specifics, no-op test
 claims, a missing-bundle counterfeit, an independently authored equivalent
 graveyard script, and sandbox access boundaries.

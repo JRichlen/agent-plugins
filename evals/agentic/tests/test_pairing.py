@@ -423,7 +423,7 @@ class ArmNonVacuity(unittest.TestCase):
     def test_treatment_with_no_files_and_no_divergence_is_rejected(self):
         """CV-05: a treatment arm that materializes nothing and diverges
         from its baseline nowhere is indistinguishable from that baseline
-        by construction -- exactly the state all 25 FULL_PACKAGE arms were
+        by construction -- exactly the state every FULL_PACKAGE arm was
         in before this repair (every card's capability silently failed to
         materialize)."""
         # A treatment arm with the SAME shape as its own baseline (no

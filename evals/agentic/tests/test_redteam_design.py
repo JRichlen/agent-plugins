@@ -101,7 +101,7 @@ def _assert_plan_balanced(plugin: str, entry: dict) -> None:
 
 class TwoByTwoCompleteness(unittest.TestCase):
     """T46: design §7. Plan validation over the real, committed
-    configs/generated/_index.json (all 25 plugins) plus drift-freedom of the
+    configs/generated/_index.json (every plugin) plus drift-freedom of the
     generated configs themselves."""
 
     def test_two_by_two_design_has_four_balanced_cells_with_shared_corpus_and_grader(self):
@@ -125,7 +125,7 @@ class TwoByTwoCompleteness(unittest.TestCase):
             # scaffold generate.py itself computes right now.
             self.assertEqual(entry["frame_sha256"], generate.contract.digest(generate.frame_payload()))
 
-        self.assertEqual(len(frame_values), 1, "frame_sha256 must be identical across all 25 plugins")
+        self.assertEqual(len(frame_values), 1, "frame_sha256 must be identical across every plugin")
         self.assertEqual(next(iter(frame_values)), index["frame_sha256"])
 
         # NO model-graded assertion anywhere, and every deterministic
