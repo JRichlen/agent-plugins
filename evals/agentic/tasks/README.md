@@ -2,7 +2,7 @@
 
 The registry discovers `tasks/<plugin>/<card_id>/card.json`. Each card names
 its task input, passing and failing workspaces, and independent outcome and
-adoption verifiers. The current corpus contains 90 cards across 25 plugins;
+adoption verifiers. The current corpus contains 96 cards across 27 plugins;
 coverage is not a claim that every plugin is effective.
 
 ```
@@ -66,7 +66,7 @@ Redgate criteria and checks are subject deliverables and are never seeded.
 not imply grader ownership: negative cards often share the same correct
 answer, and injecting it would let an empty workspace pass.
 
-All 25 positive reference tasks expose their output interfaces and explicitly
+All 27 positive reference tasks expose their output interfaces and explicitly
 declare any additional repository inputs. Input declarations cannot point at
 pass/fail fixtures or grading code. Hidden output filenames and ritual-only
 requirements must not become a utility criterion.
@@ -123,6 +123,7 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | --- | --- |
 | agent-compiler | Rendered agent with compilation header and name |
 | codebase-design | Candidate designs with design dimensions |
+| consolidation-map | Counts line plus disposition rows in a consolidation map |
 | context-handoff | Referenced handoff or ordered decision log |
 | dev-diary | Dated diary entry with a summary |
 | diagnosing-bugs | Numbered hypotheses and falsifying checks |
@@ -187,7 +188,7 @@ python3 -m unittest evals.agentic.tests.test_corpus evals.agentic.tests.test_cor
 python3 -m unittest evals.agentic.tests.test_controls evals.agentic.tests.test_registry
 ```
 
-The integrity tests cover generic ledger forgery across all 25 plugins,
+The integrity tests cover generic ledger forgery across all 27 plugins,
 empty-workspace helper injection, unsupported voice specifics, no-op test
 claims, a missing-bundle counterfeit, an independently authored equivalent
 graveyard script, and sandbox access boundaries.

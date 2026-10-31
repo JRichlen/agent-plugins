@@ -89,7 +89,7 @@ that it is green because it did not run, never silently.
 - **What it proves.** The evaluation framework's contracts, positive and negative
   controls, task-specific artifact graders, protocol fixtures, native evidence
   binding, attempt accounting, statistical calculations, and catalog wiring.
-  The corpus has 93 cards across 26 plugins. Grader-owned helper files are
+  The corpus has 96 cards across 27 plugins. Grader-owned helper files are
   explicit; arbitrary identical fixture files are never injected as answers.
   The subject cannot replace the canonical grader, and executable artifacts run
   in Bubblewrap without host credentials, network or hidden fixture answers.
@@ -1034,6 +1034,7 @@ pack: agent-compiler/cheap
 pack: agent-compiler/promptfoo
 pack: agent-compiler/scale
 pack: codebase-design/cheap
+pack: consolidation-map/cheap
 pack: context-handoff/cheap
 pack: dev-diary/cheap
 pack: diagnosing-bugs/cheap

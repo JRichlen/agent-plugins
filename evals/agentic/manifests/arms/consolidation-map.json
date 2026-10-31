@@ -1,0 +1,79 @@
+{
+  "plugin": "consolidation-map",
+  "directory": "plugins/consolidation-map",
+  "version": "0.0.1",
+  "derived_capabilities": [
+    {
+      "name": "consolidation-map",
+      "kind": "skill",
+      "source_plugin": "consolidation-map",
+      "generic_equivalent": null
+    },
+    {
+      "name": "consolidation-map",
+      "kind": "command",
+      "source_plugin": "consolidation-map",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-consolidation-map-4f8a5dd4fcbe276840de86d2e991bf10",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "consolidation-map"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "consolidation-map",
+        "kind": "skill",
+        "source_plugin": "consolidation-map",
+        "generic_equivalent": "list the changed files and call it a summary of the consolidation"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/consolidation-map/SKILL.md": "6ca1945f6ea9c87f111a03c925e1b81401c16b10341e72d6e5941da6307f9d11"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-53198edcad562284440ebedeed119089",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "list the changed files and call it a summary of the consolidation",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "7e87eb3ff96b1f9817739b3938a7e16c364922af2bb51bd26e4e667d37186c62"
+    }
+  },
+  "arm_source_card": "consolidation-map-pos-01"
+}

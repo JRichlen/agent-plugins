@@ -29,6 +29,20 @@
       "secondary_skills": [],
       "task": "Design the new plugin-registry module's public interface before writing it."
     },
+    "consolidation-map": {
+      "artifact": "consolidation-map",
+      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
+      "completion_marker": "TASK_COMPLETE: consolidation-map",
+      "guards": [
+        "bundle verify",
+        "--private",
+        "generate-delete-script.sh"
+      ],
+      "primary_skill": "plugins/consolidation-map/skills/consolidation-map/SKILL.md",
+      "sandbox_root": "/work/repo",
+      "secondary_skills": [],
+      "task": "Write up what happened to each entity in the catalog consolidation, with counts that reconcile."
+    },
     "context-handoff": {
       "artifact": "handoff-note",
       "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",

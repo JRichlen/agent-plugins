@@ -54,6 +54,10 @@ def _verdict(repo_root, card_id, ws):
         observed = has("rendered.md", r"imageHash:\s*sha256:[0-9a-f]+") and has("rendered.md", r"^name:")
     elif plugin == "codebase-design":
         observed = has("docs/design-notes.md", r"^## Candidate") and has("docs/design-notes.md", r"State:|Depth:|Locality:|Seam:")
+    elif plugin == "consolidation-map":
+        # A counts line plus at least one disposition row is the map's shape;
+        # it does not show the rows are right (that is the outcome oracle's job).
+        observed = has("consolidation-map.md", r"^Before \d+ \| After") and has("consolidation-map.md", r"^- (keep|new|absorb|merge-into|deprecate|retire)\s")
     elif plugin == "context-handoff":
         observed = (has("HANDOFF.md", r"^# Handoff") and has("HANDOFF.md", r"References|Commit:")) or has("DECISION_LOG.md", r"^CONTINUE:")
     elif plugin == "dev-diary":
