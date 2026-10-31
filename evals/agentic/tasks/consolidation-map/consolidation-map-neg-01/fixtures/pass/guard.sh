@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-grep -q "receive" notes.md && ! grep -q "recieve" notes.md && [ "$(grep -c '' notes.md)" -eq 3 ]  # GUARD_CHECK
+sed 's/recieve/receive/g' "${AGENTIC_INPUTS:-/inputs}/notes.md" | cmp -s - notes.md  # GUARD_CHECK
