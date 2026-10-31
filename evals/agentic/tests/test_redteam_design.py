@@ -99,6 +99,27 @@ def _assert_plan_balanced(plugin: str, entry: dict) -> None:
         raise AssertionError(f"{plugin}: cell condition/arm mapping is wrong: {cells}")
 
 
+def _treatment_skill_path(config_text: str) -> str:
+    """The treatment provider's `skillPath` out of a generated config -- the
+    one value transcript.js / the tranche broker read at request time."""
+    import re
+    m = re.search(r"label: treatment\n\s+config:\n(?:\s+.*\n)*?\s+skillPath: \"([^\"]+)\"", config_text)
+    if not m:
+        raise AssertionError("no treatment skillPath found in the generated config")
+    return m.group(1)
+
+
+def _assert_treatment_carries_every_skill(plugin: str, meta: dict, shown: str) -> None:
+    """What the treatment arm is shown must contain the full text of every
+    skill the plugin opted in (primary first, then the secondaries)."""
+    skills = [meta["primary_skill"]]
+    if meta.get("treatment_includes_secondary_skills"):
+        skills += list(meta.get("secondary_skills", []))
+    for rel in skills:
+        if (REPO_ROOT / rel).read_text(encoding="utf-8") not in shown:
+            raise AssertionError(f"{plugin}: the treatment prompt does not carry {rel}")
+
+
 class TwoByTwoCompleteness(unittest.TestCase):
     """T46: design §7. Plan validation over the real, committed
     configs/generated/_index.json (every plugin) plus drift-freedom of the
@@ -161,6 +182,47 @@ class TwoByTwoCompleteness(unittest.TestCase):
         for names in (("first",), ("first", "second", "extra")):
             with self.subTest(names=names), self.assertRaisesRegex(AssertionError, "roster mismatch"):
                 _assert_plan_covers_marketplace({"plugins": dict.fromkeys(names, {})}, marketplace)
+
+    def test_secondary_skills_reach_the_treatment_prompt(self):
+        """A plugin that ships more than one skill (semver-gate hosts
+        prove-the-undo) must show the treatment arm all of them, read from
+        the config's own skillPath; every plugin without the opt-in keeps the
+        primary SKILL.md as its skillPath, byte for byte."""
+        generate = _load_generate()
+        plugins = generate.load_plugins()
+        index = _index()
+        opted_in = sorted(n for n, m in plugins.items() if m.get("treatment_includes_secondary_skills"))
+        self.assertIn("semver-gate", opted_in)
+        for plugin, meta in sorted(plugins.items()):
+            with self.subTest(plugin=plugin):
+                config = (GENERATED_DIR / f"{plugin}.yaml").read_text(encoding="utf-8")
+                skill_path = _treatment_skill_path(config)
+                self.assertEqual(skill_path, index["plugins"][plugin]["skill_paths"]["treatment"])
+                shown = (REPO_ROOT / skill_path).read_text(encoding="utf-8")
+                _assert_treatment_carries_every_skill(plugin, meta, shown)
+                self.assertEqual(len(shown), index["plugins"][plugin]["prompt_chars"]["treatment"])
+                if plugin in opted_in:
+                    self.assertEqual(index["plugins"][plugin]["treatment_skills"],
+                                     [meta["primary_skill"], *meta["secondary_skills"]])
+                else:
+                    self.assertEqual(skill_path, meta["primary_skill"])
+                    self.assertNotIn("treatment_skills", index["plugins"][plugin])
+        shown = (REPO_ROOT / _treatment_skill_path(
+            (GENERATED_DIR / "semver-gate.yaml").read_text(encoding="utf-8"))).read_text(encoding="utf-8")
+        self.assertIn("name: prove-the-undo", shown)
+        # The paid-tranche emitter resolves the treatment file through the same
+        # helper, so it names exactly the file the generated config names.
+        self.assertEqual(generate.treatment_skill_rel("semver-gate", plugins["semver-gate"]),
+                         _treatment_skill_path((GENERATED_DIR / "semver-gate.yaml").read_text(encoding="utf-8")))
+
+    def test_secondary_skills_reach_the_treatment_prompt__negative(self):
+        """The same check must reject a treatment that carries only the
+        primary skill of an opted-in plugin -- the pre-fix state."""
+        generate = _load_generate()
+        meta = generate.load_plugins()["semver-gate"]
+        primary_only = (REPO_ROOT / meta["primary_skill"]).read_text(encoding="utf-8")
+        with self.assertRaisesRegex(AssertionError, "prove-the-undo"):
+            _assert_treatment_carries_every_skill("semver-gate", meta, primary_only)
 
     def test_generated_configs_are_not_drifted(self):
         """GeneratedConfigsNotDrifted per the design doc's own naming

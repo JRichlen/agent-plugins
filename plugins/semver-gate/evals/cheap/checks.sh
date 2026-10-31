@@ -8,10 +8,19 @@
 # comparatively loose about everything else the skill's prose says — a
 # regression that silently weakens the MAJOR gate is the failure mode that
 # matters; wording drift elsewhere is not what this tier exists to catch.
+#
+# This pack also defends the plugin's second skill, prove-the-undo (folded in
+# from the former standalone prove-the-undo plugin, whose checks are carried
+# over below under their original group names): an irreversible action is
+# never justified by an unverified backup — the restore path must be named AND
+# exercised in-session before the action proceeds. Same posture: paranoid about
+# that one rule, loose about wording drift elsewhere.
 
 SKILL="$PLUGIN_DIR/skills/semver-gate/SKILL.md"
 RUBRIC="$PLUGIN_DIR/skills/semver-gate/references/rubric.md"
 AGENTS="$PLUGIN_DIR/AGENTS.md"
+UNDO_SKILL="$PLUGIN_DIR/skills/prove-the-undo/SKILL.md"
+UNDO_CMD="$PLUGIN_DIR/commands/prove-the-undo.md"
 
 # --- structure: the plugin's advertised surface actually exists ------------
 group "semver-gate — structure"
@@ -160,3 +169,41 @@ fi
 # evals/cheap/run.sh section 8 (across all shipped plugins) — not duplicated
 # here, since a self-referential grep for that literal inside this file would
 # trip on its own pattern text.
+
+# =============================================================================
+# prove-the-undo — the plugin's second skill (folded in from the standalone
+# prove-the-undo plugin; checks, patterns and messages carried over verbatim
+# apart from the variable names and the shared AGENTS.md).
+# =============================================================================
+
+group "prove-the-undo — structure"
+for f in "$UNDO_SKILL" "$UNDO_CMD"; do
+  if [ -f "$f" ]; then ok "present: $f"; else bad "MISSING: $f"; fi
+done
+
+group "prove-the-undo — invariant survives verbatim"
+INV='NEVER justified by the mere existence of an unverified backup'
+has "$UNDO_SKILL"  "$INV" "SKILL.md carries the unverified-backup invariant verbatim" "SKILL.md lost the unverified-backup invariant"
+has "$AGENTS" "$INV" "AGENTS.md carries the unverified-backup invariant verbatim" "AGENTS.md lost the unverified-backup invariant"
+hasE "$UNDO_SKILL" 'ALWAYS preceded by a named restore path' "SKILL.md requires a NAMED restore path before the action" "SKILL.md no longer requires a named restore path"
+hasE "$UNDO_SKILL" 'exercised.*(restored, diffed, or dry-run-verified)' "SKILL.md requires the restore path be EXERCISED, not just named" "SKILL.md no longer requires exercising the restore path"
+
+group "prove-the-undo — the rehearsal is three mandatory steps in order"
+hasE "$UNDO_SKILL" '1\..*[Nn]ame the restore path' "step 1 (name the restore path) present" "step 1 (name the restore path) missing"
+hasE "$UNDO_SKILL" '2\..*[Ee]xercise it now, in this session' "step 2 (exercise it in-session) present" "step 2 (exercise it in-session) missing"
+hasE "$UNDO_SKILL" '3\..*[Aa]ttach the evidence' "step 3 (attach the evidence) present" "step 3 (attach the evidence) missing"
+hasE "$UNDO_SKILL" 'Only after all three does the irreversible action proceed' "SKILL.md gates the action on all three steps" "SKILL.md no longer gates the action on all three steps"
+
+group "prove-the-undo — verification failure blocks, never downgrades"
+hasE "$UNDO_SKILL" 'If step 2 fails|fails or can.t be run' "SKILL.md handles the verification-failure branch" "SKILL.md is missing the verification-failure branch"
+hasE "$UNDO_SKILL" 'the action is blocked' "verification failure blocks the action" "verification failure no longer blocks the action"
+hasE "$UNDO_SKILL" 'never downgrade' "SKILL.md forbids downgrading to an assumed-good backup" "SKILL.md no longer forbids downgrading"
+
+group "prove-the-undo — delegated scripts must self-gate"
+hasE "$UNDO_SKILL" 'gate the destructive step on the verification' "SKILL.md requires generated scripts to gate deletion on verification" "SKILL.md no longer requires generated scripts to self-gate"
+hasE "$UNDO_CMD" 'destructive step on the verification inside the script' "command restates the script self-gating rule" "command lost the script self-gating rule"
+
+group "prove-the-undo — disambiguated from siblings"
+has "$UNDO_SKILL" 'semver-gate' "SKILL.md disambiguates vs semver-gate (classify vs rehearse)" "SKILL.md lost the semver-gate disambiguation"
+has "$UNDO_SKILL" 'graveyard' "SKILL.md names graveyard as the concrete instance of this discipline" "SKILL.md lost the graveyard lineage note"
+hasE "$UNDO_SKILL" 'human sign-off does not substitute' "SKILL.md states human sign-off never substitutes for the rehearsal" "SKILL.md no longer states sign-off does not substitute for rehearsal"

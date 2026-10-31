@@ -54,9 +54,22 @@ for f in sorted(glob.glob(os.path.join(data_dir, "*.json"))):
 def esc(x):
     return html.escape("" if x is None else str(x))
 
+def skill_path(name):
+    # A skill's own plugin dir, else the plugin that hosts it (prove-the-undo
+    # ships inside semver-gate): plugins/<host>/skills/<name>/SKILL.md.
+    own = os.path.join(root, "plugins", name, "skills", name, "SKILL.md")
+    if os.path.isfile(own):
+        return own
+    hits = sorted(glob.glob(os.path.join(root, "plugins", "*", "skills", name, "SKILL.md")))
+    return hits[0] if hits else ""
+
+def host_plugin(name):
+    p = skill_path(name)
+    return p.split(os.sep)[-4] if p else name
+
 def desc_of(plugin):
-    p = os.path.join(root, "plugins", plugin, "skills", plugin, "SKILL.md")
-    if not os.path.isfile(p):
+    p = skill_path(plugin)
+    if not p:
         return ""
     txt = open(p).read()
     m = re.search(r'description:\s*>?-?\s*\n?(.*?)(?:\nlicense:|\ncompatibility:|\n---)', txt, re.S)
@@ -217,7 +230,7 @@ for s in snaps:
       <span class="badge src {esc(kind)}" title="{esc(src_title)}">{esc(src_label)}</span>
       {judge_flag}
     </div>
-    <p class="card-links"><a href="{REPO}/tree/main/plugins/{esc(plugin)}">plugin docs</a>{deep} · <a href="{json_url}">raw JSON</a></p>
+    <p class="card-links"><a href="{REPO}/tree/main/plugins/{esc(host_plugin(plugin))}">plugin docs</a>{deep} · <a href="{json_url}">raw JSON</a></p>
   </header>
   <p class="skilldesc">{esc(desc_of(plugin))}</p>
   <div class="verdict{" derived" if div == "unjudged" else ""}">

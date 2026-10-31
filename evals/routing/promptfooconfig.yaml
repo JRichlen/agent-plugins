@@ -183,14 +183,14 @@ tests:
   # otherwise free to be none or a procedure skill. The skill absent from both
   # is still the routing miss these rows exist to catch; the contract's rule 5
   # still rejects naming it in both.
-  - description: "irreversible GitHub delete → prove-the-undo (neighbor: egress-gate, semver-gate)"
+  - description: "irreversible GitHub delete → semver-gate, whose prove-the-undo skill rehearses the rollback (neighbor: egress-gate)"
     vars:
       request: >-
         I'm about to run a script that force-deletes a production S3 bucket and
         its backups. Help me make sure I'm doing this safely before I run it.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=prove-the-undo\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
+        value: 'ROUTE:\s*specialist=semver-gate\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
 
   - description: "search before writing a helper → find-before-build (neighbor: codebase-design)"
     vars:
@@ -201,7 +201,7 @@ tests:
       - type: regex
         value: 'ROUTE:\s*(?:specialist=find-before-build\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)|specialist=(?:[a-z0-9-]+|none)\s*\|\s*envelope=(?:[a-z0-9-]+(?:,[a-z0-9-]+)*|none)\s*\|\s*guards=(?:[a-z0-9-]+,)*find-before-build(?:,[a-z0-9-]+)*)\s*\|\s*interaction_owner=(?:[a-z0-9-]+|none)\s*$'
 
-  - description: "posting content off-machine → egress-gate (neighbor: prove-the-undo)"
+  - description: "posting content off-machine → egress-gate (neighbor: semver-gate)"
     vars:
       request: >-
         Draft a GitHub issue comment summarizing this failing test and post it to
@@ -356,13 +356,18 @@ tests:
   # one-line redgate description alone did not make the envelope inferable
   # (measured finding, logged for #89). The request now names verification
   # and sign-off explicitly, parallel to S1's proven-promptable shape. Guards
-  # are graded as a REQUIRED SUBSET: prove-the-undo must be present in the
-  # sorted list, roster-valid extras allowed. semver-gate was dropped from the
-  # required set in the residual pass (run 33342419465): with the strengthened
-  # request the model expressed "explicit sign-off" as interaction_owner=redgate
-  # on 5/5 rows and carried semver-gate as a guard on 0/5 — a data-driven
-  # relabel; the sign-off requirement is graded through the owner slot.
-  - description: "S4 COMPOSITION — mass repo retirement → graveyard under redgate with the prove-the-undo guard"
+  # are graded as a REQUIRED SUBSET: semver-gate must be present in the sorted
+  # list, roster-valid extras allowed. prove-the-undo is no longer a roster
+  # name: it ships as the second skill of the semver-gate plugin (the roster is
+  # one line per plugin), so the rehearsal guard is named by its host plugin.
+  # History: semver-gate was dropped from the required set in the residual pass
+  # (run 33342419465) when the roster's semver-gate line described only the
+  # classifier — the model expressed "explicit sign-off" as
+  # interaction_owner=redgate on 5/5 rows and carried semver-gate as a guard on
+  # 0/5, a data-driven relabel. The roster line now also names the rollback
+  # rehearsal, which is the guard this row exists to check; the sign-off
+  # requirement is still graded through the owner slot.
+  - description: "S4 COMPOSITION — mass repo retirement → graveyard under redgate with the semver-gate guard (prove-the-undo rehearsal)"
     vars:
       request: >-
         We're retiring twelve dead repos this week — archive them and delete the
@@ -370,7 +375,7 @@ tests:
         is deleted, and explicit sign-off before the deletion batch runs.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=graveyard\s*\|\s*envelope=redgate\s*\|\s*guards=(?:[a-z0-9-]+,)*prove-the-undo(?:,[a-z0-9-]+)*\s*\|\s*interaction_owner=redgate\s*$'
+        value: 'ROUTE:\s*specialist=graveyard\s*\|\s*envelope=redgate\s*\|\s*guards=(?:[a-z0-9-]+,)*semver-gate(?:,[a-z0-9-]+)*\s*\|\s*interaction_owner=redgate\s*$'
 
   # --- must-NOT-fire: routine requests, activating anything is the failure ---
   - description: "CALIBRATION — a plain code question fires nothing"

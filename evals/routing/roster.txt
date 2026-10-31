@@ -14,11 +14,10 @@ grill-me: Interview the user about a plan before work starts, single-session and
 jori: Coordinate complex work with bounded agents, evidence, and proportional dashboards.
 orchestrate: Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code's Workflow tool:
 plugin-factory: Scaffold a new marketplace plugin skeleton in one command:
-prove-the-undo: Rehearse the rollback before any irreversible action:
 recurrence-detector: Close the growth loop's DETECT step:
 redgate: Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates.
 scope-fence: Keep every hunk of the diff traceable to the stated task:
-semver-gate: Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR.
+semver-gate: Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it.
 stop-rule: A halting discipline for iterative fix loops:
 tailscale-wif: Set up and troubleshoot secretless GitHub Actions -> Tailscale auth via Workload Identity Federation (WIF):
 tracer-bullets: Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research.

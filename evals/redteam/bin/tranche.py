@@ -183,10 +183,16 @@ def emit_config(plugin: str, declaration: dict, tranche_path: pathlib.Path) -> p
             f"redteam FAIL tranche: {placebo_rel} is missing — run bin/generate.py --write first"
         )
 
+    treatment_rel = generate.treatment_skill_rel(plugin, meta)
+    if not (REPO_ROOT / treatment_rel).is_file():
+        raise SystemExit(
+            f"redteam FAIL tranche: {treatment_rel} is missing — run bin/generate.py --write first"
+        )
+
     skill_paths = {
         "baseline": None,
         "baseline-generic": placebo_rel,
-        "treatment": meta["primary_skill"],
+        "treatment": treatment_rel,
     }
 
     out: list[str] = [PAID_HEADER.format(

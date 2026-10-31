@@ -1,6 +1,6 @@
 # `manifests/arms/*.json` — per-plugin arm manifests (registry lane, T16/T17)
 
-One file per live roster plugin (27 today, regenerate on a roster change --
+One file per live roster plugin (regenerate on a roster change --
 these are DERIVED artifacts, not hand-authored; see
 `evals.agentic.framework.pairing`). Each document:
 
@@ -19,10 +19,19 @@ these are DERIVED artifacts, not hand-authored; see
 `arm_source_card` names the real card whose author-curated `capabilities`
 built these two arms (contract §3.11's precedence rule: an author-curated
 card always wins over blind discovery) -- the plugin's own `-pos-01` card
-when one exists, which as of this generation is every one of the 27 roster
-plugins. A plugin that gains a card later, or loses its only positive card,
+when one exists, which as of this generation is every roster
+plugin. A plugin that gains a card later, or loses its only positive card,
 regenerates from a throwaway "survey" `Card` instead, whose `capabilities`
 come straight from `discover_plugin_capabilities` (real, not curated).
+
+A plugin that ships more than one skill still gets ONE manifest, and
+`run.py`'s `dispatch_plan` arms every card of that plugin from it
+(`manifests/arms/<card.plugin>.json`), so the arm must describe the whole
+package. `semver-gate` is the worked case: its `-pos-01` card lists both of its
+skills (`semver-gate` and `prove-the-undo`) in `capabilities`, so the
+full-package arm carries both `SKILL.md` files and the baseline arm's
+`system_prompt_append` carries both generic equivalents, and the `-02` cards
+(which exercise `prove-the-undo`) run against that same pair.
 
 Every pair committed here was verified with `pairing.assert_exposure_parity`
 at generation time -- a manifest pair that would fail parity is never
@@ -60,7 +69,7 @@ calls above reproduce this file's `full_package_arm`/`baseline_arm` blocks
 exactly (`tests/test_pairing.py::CommittedManifestsAreReproducible` asserts
 this for `graveyard.json`). `derived_capabilities`/`estimand_availability`/
 `arm_source_card` are assembled around those two `Arm`s by the same
-generator; regenerating the full 27-file set follows the same shape per
+generator; regenerating the full file set follows the same shape per
 plugin.
 
 Counterfeit fixture `25-agentic-exposure-parity` (contract §8.8) mutates a

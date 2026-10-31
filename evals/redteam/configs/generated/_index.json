@@ -39,8 +39,8 @@
       "config_path": "configs/generated/agent-compiler.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "9303f88367214941f5f5ec8dbb4ea8d987ce9481606c8487ef6f6ff32204d9d2",
-        "clean": "ec9ecaa1d2e42e71283cafa2cc65ae87d889a7b97122c746a15638cce9d1f4ec"
+        "adversarial": "4937a710f96d01b2969bd5ddba29fc8812e95d9b1df83d96369805b978594b35",
+        "clean": "9df5074ab1109c500b5e9c53cc6cb53acd91631098a4fd865c7a186ca791d67d"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -881,8 +881,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "0adadc6ad319d8e88cf380a381950a882c79c0724b5f6a9f06d18aa7982742d9",
-        "clean": "bc78f9980342a62ff590dfbca6803c77d523af5a75e35b11044ce85600be68c0"
+        "adversarial": "a013ef99b884220e4d94cd075a794df26bddcffea160ab80b22cd40de2fd3623",
+        "clean": "5244041dcbe9a70bde87a59710686a9e7e7841a02c4552b94e6faeb62737614c"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -899,62 +899,6 @@
         "baseline": null,
         "baseline-generic": "evals/redteam/configs/generated/placebo/plugin-factory.md",
         "treatment": "plugins/plugin-factory/skills/plugin-factory/SKILL.md"
-      }
-    },
-    "prove-the-undo": {
-      "cells": {
-        "C1": {
-          "arm": "baseline",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C2": {
-          "arm": "treatment",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C3": {
-          "arm": "baseline",
-          "condition": "adversarial",
-          "planned_n": 48
-        },
-        "C4": {
-          "arm": "treatment",
-          "condition": "adversarial",
-          "planned_n": 48
-        },
-        "C5": {
-          "arm": "baseline-generic",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C6": {
-          "arm": "baseline-generic",
-          "condition": "adversarial",
-          "planned_n": 48
-        }
-      },
-      "config_path": "configs/generated/prove-the-undo.yaml",
-      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
-      "parity_sha256": {
-        "adversarial": "45da29fdd639375600b2a13463d748021798606d4176283148cefb6795684c15",
-        "clean": "af0e59da2fb1235581dc94c855b6b3f28ce7bb4e7a4c59c7a79db54df2af82ec"
-      },
-      "parity_status": "OK",
-      "planned_attempts_total": 288,
-      "plugin": "prove-the-undo",
-      "primary_skill": "plugins/prove-the-undo/skills/prove-the-undo/SKILL.md",
-      "primary_skill_sha256": "cc400697ec846bb0cb47823bea72a146c2e969561c763ac02ad1bda56854bd1b",
-      "prompt_chars": {
-        "baseline": 0,
-        "baseline-generic": 4532,
-        "treatment": 4532
-      },
-      "secondary_skills": [],
-      "skill_paths": {
-        "baseline": null,
-        "baseline-generic": "evals/redteam/configs/generated/placebo/prove-the-undo.md",
-        "treatment": "plugins/prove-the-undo/skills/prove-the-undo/SKILL.md"
       }
     },
     "recurrence-detector": {
@@ -1174,15 +1118,22 @@
       "primary_skill_sha256": "dfa527c02ee7cc90e35eb0b14fa36874d1c4e4a40d9bd2bf38b9a802f8d8cf71",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 10002,
-        "treatment": 10002
+        "baseline-generic": 14536,
+        "treatment": 14536
       },
-      "secondary_skills": [],
+      "secondary_skills": [
+        "plugins/semver-gate/skills/prove-the-undo/SKILL.md"
+      ],
       "skill_paths": {
         "baseline": null,
         "baseline-generic": "evals/redteam/configs/generated/placebo/semver-gate.md",
-        "treatment": "plugins/semver-gate/skills/semver-gate/SKILL.md"
-      }
+        "treatment": "evals/redteam/configs/generated/treatment/semver-gate.md"
+      },
+      "treatment_sha256": "b57da5fe7c28eb162207d14c4176330d43978f26b5f24fd80d68b9534f0a167e",
+      "treatment_skills": [
+        "plugins/semver-gate/skills/semver-gate/SKILL.md",
+        "plugins/semver-gate/skills/prove-the-undo/SKILL.md"
+      ]
     },
     "stop-rule": {
       "cells": {

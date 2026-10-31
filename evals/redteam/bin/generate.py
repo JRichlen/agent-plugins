@@ -108,7 +108,7 @@ providers:
     config:
       arm: treatment
       plugin: {plugin}
-      skillPath: {primary_skill}
+      skillPath: {treatment_skill}
       ledgerDir: "{{{{env.REDTEAM_LEDGER_DIR}}}}"
 
 defaultTest:
@@ -164,6 +164,11 @@ def validate_plugins(plugins: dict) -> None:
             )
         if not (REPO_ROOT / primary).is_file():
             raise SystemExit(f"redteam FAIL design: {name}'s primary_skill {primary} does not exist on disk")
+        if meta.get("treatment_includes_secondary_skills") and not meta.get("secondary_skills"):
+            raise SystemExit(
+                f"redteam FAIL design: {name} opts secondary skills into the treatment "
+                "(treatment_includes_secondary_skills) but lists none"
+            )
         for sec in meta.get("secondary_skills", []):
             if not (REPO_ROOT / sec).is_file():
                 raise SystemExit(f"redteam FAIL design: {name}'s secondary skill {sec} does not exist on disk")
@@ -254,7 +259,44 @@ def _length_match(base: str, target_len: int) -> str:
     return (unit * reps)[:target_len]
 
 
-def guidance_text_for(arm: str, meta: dict, *, treatment_len: int | None = None) -> tuple[str | None, str]:
+def treatment_skills(meta: dict) -> list[str]:
+    """Every SKILL.md the treatment arm is exposed to, primary first.
+
+    A plugin that ships more than one skill (semver-gate hosts prove-the-undo)
+    opts its secondary skills into the treatment with
+    `treatment_includes_secondary_skills: true` in targets/plugins.json; the
+    flag is per plugin because a frozen tranche (tranches/) already ran
+    redgate's treatment on its primary skill alone, so widening that exposure
+    here would silently change what the frozen evidence measured. Without the
+    flag the treatment is the primary skill and nothing else, exactly as before.
+    """
+    skills = [meta["primary_skill"]]
+    if meta.get("treatment_includes_secondary_skills"):
+        skills.extend(meta.get("secondary_skills", []))
+    return skills
+
+
+def treatment_skill_rel(plugin: str, meta: dict) -> str:
+    """The repo-root-relative file the treatment arm's skillPath names: the
+    primary SKILL.md itself when it is the only treatment skill (so plugins
+    without the opt-in are byte-identical to before), otherwise the committed,
+    materialized concatenation under configs/generated/treatment/ -- the same
+    shape as the placebo, and for the same reason: the runtime providers read
+    ONE skillPath off disk and never re-derive it."""
+    skills = treatment_skills(meta)
+    if len(skills) == 1:
+        return skills[0]
+    return f"evals/redteam/configs/generated/treatment/{plugin}.md"
+
+
+def treatment_text(meta: dict) -> str:
+    """What the treatment arm is shown: each skill's text verbatim, in order,
+    separated by a blank line. A single skill is returned unchanged."""
+    return "\n\n".join((REPO_ROOT / rel).read_text(encoding="utf-8") for rel in treatment_skills(meta))
+
+
+def guidance_text_for(arm: str, meta: dict, *, treatment_len: int | None = None,
+                      plugin: str | None = None) -> tuple[str | None, str]:
     """Returns (skillPath-or-None, guidance_text) for prompt_chars accounting.
     Mirrors what providers/lib/transcript.js does at request time (reading
     the SAME committed file this function writes for baseline-generic), so
@@ -262,8 +304,8 @@ def guidance_text_for(arm: str, meta: dict, *, treatment_len: int | None = None)
     if arm == "baseline":
         return None, ""
     if arm == "treatment":
-        rel = meta["primary_skill"]
-        return rel, (REPO_ROOT / rel).read_text(encoding="utf-8")
+        assert plugin is not None
+        return treatment_skill_rel(plugin, meta), treatment_text(meta)
     if arm == "baseline-generic":
         assert treatment_len is not None
         base = (REPO_ROOT / GENERIC_GUIDANCE_REL).read_text(encoding="utf-8")
@@ -283,9 +325,16 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
     # configs/generated/placebo/ so the actual runtime provider (which reads
     # skillPath off disk, never re-derives a length) sees exactly what
     # _index.json's prompt_chars claims.
-    _, treatment_text = guidance_text_for("treatment", meta)
-    treatment_len = len(treatment_text)
+    treatment_rel, treatment_body = guidance_text_for("treatment", meta, plugin=plugin)
+    treatment_len = len(treatment_body)
     _, generic_text = guidance_text_for("baseline-generic", meta, treatment_len=treatment_len)
+
+    if treatment_rel != meta["primary_skill"]:
+        # More than one treatment skill: materialize the exact bytes the arm
+        # will read, so skillPath still names ONE committed file.
+        treatment_dir = out_dir / "treatment"
+        treatment_dir.mkdir(parents=True, exist_ok=True)
+        (treatment_dir / f"{plugin}.md").write_text(treatment_body, encoding="utf-8")
 
     placebo_dir = out_dir / "placebo"
     placebo_dir.mkdir(parents=True, exist_ok=True)
@@ -299,7 +348,7 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
     header = HEADER.format(
         plugin=plugin,
         generic_guidance_rel=_yaml_scalar(placebo_rel),
-        primary_skill=_yaml_scalar(meta["primary_skill"]),
+        treatment_skill=_yaml_scalar(treatment_rel),
     )
 
     lines: list[str] = []
@@ -336,7 +385,7 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
         "baseline-generic": len(generic_text),
         "treatment": treatment_len,
     }
-    skill_paths = {"baseline": None, "baseline-generic": placebo_rel, "treatment": meta["primary_skill"]}
+    skill_paths = {"baseline": None, "baseline-generic": placebo_rel, "treatment": treatment_rel}
 
     generic_len = prompt_chars["baseline-generic"]
     if generic_len == 0:
@@ -381,6 +430,11 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
         },
         "frame_sha256": contract.digest(frame_payload()),
     }
+    if treatment_rel != meta["primary_skill"]:
+        # Exposure accounting for a multi-skill treatment only; plugins whose
+        # treatment is the primary skill alone keep their entry byte-identical.
+        index_entry["treatment_skills"] = treatment_skills(meta)
+        index_entry["treatment_sha256"] = _sha256_text(treatment_body)
     return body, index_entry
 
 

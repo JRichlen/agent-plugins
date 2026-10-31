@@ -95,8 +95,6 @@ def _verdict(repo_root, card_id, ws):
     elif plugin == "plugin-factory":
         observed = bool(data("new-plugin.json")) or (bool(data("plugin.json")) and bool(data("marketplace-entry.json")) and has("invariant.md"))
         observed = observed or (has("new_plugin_json.txt") and has("marketplace_entry.txt"))
-    elif plugin == "prove-the-undo":
-        observed = has("rehearsal.md", r"Restore path:") and has("rehearsal.md", r"Exercised:")
     elif plugin == "recurrence-detector":
         observed = has("candidates.md", r"PROMOTED|WATCHED") and has("candidates.md", r"cite:")
     elif plugin == "redgate":
@@ -104,7 +102,12 @@ def _verdict(repo_root, card_id, ws):
     elif plugin == "scope-fence":
         observed = has("diff.patch", r"^--- a/") and has("findings.md", r"Found out of scope:")
     elif plugin == "semver-gate":
-        observed = has("classification.md", r"Classification:\s*(PATCH|MINOR|MAJOR)") and has("ask.md")
+        # semver-gate ships two skills (semver-gate, prove-the-undo); the -02
+        # cards exercise prove-the-undo and leave a rehearsal, not a classification.
+        if card_id in ("semver-gate-pos-02", "semver-gate-near-02", "semver-gate-neg-02"):
+            observed = has("rehearsal.md", r"Restore path:") and has("rehearsal.md", r"Exercised:")
+        else:
+            observed = has("classification.md", r"Classification:\s*(PATCH|MINOR|MAJOR)") and has("ask.md")
     elif plugin == "stop-rule":
         observed = has("stop-report.md", r"^objective:") and has("stop-report.md", r"^attempt \d+:") and has("stop-report.md", r"^hypothesis \d+:")
     elif plugin == "tailscale-wif":

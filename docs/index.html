@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent-plugins — a cross-harness agent plugin marketplace</title>
-<meta name="description" content="27 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
+<meta name="description" content="26 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
 <style>
   :root {
     --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5f5e5a; --card:#ffffff; --line:#e3e1dc; --line-strong:#cfccc4;
@@ -93,7 +93,7 @@
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A marketplace of 27 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
+  <p class="sub">A marketplace of 26 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
   (Codex, Cursor, Gemini, …) through standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points. Every plugin is gated by evals;
   15 of them have a published before/after example with the models disclosed; 13 are graded by a model in CI on every change.</p>
 </header>
@@ -152,7 +152,7 @@
     <p>Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. Use this when the context window is getting full, you&#x27;re wondering whether to clear or compact, you need to hand off to another harness, directory, or colleague, you&#x27;ve hit a phase boundary and aren&#x27;t sure whether to keep going or start fresh, or you want to cache hard-won research before it&#x27;s lost.</p>
     <p class="p-links"><code>/plugin install context-handoff@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="dev-diary keep a scannable developer journal that writes itself: discover a day&#x27;s work from local claude code sessions, git commits, and prompt history; interview the user about what mattered and why; and record a tight, dated entry. ships /dev-diary (write today) and /dev-diary-review (revise a past day). the journal is a separate private repo; this plugin is just the tool. diary journal changelog standup dev-log retrospective">
+  <li class="plugin" data-q="dev-diary keep a scannable developer journal that writes itself: discover a day&#x27;s work from local claude code sessions, git commits, and prompt history; interview the user about what mattered and why; and record a tight, dated entry. ships /dev-diary (write today) and /dev-diary-review (revise a past day). the journal is a separate private repo; this plugin is just the tool. diary journal changelog standup dev-log retrospective dev-diary-review">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/dev-diary">dev-diary</a> <span class="ver">v1.0.0</span></h3>
       <div class="tags"><a class="tag ex moderate" href="examples/#dev-diary" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span></div>
@@ -248,14 +248,6 @@
     <p>Scaffold a new marketplace plugin skeleton in one command: a deterministic generator emits a valid plugin.json, an invariant-first SKILL.md, cross-harness AGENTS.md symlinks, a command stub, and a red-by-default eval that fails closed until you implement real checks — then wires it into the marketplace lockfile.</p>
     <p class="p-links"><code>/plugin install plugin-factory@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="prove-the-undo rehearse the rollback before any irreversible action: name the specific restore path and demonstrate it works — never proceed on the strength of &#x27;a backup exists&#x27;. use before deletes, drops, force-pushes, migrations, or any action semver-gate classifies as major. rollback restore irreversible backup-verification rehearsal safety">
-    <div class="p-head">
-      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/prove-the-undo">prove-the-undo</a> <span class="ver">v0.0.1</span></h3>
-      <div class="tags"><a class="tag ex untagged" href="examples/#prove-the-undo" title="before/after example — described without a one-word grade; seed"><span class="dot untagged"></span>example</a><span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span></div>
-    </div>
-    <p>Rehearse the rollback before any irreversible action: name the specific restore path and demonstrate it works — never proceed on the strength of &#x27;a backup exists&#x27;. Use before deletes, drops, force-pushes, migrations, or any action semver-gate classifies as MAJOR.</p>
-    <p class="p-links"><code>/plugin install prove-the-undo@jrichlen</code></p>
-  </li>
   <li class="plugin" data-q="recurrence-detector close the growth loop&#x27;s detect step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least n times as a named candidate invariant with its sightings cited. proposes; never scaffolds. use when asking what keeps going wrong, or before adding a skill on a hunch. recurrence growth-loop detect failure-shape invariant-mining memory meta">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/recurrence-detector">recurrence-detector</a> <span class="ver">v0.0.1</span></h3>
@@ -264,7 +256,7 @@
     <p>Close the growth loop&#x27;s DETECT step: read the exhaust every run already sheds — stop-reports, scope-fence findings, unmet criteria, diary entries — cluster it by failure shape, and surface any shape seen at least N times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. Use when asking what keeps going wrong, or before adding a skill on a hunch.</p>
     <p class="p-links"><code>/plugin install recurrence-detector@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="redgate working harness for nontrivial work that needs explicit falsifiable criteria, verified arm/trace/judge rounds, or classified human gates. compose around the most-specific specialist skill or recipe; redgate reinforces execution and verification rather than replacing the domain procedure. red-gate verifier rounds begin-middle-end falsifiable sdlc ai-dlc apm cross-harness">
+  <li class="plugin" data-q="redgate working harness for nontrivial work that needs explicit falsifiable criteria, verified arm/trace/judge rounds, or classified human gates. compose around the most-specific specialist skill or recipe; redgate reinforces execution and verification rather than replacing the domain procedure. red-gate verifier rounds begin-middle-end falsifiable sdlc ai-dlc apm cross-harness criteria-contract reconcile">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/redgate">redgate</a> <span class="ver">v0.1.0</span></h3>
       <div class="tags"><a class="tag ex moderate" href="examples/#redgate" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span></div>
@@ -280,12 +272,12 @@
     <p>Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to &#x27;fix it while I&#x27;m here&#x27;, or when reviewing whether a diff crept beyond its mandate.</p>
     <p class="p-links"><code>/plugin install scope-fence@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="semver-gate classify a candidate action as patch/minor/major (semver-style blast-radius test) before acting — act silently on patch, flag-and-stage minor, stop for explicit human sign-off on major. use whenever you&#x27;re mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json&#x27;s automode patterns don&#x27;t enumerate. autonomy semver escalation blast-radius human-in-the-loop decision-gate">
+  <li class="plugin" data-q="semver-gate classify a candidate action as patch/minor/major (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. act silently on patch, flag-and-stage minor, stop for explicit human sign-off on major; sign-off authorizes the action, the rehearsal proves the exit. use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json&#x27;s automode patterns don&#x27;t enumerate. autonomy semver escalation blast-radius human-in-the-loop decision-gate rollback restore irreversible backup-verification rehearsal safety prove-the-undo">
     <div class="p-head">
-      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate">semver-gate</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span></div>
+      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate">semver-gate</a> <span class="ver">v1.1.0</span></h3>
+      <div class="tags"><a class="tag ex untagged" href="examples/#prove-the-undo" title="before/after example — described without a one-word grade; seed"><span class="dot untagged"></span>example</a><span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span></div>
     </div>
-    <p>Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR. Use whenever you&#x27;re mid-task and unsure how much autonomy to take on the next action: which of several implementation paths to pick, whether to overwrite unreviewed state, whether to disable a safety toggle, or any judgment call settings.json&#x27;s autoMode patterns don&#x27;t enumerate.</p>
+    <p>Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR; sign-off authorizes the action, the rehearsal proves the exit. Use mid-task when unsure how much autonomy to take: which path to pick, overwriting unreviewed state, disabling a safety toggle, deletes, drops, force-pushes, migrations, or any judgment call settings.json&#x27;s autoMode patterns don&#x27;t enumerate.</p>
     <p class="p-links"><code>/plugin install semver-gate@jrichlen</code></p>
   </li>
   <li class="plugin" data-q="stop-rule a halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report the state with hypotheses — never make attempt n+1 on momentum. use when re-pushing to fix ci, retrying a flaky repro, or any loop where each retry is a guess rather than a diagnosis. halting retry-loops attempt-bound stop-and-report ci discipline">
@@ -320,7 +312,7 @@
     <p>Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first.</p>
     <p class="p-links"><code>/plugin install verify-before-claim@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="voice route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus ai-writing-mistakes, a wording pass that strips the tells marking prose as machine-written, and second-opinion, an offer-only subagent validation pipeline that never runs unbidden. voice style prose output-style confidence validation second-opinion communication writing editing ai-detection prose-quality">
+  <li class="plugin" data-q="voice route every response element to exactly one voice: prose to human-voice (verdict-first, confidence-tagged), machine-read artifacts to machine-voice (compressed traces, logs, status lines); plus ai-writing-mistakes, a wording pass that strips the tells marking prose as machine-written, and second-opinion, an offer-only subagent validation pipeline that never runs unbidden. voice style prose output-style confidence validation second-opinion communication writing editing ai-detection prose-quality ai-writing-mistakes human-voice machine-voice second-opinion">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/voice">voice</a> <span class="ver">v0.1.0</span></h3>
       <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span></div>
