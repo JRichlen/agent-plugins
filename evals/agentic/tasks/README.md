@@ -67,7 +67,7 @@ Redgate criteria and checks are subject deliverables and are never seeded.
 not imply grader ownership: negative cards often share the same correct
 answer, and injecting it would let an empty workspace pass.
 
-All 25 positive reference tasks expose their output interfaces and explicitly
+All 27 positive reference tasks expose their output interfaces and explicitly
 declare any additional repository inputs. Input declarations cannot point at
 pass/fail fixtures or grading code. Hidden output filenames and ritual-only
 requirements must not become a utility criterion.
@@ -124,6 +124,7 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | --- | --- |
 | agent-compiler | Rendered agent with compilation header and name |
 | codebase-design | Candidate designs with design dimensions |
+| consolidation-map | Counts line plus disposition rows in a consolidation map |
 | context-handoff | Referenced handoff or ordered decision log |
 | dev-diary | Dated diary entry with a summary |
 | diagnosing-bugs | Numbered hypotheses and falsifying checks |

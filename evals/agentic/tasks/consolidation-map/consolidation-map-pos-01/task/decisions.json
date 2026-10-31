@@ -1,0 +1,43 @@
+{
+  "catalog": "notification services",
+  "units": [
+    {
+      "intent": "mail-relay, sms-relay and push-relay were built into a new notify-gateway",
+      "rows": [
+        {"entity": "notify-gateway", "verb": "new"},
+        {"entity": "mail-relay", "verb": "merge-into", "target": "notify-gateway"},
+        {"entity": "sms-relay", "verb": "merge-into", "target": "notify-gateway"},
+        {"entity": "push-relay", "verb": "merge-into", "target": "notify-gateway"}
+      ],
+      "why": "three relays shared one delivery path, so one gateway replaces them",
+      "lost": "per-channel retry settings; the gateway applies a single shared retry policy"
+    },
+    {
+      "intent": "event-trail was absorbed by audit-log",
+      "rows": [
+        {"entity": "audit-log", "verb": "absorb"},
+        {"entity": "event-trail", "verb": "merge-into", "target": "audit-log"}
+      ],
+      "why": "event-trail duplicated audit-log's write path",
+      "lost": "the 30-day replay endpoint, which audit-log does not offer"
+    },
+    {
+      "intent": "legacy-pager is retired",
+      "rows": [
+        {"entity": "legacy-pager", "verb": "retire"}
+      ],
+      "why": "nothing has called it in 90 days and no replacement is planned",
+      "lost": "pager escalation for the old on-call rota",
+      "evidence": "no inbound calls in 90 days"
+    },
+    {
+      "intent": "ops-console is deprecated",
+      "rows": [
+        {"entity": "ops-console", "verb": "deprecate"}
+      ],
+      "why": "scheduled for removal once notify-gateway has its own admin view",
+      "lost": "nothing yet; removal will drop the manual resend button"
+    }
+  ],
+  "unchanged": ["status-page"]
+}

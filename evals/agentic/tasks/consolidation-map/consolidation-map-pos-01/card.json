@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "list the changed files and call it a summary of the consolidation",
+      "kind": "skill",
+      "name": "consolidation-map",
+      "source_plugin": "consolidation-map"
+    }
+  ],
+  "card_id": "consolidation-map-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/consolidation-map/consolidation-map-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/consolidation-map/consolidation-map-pos-01/fixtures/pass",
+  "plugin": "consolidation-map",
+  "task_path": "evals/agentic/tasks/consolidation-map/consolidation-map-pos-01/task"
+}

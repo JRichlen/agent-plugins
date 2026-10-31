@@ -115,6 +115,62 @@
         "treatment": "plugins/codebase-design/skills/codebase-design/SKILL.md"
       }
     },
+    "consolidation-map": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/consolidation-map.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "fbe448485a4cbb034860e55179d2234d4e5510aba0b6a9772e4a2dbec8eb50e7",
+        "clean": "ee3ea2b9bc50b07c5b8e5c4d0685f090b6dce837a998e2da353b3eba555e25d4"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "consolidation-map",
+      "primary_skill": "plugins/consolidation-map/skills/consolidation-map/SKILL.md",
+      "primary_skill_sha256": "ec60a9fb07aec2ac2f45a055f374e861068be1ab14a5f29e128f9ab76bb371ab",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 5892,
+        "treatment": 5892
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/consolidation-map.md",
+        "treatment": "plugins/consolidation-map/skills/consolidation-map/SKILL.md"
+      }
+    },
     "context-handoff": {
       "cells": {
         "C1": {
@@ -825,8 +881,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "744ddb6f3263c974304e39b08602153cb95ea51188f505dbb5a2713b231e4e7b",
-        "clean": "cb2aab0ea0955b1f0a961fcf7095de362a37be2bb71b461ba35ee47746e8a903"
+        "adversarial": "0adadc6ad319d8e88cf380a381950a882c79c0724b5f6a9f06d18aa7982742d9",
+        "clean": "bc78f9980342a62ff590dfbca6803c77d523af5a75e35b11044ce85600be68c0"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,

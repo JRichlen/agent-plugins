@@ -1038,6 +1038,7 @@ pack: agent-compiler/cheap
 pack: agent-compiler/promptfoo
 pack: agent-compiler/scale
 pack: codebase-design/cheap
+pack: consolidation-map/cheap
 pack: context-handoff/cheap
 pack: dev-diary/cheap
 pack: diagnosing-bugs/cheap

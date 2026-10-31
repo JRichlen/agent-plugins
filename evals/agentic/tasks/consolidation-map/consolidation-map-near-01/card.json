@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "list the changed files and call it a summary of the consolidation",
+      "kind": "skill",
+      "name": "consolidation-map",
+      "source_plugin": "consolidation-map"
+    }
+  ],
+  "card_id": "consolidation-map-near-01",
+  "expected_boundary_verdict": "undecided-entity-named-not-invented",
+  "fail_fixture": "evals/agentic/tasks/consolidation-map/consolidation-map-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Four of the five reporting packages have a decision on file; the fifth, report-exporter, has none yet. Write up the consolidation as it stands.",
+    "The owner has ruled on every reporting package except report-exporter. Produce the consolidation write-up from the decisions supplied."
+  ],
+  "pass_fixture": "evals/agentic/tasks/consolidation-map/consolidation-map-near-01/fixtures/pass",
+  "plugin": "consolidation-map",
+  "task_path": "evals/agentic/tasks/consolidation-map/consolidation-map-near-01/task"
+}

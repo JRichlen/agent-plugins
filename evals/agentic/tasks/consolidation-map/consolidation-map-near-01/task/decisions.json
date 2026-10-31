@@ -1,0 +1,24 @@
+{
+  "catalog": "reporting packages",
+  "units": [
+    {
+      "intent": "report-viewer was absorbed by report-builder",
+      "rows": [
+        {"entity": "report-builder", "verb": "absorb"},
+        {"entity": "report-viewer", "verb": "merge-into", "target": "report-builder"}
+      ],
+      "why": "the viewer only rendered what the builder already produced",
+      "lost": "the standalone embed script"
+    },
+    {
+      "intent": "theme-pack is retired",
+      "rows": [
+        {"entity": "theme-pack", "verb": "retire"}
+      ],
+      "why": "no package has imported it in 90 days",
+      "lost": "the dark-mode palette",
+      "evidence": "no imports in 90 days"
+    }
+  ],
+  "unchanged": ["chart-lib"]
+}

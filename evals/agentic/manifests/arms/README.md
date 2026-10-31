@@ -1,6 +1,6 @@
 # `manifests/arms/*.json` — per-plugin arm manifests (registry lane, T16/T17)
 
-One file per live roster plugin (25 today, regenerate on a roster change --
+One file per live roster plugin (27 today, regenerate on a roster change --
 these are DERIVED artifacts, not hand-authored; see
 `evals.agentic.framework.pairing`). Each document:
 
@@ -19,7 +19,7 @@ these are DERIVED artifacts, not hand-authored; see
 `arm_source_card` names the real card whose author-curated `capabilities`
 built these two arms (contract §3.11's precedence rule: an author-curated
 card always wins over blind discovery) -- the plugin's own `-pos-01` card
-when one exists, which as of this generation is every one of the 25 roster
+when one exists, which as of this generation is every one of the 27 roster
 plugins. A plugin that gains a card later, or loses its only positive card,
 regenerates from a throwaway "survey" `Card` instead, whose `capabilities`
 come straight from `discover_plugin_capabilities` (real, not curated).
@@ -60,7 +60,7 @@ calls above reproduce this file's `full_package_arm`/`baseline_arm` blocks
 exactly (`tests/test_pairing.py::CommittedManifestsAreReproducible` asserts
 this for `graveyard.json`). `derived_capabilities`/`estimand_availability`/
 `arm_source_card` are assembled around those two `Arm`s by the same
-generator; regenerating the full 25-file set follows the same shape per
+generator; regenerating the full 27-file set follows the same shape per
 plugin.
 
 Counterfeit fixture `25-agentic-exposure-parity` (contract §8.8) mutates a
