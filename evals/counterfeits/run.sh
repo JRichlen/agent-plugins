@@ -174,7 +174,7 @@ done
 # fixture (default: unset, all fixtures run -- unchanged behavior). Added for
 # the bounded T51 test (coordinator's integration-cost-decisions.md decision
 # 1): T51 must exercise ONE fixture end to end without running the full
-# 31-fixture corpus (and, transitively, the full cheap tier 31 times) from
+# fixture corpus (and, transitively, the full cheap tier once per fixture) from
 # inside a single unittest method. Calibration and gate-coverage above are
 # unaffected -- they are cheap (reuse the one already-computed $cal_out) and
 # are part of what makes a single-fixture run trustworthy at all.

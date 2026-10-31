@@ -20,8 +20,8 @@ it to what matters for this specific task. Otherwise (a plugin with no
 committed card yet, or a composition/version arm spanning plugin(s) the card
 does not name) capabilities are discovered structurally from the plugin's
 own manifest and filesystem via ``discover_plugin_capabilities`` -- this is
-what makes ``manifests/arms/*.json`` derivable for all 25 roster plugins
-today, 21 of which have no card yet (contract §8.4's honest partial-corpus
+what makes ``manifests/arms/*.json`` derivable for every roster plugin,
+including any that has no card yet (contract §8.4's honest partial-corpus
 state).
 
 Exposure parity (T16, contract §3.11 clause (c)): the baseline arm never
@@ -1036,7 +1036,7 @@ def holdout_split(
 # ---------------------------------------------------------------------------
 
 def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, dict[str, str]]:
-    """Per-plugin estimand availability across the live 25-plugin roster --
+    """Per-plugin estimand availability across the live plugin roster --
     a structural survey, offline, no model call. For each roster plugin:
 
       full-package:   always "available" (every plugin can be installed whole).

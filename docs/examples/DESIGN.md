@@ -13,8 +13,8 @@ argue against a reason rather than a taste.
 
 Per plugin: one prompt (100–1,400 chars), two transcripts (1–8 KB each), a
 judge's paragraph on how they diverge with a one-word grade, and provenance.
-Twenty-four plugins, so the page must be *skimmable* (which skills show the
-starkest effect?) and *auditable* (where did this text come from?) at once.
+With a whole marketplace of plugins, the page must be *skimmable* (which
+skills show the starkest effect?) and *auditable* (where did this text come from?) at once.
 Constraints: static HTML from a Python script, no build tooling, no external
 assets, light and dark, byte-reproducible, and the original prompts verbatim.
 

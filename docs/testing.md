@@ -26,7 +26,7 @@ structurally cannot.
 | [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, <1 min | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
 | [agentic suite](#agentic-suite) | `evals/agentic/run.sh` | free, offline; `--gate` (what fires below) ~5-15s, full suite ~4-5 min (real promptfoo/docker subprocess) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
 | [red-team suite](#redteam-suite) | `evals/redteam/run.sh` | free, offline; `--gate` (what fires below) well under 1s, full suite real per-config promptfoo validate (materially more) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
-| [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min (31 fixtures) | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
+| [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
 | [install](#install-tier) | `ci/install-smoke.sh` + `evals/cheap/run-one.sh` | free, offline, per-plugin matrix | every push/PR, all registered plugins | yes — `install tier (marketplace install-smoke + per-plugin evals)` |
 | [grader-model](#grader-model-check) | `evals.yml` job | ~1 API ping per grader slug | every push/PR (needs secrets; skipped on fork PRs) | yes — `confirm grader model resolves` |
 | [subject-model](#subject-model-reachability-advisory) | `evals/paid/check-subject-model.sh` | ~1 API ping per subject slug | every push/PR (needs secrets; skipped on fork PRs) **and** as a preflight in `refresh-examples.yml` | no — advisory in `evals.yml`; blocking in the refresh, which spends the budget |
@@ -89,7 +89,9 @@ that it is green because it did not run, never silently.
 - **What it proves.** The evaluation framework's contracts, positive and negative
   controls, task-specific artifact graders, protocol fixtures, native evidence
   binding, attempt accounting, statistical calculations, and catalog wiring.
-  The corpus has 96 cards across 27 plugins. Grader-owned helper files are
+  The corpus covers every registered plugin
+  (`python3 -m evals.agentic.framework.validate --corpus` prints the live card
+  and roster counts). Grader-owned helper files are
   explicit; arbitrary identical fixture files are never injected as answers.
   The subject cannot replace the canonical grader, and executable artifacts run
   in Bubblewrap without host credentials, network or hidden fixture answers.
@@ -161,13 +163,15 @@ that it is green because it did not run, never silently.
   for, and nothing about model behavior.
 - **Fires.** Path-gated in CI (`evals/cheap/**`, `evals/counterfeits/**`,
   `plugins/**`); the required `counterfeit tier` aggregate always reports.
-- **Cost.** Free, offline. **31 fixtures now** (18 original + 13 for the
-  agentic/red-team suites, contract §8.8) — measured on this host at
-  roughly **5 minutes** for the full corpus (each fixture rebuilds a
-  synthetic marketplace root and reruns the cheap tier once, which itself
-  runs `evals/agentic/run.sh --gate` and `evals/redteam/run.sh --gate`;
-  those stayed fast specifically so this multiplication by 31 stays minutes,
-  not the multi-hour recursion a slower `--gate` would produce). Not part of
+- **Cost.** Free, offline. One fixture per directory under
+  `evals/counterfeits/fixtures/` (`ls evals/counterfeits/fixtures | wc -l`
+  counts them), including those for the agentic/red-team suites (contract
+  §8.8) — measured on this host at roughly **5 minutes** for the full
+  corpus (each fixture rebuilds a synthetic marketplace root and reruns the
+  cheap tier once, which itself runs `evals/agentic/run.sh --gate` and
+  `evals/redteam/run.sh --gate`; those stayed fast specifically so this
+  multiplication by the fixture count stays minutes, not the multi-hour
+  recursion a slower `--gate` would produce). Not part of
   the always-on cheap tier; a separate, path-gated top-level check.
   `COUNTERFEIT_ONLY=<fixture-dir-name> evals/counterfeits/run.sh` runs
   exactly one fixture end to end (used by the bounded T51 test, ~30-40s).

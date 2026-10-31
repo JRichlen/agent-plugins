@@ -75,9 +75,9 @@ class RosterDerivation(unittest.TestCase):
 
     def test_no_hardcoded_plugin_name_list_in_registry_source(self):
         """A grep-shaped check: registry.py's source must not contain a
-        literal roster (a comma/list-joined enumeration of the 25 real
+        literal roster (a comma/list-joined enumeration of the real
         plugin names) anywhere. A single incidental mention (e.g. in a
-        docstring example) is fine; all 25 appearing together would mean
+        docstring example) is fine; all of them appearing together would mean
         someone pasted in a frozen roster."""
         roster = registry.derive_roster(REPO_ROOT)
         names = [r.name for r in roster]
@@ -262,7 +262,7 @@ class CatalogMergeAndResolve(unittest.TestCase):
 class TripletCompleteness(unittest.TestCase):
     def test_reference_plugins_have_all_three_card_kinds(self):
         """Named for T12's frozen catalog test_name, but -- registry lane
-        part 3 -- now checks the whole 25-plugin roster, not just the four
+        part 3 -- now checks the whole roster, not just the four
         reference plugins: the corpus is complete, and a test that only
         ever looked at graveyard/redgate/voice/jori would keep passing
         forever even if every other plugin silently lost a card kind."""
@@ -301,10 +301,10 @@ class TripletCompleteness(unittest.TestCase):
 
     def test_assert_triplet_completeness_passes_for_the_now_complete_corpus(self):
         """Honest state check, updated for registry lane part 3: the corpus
-        is now complete across all 25 plugins (>=75 cards, no missing
+        is now complete across every plugin (no missing
         plugin/kind cell), so the roster-wide gate must NOT raise. This
         replaces the interim assertion (kept as this method's ``__negative``
-        sibling below) that covered the earlier 4/25 partial state -- it must
+        sibling below) that covered the earlier partial state -- it must
         never regress to reading complete only because a handful of
         reference plugins are done."""
         cards = validate.load_cards(REPO_ROOT)
@@ -344,10 +344,10 @@ class TripletCompleteness(unittest.TestCase):
 
 class SamplingIntegrity(unittest.TestCase):
     def test_holdout_ids_are_the_reference_near_miss_cards(self):
-        """The corpus is now complete across all 25 plugins (registry
+        """The corpus is now complete across every plugin (registry
         lane part 3): the holdout set is every plugin's near-miss card,
         not just the four reference plugins' -- updated from the interim
-        4/25 assertion once the full triplet-per-plugin corpus landed."""
+        partial-corpus assertion once the full triplet-per-plugin corpus landed."""
         cards = validate.load_cards(REPO_ROOT)
         roster = registry.derive_roster(REPO_ROOT)
         expected = {f"{p.name}-near-01" for p in roster}
@@ -369,9 +369,9 @@ class SamplingIntegrity(unittest.TestCase):
 
     def test_scan_leakage_finds_zero_overlaps_against_real_plugin_surfaces(self):
         """Scans EVERY roster plugin's real surface, not just the four
-        reference plugins -- updated for registry lane part 3 now that all
-        25 plugins carry cards. Restricting this to REFERENCE_PLUGINS would
-        leave the other 21 plugins' cards structurally unscanned for
+        reference plugins -- updated for registry lane part 3 now that every
+        plugin carries cards. Restricting this to REFERENCE_PLUGINS would
+        leave every other plugin's cards structurally unscanned for
         leakage against the very surfaces their prompts and expected
         artifacts describe."""
         cards = validate.load_cards(REPO_ROOT)
