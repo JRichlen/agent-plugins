@@ -23,6 +23,7 @@ OUT="$HERE/index.html"
 render() {
 python3 - "$ROOT" <<'PY'
 import glob, html, json, os, re, string, sys
+sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 root = sys.argv[1]
 sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
 sys.path.insert(0, os.path.join(root, "docs", "_shared"))
@@ -31,13 +32,13 @@ from sitenav import nav, BASE_CSS, REPO
 def esc(x):
     return html.escape("" if x is None else str(x))
 
-mp = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+mp = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json"), encoding="utf-8"))
 plugins = sorted(mp.get("plugins") or [], key=lambda p: p["name"])
 
 snaps = {}
 for f in glob.glob(os.path.join(root, "docs", "examples", "data", "*.json")):
     try:
-        s = json.load(open(f))
+        s = json.load(open(f, encoding="utf-8"))
         notice = (s.get("notice") or "").strip()
         m = re.search(r"\[divergence: ([a-z]+)\]", notice)
         src = str((s.get("provenance") or {}).get("source") or "")

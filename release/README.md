@@ -32,6 +32,8 @@ cd /tmp/plugin-candidate
 sha256sum -c SHA256SUMS
 ```
 
+## Guarantees and limits
+
 Use a nonexistent output directory; even an existing empty directory is refused. The builder reads Git objects, never the dirty
 working tree, and does not execute the selected candidate. It writes a tar.gz,
 `manifest.json` and `SHA256SUMS`. The manifest records the exact commit/tree,

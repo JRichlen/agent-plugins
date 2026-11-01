@@ -56,6 +56,10 @@ The free pipeline contracts check the newcomer documentation's local links and
 anchors, capture eligibility, and recovery provenance against real process/Git
 seams. Page generators still own derived counts and presentation. The obsolete
 gallery phase/count plan was removed; its historical states remain in Git.
+Renderer controls also execute the actual embedded Python with Windows-style
+stdout/file writers: removing explicit LF output must fail the control. Ordinary
+graded and attested captures retain the same per-arm criteria/context disclosure
+as recovered captures. These source/runtime controls do not replace browser QA.
 
 Five active-plugin examples were recovered offline from retained run41280016961
 artifact13073393801, using the original source config. They are explicitly

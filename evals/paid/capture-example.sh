@@ -205,8 +205,9 @@ snap = {
     },
 }
 path = os.path.join(outdir, f"{plugin}.json")
-json.dump(snap, open(path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
-open(path, "a", encoding="utf-8").write("\n")
+with open(path, "w", encoding="utf-8", newline="\n") as snapshot:
+    json.dump(snap, snapshot, indent=2, ensure_ascii=False)
+    snapshot.write("\n")
 print(f"capture-example: wrote {path} (with_skill pass={snap['with_skill']['graded']['pass']}, "
       f"without_skill pass={snap['without_skill']['graded']['pass']}; subject={subject}; grader={grader})")
 PY

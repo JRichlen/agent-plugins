@@ -34,6 +34,7 @@ OUT="$HERE/examples/index.html"
 render() {
 python3 - "$ROOT" <<'PY'
 import collections, glob, hashlib, html, json, os, re, string, sys
+sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 root = sys.argv[1]
 sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
 sys.path.insert(0, os.path.join(root, "docs", "_shared"))
@@ -227,7 +228,10 @@ for s in snaps:
         arm = s.get(side) or {}
         return esc(json.dumps({"criteria": arm.get("criteria") or "not recorded", "context": arm.get("comparison_inputs") or {}}, indent=2, ensure_ascii=False))
     source_config = prov.get("source_config_url") or (f"{REPO}/blob/{commit}/plugins/{plugin}/evals/promptfoo/promptfooconfig.yaml" if re.fullmatch(r"[0-9a-f]{40}", commit) and kind != "seed" else "")
-    criterion_details = (f'<details><summary>Per-arm criteria and context (grades use different rubrics)</summary><p><a href="{esc(source_config)}">Original source config</a>. Compare criteria and inputs before interpreting booleans. Full source rows remain in the referenced results artifact.</p><h4>With skill</h4><pre>{criteria("with_skill")}</pre><h4>Calibration control</h4><pre>{criteria("without_skill")}</pre></details>' if kind == "recovered" else "")
+    criteria_note = "grades use different rubrics" if (s.get("with_skill") or {}).get("criteria") != (s.get("without_skill") or {}).get("criteria") else "compare the recorded rubrics"
+    criterion_details = (f'<details><summary>Per-arm criteria and context ({criteria_note})</summary><p><a href="{esc(source_config)}">Original source config</a>. Compare criteria and inputs before interpreting booleans. Full source rows remain in the referenced results artifact.</p><h4>With skill</h4><pre>{criteria("with_skill")}</pre><h4>Calibration control</h4><pre>{criteria("without_skill")}</pre></details>' if kind in ("recovered", "graded", "attested") else "")
+    control_label = "Calibration control · control criterion" if kind in ("graded", "recovered", "attested") else "Without the skill"
+    skill_label = "With the skill · skill criterion" if kind in ("graded", "recovered", "attested") else "With the skill"
     with_out = (s.get("with_skill") or {}).get("output", "")
     without_out = (s.get("without_skill") or {}).get("output", "")
     prompt = s.get("prompt") or ""
@@ -257,11 +261,11 @@ for s in snaps:
 {inputs_notice}
   <div class="compare clamped">
     <div class="col without">
-      <div class="col-head"><span>Calibration control · control criterion</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>{esc(control_label)}</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(without_out)}</div>
     </div>
     <div class="col with">
-      <div class="col-head"><span>With the skill · skill criterion</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>{esc(skill_label)}</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(with_out)}</div>
     </div>
     <div class="compare-tools js-only">
