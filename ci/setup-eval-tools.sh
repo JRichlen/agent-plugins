@@ -6,6 +6,8 @@ set -euo pipefail
 : "${GITHUB_PATH:?GITHUB_PATH is required}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 python3 "$root/ci/check_toolchain.py" --root "$root"
+expected_npm="$(node -p "require(process.argv[1]).packageManager.replace(/^npm@/, '')" "$root/ci/tools/package.json")"
+[ "$(npm --version)" = "$expected_npm" ] || { echo "Expected npm $expected_npm from the pinned Node toolchain" >&2; exit 1; }
 tools="$RUNNER_TEMP/pinned-tools"
 mkdir -p "$tools"
 cp "$root/ci/tools/package.json" "$root/ci/tools/package-lock.json" "$tools/"

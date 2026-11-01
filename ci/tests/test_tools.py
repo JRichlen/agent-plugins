@@ -25,6 +25,7 @@ class Tools(unittest.TestCase):
             for filename in ("package.json", "package-lock.json", "lifecycle-policy.json"):
                 shutil.copyfile(ROOT / "ci/tools" / filename, root / "ci/tools" / filename)
             self.assertEqual(policy.check(root), [])
+            self.assertEqual(json.loads((root / "ci/tools/package.json").read_text(encoding="utf-8"))["packageManager"], "npm@10.9.8")
             path = root / "ci/tools/package-lock.json"
             data = json.loads(path.read_text(encoding="utf-8"))
             data["packages"]["node_modules/unreviewed"] = {"version": "1.0.0", "hasInstallScript": True}

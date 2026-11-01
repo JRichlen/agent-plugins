@@ -49,7 +49,8 @@ compare an identical clean-main run before calling a failure pre-existing.
 ## Tool and profile ownership
 
 [`setup-eval-tools`](../.github/actions/setup-eval-tools/action.yml) reads the
-Node pin from `evals/redteam/pin.json`, installs the exact
+Node pin from `evals/redteam/pin.json`, verifies the bundled npm version recorded
+in `tools/package.json`, and installs the exact
 [`tools/package-lock.json`](tools/package-lock.json) into runner temp with
 general lifecycle scripts disabled, explicitly runs the inspected locked Claude
 platform-copy installer, verifies its executable ELF binary without invoking the
@@ -85,7 +86,9 @@ GitHub stack object, not merely matching branch bases.
 
 For already pushed drafts, the official `gh stack link <pr-url> <pr-url>` links
 them bottom to top without pushing branch arguments. Verify the remote stack,
-heads, bases, draft state and individual diffs afterward. Each native layer
+heads, bases, draft state and individual diffs afterward. CLI tracking metadata
+can be stale after a manual leased push; verify the server stack and PR heads
+separately rather than treating local `view` output as remote proof. Each native layer
 inherits trunk rules and Actions filters, so do not turn off intermediate free
 checks to save time. See GitHub's [stack CLI reference](https://docs.github.com/en/pull-requests/reference/stacked-prs-cli-commands)
 and [stack CI guidance](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/optimizing-ci-for-stacked-pull-requests).
