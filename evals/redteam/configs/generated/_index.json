@@ -214,11 +214,11 @@
       "planned_attempts_total": 288,
       "plugin": "context-handoff",
       "primary_skill": "plugins/context-handoff/skills/context-handoff/SKILL.md",
-      "primary_skill_sha256": "05d5fe5b976a84a849ed068b2460e424b7d8f82aa06d2dc3673e66ccf61809b2",
+      "primary_skill_sha256": "dc426f7a010f7b258b0b5820287631c6b88924a786e3d9b0751c977c4444be97",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 9241,
-        "treatment": 9241
+        "baseline-generic": 9433,
+        "treatment": 9433
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -1406,11 +1406,11 @@
       "planned_attempts_total": 288,
       "plugin": "wave-research",
       "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
-      "primary_skill_sha256": "e27aa6b58430ff629e6ed9bda643b07da6c3ee3674def2876ed55ad51d665ad6",
+      "primary_skill_sha256": "0cf79a1b8a12d0f915dff12fbe8653ffbd2578b867bce99ab74629f4c0c6bf77",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 15026,
-        "treatment": 15026
+        "baseline-generic": 15173,
+        "treatment": 15173
       },
       "secondary_skills": [],
       "skill_paths": {
