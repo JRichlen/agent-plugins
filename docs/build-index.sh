@@ -23,6 +23,7 @@ OUT="$HERE/index.html"
 render() {
 python3 - "$ROOT" <<'PY'
 import glob, html, json, os, re, string, sys
+sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 root = sys.argv[1]
 sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
 sys.path.insert(0, os.path.join(root, "docs", "_shared"))
@@ -31,20 +32,20 @@ from sitenav import nav, BASE_CSS, REPO
 def esc(x):
     return html.escape("" if x is None else str(x))
 
-mp = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json")))
+mp = json.load(open(os.path.join(root, ".claude-plugin", "marketplace.json"), encoding="utf-8"))
 plugins = sorted(mp.get("plugins") or [], key=lambda p: p["name"])
 
 snaps = {}
 for f in glob.glob(os.path.join(root, "docs", "examples", "data", "*.json")):
     try:
-        s = json.load(open(f))
+        s = json.load(open(f, encoding="utf-8"))
         notice = (s.get("notice") or "").strip()
         m = re.search(r"\[divergence: ([a-z]+)\]", notice)
         src = str((s.get("provenance") or {}).get("source") or "")
         # Same three states the gallery distinguishes: a tagged verdict, a
         # verdict with no one-word grade, and no verdict written at all.
-        snaps[s["plugin"]] = {"div": m.group(1) if m else ("untagged" if notice else "unjudged"),
-                              "kind": "graded" if src.startswith("promptfoo") else "seed"}
+        snaps[s["plugin"]] = {"div": "unjudged" if src == "promptfoo-recovered" else (m.group(1) if m else ("untagged" if notice else "unjudged")),
+                              "kind": "recovered, unattested" if src == "promptfoo-recovered" else ("graded" if src.startswith("promptfoo") else "seed")}
     except Exception:
         pass
 
@@ -74,6 +75,10 @@ DEEP_BLURB = {
     "agent-compiler": "Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, a stdlib-only kernel resolves modules and fails closed on conflicts, and out comes an immutable AgentImage with per-line provenance.",
 }
 
+# The root README owns the plain-language user catalog; routing metadata stays
+# in manifests. Reuse that catalog rather than maintaining another summary map.
+readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+user_purposes = dict(re.findall(r"\| \[\*\*([^*]+)\*\*\]\([^)]*\) \| ([^\n]+) \|", readme))
 rows = []
 for p in plugins:
     name = p["name"]
@@ -82,7 +87,7 @@ for p in plugins:
     if ex:
         tiers = ("stark", "strong", "moderate", "subtle")
         label = ex["div"] if ex["div"] in tiers else "example"
-        title = (f'before/after example — judged divergence: {ex["div"]}; {ex["kind"]}'
+        title = (f'before/after example — judged difference (not benefit): {ex["div"]}; {ex["kind"]}'
                  if ex["div"] in tiers else
                  f'before/after example — {"described without a one-word grade" if ex["div"] == "untagged" else "divergence not judged"}; {ex["kind"]}')
         ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(ex_key)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
@@ -101,7 +106,7 @@ for p in plugins:
       <h3><a href="{REPO}/tree/main/plugins/{esc(name)}">{esc(name)}</a> <span class="ver">v{esc(p.get("version","?"))}</span></h3>
       <div class="tags">{ex_html}{pack_html}</div>
     </div>
-    <p>{esc(p.get("description",""))}</p>
+    <p>{esc(user_purposes.get(name, p.get("description","")))}</p>
     <p class="p-links"><code>/plugin install {esc(name)}@jrichlen</code>{deep_html}</p>
   </li>''')
 
@@ -183,19 +188,28 @@ $nav
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A shared operating contract and task methods for AI-assisted work. Start with the outcome,
-  use the smallest useful method, and inspect the result. This draft has $n_plugins registered plugins;
-  $n_ex have an example and $n_pack carry model-evaluation packs. Presence is not proof of execution or host parity.
-  <a href="$repo/blob/main/README.md">Start with the walkthrough</a> or <a href="$repo/blob/main/core/OPERATING.md">inspect the core</a>.</p>
+  <p class="sub">Find help for a bug, a small change, a difficult question or a handoff.
+  Try one source-loaded task, see the result and its limits, then go deeper when useful.
+  Choose from $n_plugins task-method plugins; no architecture lesson is required to begin.
+  <a href="$repo/blob/main/docs/getting-started.md">Try the first task</a> or <a href="$repo/blob/main/core/OPERATING.md">inspect the core</a>.</p>
 </header>
 
+<details>
+<summary>Native packaging and other installation routes</summary>
 <div class="install">
   <div><span class="lbl">Claude Code</span><pre>/plugin marketplace add JRichlen/agent-plugins
 /plugin install &lt;name&gt;@jrichlen</pre></div>
-  <div><span class="lbl">Any harness, via APM (pin the SHA)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
+  <div><span class="lbl">APM source resolution (host support varies)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
 </div>
+<p>Installation availability does not establish host behavior. <a href="$repo/blob/main/docs/getting-started.md#what-is-qualified">Check qualification and removal</a>.</p>
+</details>
 
-<h2>Explore further</h2>
+<h2>Choose your next step</h2>
+<div class="cards">
+  <a class="card" href="$repo/blob/main/docs/getting-started.md"><span class="lbl">Start here</span><h3>Find existing code</h3><p>A source-loaded first task, actual findings, installation choices and undo.</p></a>
+  <a class="card" href="$repo/blob/main/docs/guides/README.md"><span class="lbl">Guides</span><h3>Bug, feature, handoff</h3><p>Follow real repository work, with evidence and boundaries at each stage.</p></a>
+</div>
+<h2>Inspect the evidence</h2>
 <div class="cards">
   <a class="card" href="examples/"><span class="lbl">Evidence</span><h3>Before &amp; after examples</h3><p>Paired examples with evidence labels and provenance. Some entries are ungraded seeds; inspect the source rather than assuming measured benefit.</p></a>
   <a class="card" href="$repo/blob/main/docs/testing.md"><span class="lbl">Reference</span><h3>How every change is checked</h3><p>The full inventory of eval tiers, what each proves and what it structurally cannot, when it fires and what it costs — the doc the cheap tier itself keeps in sync with the workflows.</p></a>
@@ -205,7 +219,7 @@ $nav
 <div class="cards">$deep_cards
 </div>
 
-<h2>All plugins <small><span id="n"></span></small></h2>
+<h2 id="plugins">All plugins <small><span id="n"></span></small></h2>
 <input id="q" class="search js-only" type="search" placeholder="Filter by name, description or keyword" aria-label="Filter plugins">
 <ol class="catalog">$rows
 </ol>
@@ -215,7 +229,7 @@ $nav
   script in <code>docs/</code>; the offline eval tier fails any commit whose page drifts from its data, and the Pages workflow re-checks before it deploys.
   <ul>
     <li><a href="$repo/blob/main/docs/build-index.sh">build-index.sh</a> — this page, from <code>marketplace.json</code>, the snapshots and the packs</li>
-    <li><a href="$repo/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="$repo/blob/main/docs/examples/DESIGN.md">why it looks the way it does</a>)</li>
+    <li><a href="$repo/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="$repo/blob/main/docs/examples/README.md">capture and evidence limits</a>)</li>
   </ul>
 </div>
 

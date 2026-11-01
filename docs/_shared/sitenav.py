@@ -10,9 +10,12 @@ REPO = "https://github.com/JRichlen/agent-plugins"
 
 # (id, label, path relative to docs/)
 PAGES = [
-    ("home",     "Home",           ""),
-    ("examples", "Examples",       "examples/"),
-    ("compiler", "agent-compiler", "agent-compiler/"),
+    ("home", "Home", ""),
+    ("start", "Start here", REPO + "/blob/main/docs/getting-started.md"),
+    ("guides", "Guides", REPO + "/blob/main/docs/guides/README.md"),
+    ("plugins", "Plugins", "#plugins"),
+    ("examples", "Evidence", "examples/"),
+    ("contribute", "Contribute", REPO + "/blob/main/CONTRIBUTING.md"),
 ]
 
 
@@ -22,7 +25,7 @@ def nav(current, prefix):
     items = []
     for pid, label, path in PAGES:
         cls = ' class="cur" aria-current="page"' if pid == current else ""
-        items.append(f'<a href="{html.escape(prefix + path)}"{cls}>{html.escape(label)}</a>')
+        items.append(f'<a href="{html.escape(path if path.startswith("https://") else prefix + path)}"{cls}>{html.escape(label)}</a>')
     items.append(f'<a href="{REPO}" class="ext" rel="noopener">GitHub ↗</a>')
     return ('<nav class="site" aria-label="Site">'
             f'<a class="brand" href="{html.escape(prefix)}">agent-plugins</a>'
@@ -33,7 +36,7 @@ def nav(current, prefix):
 # own palette embed exactly
 # this, so the nav can never be split from its closing brace again.
 NAV_CSS = """
-  nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
+  nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
   nav.site .brand { font-weight:800; letter-spacing:-.01em; color:var(--fg); text-decoration:none; }
   nav.site .site-links { display:flex; gap:.15rem; flex-wrap:wrap; margin-left:auto; }
   nav.site .site-links a { color:var(--muted); text-decoration:none; padding:.25rem .6rem; border-radius:6px; }

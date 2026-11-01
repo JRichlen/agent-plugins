@@ -195,16 +195,18 @@ else
   bad "plugin-factory: SKILL.md does not point authors at references/authoring-checklist.md"
 fi
 
-# CONTRIBUTING.md must carry the marketplace.json rebase-and-reconcile section
-# in real content, not just a heading — grep for the load-bearing instruction
-# (keep BOTH entries on conflict) so a heading-only stub still fails.
+# Contribution navigation points to one current, code-adjacent reconciliation
+# procedure. Registry shape/uniqueness remain checked by the real JSON gates;
+# this source control must not require the old unsafe keep-both policy.
 _contrib="$REPO_ROOT/CONTRIBUTING.md"
-if [ -f "$_contrib" ] && grep -qi 'rebase' "$_contrib" \
-   && grep -qi 'keep BOTH entries' "$_contrib" \
-   && grep -qF 'marketplace.json' "$_contrib"; then
-  ok "plugin-factory: CONTRIBUTING.md documents rebase + keep-both-entries recovery for marketplace.json conflicts"
+_recovery="$PLUGIN_DIR/README.md"
+if [ -f "$_contrib" ] && grep -qF 'plugins/plugin-factory/README.md#reconcile-marketplace-changes' "$_contrib" \
+   && grep -qF 'plugin name and source path' "$_recovery" \
+   && grep -qF 'Never keep conflicting duplicates' "$_recovery" \
+   && grep -qF 'marketplace.json' "$_recovery"; then
+  ok "plugin-factory: contributor path resolves to identity-aware marketplace reconciliation"
 else
-  bad "plugin-factory: CONTRIBUTING.md is missing the marketplace.json rebase/reconcile section"
+  bad "plugin-factory: current marketplace reconciliation guidance is missing"
 fi
 
-unset _checklist _contrib
+unset _checklist _contrib _recovery

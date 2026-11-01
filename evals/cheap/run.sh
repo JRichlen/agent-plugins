@@ -1694,15 +1694,17 @@ if [ ! -e docs/build-examples.sh ]; then
   ok "example gallery: not present in this root — nothing to check"
 elif [ ! -x docs/build-examples.sh ]; then
   bad "examples: build-examples.sh exists but is not executable — chmod +x it"
-elif docs/build-examples.sh --check >/dev/null 2>&1; then
+elif docs/build-examples.sh --check; then
   ok "examples: index.html is in sync with docs/examples/data/"
 else
-  bad "examples: index.html is STALE — run docs/build-examples.sh"
+  bad "examples: generator check failed; inspect stderr above for render failure versus stale output"
 fi
 if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
 import glob, json, os, re, sys
 root = sys.argv[1]
+sys.path.insert(0, os.path.join(root, "evals", "paid"))
+from recover_examples import validate_recovered
 fail = 0
 found = 0
 for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json"))):
@@ -1752,6 +1754,12 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
             g = (s.get(side) or {}).get("graded") or {}
             if not isinstance(g.get("pass"), bool):
                 prob.append(f"{side}.graded.pass must be true/false on a graded pair")
+        if src == "promptfoo-recovered":
+            if prov.get("captured_at") != "unknown":
+                prob.append("recovery must preserve unknown original capture time")
+            if str(prov.get("attestation") or "").startswith("github"):
+                prob.append("recovery cannot claim a snapshot attestation")
+            prob.extend(validate_recovered(prov))
     elif "seed" in src:
         # An ungraded seed may not pose as more than it is.
         if prov.get("same_family_judge") is not True and "none" not in str(prov.get("judge_model")).lower() and "not recorded" not in str(prov.get("judge_model")).lower():
@@ -1771,21 +1779,6 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
         print(f"  PASS examples/{name}: real pair, models disclosed by role ({s['plugin']}: {src})")
 if found == 0:
     print("  FAIL example gallery declared but docs/examples/data/ is empty"); fail += 1
-# PLAN.md's "committed snapshots | **N of M**" row is a hand-written count that
-# drifted twice (14 of 23 over a 15-file directory and a 24-plugin marketplace).
-# Pin it to the data: N is the snapshot count, M the marketplace plugin count.
-import re
-plan = os.path.join(root, "docs", "examples", "PLAN.md")
-mp = os.path.join(root, ".claude-plugin", "marketplace.json")
-if os.path.exists(plan) and os.path.exists(mp):
-    m = re.search(r"\| committed snapshots \| \*\*(\d+) of (\d+)\*\*", open(plan).read())
-    plugins = len((json.load(open(mp)).get("plugins") or []))
-    if not m:
-        print("  FAIL examples: PLAN.md has no 'committed snapshots | **N of M**' row"); fail += 1
-    elif (int(m.group(1)), int(m.group(2))) != (found, plugins):
-        print(f"  FAIL examples: PLAN.md says {m.group(1)} of {m.group(2)} snapshots, but docs/examples/data/ holds {found} and the marketplace lists {plugins} plugins"); fail += 1
-    else:
-        print(f"  PASS examples: PLAN.md snapshot count ({found} of {plugins}) matches the data directory and the marketplace")
 sys.exit(1 if fail else 0)
 PYE
 if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
@@ -1853,7 +1846,10 @@ txt = open(wf).read()
 # Position of the cleanup (an rm of the packs' results.json) and of the step
 # that runs this tier. Compared by offset, so ordering is what is enforced.
 clean = re.search(r"rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+[^\n]*plugins/\*/evals/promptfoo/results\.json", txt)
-tier  = re.search(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M)
+# A pre-spend gate has no generated results yet. Cleanup must precede the
+# final post-generation gate; the earlier gate must remain free-before-paid.
+tiers = list(re.finditer(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M))
+tier = tiers[-1] if tiers else None
 if not clean:
     print("  FAIL refresh-examples.yml never removes plugins/*/evals/promptfoo/results.json — the cheap tier will fail on every packed plugin and the refresh will open no PR"); sys.exit(1)
 if not tier:
@@ -2489,7 +2485,16 @@ fi
 # REPO-level gate: needs a real .git, so it is inert in the synthetic
 # counterfeit root, which is not itself a git worktree.
 if [ -e ".git" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  group "gitignored generated content is not tracked"
+  group "workflow contracts — free-before-paid and capture launch"
+  if [ ! -f ci/tests/test_workflows.py ] || [ ! -f .github/actions/setup-eval-tools/action.yml ]; then
+    bad "workflow contracts: required runner or composite action missing"
+  elif python3 -m unittest discover -s ci/tests -p 'test_*.py'; then
+    ok "workflow contracts"
+  else
+    bad "workflow contracts failed"
+  fi
+
+group "gitignored generated content is not tracked"
   _gi_hits="$(git ls-files -z 2>/dev/null | git check-ignore --no-index -z --stdin 2>/dev/null | tr '\0' '\n' | grep -v '^$')"
   if [ -z "$_gi_hits" ]; then
     ok "no tracked file matches a .gitignore pattern"

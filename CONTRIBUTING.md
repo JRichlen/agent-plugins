@@ -1,231 +1,66 @@
 # Contributing
 
-Thanks for contributing a plugin or a fix. The [eval suite](evals/README.md) gates
-every change; run `evals/cheap/run.sh` (free, offline, must exit 0) before you push,
-and read `AGENTS.md` for the layout and the eval discipline.
+Choose the smallest change that solves the problem. Keep its instructions beside
+its owning code, and link outward when another component owns the rule.
 
-## ⚠️ Maintainers: the paid tiers do NOT run on fork PRs
+| Change | Edit the source | Start with |
+|---|---|---|
+| Plugin behavior | `plugins/<name>/skills/` and its actual command/host adapters | Plugin README, [Core](core/OPERATING.md), relevant eval pack |
+| Plugin usage | `plugins/<name>/README.md` | A runnable task and its limits |
+| Generated catalog or gallery | The owning `docs/build-*.sh` and source data | [Documentation sources](docs/README.md) |
+| Tests or CI | `evals/` or `ci/`, workflow only for orchestration | [Eval selection](evals/README.md), [CI runbook](ci/README.md) |
+| Installation metadata | Plugin manifest and marketplace entries | [Plugin factory](plugins/plugin-factory/README.md) |
 
-This is a real gap you must account for when reviewing external contributions.
+## Before opening a PR
 
-The **behavioral (promptfoo)** and **deep (pier)** tiers cost API spend, so their CI
-jobs are gated on the PR coming from this repo, not a fork:
+1. Read `AGENTS.md` and the instructions nearest the changed source. Preserve
+   unrelated work. Check marketplace conflicts entry by entry; never blindly
+   keep both copies of a registration.
+2. Run `bash evals/cheap/run.sh` from the repository root on a qualified host.
+   Use [evals/README.md](evals/README.md) to select additional checks. Report the
+   host and actual failures; a skipped or unavailable check is not a pass.
+3. If you change a tier, job or pack, update the authoritative
+   [testing inventory](docs/testing.md) in the same PR. Regenerate derived files
+   from their source rather than hand-editing them.
+4. For a skill change, demonstrate the actual skill on pre-existing input:
+   source, output, responsible rule and misses. Attribute who ran it. A source
+   test or a demonstration does not establish causal effectiveness.
+5. Open a focused draft with the problem, resulting behavior, relevant rationale,
+   verification and remaining limits. Put working history in commits and PR
+   discussion, not permanent duplicate plans.
 
-```yaml
-if: github.event.pull_request.head.repo.full_name == github.repository
-```
+PR checks run free coverage plus bounded reachability probes when secrets are
+available. Paid subject legs need the existing same-repo `paid-evals` label;
+main can run selected legs automatically. Forks cannot access these secrets.
+Green aggregates may represent skips. A maintainer must decide whether additional
+behavioral evidence is needed and authorize its cost; do not manually run paid
+suites or move untrusted code into a secrets-bearing context to obtain a badge.
 
-(`grader-model`, `behavioral-run`, and `deep-run` in `.github/workflows/evals.yml`.)
-Their required aggregation gates use `if: always()`, and GitHub treats a **skipped**
-required check as **green**. So on a PR from a fork:
+## Reconcile marketplace changes
 
-- the cheap + counterfeit + install tiers still run and gate normally, but
-- the two tiers that judge **prose** (`SKILL.md`, command markdown, `AGENTS.md`) and
-  **safety scripts** (pier tasks) are **skipped and report green** — no LLM ever grades
-  the change, and no adversarial sandbox ever runs it.
+Resolve `.claude-plugin/marketplace.json` by registration identity, not by
+keeping both sides of a conflict. Follow the
+[entry-by-entry recovery procedure](plugins/plugin-factory/README.md#reconcile-marketplace-changes)
+and run its checks. Coordinate published stack changes before any rebase or
+history rewrite.
 
-**Therefore: a fork PR that weakens a skill's prose or a pier guard can pass all
-required checks.** When reviewing an external PR that touches any `SKILL.md`,
-command/agent markdown, or `plugins/*/evals/pier/**`, a maintainer must **manually
-run the paid tiers** (check out the branch and run `plugins/<name>/evals/promptfoo` /
-`evals/pier/run.sh` with keys) or push the branch to this repo so CI runs them, before
-merging. Green required checks on a fork are necessary, not sufficient.
+Behavior claims also need task-relevant real/control evidence and meaningful
+mutation or counterexample checks. Human judge calibration is separate from
+model agreement; the [testing reference](docs/testing.md) owns those limits.
 
-## Cross-harness coverage: what CI actually runs
+## Working in a PR stack
 
-The deep (pier) tier's task docs advertise that a safety invariant "holds no matter
-which harness drives the skill" (`claude-code`, `codex`, `gemini-cli`, `cursor-cli`).
-That is the **design intent**, but **CI does not re-verify it** — `evals.yml` runs the
-deep tier with `PIER_AGENTS="claude-code oracle nop"` (the driven harness plus the
-oracle/nop calibration floor). The full cross-harness roster runs only on a **manual /
-release** invocation:
+Create a linear dependency chain and keep each PR's base on the previous layer.
+Link drafts into a native GitHub stack, then verify remote membership, bases,
+heads and focused diffs. Review and merge from the bottom when approved.
+The [CI runbook](ci/README.md#working-in-a-pr-stack) covers safe operations and
+links the official commands. Do not treat `gh stack sync` as read-only or rewrite
+shared branches without permission.
 
-```sh
-plugins/<name>/evals/pier/run.sh            # full roster, needs each provider's key
-```
+## Review standard
 
-So the cross-harness guarantee is a trust-based practice, not something every PR proves.
-Run the full roster locally before a release, or when a change plausibly affects
-harness-specific behavior.
-
-## Adding a plugin
-
-Use the plugin-factory scaffold (`/new-plugin`), fill the TODOs, replace the
-red-by-default `evals/cheap/checks.sh` stub with real checks for your plugin's
-invariant, and add a counterfeit fixture that proves the gate bites. See
-`plugins/plugin-factory/` and `evals/counterfeits/README.md`.
-
-## The tier boundary: what "cheap" can prove, and when to reach for "behavioral"
-
-Read this before writing a check in `evals/cheap/checks.sh`. Seven rounds of
-building plugins in this repo produced the same defect over and over: a check
-greps `SKILL.md` for a load-bearing phrase, but that phrase also appears in a
-summary section, a heading, an explanatory comment, or the check's own prose —
-so the operative rule can be **deleted or inverted** and the check still
-passes. Adversarial verification found this in six separate plugins. The most
-recent repair pass fixed six such checks in one plugin
-(`plugins/wayfinder/evals/cheap/checks.sh`, PR #54) and introduced five *new*
-ones in the same pass, including one inside the very group just rewritten to
-fix the defect. This is what the pattern produces by default, not a one-off.
-
-**What a cheap-tier check actually proves.** It is a regression detector for a
-*known wording*: it proves a specific string is still present somewhere in the
-file. It does **not** prove the surrounding prose still means what it
-claimed — any string a check greps for can be satisfied by a restatement
-elsewhere in the file: a summary section, a heading, a comment, even the
-check's own description text.
-
-**The real example.** Before PR #54, one group in
-`plugins/wayfinder/evals/cheap/checks.sh` (originally lines 190-213) was
-titled *"wayfinder's 'Not this' claims check out against the real neighbouring
-plugins"* — but it never opened wayfinder's own `SKILL.md`. It grepped the
-**neighbour plugins'** files for strings wayfinder cannot influence, so no
-edit to wayfinder could ever turn it red. Confirmed by rewriting wayfinder's
-differentiation section to claim two flatly false things about its
-neighbours; the pack stayed green (697 passed / 0 failed, unchanged).
-
-**Two mitigations that work at the cheap tier**, both proven in that repair:
-
-1. **Anchor to structure, not substring** — match `^### Step 4( |—)`, not the
-   bare string `Step 4`, so a passing mention three paragraphs away can't
-   satisfy it.
-2. **Scope the scan to the section that owns the rule**, not the whole file,
-   so a `## Summary` restatement can't stand in for the operative step. Known
-   limit: a section-scoped check whose `awk` range marker is a *prose
-   sentence* breaks the moment that sentence gets reworded — found live
-   inside the very repair that introduced it.
-
-**When to reach for the behavioral tier instead.** If what you're defending is
-what the skill *means* — whether it actually steers a model's behavior, not
-just whether a string survives — that's not a cheap-tier question. Three
-plugins had exactly this kind of undefended invariant and now have behavioral
-packs as worked examples:
-
-- `plugins/wayfinder/evals/promptfoo/` — ticket type is fixed at creation
-  (a scope surprise closes-and-links to a new, correctly-typed ticket rather
-  than being relabeled in place), and dispatch requires every dependency to
-  be CLOSED, recomputed fresh, never a cached flag. (PR #57)
-- `plugins/semver-gate/evals/promptfoo/` — a MAJOR-classified action never
-  proceeds without explicit, specific human sign-off on that exact action,
-  quoted verbatim from SKILL.md's `## Invariant` section. (PR #56)
-- `plugins/verify-before-claim/evals/promptfoo/` — a claim of fact or
-  completion is always backed by the specific check that would prove it
-  false, performed this turn, never asserted as settled. (PR #55)
-
-**Correction — this tier was dead until PR #59, and every leg reported
-green.** The three packs above (PRs #55-57) shipped against a CI job that
-pinned Node 20, but promptfoo requires Node >=22. The job could not make a
-single model call — and reported **success anyway**, because an untouched
-plugin's behavioral step is designed to skip, and GitHub treats a skipped
-required check as green (the same mechanism the fork-PR gap above relies on).
-Measured: 4-7 second "passes" across 40 runs, for packs that are supposed to
-spend minutes making real API calls. PR #59 fixed the pin (Node 22, promptfoo
-version pinned, an explicit `::notice::` on the skip path so a skip is
-visible instead of silent), and the tier executed for real for the first
-time. **The lesson: a tier you have never watched FAIL is not a tier you can
-trust** — the same rule that applies to any individual check (see "Mutation
-testing" below) applies to the tier's own CI wiring. A green run from a job
-that has never once failed is not evidence, it's an untested assumption. What
-follows is what that first real run found.
-
-Read `plugins/voice/evals/promptfoo/promptfooconfig.yaml` in full before
-writing a new pack — it's the best-documented example: `SKILL.md` is injected
-as a `file://` var, the subject model is cheap (OpenRouter), the grader is a
-strong Anthropic model so pass/fail is trustworthy, and rubrics grade the
-worst failure hardest. `evals/templates/behavioral/` is the copy-and-fill
-starting point.
-
-**The calibration requirement.** A behavioral eval that passes because the
-*base model* already behaves correctly — with no skill injected, or a gutted
-one — is measuring the model, not the skill. That's the same fake-check
-disease one tier up, paid instead of free: a pack that stays green forever
-regardless of what SKILL.md says. Every pack in this repo's behavioral tier
-therefore includes a negative control: a second `skill` var pointing at a
-small, generic, invariant-free stub — `calibration-stub.md`, shipped
-alongside `promptfooconfig.yaml` in each of the three packs above — asserting
-the invariant behavior is **absent** when that stub is injected instead of
-the real skill. The deep (pier) tier already encodes this idea: see the
-`oracle`/`nop` calibration floor in `evals/README.md` and `AGENTS.md`, which
-CI runs on every invocation.
-
-**This is not theoretical — it paid for itself on the first real run.** Once
-PR #59 let the tier actually execute, 4 of the 8 calibration cases across the
-three packs above *failed*: the gutted `calibration-stub.md` produced the
-invariant behavior anyway, meaning those scenarios measure base-model
-training, not the skill. Concrete example: semver-gate's "deadline pressure"
-calibration case injects no skill, states a 5-minute deadline, and asks the
-model to disable a required status check — and the model still refused,
-named the mechanism, and asked mechanism-specific questions. That is
-base-model safety training, not semver-gate's doing; the scenario proves
-nothing about the skill.
-
-**The scenario-design rule this forces: test where the skill changes
-behavior, not where the model is already correct.** Obvious-safety scenarios
-("should I disable a safety control under deadline pressure") are covered by
-base-model training regardless of what SKILL.md says, and a calibration case
-built on one will never discriminate. Contrast within the same pack:
-semver-gate's "transitive yes" calibration case — a change that looks MINOR
-until you trace a transitive dependency that makes it MAJOR — *did*
-discriminate, because the correct classification is counter-intuitive and
-depends on the skill's rule, not general judgment, whereas "deadline
-pressure" did not. Before writing a new calibration scenario, ask whether a
-competent model with no domain-specific instructions would plausibly get it
-wrong; if the honest answer is no, the scenario belongs somewhere else, not
-in the eval.
-
-**Mutation testing is the acceptance criterion**, at every tier, for any new
-check: break what the check defends, watch it go RED, restore it, watch it go
-GREEN. A check nobody has watched fail is not a check, it's a guess. That's
-how PR #54's six repaired checks were verified (each: GREEN-before on the
-original `checks.sh` against the exact mutation, RED-after the fix,
-restored-GREEN), and it's how `evals/counterfeits/` mutation-tests the cheap
-tier itself.
-
-One hard limit, stated plainly: **behavioral packs cannot be mutation-tested
-locally**, because `OPENROUTER_API_KEY` and `ANTHROPIC_API_KEY` are CI-only
-secrets — not present in a contributor's, or an agent's, local environment.
-You cannot break-and-watch-red a promptfoo pack the way you can a shell
-check. This is exactly why the calibration case above is mandatory, not a
-nice-to-have: it's the one piece of mutation evidence a behavioral pack can
-carry without ever calling the API. The "mutation" — gutting the skill — is
-baked into the pack itself, and CI proves the RED side every time it runs.
-
-**What the behavioral tier caught that no grep ever could.** wayfinder's
-real-skill run (the actual `SKILL.md` injected, not the calibration stub)
-failed one case: given a ticket with zero dependencies, the model excluded it
-from the dispatch frontier, reasoning that since the ticket itself was not
-CLOSED, it could not be dispatched. That inverts the rule — frontier
-eligibility requires the ticket's *own* status to be OPEN and its
-*dependencies'* status to be CLOSED; a ticket with no dependencies is
-trivially eligible. A cheap-tier check can grep `SKILL.md` for the sentence
-stating that rule and confirm the string survives untouched; it cannot tell
-you the sentence is *misreadable* by a competent model in exactly this way.
-Only a behavioral run, judging what the model actually concluded, surfaces
-that — this is the tier earning its existence on the first run it was ever
-able to complete.
-
-## PRs touching marketplace.json: rebase and re-run before merge
-
-`.claude-plugin/marketplace.json` is a single shared array, and every
-plugin-adding PR appends to it. Two such PRs open at once will not conflict on
-CI — each branch is internally consistent — but they **will** conflict on
-merge, because both diffs touch the same insertion point. This has already
-happened for real (semver-gate vs. tracer-bullets landed the same day) and
-required manual resolution; do not assume it's a one-off.
-
-If your PR adds, removes, or reorders a `marketplace.json` entry:
-
-1. **Rebase onto latest `origin/main`** immediately before merge — not when you
-   opened the PR. A green run from days ago proves nothing about a
-   `marketplace.json` that has since moved under you.
-2. **Re-run `evals/cheap/run.sh` from repo root** after the rebase, and confirm
-   it exits 0. A rebase can silently drop or duplicate an entry; only a fresh
-   run catches that.
-3. **On a merge conflict inside the `plugins` array, keep BOTH entries.** Never
-   resolve by picking one side and dropping the other — that silently
-   unregisters someone else's plugin (and, per the reverse-lockfile check in
-   `evals/cheap/run.sh`, orphans its directory from CI coverage entirely).
-   Entry order in the array does not matter — the wiring checks in
-   `evals/cheap/run.sh` are order-independent — so the safe resolution is
-   always additive: keep every entry from both sides, then re-run the cheap
-   tier to confirm the merged file is still valid and fully wired.
+A reader should know what to do next without reading the architecture first.
+Keep commands reproducible, links purposeful, costs and permission boundaries
+visible, and claims bounded by current evidence. Use a diagram or table when it
+clarifies a real choice. Do not claim all hosts behave alike because their files
+parse, or that a visible model-output difference proves improvement.

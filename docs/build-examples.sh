@@ -8,7 +8,7 @@
 # theme-aware static page to docs/examples/index.html. No external assets, no
 # build step, no network — GitHub Pages serves the file as-is.
 #
-# Page shape (see docs/examples/DESIGN.md for the research behind it):
+# Page shape (see docs/examples/README.md for maintenance and evidence limits):
 #   - a sticky plugin list + filters on the left, one anchored card per plugin
 #   - inside a card, inverted-pyramid order: verdict first, then the scenario,
 #     the verbatim prompt (collapsible, never truncated), then the two
@@ -34,6 +34,7 @@ OUT="$HERE/examples/index.html"
 render() {
 python3 - "$ROOT" <<'PY'
 import collections, glob, hashlib, html, json, os, re, string, sys
+sys.stdout.reconfigure(encoding="utf-8", newline="\n")
 root = sys.argv[1]
 sys.dont_write_bytecode = True   # never litter docs/_shared with __pycache__
 sys.path.insert(0, os.path.join(root, "docs", "_shared"))
@@ -71,7 +72,7 @@ def desc_of(plugin):
     p = skill_path(plugin)
     if not p:
         return ""
-    txt = open(p).read()
+    txt = open(p, encoding="utf-8").read()
     m = re.search(r'description:\s*>?-?\s*\n?(.*?)(?:\nlicense:|\ncompatibility:|\n---)', txt, re.S)
     if not m:
         return ""
@@ -114,6 +115,8 @@ def divergence_of(s):
     conflated: a tagged verdict; a verdict written without a one-word grade;
     and no verdict at all (what capture-example.sh emits — it copies the run
     verbatim and invents no prose)."""
+    if (s.get("provenance") or {}).get("source") == "promptfoo-recovered":
+        return "unjudged"
     notice = (s.get("notice") or "").strip()
     if not notice:
         return "unjudged"
@@ -169,11 +172,14 @@ def source_kind(s):
     prov = s.get("provenance") or {}
     src = str(prov.get("source") or "")
     attested = str(prov.get("attestation") or "").startswith("github")
+    if src == "promptfoo-recovered":
+        return "recovered"
     if src.startswith("promptfoo"):
         return ("attested" if attested else "graded")
     return "seed"
 
 SRC_LABEL = {
+    "recovered": ("recovered · unattested", "copied offline from retained CI results; original capture time unknown and no snapshot attestation"),
     "attested": ("CI-graded · attested", "captured by the refresh workflow from a graded promptfoo run and Sigstore-attested to that run"),
     "graded":   ("CI-graded", "captured from a graded promptfoo run in CI; not attested"),
     "seed":     ("seed · ungraded", "produced by a Claude Code session outside CI; no rubric grade, no attestation"),
@@ -211,16 +217,25 @@ for s in snaps:
                   f"  --repo JRichlen/agent-plugins \\\n"
                   f"  --signer-workflow JRichlen/agent-plugins/.github/workflows/refresh-examples.yml\n"
                   f"# 3. compare the pair against the run's promptfoo-results artifact (linked from the run page)")
-    elif kind == "graded":
+    elif kind in ("graded", "recovered"):
         verify = (f"sha256sum docs/examples/data/{plugin}.json      # expect {s['_sha256']}\n"
                   f"# then open the run linked above: its promptfoo-results artifact holds the results.json this pair was cut from")
     else:
         verify = (f"sha256sum docs/examples/data/{plugin}.json      # expect {s['_sha256']}\n"
                   f"git log --format='%H %an %ad' -- docs/examples/data/{plugin}.json   # who committed it, and when\n"
                   f"# no attestation exists for a seed: the git history above is the whole provenance")
+    def criteria(side):
+        arm = s.get(side) or {}
+        return esc(json.dumps({"criteria": arm.get("criteria") or "not recorded", "context": arm.get("comparison_inputs") or {}}, indent=2, ensure_ascii=False))
+    source_config = prov.get("source_config_url") or (f"{REPO}/blob/{commit}/plugins/{plugin}/evals/promptfoo/promptfooconfig.yaml" if re.fullmatch(r"[0-9a-f]{40}", commit) and kind != "seed" else "")
+    criteria_note = "grades use different rubrics" if (s.get("with_skill") or {}).get("criteria") != (s.get("without_skill") or {}).get("criteria") else "compare the recorded rubrics"
+    criterion_details = (f'<details><summary>Per-arm criteria and context ({criteria_note})</summary><p><a href="{esc(source_config)}">Original source config</a>. Compare criteria and inputs before interpreting booleans. Full source rows remain in the referenced results artifact.</p><h4>With skill</h4><pre>{criteria("with_skill")}</pre><h4>Calibration control</h4><pre>{criteria("without_skill")}</pre></details>' if kind in ("recovered", "graded", "attested") else "")
+    control_label = "Calibration control · control criterion" if kind in ("graded", "recovered", "attested") else "Without the skill"
+    skill_label = "With the skill · skill criterion" if kind in ("graded", "recovered", "attested") else "With the skill"
     with_out = (s.get("with_skill") or {}).get("output", "")
     without_out = (s.get("without_skill") or {}).get("output", "")
     prompt = s.get("prompt") or ""
+    inputs_notice = ('<p class="who">Inputs differ: inspect the per-arm context below; the shared user question is not the complete model input.</p>' if (s.get("with_skill") or {}).get("comparison_inputs") != (s.get("without_skill") or {}).get("comparison_inputs") else '')
     cards.append(f'''
 <article class="card" id="{esc(plugin)}" data-div="{esc(div)}" data-src="{esc(kind)}">
   <header class="card-head">
@@ -228,7 +243,7 @@ for s in snaps:
       <h2><a href="#{esc(plugin)}">{esc(plugin)}</a></h2>
       <span class="badge div {esc(div)}" title="{esc(DIV_TITLE.get(div, "how far the two transcripts diverge, in the judge's own word"))}">{esc(DIV_LABEL.get(div, div))}</span>
       <span class="badge src {esc(kind)}" title="{esc(src_title)}">{esc(src_label)}</span>
-      {judge_flag}
+{judge_flag}
     </div>
     <p class="card-links"><a href="{REPO}/tree/main/plugins/{esc(host_plugin(plugin))}">plugin docs</a>{deep} · <a href="{json_url}">raw JSON</a></p>
   </header>
@@ -240,16 +255,17 @@ for s in snaps:
   </div>
   <p class="scenario"><span class="lbl">Scenario</span>{esc(s.get("scenario", ""))}</p>
   <details class="prompt">
-    <summary><span class="lbl">Prompt</span><span class="preview">{esc(short(prompt, 150))}</span><span class="meta">{len(prompt)} chars · verbatim</span></summary>
+    <summary><span class="lbl">Shared user question</span><span class="preview">{esc(short(prompt, 150))}</span><span class="meta">{len(prompt)} chars · verbatim</span></summary>
     <div class="promptbody">{esc(prompt)}</div>
   </details>
+{inputs_notice}
   <div class="compare clamped">
     <div class="col without">
-      <div class="col-head"><span>Without the skill</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>{esc(control_label)}</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(without_out)}</div>
     </div>
     <div class="col with">
-      <div class="col-head"><span>With the skill</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>{esc(skill_label)}</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(with_out)}</div>
     </div>
     <div class="compare-tools js-only">
@@ -258,6 +274,7 @@ for s in snaps:
       <span class="sizes">{len(without_out):,} / {len(with_out):,} chars</span>
     </div>
   </div>
+{criterion_details}
   <details class="prov">
     <summary><span class="lbl">Provenance</span>who answered, who graded, who judged — and how to verify this pair</summary>
     <dl>
@@ -267,6 +284,9 @@ for s in snaps:
       <dt>Divergence judge</dt><dd>{esc(prov.get("judge_model"))}</dd>
       <dt>Captured</dt><dd>{esc(prov.get("captured_at"))} at commit {commit_html}</dd>
       <dt>Actions run</dt><dd>{run_html}</dd>
+      <dt>Recovery</dt><dd>{esc(prov.get("recovered_at") or "not a recovery")} · artifact {esc(prov.get("artifact_id") or "not recorded")}</dd>
+      <dt>Results SHA-256</dt><dd><code class="sha">{esc(prov.get("results_sha256") or "not recorded")}</code></dd>
+      <dt>Source rows</dt><dd>{esc(prov.get("source_rows") or "not recorded")}</dd>
       <dt>Attestation</dt><dd>{esc(prov.get("attestation"))}</dd>
       <dt>Snapshot SHA-256</dt><dd><code class="sha">{esc(s["_sha256"])}</code></dd>
       <dt>On GitHub</dt><dd><a href="{json_url}">this file at main</a> · <a href="{hist_url}">its commit history</a></dd>
@@ -318,7 +338,7 @@ def first_provider(txt):
 
 pack_subjects, pack_graders = set(), set()
 for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
-    txt = open(cfg).read()
+    txt = open(cfg, encoding="utf-8").read()
     subj = first_provider(txt)
     g = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
     if subj: pack_subjects.add(subj)
@@ -502,6 +522,7 @@ $nav
   <div class="chips js-only" style="margin-top:.35rem">
     <button type="button" class="chip" data-filter="src" data-value="attested">attested</button>
     <button type="button" class="chip" data-filter="src" data-value="graded">CI-graded</button>
+    <button type="button" class="chip" data-filter="src" data-value="recovered">recovered</button>
     <button type="button" class="chip" data-filter="src" data-value="seed">seed</button>
   </div>
   <p class="side-note">Dots grade divergence in the judge's own word: <span class="dot stark"></span> stark, <span class="dot strong"></span> strong, <span class="dot moderate"></span> moderate, <span class="dot subtle"></span> subtle.</p>
@@ -520,10 +541,14 @@ $nav
   <p class="sub">For each skill shown, compare a prompt with the skill injected and with a generic stub. Captured runs and ungraded seed examples are labeled separately.
   The judge's verdict comes first; the full transcripts and the original prompt are one click away; every card ends with who answered,
   who graded, who judged, and the commands that check it.</p>
+  <p><strong>Difference is not benefit.</strong> Strong/stark labels describe transcript divergence.
+  Recovered pairs have grades from the source results, unknown original capture times and no snapshot attestation.
+  The recovered real and calibration arms use opposite-behavior rubrics. Both can pass while behaving differently; the grades are not a common quality scale. Stop-rule also varies the declared attempt-bound context.</p>
   <div class="stats">
     <span><b>$count</b>example$plural</span>
     <span><b>$n_attested</b>CI-graded &amp; attested</span>
     <span><b>$n_graded</b>CI-graded, unattested</span>
+    <span><b>$n_recovered</b>recovered, unattested</span>
     <span><b>$n_seed</b>seeds (ungraded)</span>
     <span>divergence: $spread</span>
   </div>
@@ -561,7 +586,7 @@ $body
 
 <section class="verify-section disclose" id="verify">
   <h2>How to verify these are real model outputs</h2>
-  <p>Nothing on this page is typed by hand, and you do not have to take that on trust. The evidence chain for a CI-graded, attested pair:</p>
+  <p>Seed examples and captured results have different evidence limits; inspect the label. The evidence chain for a CI-graded, attested pair:</p>
   <div class="chain">
     <div class="step"><b>The run.</b> A scheduled GitHub Actions workflow (<a href="$repo/blob/main/.github/workflows/refresh-examples.yml"><code>refresh-examples.yml</code></a>) runs each plugin's promptfoo pack against the subject model and grades it with a different model family. The run's log and its <code>promptfoo-results</code> artifact are linked from the card.</div>
     <div class="step"><b>The cut.</b> <a href="$repo/blob/main/evals/paid/capture-example.sh"><code>capture-example.sh</code></a> copies one passing real-skill row and its stub-skill calibration row out of <code>results.json</code>, verbatim, into the snapshot — reading the grader from the pack config and refusing a same-family pair.</div>
@@ -582,7 +607,7 @@ $body
 
 <footer class="site">
   Generated by <code>docs/build-examples.sh</code> from committed snapshots in <code>docs/examples/data/</code> — no timestamps minted here, so the page is reproducible byte for byte.
-  Source of truth: the behavioral eval tier. <a href="$repo/blob/main/docs/examples/DESIGN.md">Why the page looks like this</a> · <a href="$repo/blob/main/docs/examples/PLAN.md">Roadmap</a>
+  Read the source snapshot and its evidence label. <a href="$repo/blob/main/docs/examples/README.md">Capture, recovery and maintenance</a>
 </footer>
 </main>
 </div>
@@ -596,7 +621,7 @@ print(TEMPLATE.substitute(
     css=CSS, js=JS, nav=nav("examples", "../"), repo=REPO,
     filters=filters_html, count=count, plural="s" if count != 1 else "",
     side_items="\n".join(side_items),
-    n_attested=kinds["attested"], n_graded=kinds["graded"], n_seed=kinds["seed"], spread=esc(spread),
+    n_recovered=kinds["recovered"], n_attested=kinds["attested"], n_graded=kinds["graded"], n_seed=kinds["seed"], spread=esc(spread),
     packs_n=packs_n,
     pack_subjects=esc(", ".join(sorted(pack_subjects)) or "none"),
     pack_graders=esc(", ".join(sorted(pack_graders)) or "none"),

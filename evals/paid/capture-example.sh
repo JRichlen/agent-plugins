@@ -12,7 +12,7 @@
 #
 # It pairs the plugin's real-skill scenario with its negative-control
 # (calibration / stub) scenario from the SAME results file:
-#   with_skill    = a passing real-skill test row (the skill steered the output)
+#   with_skill    = a passing real-skill test row (not proof the skill caused success)
 #   without_skill = the calibration row (same bait, generic stub — the
 #                   naturally-helpful baseline the skill is measured against)
 # and writes docs/examples/data/<plugin>.json with both outputs, both grades,
@@ -42,6 +42,7 @@ set -uo pipefail
 RESULTS=""; PLUGIN=""; OUT="docs/examples/data"; COMMIT=""; CAPTURED=""; RUN_URL=""; ATTEST="none"; PACK=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --help|-h) echo "usage: capture-example.sh RESULTS.json PLUGIN [--out DIR] [--commit SHA] [--captured-at ISO8601] [--run-url URL] [--attestation github|none] [--pack DIR]"; exit 0 ;;
     --out)         OUT="${2:?}"; shift 2 ;;
     --commit)      COMMIT="${2:?}"; shift 2 ;;
     --captured-at) CAPTURED="${2:?}"; shift 2 ;;
@@ -61,10 +62,10 @@ case "$ATTEST" in github|none) ;; *) echo "capture-example: --attestation must b
 mkdir -p "$OUT"
 
 python3 - "$RESULTS" "$PLUGIN" "$OUT" "$COMMIT" "$CAPTURED" "$RUN_URL" "$ATTEST" "$PACK" <<'PY'
-import collections, json, os, re, sys
+import collections, hashlib, json, os, re, sys
 results, plugin, outdir, commit, captured, run_url, attest, pack = sys.argv[1:9]
 try:
-    doc = json.load(open(results))
+    doc = json.load(open(results, encoding="utf-8"))
 except Exception as e:
     print(f"capture-example: cannot parse {results}: {e}", file=sys.stderr); sys.exit(2)
 
@@ -87,8 +88,21 @@ def uses_stub(r):
     s = var(r, "skill") or ""
     return "calibration" in str(s).lower() or "stub" in str(desc(r)).lower()
 
-real = next((r for r in rows if r.get("success") and not uses_stub(r) and var(r, "question")), None)
-stub = next((r for r in rows if uses_stub(r) and var(r, "question")), None)
+def provider_id(r):
+    p = r.get("provider")
+    return (p.get("id") if isinstance(p, dict) else p) or "unknown"
+
+def gradeable(r):
+    return isinstance(r.get("success"), bool) and r.get("failureReason") != 2 and bool(out_of(r).strip())
+
+real = stub = None
+for candidate in rows:
+    if candidate.get("success") is not True or not gradeable(candidate) or uses_stub(candidate) or not var(candidate, "question"):
+        continue
+    control = next((row for row in rows if gradeable(row) and uses_stub(row) and var(row, "question") == var(candidate, "question") and provider_id(row) == provider_id(candidate)), None)
+    if control is not None:
+        real, stub = candidate, control
+        break
 if not real or not stub:
     # A skip used to be one opaque line, so two full refresh runs (2026-09-01 and
     # 2026-09-08) captured nothing across all 12 packs and still reported success —
@@ -117,14 +131,13 @@ if not real or not stub:
         print("  cause: every real-skill row FAILED — a snapshot needs at least one passing one")
         for why, n in reasons.most_common(3):
             print(f"    x{n}: {why}")
+    if real and not stub and stubs:
+        print("  cause: NO gradeable calibration row with the same question and provider — refusing an unmatched comparison")
     if not stubs:
         print("  cause: NO stub/calibration row — the pack has no negative control to pair against")
     print("  the previous snapshot (if any) stands; nothing was overwritten")
     sys.exit(0)
 
-def provider_id(r):
-    p = r.get("provider")
-    return (p.get("id") if isinstance(p, dict) else p) or "unknown"
 
 def family(model_id):
     """Vendor/family of a provider id: 'anthropic:messages:claude-x' -> anthropic;
@@ -143,7 +156,7 @@ def grader_from_pack(pack_dir):
         return None
     try:
         import yaml
-        doc = yaml.safe_load(open(cfg))
+        doc = yaml.safe_load(open(cfg, encoding="utf-8"))
         prov = (((doc or {}).get("defaultTest") or {}).get("options") or {}).get("provider")
         if isinstance(prov, dict):
             return prov.get("id")
@@ -153,7 +166,7 @@ def grader_from_pack(pack_dir):
         pass
     # PyYAML unavailable or an odd shape: fall back to the unambiguous marker
     # the CI grader-model job also greps for.
-    m = re.search(r"id:\s*(anthropic:messages:[^\s]+)", open(cfg).read())
+    m = re.search(r"id:\s*(anthropic:messages:[^\s]+)", open(cfg, encoding="utf-8").read())
     return m.group(1) if m else None
 
 subject = provider_id(real)
@@ -172,10 +185,13 @@ snap = {
     "plugin": plugin,
     "scenario": desc(real),
     "prompt": (var(real, "question") or "").strip(),
-    "with_skill":    {"output": out_of(real).strip(), "graded": graded(real)},
-    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub)},
+    "with_skill": {"output": out_of(real).strip(), "graded": graded(real), "criteria": (real.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (real.get("vars") or {}).items() if k not in ("skill", "question")}},
+    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub), "criteria": (stub.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (stub.get("vars") or {}).items() if k not in ("skill", "question")}},
     "provenance": {
         "source": "promptfoo",
+        "results_sha256": hashlib.sha256(open(results, "rb").read()).hexdigest(),
+        "source_rows": {"with_skill": {"index": rows.index(real), "id": real.get("id")},
+                        "without_skill": {"index": rows.index(stub), "id": stub.get("id")}},
         "workflow": (re.search(r"/actions/runs/\d+", run_url) and "github-actions") if run_url else None,
         "subject_model": subject,
         "grader_model": grader + " (llm-rubric)",
@@ -189,8 +205,9 @@ snap = {
     },
 }
 path = os.path.join(outdir, f"{plugin}.json")
-json.dump(snap, open(path, "w"), indent=2, ensure_ascii=False)
-open(path, "a").write("\n")
+with open(path, "w", encoding="utf-8", newline="\n") as snapshot:
+    json.dump(snap, snapshot, indent=2, ensure_ascii=False)
+    snapshot.write("\n")
 print(f"capture-example: wrote {path} (with_skill pass={snap['with_skill']['graded']['pass']}, "
       f"without_skill pass={snap['without_skill']['graded']['pass']}; subject={subject}; grader={grader})")
 PY

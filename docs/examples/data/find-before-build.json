@@ -1,0 +1,67 @@
+{
+  "plugin": "find-before-build",
+  "scenario": "an existing ugly-but-correct helper blocks writing the requested clean parallel version",
+  "prompt": "I need retry-with-backoff around the new `fetchInventory` call in src/inventory.js. Write me a clean little async/await retry util for it — the modern kind, maybe `retry(fn, {retries, baseDelay})` — I don't love the old callback stuff floating around this codebase.",
+  "with_skill": {
+    "output": "I'm not going to write a new retry util here, and I want to be upfront about why and about what I actually verified versus what I'm working from.\n\n**What I know (from repo context, not from a search I ran):** `src/lib/net.js` exports `withRetry(fn, cb, opts)` — a callback-style exponential-backoff retry helper. That is the same job you're asking me to build: retry a function with backoff.\n\n**What I did NOT do (no tools this turn):** I haven't grepped `src/` for `retry|backoff`, haven't opened `src/lib/net.js` to confirm the exact signature and whether it tolerates async `fn`, haven't checked `package.json` for an already-installed retry package, and haven't surveyed other call sites of `withRetry` to see how it's used in practice. Before writing anything I would run at least:\n\n- `rg 'withRetry|retry|backoff' src/` — to see all existing retry touchpoints and confirm nothing else already wraps this in async/await.\n- `rg 'fetchInventory' src/` — to see if a retry pattern is already applied at the call site.\n- Open `src/lib/net.js` — to check whether `withRetry` already accepts a promise-returning `fn` or whether the callback is mandatory.\n- `rg 'retry' package.json` — to rule out an installed dep (e.g. `async-retry`, `p-retry`).\n\nI'd need those results to give you a fully grounded answer. I'm giving you my best answer anyway, with the caveat that the signature details below are my assumption and you should confirm them by opening the file.\n\n**The decision:** Your objection is \"I don't love the old callback stuff.\" That's a style preference, not a functional gap. `withRetry` retries with exponential backoff; that's the job. The skill-appropriate move is to **adapt the existing helper locally**, not to ship a parallel implementation alongside it. A thin promise wrapper is a few lines at the call site (or in `inventory.js` itself), not a new utility in `src/lib/`:\n\n```js\n// src/inventory.js\nconst { withRetry } = require('./lib/net');\n\n// Local adapter — not a new abstraction, just a promise seam over the existing helper.\nfunction retryAsync(fn, { retries = 3, baseDelay = 1000 } = {}) {\n  return new Promise((resolve, reject) => {\n    withRetry(\n      fn,\n      (err, result) => (err ? reject(err) : resolve(result)),\n      { retries, baseDelay },\n    );\n  });\n}\n\nasync function fetchInventory(sku) {\n  const data = await retryAsync(\n    () => httpGet(`/inventory/${sku}`),\n    { retries: 4, baseDelay: 200 },\n  );\n  return data;\n}\n```\n\n(Adjust the `withRetry` call shape once you confirm its actual signature — whether `opts` is `{retries, baseDelay}` or `{maxRetries, backoffMs}` or something else, and whether the wrapped `fn` is expected to call `cb(err, result)` itself or whether `withRetry` invokes it synchronously.)\n\n**If you want the adapter promoted** into `src/lib/net.js` as an additional named export (`withRetryAsync`) so other async call sites stop re-writing the same 5-line wrapper — that's a reasonable small extension of the existing module, and I'd do that instead of a standalone `retry.js`. But that's a design question for after we confirm the search results above.\n\n**If you genuinely want a from-scratch async util** (different semantics, e.g. jitter, abort-signal support, per-attempt logging that `withRetry` doesn't offer), I'll write it — but I'd want to actually run those searches first so we're building on a confirmed-empty field rather than beside a working helper. And at that point the design conversation (depth, seam placement, API shape) is worth doing properly rather than \"a clean little util.\"\n\nWant me to walk through what I'd check in `src/lib/net.js` line by line so we can confirm whether the adapter above is a drop-in or needs a tweak?",
+    "graded": {
+      "pass": true,
+      "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. An existing equivalent (`withRetry` in src/lib/net.js) does the job the user needs; the ONLY gap is that it is callback-style rather than async/await. Judging that gap to be taste rather than unusability is the model's own work here — the scenario no longer asserts the helper is correct, current or in-use, because saying so handed the floor the skill's conclusion. SKILL.md is explicit that preference/style/not-invented-here is not unusability. PASS requires the response NOT deliver a new parallel retry utility as the solution: it must point at `withRetry` and use/extend/wrap it at the call site (a thin local promisification AT the call site, or extending net.js itself, is acceptable reuse), and treat the wish for a cleaner API as a recorded finding or proposed separate refactor of the existing helper — not a second implementation shipped next to the first. CRITICAL FAILURE (grade hardest): the response writes the requested new standalone retry util (whatever it is named, wherever it is placed) while `withRetry` remains in place, i.e. the codebase ends up with two parallel retry implementations."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent in a large Node.js monorepo you did not write. You know the repo contains `src/lib/net.js`, which exports `withRetry(fn, cb, opts)` — a callback-style exponential-backoff retry helper. This is a single reply with no tool round-trips."
+    }
+  },
+  "without_skill": {
+    "output": "Here's a clean async/await retry util you can drop in. I haven't been able to read your actual `src/inventory.js` or `src/lib/net.js` in this turn, so I'm writing this from scratch — no dependency on the old callback helper. Adjust the import paths and function signatures to match what's actually in your files.\n\n---\n\n## The retry utility\n\n**`src/lib/retry.js`** (or wherever you keep shared utils)\n\n```js\n/**\n * Retry an async function with exponential backoff.\n *\n * @param {() => Promise<T>} fn  – the async operation to attempt\n * @param {object}  opts\n * @param {number}  [opts.retries=3]      – max *additional* attempts after the first\n * @param {number}  [opts.baseDelay=200]  – ms before the 1st retry (doubles each time)\n * @param {number}  [opts.maxDelay=10_000]– cap on a single backoff sleep\n * @param {(err: Error, attempt: number) => boolean} [opts.shouldRetry]\n *        – return false to bail early (e.g. on 4xx). Default: retry everything.\n * @returns {Promise<T>}\n */\nexport async function retry(fn, opts = {}) {\n  const {\n    retries = 3,\n    baseDelay = 200,\n    maxDelay = 10_000,\n    shouldRetry = () => true,\n  } = opts;\n\n  let lastError;\n\n  for (let attempt = 0; attempt <= retries; attempt++) {\n    try {\n      return await fn();\n    } catch (err) {\n      lastError = err;\n\n      // Don't sleep after the final attempt.\n      if (attempt === retries || !shouldRetry(err, attempt)) {\n        break;\n      }\n\n      const delay = Math.min(baseDelay * 2 ** attempt, maxDelay);\n      // Add ±20 % jitter so concurrent callers don't stampede.\n      const jittered = delay * (1 + (Math.random() - 0.5) * 0.4);\n\n      await new Promise((resolve) => setTimeout(resolve, jittered));\n    }\n  }\n\n  throw lastError;\n}\n```\n\n---\n\n## Wiring it into `fetchInventory`\n\n**`src/inventory.js`** (sketch — swap in your real call)\n\n```js\nimport { retry } from './lib/retry.js';\n\nexport async function fetchInventory(sku) {\n  return retry(() => fetchInventoryOnce(sku), {\n    retries: 4,\n    baseDelay: 300,\n    // Don't hammer the server on a 404 – the SKU just doesn't exist.\n    shouldRetry: (err) => err.status !== 404,\n  });\n}\n\n// The actual network call, kept separate so retry can wrap it cleanly.\nasync function fetchInventoryOnce(sku) {\n  const res = await fetch(`/api/inventory/${encodeURIComponent(sku)}`);\n  if (!res.ok) {\n    const err = new Error(`Inventory fetch failed: ${res.status}`);\n    err.status = res.status;\n    throw err;\n  }\n  return res.json();\n}\n```\n\n---\n\n## What's different from the old `withRetry`\n\n| | `src/lib/net.js` `withRetry` | new `retry` |\n|---|---|---|\n| Style | callback (`(err, result) => …`) | `async / await` / Promise |\n| Backoff | fixed-ish | exponential + jitter |\n| Early bail | none | `shouldRetry` predicate |\n| Cap | (unknown – I didn't read it) | `maxDelay` ceiling |\n\n---\n\n## Things to check / adjust once you drop this in\n\n1. **Import path** – confirm whether your repo uses ESM (`import`) or CJS (`require`). I wrote ESM; flip to CJS if needed.\n2. **`fetchInventory` signature** – I guessed `(sku)`; match whatever your real function takes.\n3. **Error shape** – the `shouldRetry` filter keys off `err.status`. If your HTTP client throws something different (e.g. an Axios error with `err.response.status`), adjust the predicate.\n4. **Logging / metrics** – if the old helper emitted retry telemetry, you may want to add an `onRetry(err, attempt, delay)` callback here so your dashboards don't go blind.\n\nIf you paste the actual `fetchInventory` body or the relevant slice of `src/inventory.js`, I can tailor the wrapper exactly to your signatures and error types. Otherwise the above should slot in with minimal tweaks.",
+    "graded": {
+      "pass": true,
+      "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. The injected skill is a generic stub with NO search-before-build rule — this is the calibration floor. This test's PASS condition is the OPPOSITE of the real test: PASS requires the response behave like a naturally helpful assistant and deliver the requested new async/await retry utility (it may mention `withRetry` exists, as long as it still ships the new standalone util the user asked for). FAIL only if the response spontaneously does the full thing the real skill requires: declines to add a parallel implementation, reuses/extends `withRetry` instead, and treats the cleaner-API wish as a separate proposed refactor. If this test STILL fails after the de-leak recorded in the header, the bare model refuses parallel builds unaided on a stimulus that no longer states the skill's conclusion — that is the finding. Do not redraft a third time: escalate it as the retire-or-keep decision the owner already made for semver-gate's and scope-fence's floors."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent in a large Node.js monorepo you did not write. You know the repo contains `src/lib/net.js`, which exports `withRetry(fn, cb, opts)` — a callback-style exponential-backoff retry helper. This is a single reply with no tool round-trips."
+    }
+  },
+  "provenance": {
+    "source": "promptfoo-recovered",
+    "results_sha256": "2f8b4326e22e5e732e4d75c03c21b078857be8a6f8f7e9d742833920e165c600",
+    "source_rows": {
+      "with_skill": {
+        "index": 0,
+        "id": "4e62b149-9e60-40c4-81d2-18bc342568f3"
+      },
+      "without_skill": {
+        "index": 6,
+        "id": "22cd8294-13aa-420b-b598-a0d0a9911035"
+      }
+    },
+    "workflow": "github-actions",
+    "subject_model": "openrouter:qwen/qwen3.8-flash",
+    "grader_model": "anthropic:messages:claude-haiku-4-5-20251001 (llm-rubric)",
+    "judge_model": "none — a graded pair: the pass/fail grades from grader_model are the judgement; no separate divergence judge",
+    "same_family_judge": false,
+    "commit": "2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d",
+    "captured_at": "unknown",
+    "run_url": "https://github.com/JRichlen/agent-plugins/actions/runs/41280016961",
+    "attestation": "none — recovered after the failed capture; no original snapshot or signature existed",
+    "recovered_at": "2026-11-01T21:06:40Z",
+    "artifact_id": "13073393801",
+    "artifact_path": "find-before-build/evals/promptfoo/results.json",
+    "source_config_sha256": "67d75bd5169bdd6ab23372a2979bb36e393f6172159214ad19fb5a9f18d74495",
+    "source_config_url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/find-before-build/evals/promptfoo/promptfooconfig.yaml",
+    "grading_comparability": "Arm-specific rubrics; pass booleans are not a common outcome scale."
+  },
+  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Each arm is graded against its own criterion; both passing does not mean equal behavior or prove causal improvement."
+}

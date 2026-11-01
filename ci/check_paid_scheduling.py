@@ -100,20 +100,20 @@ def check_text(text: str) -> list[str]:
                     continue
                 script = _field(step, "run", 8).replace("\\\n", " ")
                 for line in script.splitlines():
-                    if "npx" not in line or line.lstrip().startswith("#"):
+                    if not line.lstrip().startswith(("node ", "npx ")):
                         continue
                     lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")
                     lexer.whitespace_split = True
                     tokens = list(lexer)
-                    if not tokens or tokens[0] != "npx":
+                    if not tokens or tokens[0] not in ("node", "npx"):
                         continue
-                    if tokens[:4] != ["npx", "--yes", "promptfoo@0.122.0", "eval"]:
+                    if tokens[:3] != ["node", "$PROMPTFOO_HOME/dist/src/entrypoint.js", "eval"]:
                         problems.append(f"{name}: unrecognized subject eval command")
                         continue
                     count += 1
                     # Only command arguments count: an echo or comment after
                     # a shell operator cannot masquerade as a concurrency cap.
-                    args = tokens[4:]
+                    args = tokens[3:]
                     end = next((i for i, token in enumerate(args) if token in ("||", "&&", ";", "&", "|")), len(args))
                     args = args[:end]
                     limits = []
@@ -170,7 +170,7 @@ def self_test(text: str) -> list[str]:
         # Mutate the actual subject step, not the earlier setup/announcement
         # steps which deliberately use the same changed-path predicate.
         for step in re.split(r"(?m)^      - ", job)[1:]:
-            if re.search(r"^        run:.*npx|^          npx", step, re.MULTILINE):
+            if re.search(r"^        run:\s*node |^          node ", step, re.MULTILINE):
                 changed = _replace(step, f"steps.touched.outputs.{selected} == 'true'", "true")
                 if not check_text(text.replace(step, changed, 1)):
                     problems.append(f"counterfeit accepted: {job_name} subject filter removed")

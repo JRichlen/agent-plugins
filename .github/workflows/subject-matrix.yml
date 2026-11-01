@@ -66,11 +66,9 @@ jobs:
         plugin: ${{ fromJSON(needs.detect.outputs.packs) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-eval-tools
         with:
-          # 22, not 20: promptfoo 0.122.0 declares engines.node >=22.22.0 and
-          # aborts on node 20 before making a model call (see evals.yml).
-          node-version: 22
+          offline-sandbox: false
       - name: ensure PyYAML (the overlay script reads the pack config with it)
         run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
       - name: overlay the pack with the extra subjects
@@ -104,7 +102,7 @@ jobs:
         # Same pin and the same `|| echo` as the behavioral tier: promptfoo's exit
         # code conflates a rubric failure with a transport fault; the per-provider
         # statistical gate below is the verdict.
-        run: npx --yes promptfoo@0.122.0 eval -c promptfooconfig.matrix.yaml --output results.matrix.json || echo "::warning::promptfoo exited non-zero — the per-provider statistical gate scores results.matrix.json and decides this leg"
+        run: node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c promptfooconfig.matrix.yaml --output results.matrix.json || echo "::warning::promptfoo exited non-zero — the per-provider statistical gate scores results.matrix.json and decides this leg"
       - name: per-provider statistical gate (baseline decides; subjects advisory)
         # pipefail, or `| tee` swallows the scorer's exit code and the job goes
         # green on a red baseline (run 34046683394 did exactly that).

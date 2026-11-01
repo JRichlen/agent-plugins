@@ -1,52 +1,72 @@
 # agent-plugins
 
-A shared operating contract and task methods for AI-assisted work.
+Practical methods for AI-assisted work: diagnose a bug, plan a change, research a
+claim or hand work over with evidence someone else can use.
 
-Describe the outcome you want. Use the smallest useful method, stay within the
-accepted scope, and return a result that can be inspected and continued. Shared
-rules have one owner; detailed procedures are selected for the task.
+Start with the task. You can ask for a method explicitly and inspect how it
+works when you need more control. Shared scope, authority and evidence rules
+have one owner; a plugin supplies the detailed method.
 
-This draft implements those boundaries in repository instructions and services.
-It does not install the core into a host or establish identical behavior across
-coding assistants. [Current status and migration](#current-status-and-migration)
-separate the changes from the remaining qualification work.
+**[Try a first task](docs/getting-started.md)** ·
+[Choose by need](#choose-by-need) · [Follow the guides](docs/guides/README.md)
 
-## Start with the work
+## Try it
 
-> Fix the CSV export bug, explain the change, and update the documentation.
+Open a disposable clone in Codex:
 
-For a clear, bounded task, the path may simply be to do the work and check it.
-Request a particular method when you want one. You should not need to learn a
-coordinator's persona or a universal protocol before describing the outcome.
+```sh
+git clone https://github.com/JRichlen/agent-plugins.git agent-plugins-first-task
+cd agent-plugins-first-task
+```
 
-## Follow one task
+Ask it to read `AGENTS.md` and
+`plugins/find-before-build/skills/find-before-build/SKILL.md`, then:
 
-This is a fictional walkthrough of intended use, not a recorded test run.
+> Before adding another gallery capture helper, find the existing one. Show the
+> searches and what can be reused. Do not edit files or run models.
 
-1. **Establish the objective.** Keep the reported bug, documentation request,
-   constraints and completion condition together. Ask for a consequential
-   missing decision or required approval.
-2. **Diagnose before changing.** Reproduce the failure and test plausible causes.
-   Reuse an existing implementation when it fits.
-3. **Make a focused fix.** Preserve unrelated work. Use delegated help when
-   independent assignments justify the brief and integration work.
-4. **Verify the claim.** Check the regression and relevant behavior. A worker's
-   success report remains a report until its evidence is checked.
-5. **Change stages.** Pass verified findings and remaining limits to
-   documentation work. Do not turn an unresolved hypothesis into the explanation
-   of a fix. Ordinary document authoring does not require an instruction-file audit.
-6. **Hand back useful state.** Say what changed, what was checked, what remains
-   uncertain and whether anything needs a decision.
+The [first-task guide](docs/getting-started.md) shows actual search results from
+source-loaded Codex, how to check and undo the exercise, and host limits. No
+plugin or global instruction is installed by this route.
 
-If supported by actual checks, the result could be:
+<details>
+<summary>Prefer native Claude Code packaging?</summary>
 
-> CSV export now preserves labels containing commas. The regression failed
-> before the fix and passes now. The export tests pass, and the documentation
-> reflects the change. Production data has not been checked.
+Start Claude Code in the cloned repository, then:
 
-That can be enough. You can also inspect the diff, commands, source evidence,
-worker handbacks and method choice. Required approvals, material cost, privacy
-exposure and verification limits stay visible at every depth.
+```text
+/plugin marketplace add JRichlen/agent-plugins
+/plugin install find-before-build@jrichlen
+```
+
+Review the details and choose local-only scope for the trial. Native Claude
+installation/use was not tested in the recorded Codex demonstration; see the
+[host guide](docs/getting-started.md) for qualification and removal.
+
+</details>
+
+## See what happens
+
+```mermaid
+flowchart LR
+  Task[Describe the outcome] --> Method[Select the smallest useful method]
+  Method --> Work[Do the work within authority]
+  Work --> Check[Check the result]
+  Check --> Return[Return evidence and remaining limits]
+```
+
+For example, the [capture-launch fix](docs/guides/bug-fix.md) follows a real
+scheduled-run failure through its source, regression controls and remaining
+limits. The [small-feature guide](docs/guides/small-feature.md) shows source
+candidate packaging. The [handoff guide](docs/guides/handoff.md) explains what
+another session needs to continue from the actual commits.
+
+Start with the result, then open the explanation, evidence or customization
+links as needed. Required permissions, material costs and verification limits
+stay visible even when the explanation is short.
+
+<details>
+<summary>How the pieces fit together</summary>
 
 ## One system with clear responsibilities
 
@@ -62,6 +82,8 @@ Evidence, knowledge and decisions connect these layers through existing task,
 project and decision records. They are not another coordinator or an autonomous
 self-rewriting subsystem. Each method should finish or hand off without leaving
 its entire procedure active for the next stage.
+
+</details>
 
 ## Choose by need
 
@@ -186,7 +208,7 @@ its current plugin naming and loading behavior.
 
 ## Current status and migration
 
-This draft has 24 registered plugins. Redgate and Jori are retired public
+The catalog has 24 registered plugins. Redgate and Jori are retired public
 products; useful mechanisms have one owner in the existing verification and
 delegation packages. The fleet curator is retired without a replacement for its
 scheduled cross-repository service.
@@ -205,15 +227,15 @@ catalog, callers and generated outputs together from the pre-migration revision;
 restoring only an unlisted plugin directory is incomplete.
 
 Qualification is still in progress. Focused structural checks are not proof of
-behavioral improvement or complete host parity. The required full gate and host
-adoption limits must be reported with the implementation. The frozen
+behavioral improvement or complete host parity. Inspect [current checks and their limits](docs/testing.md); installed host
+behavior and general outcome improvement remain separately qualified. The frozen
 [PR129 experiment](https://github.com/JRichlen/agent-plugins/pull/129) remains
 separate from the [synthetic re-entry pilot](docs/designs/conversation-reentry-pilot.md).
 
 ## Full catalog
 
 <details>
-<summary>Browse the 24 registered plugins in this draft</summary>
+<summary>Browse the 24 registered plugins</summary>
 
 | Plugin | Purpose |
 |---|---|

@@ -16,6 +16,59 @@ workflows and eval packs by `evals/cheap/check-testing-doc.sh` on every
 > the inventory half of this order; the prose half (the tier tables below) is
 > on the PR author and reviewer.
 
+## Pipeline operation
+
+For event selection, costs, artifacts and recovery, start with the
+[CI runbook](../ci/README.md). The inventory below remains the reference for
+coverage and evidence limits.
+
+Free correctness runs on every layer of a native main-rooted PR stack. The
+`stacked` event refreshes checks when linkage changes. Grader/subject reachability
+and routing wait for the deterministic cheap job; existing label/fork gates,
+providers and concurrency ceilings are unchanged. Each layer can still make
+reachability calls, so stack size matters to cost. Skip is not behavioral success.
+
+Offline and Promptfoo model jobs share a locked tool setup and fresh empty profiles.
+Only offline jobs provision the qualified Linux sandbox. Lifecycle scripts are
+disabled except the explicitly hash-reviewed Claude platform-copy installer;
+its result must be an executable Linux binary. Patched Git dependencies have a
+read-only API and unsafe-option smoke check. Provisioning
+checks package versions without initializing Promptfoo. Runtime diagnostics are
+subject to the pinned tool's known opt-out limitation; the fail-closed offline
+wrapper remains in place. The gallery refresh validates selection and capture
+launch and the full cheap gate before any paid call, then checks generated output
+and preserves raw result artifacts on failure. Required behavioral/deep aggregates
+fail as blocked when their cheap dependency fails; a canceled superseded run does
+not report a fresh verdict. See the CI runbook for stacked-event cancellation.
+
+## Release-candidate boundary
+
+The [candidate builder](../release/README.md) packages exact Git objects with
+file hashes/modes and deterministic archive metadata. Its free `verify` job
+runs actual temporary-Git tests; manual `stage` uploads a source artifact only.
+Neither job publishes a release, calls a model, grants write permissions or
+establishes host/behavioral readiness. Existing failed and skipped checks remain
+separate evidence. No manual candidate dispatch was required to test the builder.
+
+## Guided docs and recovered examples
+
+The free pipeline contracts check the newcomer documentation's local links and
+anchors, capture eligibility, and recovery provenance against real process/Git
+seams. Page generators still own derived counts and presentation. The obsolete
+gallery phase/count plan was removed; its historical states remain in Git.
+Renderer controls also execute the actual embedded Python with Windows-style
+stdout/file writers: removing explicit LF output must fail the control. Ordinary
+graded and attested captures retain the same per-arm criteria/context disclosure
+as recovered captures. These source/runtime controls do not replace browser QA.
+
+Five active-plugin examples were recovered offline from retained run41280016961
+artifact13073393801, using the original source config. They are explicitly
+recovered/unattested with unknown original capture time and source row/file
+identities. Every recovered pair passed its arm-specific rubric. The calibration criteria
+reward opposite behavior, and stop-rule also varies the declared-bound context;
+these are not identical-input common-rubric efficacy trials. No new model trial or human calibration was performed for
+that recovery. Read [gallery maintenance](examples/README.md) for interpretation.
+
 ## Responsibility-refactor coverage
 
 The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old
@@ -1033,6 +1086,7 @@ job: behavioral tier — detect paid packs
 job: behavioral tier — promptfoo
 job: build
 job: calibration sheet — draw and commit
+job: candidate packaging contracts (offline)
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
 job: confirm subject model resolves (advisory)
@@ -1052,6 +1106,7 @@ job: model pricing — offline controls
 job: paid multi-plugin gate
 job: refresh
 job: routing tier (roster trigger routing)
+job: stage source candidate (not a release)
 job: subject matrix —  (advisory)
 job: subject matrix — detect packs
 pack: agent-compiler/cheap
@@ -1097,6 +1152,7 @@ workflow: grader-agreement.yml
 workflow: model-pricing.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
+workflow: release-candidate.yml
 workflow: scale.yml
 workflow: subject-matrix.yml
 ```

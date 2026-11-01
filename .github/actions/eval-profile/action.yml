@@ -1,0 +1,7 @@
+name: Fresh evaluation profiles
+description: Isolate CLI state and disable nonessential analytics without changing model settings.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: bash ci/eval-profile.sh
