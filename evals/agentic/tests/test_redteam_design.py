@@ -850,7 +850,7 @@ def _tranche_rows(*, faults_per_cell: int, valid_per_cell: int) -> list[dict]:
     return rows
 
 
-def _plan(plugin: str = "jori") -> dict:
+def _plan(plugin: str = "diagnosing-bugs") -> dict:
     plan = dict(_index()["plugins"][plugin])
     plan["plugin"] = plugin
     return plan

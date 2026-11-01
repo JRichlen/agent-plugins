@@ -3,7 +3,7 @@
 # build-index.sh — generate the GitHub Pages landing page (docs/index.html).
 #
 # The landing page is the site's hub: what the marketplace is, how to install
-# from it, the three ways into the site (evidence, story, deep dives), and a
+# from it, examples and verification references, and a
 # catalog of EVERY plugin read from .claude-plugin/marketplace.json — with, per
 # plugin, whether it has a before/after example (and how starkly the judge saw
 # it diverge), a behavioral eval pack, and a deep-dive page. Reading those from
@@ -71,7 +71,6 @@ def has_deep(name):
     return os.path.isfile(os.path.join(root, "docs", name, "index.html"))
 
 DEEP_BLURB = {
-    "redgate": "The Red Gate protocol: rounds of ARM → TRACE → JUDGE with graduated autonomy, a verifier proven able to fail before any work starts, and PATCH / MINOR / MAJOR gates so irreversible decisions always block on a human.",
     "agent-compiler": "Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, a stdlib-only kernel resolves modules and fails closed on conflicts, and out comes an immutable AgentImage with per-line provenance.",
 }
 
@@ -89,8 +88,8 @@ for p in plugins:
         ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(ex_key)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
     else:
         ex_html = '<span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span>'
-    pack_html = ('<span class="tag pack" title="has a behavioral (promptfoo) eval pack: a model is graded on this skill in CI">graded in CI</span>'
-                 if has_pack(name) else '<span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span>')
+    pack_html = ('<span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span>'
+                 if has_pack(name) else '<span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span>')
     deep_html = f' · <a href="{esc(name)}/">deep dive</a>' if has_deep(name) else ""
     kw = " ".join(p.get("keywords") or [])
     # The filter matches data-q only, so a skill the card does not name (a
@@ -174,8 +173,8 @@ TEMPLATE = string.Template('''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>agent-plugins — a cross-harness agent plugin marketplace</title>
-<meta name="description" content="$n_plugins plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
+<title>agent-plugins — shared rules and task methods</title>
+<meta name="description" content="A shared operating contract, reusable services and $n_plugins registered task-method plugins. Inspect evidence, decisions and host limits.">
 <style>$css</style>
 </head>
 <body>
@@ -184,9 +183,10 @@ $nav
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A marketplace of $n_plugins plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
-  (Codex, Cursor, Gemini, …) through standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points. Every plugin is gated by evals;
-  $n_ex of them have a published before/after example with the models disclosed; $n_pack are graded by a model in CI on every change.</p>
+  <p class="sub">A shared operating contract and task methods for AI-assisted work. Start with the outcome,
+  use the smallest useful method, and inspect the result. This draft has $n_plugins registered plugins;
+  $n_ex have an example and $n_pack carry model-evaluation packs. Presence is not proof of execution or host parity.
+  <a href="$repo/blob/main/README.md">Start with the walkthrough</a> or <a href="$repo/blob/main/core/OPERATING.md">inspect the core</a>.</p>
 </header>
 
 <div class="install">
@@ -195,10 +195,9 @@ $nav
   <div><span class="lbl">Any harness, via APM (pin the SHA)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
 </div>
 
-<h2>Three ways in</h2>
+<h2>Explore further</h2>
 <div class="cards">
-  <a class="card" href="examples/"><span class="lbl">Evidence</span><h3>Before &amp; after examples</h3><p>One real prompt per skill, answered with and without it. Verdict first, transcripts on demand, every model named by role, and a verification path back to the CI run that produced the pair.</p></a>
-  <a class="card" href="timeline/"><span class="lbl">Story</span><h3>Design trajectory</h3><p>How this marketplace became what it is, told as the decisions that shaped it: what forced each one, what was rejected, and a receipt you can check. Start here for the why behind everything else.</p></a>
+  <a class="card" href="examples/"><span class="lbl">Evidence</span><h3>Before &amp; after examples</h3><p>Paired examples with evidence labels and provenance. Some entries are ungraded seeds; inspect the source rather than assuming measured benefit.</p></a>
   <a class="card" href="$repo/blob/main/docs/testing.md"><span class="lbl">Reference</span><h3>How every change is checked</h3><p>The full inventory of eval tiers, what each proves and what it structurally cannot, when it fires and what it costs — the doc the cheap tier itself keeps in sync with the workflows.</p></a>
 </div>
 
@@ -212,17 +211,16 @@ $nav
 </ol>
 
 <div class="checked">
-  <strong>This site is generated, and checked.</strong> The landing page, the example gallery and the timeline are each rendered from committed data by a
+  <strong>This site is generated, and checked.</strong> The landing page and the example gallery are rendered from committed data by a
   script in <code>docs/</code>; the offline eval tier fails any commit whose page drifts from its data, and the Pages workflow re-checks before it deploys.
   <ul>
     <li><a href="$repo/blob/main/docs/build-index.sh">build-index.sh</a> — this page, from <code>marketplace.json</code>, the snapshots and the packs</li>
     <li><a href="$repo/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="$repo/blob/main/docs/examples/DESIGN.md">why it looks the way it does</a>)</li>
-    <li><a href="$repo/blob/main/docs/timeline/build-timeline.sh">build-timeline.sh</a> — the timeline, from <code>docs/timeline/data/decisions.json</code></li>
   </ul>
 </div>
 
 <footer class="site">
-  Served from <code>docs/</code> by GitHub Pages · <a href="$repo">source</a> · <a href="$repo/blob/main/AGENTS.md">eval discipline</a> · <a href="$repo/blob/main/docs/red-gate-protocol.md">Red Gate protocol</a> · <a href="$repo/blob/main/docs/red-gate-glossary.md">glossary</a>
+  Served from <code>docs/</code> by GitHub Pages · <a href="$repo">source</a> · <a href="$repo/blob/main/AGENTS.md">eval discipline</a> · <a href="$repo/blob/main/core/OPERATING.md">operating core</a> · <a href="$repo/blob/main/docs/testing.md">evidence limits</a>
 </footer>
 </div>
 <script>$js</script>

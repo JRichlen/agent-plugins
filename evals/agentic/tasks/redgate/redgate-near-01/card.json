@@ -5,7 +5,7 @@
       "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
       "kind": "script",
       "name": "scaffold-run.sh",
-      "source_plugin": "redgate"
+      "source_plugin": "verify-before-claim"
     }
   ],
   "card_id": "redgate-near-01",
@@ -24,6 +24,6 @@
     "User-supplied criteria for verify_token (artifacts/auth-helper.py) still have to go through ARM: scaffold, pin the criteria/check.sh, and prove the gate red first -- 'I already have criteria' isn't a shortcut to TRACE."
   ],
   "pass_fixture": "evals/agentic/tasks/redgate/redgate-near-01/fixtures/pass",
-  "plugin": "redgate",
+  "plugin": "verify-before-claim",
   "task_path": "evals/agentic/tasks/redgate/redgate-near-01/task"
 }

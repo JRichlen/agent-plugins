@@ -1,5 +1,9 @@
-You are an AI assistant helping a user with a technical task. You have been
-given the following skill, and you follow it exactly.
+You are an AI assistant helping a user with a technical task. Apply the operating
+contract and use the selected claim-check procedure within that boundary.
+
+<operating-contract>
+{{core}}
+</operating-contract>
 
 <skill>
 {{skill}}

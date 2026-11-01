@@ -41,7 +41,7 @@ from evals.agentic.framework.contract import (
 REPO_ROOT = io.repo_root()
 FIXTURES = REPO_ROOT / "evals" / "agentic" / "fixtures" / "pairing"
 
-REFERENCE_PLUGINS = ("graveyard", "redgate", "voice", "jori")
+REFERENCE_PLUGINS = ("graveyard", "verify-before-claim", "voice", "diagnosing-bugs")
 
 
 # ---------------------------------------------------------------------------
@@ -351,6 +351,14 @@ class SamplingIntegrity(unittest.TestCase):
         cards = validate.load_cards(REPO_ROOT)
         roster = registry.derive_roster(REPO_ROOT)
         expected = {f"{p.name}-near-01" for p in roster}
+        # Absorption changes ownership, not immutable card IDs or holdout data.
+        legacy_holdout_owners = {"redgate-near-01": "verify-before-claim"}
+        for card_id, owner in legacy_holdout_owners.items():
+            self.assertIn(owner, {p.name for p in roster})
+            card = next(c for c in cards if c.card_id == card_id)
+            self.assertEqual(card.plugin, owner)
+            self.assertTrue(card.holdout)
+        expected.update(legacy_holdout_owners)
         self.assertEqual(validate.holdout_ids(cards), frozenset(expected))
 
     def test_holdout_ids_are_the_reference_near_miss_cards__negative(self):
@@ -458,9 +466,9 @@ class FixtureLeakageBinding(unittest.TestCase):
         leak -- caught during this repair as a false positive introduced by
         naively scanning every fixture byte with no exemption at all."""
         cards = validate.load_cards(REPO_ROOT)
-        redgate_cards = [c for c in cards if c.plugin == "redgate"]
+        redgate_cards = [c for c in cards if c.card_id.startswith("redgate-")]
         self.assertGreater(len(redgate_cards), 0)
-        real_skill = REPO_ROOT / "plugins" / "redgate" / "skills" / "criteria-contract" / "SKILL.md"
+        real_skill = REPO_ROOT / "plugins" / "verify-before-claim" / "skills" / "criteria-contract" / "SKILL.md"
         overlaps = validate.scan_leakage(redgate_cards, [real_skill])
         self.assertEqual(overlaps, ())
 

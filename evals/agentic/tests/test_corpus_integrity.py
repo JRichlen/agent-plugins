@@ -75,7 +75,7 @@ class CorpusEvidenceIntegrity(unittest.TestCase):
         outcome = verifier("verify_outcome")
         # These pass/fail fixtures share the actual deliverable bytes. It must
         # still be supplied by the subject; agreement is not a helper declaration.
-        for card_id in ("graveyard-neg-01", "jori-neg-01"):
+        for card_id in ("graveyard-neg-01", "verify-before-claim-neg-01"):
             with self.subTest(card=card_id), tempfile.TemporaryDirectory() as tmp:
                 self.assertFalse(outcome._verdict(ROOT, card_id, pathlib.Path(tmp))[0])
 

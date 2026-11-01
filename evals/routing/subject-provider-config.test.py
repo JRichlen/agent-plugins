@@ -19,7 +19,7 @@ except ImportError as error:
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIGS = (
-    ROOT / "plugins/jori/evals/promptfoo/promptfooconfig.yaml",
+    ROOT / "plugins/verify-before-claim/evals/promptfoo/promptfooconfig.yaml",
     ROOT / "evals/routing/promptfooconfig.yaml",
     ROOT / "evals/routing/trajectory/promptfooconfig.yaml",
 )

@@ -1,52 +1,55 @@
-# Templates
+# Delegated execution templates
 
-Three templates for the coordinator. Fill every field; a field you cannot fill is
-a question to settle before launching, not a blank to leave.
+Use only the fields needed to make a bounded assignment reviewable. The core
+[task-state contract](../../../context/OPERATING.md) defines shared state;
+these templates add execution detail rather than another project plan.
 
 ## Delegation brief
 
-```
-TIER: <haiku|sonnet|opus>   (why: bulk|judgment|verify; advisory)
-OBJECTIVE: <what to produce> | PURPOSE: <what it is for; the end state we want>
-CONTEXT: <2-5 lines of situation; files to read first, absolute paths>
-SCOPE: IN: <...> OUT: <...>  (touch nothing outside OUTPUT PATH)
-TOOLS ALLOWED: <explicit list>. Not allowed: session control, messaging, scheduling, spawning agents.
-SEARCH BUDGET: <N searches, N fetches>. At the cap, stop and report BUDGET EXHAUSTED plus gaps.
-RULES: <non-negotiables; cite URL and date; label knowledge vs fetched; no speculation about missing data>
-OUTPUT PATH: <absolute path>  (write early, update as you go; partial is fine)
-RETURN: at most 200 words in the Return brief format. Do not paste the full output.
-DONE WHEN: <checkable criteria>
-IF BLOCKED: write what you have, say what blocked you, stop. You cannot ask the user.
+```text
+TASK ID: <existing task id>
+OBJECTIVE: <bounded deliverable> | PURPOSE: <why it is needed>
+CONTEXT: <source pointers, inputs and relevant verified findings>
+SCOPE: IN: <...> OUT: <...>
+TIER: <configured model and effort; task-fit reason, no vendor default>
+TOOLS ALLOWED: <allowlist and permitted effects>
+CONTROL TOOLS: no agent spawning, session control, messaging, scheduling, sending or spending
+ALLOWANCE: <worker/round/search/output limits; whole-cycle reserve; cost estimate or unknown>
+OUTPUT PATH: <one owner; shared inputs read-only>
+RETURN: <bounded summary and evidence pointers; no raw transcript dump>
+DONE WHEN: <checkable acceptance condition>
+STOP WHEN: <scope/effect/allowance limit, user stop or unresolved blocker>
+IF BLOCKED: preserve partial results, report to the main assistant, stop; do not interview the user
 ```
 
-A retry brief is the same brief plus a `PREVIOUS ATTEMPT:` line giving the failure
-reason (for example, "output file was empty") so the worker does not repeat it.
+A retry uses the same task id and adds `PREVIOUS ATTEMPT:` with the failure
+and diagnostic evidence. Retry limits come from stop-rule, not this template.
 
 ## Return brief
 
-```
-STATUS: done | partial | blocked | failed
-OUTPUT: <absolute path(s)> (<size or item count>)
-FINDINGS: <3-6 bullets, most important first>
-CONFIDENCE / GAPS: <weak, unverified or missing>
-BUDGET: <searches used of N; EXHAUSTED yes/no>
-SURPRISES: <anything out of scope, odd, or direction-changing>
-NEXT: <suggested follow-up, one line>
-```
-
-## Status changelog
-
-```
-PROGRESS: <objective> - <x of y tasks landed>, <state in a phrase>
-CHANGED: <what landed, failed or was decided since last check-in>
-NEXT: <what is running or launches next, and what you do on landing>
-DECISIONS NEEDED: <only direction-changing choices, as one structured choice with the recommended option first; omit if none>
+```text
+TASK ID: <existing task id>
+STATE: returned | blocked | stopped
+OUTPUT: <paths and source/evidence pointers>
+FINDINGS: <bounded factual summary; distinguish observations from inference>
+CHECKS: <checks actually run and their results>
+GAPS: <unchecked, missing, stale or uncertain>
+ALLOWANCE USED: <observable usage; estimates labeled>
+NEXT ACTION: <proposed next step, not authorization>
 ```
 
-## Status board (`status.md`, when no tracker exists)
+A worker never marks its return `verified`. The calling assistant checks the
+artifacts and required acceptance evidence first.
 
-```
-| task | tier | output path | state | attempts |
-|---|---|---|---|---|
-| <id: what it does> | haiku|sonnet|opus | <path> | queued|running|landed|failed|verified | <n> |
-```
+## Existing task record
+
+Retain the core fields: id, objective, owner, scope, state, evidence, next_action
+and decision_required. Add output ownership, dependencies, attempts and allowance
+usage to that same record when useful. Do not create a separate status board.
+Persistent planning remains Wayfinder's responsibility.
+
+## Status update
+
+Lead with the objective's current state and material change. Include relevant
+evidence/limits, next action and any required decision. Use the core interaction
+contract; there is no separate question format or timed check-in policy here.

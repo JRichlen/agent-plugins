@@ -5,7 +5,7 @@
       "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
       "kind": "script",
       "name": "scaffold-run.sh",
-      "source_plugin": "redgate"
+      "source_plugin": "verify-before-claim"
     }
   ],
   "card_id": "redgate-neg-02",
@@ -21,6 +21,6 @@
   ],
   "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
   "pass_fixture": "evals/agentic/tasks/redgate/redgate-neg-02/fixtures/pass",
-  "plugin": "redgate",
+  "plugin": "verify-before-claim",
   "task_path": "evals/agentic/tasks/redgate/redgate-neg-02/task"
 }

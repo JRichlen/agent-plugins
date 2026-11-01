@@ -33,7 +33,6 @@ has "$SKILL" 'find-before-build' "already-covered candidates are disqualified" "
 
 group "recurrence-detector — the growth-loop amendments it depends on"
 for f in plugins/dev-diary/skills/dev-diary/references/consolidate-delta.md \
-         plugins/fleet-playbook-curator/skills/fleet-playbook-curator/references/consolidate-delta.md \
          plugins/plugin-factory/skills/plugin-factory/references/judge-calibration.md; do
   if [ -f "$f" ]; then ok "present: $f"; else bad "MISSING: $f"; fi
 done

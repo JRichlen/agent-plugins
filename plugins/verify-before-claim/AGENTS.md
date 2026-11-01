@@ -1,27 +1,16 @@
-# AGENTS.md — verify-before-claim
+# Verification methods
 
-Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first.
+The [core operating contract](context/OPERATING.md) owns truthful reporting,
+authority, scope and task state. This package supplies verification procedures;
+it does not own planning, coordination, approval cadence or a second task board.
 
-## How to use it
+- `skills/verify-before-claim/SKILL.md`: choose and run the check needed to
+  support a claim, then report its limits.
+- `skills/verify-work/SKILL.md`: optional executable acceptance contract for
+  work that needs fixed criteria and independent review.
+- `skills/criteria-contract/SKILL.md` and `skills/reconcile/SKILL.md`: supporting
+  acceptance operations, entered only for a selected acceptance case.
 
-Read `skills/verify-before-claim/SKILL.md` and follow it — it is the authoritative
-description of this plugin's workflow and the invariant it defends. It is an
-always-on, inline discipline: the core procedure in the SKILL.md body applies
-to every claim, every turn, with no invocation step. Four reference files
-under `skills/verify-before-claim/references/` load only when their specific
-trigger fires:
-
-- `pre-claim-reproduction.md` — bug-report and merge/PR readiness claims
-- `uncertainty-flagging.md` — claims headed into a handoff doc or deliverable
-- `primary-source-research.md` — claims citing an external source
-- `skill-behavior-verification.md` — claims about what a skill/tool/command does
-
-The command `commands/verify-before-claim.md` is the entry point a user invokes
-to reload the discipline explicitly mid-session.
-
-## The invariant this plugin defends
-
-A claim of fact, completion, or reproduction must ALWAYS be backed by the specific check that would prove it false, performed directly — and NEVER asserted as settled when that check wasn't run; residual uncertainty must ALWAYS be flagged explicitly, never smoothed into confident-sounding prose.
-
-The deterministic checks that defend it live in `evals/cheap/checks.sh` and run
-as part of the marketplace cheap tier.
+Exit to the original task owner with actual observations, unverified aspects
+and blockers. A fresh evidence file proves execution freshness, not reviewer
+independence or the truth of a poorly chosen criterion.

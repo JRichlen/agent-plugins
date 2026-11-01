@@ -1,44 +1,39 @@
-# Failure handling and recovery
+# Recover delegated work
 
-Treat agent failure as normal. This is the detail behind the short list in
-`SKILL.md`.
+This is the execution recovery method. Core owns state and authority,
+stop-rule owns retry bounds, and the calling task owns acceptance.
 
-## Relaunch rules
+## Inspect before relaunch
 
-- **One-for-one.** Relaunch only what was lost. Add the failure reason to the
-  retry brief.
-- **Rest-for-one.** If a downstream stage consumed a failed upstream output, redo
-  that stage too.
-- **Two retries, then escalate** with partial results and a recommendation.
+Reconcile the existing task record with actual output and source versions.
+For each affected assignment, inspect its output, acceptance evidence and
+dependencies. Classify a missing/empty output behind a success report as invalid;
+do not trust the report or record alone.
 
-## Interrupts and restarts
+Preserve a valid completed output. File existence alone does not establish
+validity: a stale input, wrong result or unrelated edit can invalidate it.
 
-- **User interrupt.** An interrupt can stop every background agent. Check which
-  outputs landed on disk, compare with the task list, mark landed items done,
-  relaunch only the lost work, and say what you did in one line.
-- **Container or session restart.** Pending result notifications can be dropped.
-  On resume, do not trust the board alone: check output files and the work
-  directory first, reconcile, then relaunch only what is truly missing. Never
-  relaunch work whose file already exists and is complete.
+## Limit the repair
 
-## Partial and stray results
+- Relaunch only the missing or invalid assignment.
+- Recheck a downstream assignment only if it consumed an invalid dependency.
+- Add the failure reason and discriminating evidence to the retry brief.
+- Charge retries to the same task under stop-rule's accounting. Do not reset
+  the counter by changing the worker or wording.
+- Record useful partial results and unresolved gaps rather than rerunning all work.
 
-- **Partial results** are usable. Record what is missing as a gap, not as a failed
-  job.
-- **Stray behavior** (out-of-scope tool calls, wrong tier, unrequested actions):
-  note it, fix the allowlist, relaunch if the output is tainted.
+## Interrupts and user stops
 
-## Spot-check, do not trust
+After interruption, inspect artifacts and reconcile before deciding what can
+resume. A restart notification is not evidence that work landed or disappeared.
 
-After an agent reports "corrections applied" or "file updated", check cheaply
-yourself: the file exists, is non-empty, a grep finds the change, and a diff shows
-nothing else changed (a worker that did what it was asked can still have rewritten
-the rest of the file). A report is a claim; the file is the evidence. An empty or missing output behind a "done"
-report is a failed task, relaunched with the reason in the brief.
+On a user stop, stop dispatching. Account for every worker and in-flight action,
+request cancellation where supported, preserve results and state any uncertain
+outcome. Do not relaunch because a file is missing while a stop remains active.
 
-## Verification catches real errors
+## Return control
 
-A fresh verifier, not the producer, told to try to falsify. Typical catches: a
-widely reported feature that never shipped, and a retired product's stale numbers
-cited as current. Old notes keep their historical wording; the latest synthesis
-carries the guards (what was corrected, what is unverified).
+Exit once affected assignments have a core state, evidence/gaps and a next action
+in the existing record. If acceptance needs independent verification and no
+qualified worker is available, report that boundary; a sequential self-review
+is not an independent check.

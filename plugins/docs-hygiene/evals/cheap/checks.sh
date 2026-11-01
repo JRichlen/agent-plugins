@@ -181,12 +181,12 @@ for tier_row in "Path (renamed/moved file)" "Command (script/CLI entry)" "Behavi
   fi
 done
 
-# --- differentiation: boundary vs fleet-playbook-curator and plugin-factory
-group "docs-hygiene — boundary vs fleet-playbook-curator and plugin-factory named"
-if grep -qi 'fleet-playbook-curator' "$SKILL" && grep -qi 'source-of-truth: false' "$SKILL"; then
-  ok "SKILL.md names fleet-playbook-curator and its source-of-truth: false posture"
+# --- differentiation: boundary vs scheduled index and plugin-factory
+group "docs-hygiene — boundary vs scheduled index and plugin-factory named"
+if grep -qi 'Not a scheduled cross-repo index' "$SKILL" && grep -qi 'source-of-truth: false' "$SKILL"; then
+  ok "SKILL.md distinguishes on-demand repair from a non-authoritative scheduled index"
 else
-  bad "SKILL.md does not clearly distinguish itself from fleet-playbook-curator"
+  bad "SKILL.md does not clearly distinguish itself from a scheduled cross-repo index"
 fi
 if grep -qi 'plugin-factory' "$SKILL"; then
   ok "SKILL.md names the plugin-factory boundary"

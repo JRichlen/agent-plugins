@@ -91,8 +91,12 @@ allowlisted subjects, and hold/validate/stage decisions; it rejects URLs and
 credential-shaped output. Its plan can refer only to the three existing subject
 config paths and is marked `apply:false`. Correct citations do not prove sound
 reasoning or model quality. Every proposed subject change still needs existing
-Jori real/control cases, routing and trajectory contracts, independent judging,
-an approved calibration budget, and human review. Thresholds stay unchanged.
+task-relevant real/negative controls, routing and trajectory contracts, independent
+judging, an approved calibration budget, and human review. Retired coordination
+controls have no validated replacement; the historical claim-only calibration
+was nondiscriminating. Proposal artifacts distinguish available mechanism paths
+from unavailable replacement validation and remain activation-blocked. A file
+existing does not mean a candidate passed it. Thresholds stay unchanged.
 
 Public feeds and model output are untrusted data. HTTP errors are reported as
 sanitized statuses without bodies or credential-bearing URLs. No raw model

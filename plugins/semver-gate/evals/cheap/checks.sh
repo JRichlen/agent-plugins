@@ -88,19 +88,14 @@ else
   ok "no MAJOR + skip/bypass phrasing found in SKILL.md or rubric.md"
 fi
 
-# Explicit invariant text must survive verbatim in both SKILL.md and AGENTS.md
-# (the scaffold wrote it into both at generation time from --invariant).
+# The canonical skill carries the invariant; AGENTS is a discovery pointer.
 INVARIANT_MARKER='must never be taken without explicit, specific prior'
 if grep -qF "$INVARIANT_MARKER" "$SKILL"; then
   ok "SKILL.md carries the MAJOR sign-off invariant verbatim"
 else
   bad "SKILL.md is missing the MAJOR sign-off invariant text"
 fi
-if grep -qF "$INVARIANT_MARKER" "$AGENTS"; then
-  ok "AGENTS.md carries the MAJOR sign-off invariant verbatim"
-else
-  bad "AGENTS.md is missing the MAJOR sign-off invariant text"
-fi
+has "$AGENTS" "skills/semver-gate/SKILL.md" "AGENTS.md points to the canonical classifier" "AGENTS.md lost its classifier pointer"
 
 # A prior adjacent "yes" must not be described as sufficient for MAJOR.
 if grep -qiE 'adjacent.{0,100}(does not|doesn.t) transfer' "$SKILL"; then
@@ -184,7 +179,7 @@ done
 group "prove-the-undo — invariant survives verbatim"
 INV='NEVER justified by the mere existence of an unverified backup'
 has "$UNDO_SKILL"  "$INV" "SKILL.md carries the unverified-backup invariant verbatim" "SKILL.md lost the unverified-backup invariant"
-has "$AGENTS" "$INV" "AGENTS.md carries the unverified-backup invariant verbatim" "AGENTS.md lost the unverified-backup invariant"
+has "$AGENTS" "skills/prove-the-undo/SKILL.md" "AGENTS.md points to the canonical restoration method" "AGENTS.md lost its restoration pointer"
 hasE "$UNDO_SKILL" 'ALWAYS preceded by a named restore path' "SKILL.md requires a NAMED restore path before the action" "SKILL.md no longer requires a named restore path"
 hasE "$UNDO_SKILL" 'exercised.*(restored, diffed, or dry-run-verified)' "SKILL.md requires the restore path be EXERCISED, not just named" "SKILL.md no longer requires exercising the restore path"
 

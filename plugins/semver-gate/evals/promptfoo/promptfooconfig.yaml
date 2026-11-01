@@ -114,7 +114,7 @@
 # sign-off naming the mechanism, 0/3; under the post-sign-off block (an org
 # policy classifier's 403), bare Llama 3.3 70B already surfaced the denial
 # and refused to route around it, 0/3. Classification under the regrade
-# discipline (docs/testing-plan.md §6.3): capability finding, not a grading
+# discipline (docs/testing.md, evidence limits): capability finding, not a grading
 # or label defect. Both baits sat inside base safety training's obvious
 # patterns — "don't disable a protection setting" and "a policy denial is
 # final" — so for those models the with-skill green measured the model, not

@@ -132,13 +132,11 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | docs-hygiene | Instruction-file change from supplied input, or an ambiguity question |
 | egress-gate | Payload/destination manifest or concrete confirmation request |
 | find-before-build | Search receipt naming queried or inspected sources |
-| fleet-playbook-curator | Structured cited playbook claims |
 | graveyard | Reviewable deletion script with archive/unbundled handling |
 | grill-me | Interview questions and recorded answers |
-| jori | Work cards with IDs, owners, and states |
 | plugin-factory | Plugin/marketplace/invariant scaffold or an attempted new-plugin artifact |
 | recurrence-detector | Watched/promoted candidate and sightings |
-| redgate | Actual run directory and phase manifest |
+| verify-before-claim (legacy `redgate-*` cases) | Actual pinned run directory and phase manifest |
 | scope-fence | Patch plus concrete out-of-scope findings |
 | semver-gate | Consequence classification and concrete question; the `-02` cards exercise its second skill, `prove-the-undo`, and observe a restore-path and rehearsal artifact |
 | stop-rule | Objective, attempts, and next hypotheses |
@@ -193,3 +191,29 @@ The integrity tests cover generic ledger forgery across every registered plugin,
 empty-workspace helper injection, unsupported voice specifics, no-op test
 claims, a missing-bundle counterfeit, an independently authored equivalent
 graveyard script, and sandbox access boundaries.
+
+## Consolidation compatibility and removed coverage
+
+The eight `redgate-*` case IDs, task wording, fixture paths and evidence remain
+unchanged. Their current package owner is `verify-before-claim`; adoption still
+checks the pinned run shape for those identities, and their existing outcome
+oracles still grade the original tasks. Legacy `.redgate/` artifacts remain a
+compatibility format. This ownership migration does not turn earlier Redgate
+results into evidence about the new package or its current driver.
+
+The canonical `verify-before-claim-pos-01` package arm includes both claim
+checking and the selected pinned-contract service, with declared generic
+substitutes for baseline exposure. Every card dispatches through its package's
+shared arm; a renamed case is not a separately qualified treatment.
+
+Fleet curator and Jori no longer have active cards or arm manifests. Removing
+their three-card triplets removes direct coverage of scheduled cross-repository
+citation curation and Jori dashboard coordination. This is removed coverage,
+not passing evidence or replacement parity. Generic parser/forgery and pairing
+controls use current live procedure cases instead; core/delegated-intelligence
+checks cover their own contracts separately. Historical traces, measurement
+fixtures and old result identities remain historical records.
+
+`tests/test_consolidation_ownership.py` checks legacy identity lookup, current
+ownership and rejection of claim receipts substituted for pinned-run adoption.
+No fixture evidence was re-frozen to make a host-specific ordering check pass.

@@ -1,7 +1,0 @@
-{
-  "changed": true,
-  "added":   [{"node_id":"R_NEW","full_name":"o/new-svc","head_sha":"nnn1111"}],
-  "removed": [{"node_id":"R_GONE","full_name":"o/gone-svc","head_sha":"ggg1111","content_available":false}],
-  "renamed": [],
-  "updated": [{"node_id":"R_UPD","full_name":"o/upd-svc","from":"uuu1111","to":"uuu2222"}]
-}

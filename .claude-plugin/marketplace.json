@@ -60,25 +60,6 @@
       ]
     },
     {
-      "name": "fleet-playbook-curator",
-      "description": "Deploy daily GitHub automation that curates a living, self-invalidating operating index (a 'fleet playbook') for a glob of repos — always pointing at the repos as the source of truth, never posing as it.",
-      "version": "1.0.0",
-      "source": "./plugins/fleet-playbook-curator",
-      "author": {
-        "name": "Jordan Richlen"
-      },
-      "license": "MIT",
-      "keywords": [
-        "fleet",
-        "multi-repo",
-        "documentation",
-        "curation",
-        "github-actions",
-        "citations",
-        "index"
-      ]
-    },
-    {
       "name": "dev-diary",
       "description": "Keep a scannable developer journal that writes itself: discover the day's work from sessions, commits and prompts, interview the user, record a dated entry. Ships /dev-diary and /dev-diary-review.",
       "version": "1.0.0",
@@ -181,8 +162,8 @@
     },
     {
       "name": "verify-before-claim",
-      "description": "Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first.",
-      "version": "1.0.0",
+      "description": "Check claims against evidence; optionally pin executable acceptance criteria and obtain independent verification for work that needs a formal contract.",
+      "version": "1.1.0",
       "source": "./plugins/verify-before-claim",
       "author": {
         "name": "Jordan Richlen"
@@ -196,7 +177,10 @@
         "uncertainty",
         "discipline",
         "inline",
-        "always-on"
+        "always-on",
+        "acceptance",
+        "independent-verification",
+        "evidence-contract"
       ]
     },
     {
@@ -366,27 +350,6 @@
       ]
     },
     {
-      "name": "redgate",
-      "description": "Working harness for nontrivial work that needs explicit falsifiable criteria, verified ARM/TRACE/JUDGE rounds, or classified human gates.",
-      "version": "0.1.0",
-      "source": "./plugins/redgate",
-      "author": {
-        "name": "Jordan Richlen"
-      },
-      "license": "MIT",
-      "keywords": [
-        "red-gate",
-        "verifier",
-        "rounds",
-        "begin-middle-end",
-        "falsifiable",
-        "sdlc",
-        "ai-dlc",
-        "apm",
-        "cross-harness"
-      ]
-    },
-    {
       "name": "recurrence-detector",
       "description": "Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, scope-fence findings, unmet criteria, diary entries) by failure shape and surface repeat shapes as named candidate invariants. Proposes; never scaffolds. Use when asking what keeps going wrong.",
       "version": "0.0.1",
@@ -404,15 +367,6 @@
         "memory",
         "meta"
       ]
-    },
-    {
-      "name": "jori",
-      "description": "Coordinate complex work with bounded agents, evidence, and proportional dashboards.",
-      "version": "0.0.1",
-      "source": "./plugins/jori",
-      "author": { "name": "Jordan Richlen" },
-      "license": "MIT",
-      "keywords": ["orchestration", "multi-agent", "coordination", "evidence", "dashboards"]
     },
     {
       "name": "agent-compiler",
@@ -495,8 +449,8 @@
     },
     {
       "name": "delegated-intelligence",
-      "description": "Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs.",
-      "version": "0.1.0",
+      "description": "Delegate independent work through bounded briefs, owned outputs and checked handbacks. Use when real workers help; keep small or tightly coupled work direct.",
+      "version": "0.2.0",
       "source": "./plugins/delegated-intelligence",
       "author": {
         "name": "Jordan Richlen"
@@ -509,7 +463,7 @@
         "multi-agent",
         "coordinator",
         "background",
-        "model-tiers"
+        "bounded-execution"
       ]
     }
   ]

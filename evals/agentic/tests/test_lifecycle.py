@@ -78,7 +78,7 @@ def _load_builders():
 builders = _load_builders()
 
 REDGATE_SESSION_SCRIPT = (
-    REPO_ROOT / "plugins" / "redgate" / "hooks" / "hooks-handlers" / "session-start.sh"
+    REPO_ROOT / "plugins" / "verify-before-claim" / "hooks" / "hooks-handlers" / "session-start.sh"
 )
 VOICE_SESSION_SCRIPT = REPO_ROOT / "plugins" / "voice" / "hooks-handlers" / "session-start.sh"
 DOUBLE_PRINT_MUTANT = (
@@ -327,7 +327,7 @@ class FullLifecyclePaths(unittest.TestCase):
             run_dir.mkdir(parents=True)
             (run_dir / "manifest").write_text("slug=compact-run\nphase=TRACE\nround=1\n")
 
-            redgate_spec = HookSpec(plugin="redgate", event="SessionStart", matcher="compact",
+            redgate_spec = HookSpec(plugin="verify-before-claim", event="SessionStart", matcher="compact",
                                      command=f"bash {REDGATE_SESSION_SCRIPT}", source_file=str(REDGATE_SESSION_SCRIPT))
             payload = {"session_id": "s", "transcript_path": "/tmp/t", "cwd": str(root),
                        "hook_event_name": "SessionStart", "source": "compact"}

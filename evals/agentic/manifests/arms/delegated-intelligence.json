@@ -1,7 +1,7 @@
 {
   "plugin": "delegated-intelligence",
   "directory": "plugins/delegated-intelligence",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "derived_capabilities": [
     {
       "name": "delegated-intelligence",
@@ -50,9 +50,11 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/delegated-intelligence/SKILL.md": "34bef3e5beab690bf67f52cfff3f7ae7d99caadd0dd8c4a4342bdc709296bcf0",
-      "skills/delegated-intelligence/references/recovery.md": "b57a83cf923910a6cf82fb34290895890cf505d02815319c72d9007f05949541",
-      "skills/delegated-intelligence/references/templates.md": "eae8e6cb6d845b9b2c61fae6c5f6befc3e32cf651103c0765e3490ab9d4fafab"
+      "skills/delegated-intelligence/references/recovery.md": "181aea06f986c10f895d248a380439e9bfabe519b4c5ac1fc276acfbf03fbe69",
+      "skills/delegated-intelligence/references/templates.md": "1cbdb7dd27cfb6f1a9a7141a61c139a065e0a9437b5a3cb1fe3f99ac857dc66b",
+      "skills/delegated-intelligence/SKILL.md": "c8ccdd1d5866abda1946061f3178a4ce1850e4ec94d94831e20399fd8705eed1",
+      "context/OPERATING.md": "34e6cead58e4a0edf68519d3268d855b156961e8eca74d5d683201b1aef9b8f7",
+      "context/ownership.json": "35095085d55c6f64cd7cf281bd60ce483959ea381e0ce50583e07321644bf3ff"
     }
   },
   "baseline_arm": {

@@ -1,10 +1,28 @@
 {
   "plugin": "verify-before-claim",
   "directory": "plugins/verify-before-claim",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "derived_capabilities": [
     {
+      "name": "criteria-contract",
+      "kind": "skill",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "reconcile",
+      "kind": "skill",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
       "name": "verify-before-claim",
+      "kind": "skill",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "verify-work",
       "kind": "skill",
       "source_plugin": "verify-before-claim",
       "generic_equivalent": null
@@ -14,16 +32,52 @@
       "kind": "command",
       "source_plugin": "verify-before-claim",
       "generic_equivalent": null
+    },
+    {
+      "name": "verify-work",
+      "kind": "command",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "hooks/PreToolUse",
+      "kind": "hook",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "hooks/SessionStart",
+      "kind": "hook",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": null
+    },
+    {
+      "name": "criteria-index.sh",
+      "kind": "script",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": "plain-bash-filesystem-git::criteria-index.sh"
+    },
+    {
+      "name": "scaffold-run.sh",
+      "kind": "script",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": "plain-bash-filesystem-git::scaffold-run.sh"
+    },
+    {
+      "name": "reconcile.sh",
+      "kind": "script",
+      "source_plugin": "verify-before-claim",
+      "generic_equivalent": "plain-bash-filesystem-git::reconcile.sh"
     }
   ],
   "estimand_availability": {
     "full-package": "available",
-    "guidance-only": "available",
+    "guidance-only": "task-dependent (claim guidance available; selected acceptance procedures withheld)",
     "composition": "n/a (needs a second plugin; see composition_arms)",
     "version": "unavailable (no two-revision target identified)"
   },
   "full_package_arm": {
-    "arm_id": "arm-full-verify-before-claim-11760da885e75ff669e15d124ec69609",
+    "arm_id": "arm-full-verify-before-claim-d2986f8a3e900755b6ca8e7b5a97ce89",
     "estimand": "full-package",
     "role": "treatment",
     "plugins": [
@@ -32,10 +86,70 @@
     "revisions": {},
     "capabilities": [
       {
+        "name": "criteria-contract",
+        "kind": "skill",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "reconcile",
+        "kind": "skill",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
         "name": "verify-before-claim",
         "kind": "skill",
         "source_plugin": "verify-before-claim",
-        "generic_equivalent": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached"
+        "generic_equivalent": null
+      },
+      {
+        "name": "verify-work",
+        "kind": "skill",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "verify-before-claim",
+        "kind": "command",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "verify-work",
+        "kind": "command",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "hooks/PreToolUse",
+        "kind": "hook",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "hooks/SessionStart",
+        "kind": "hook",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": null
+      },
+      {
+        "name": "criteria-index.sh",
+        "kind": "script",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": "plain-bash-filesystem-git::criteria-index.sh"
+      },
+      {
+        "name": "scaffold-run.sh",
+        "kind": "script",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": "plain-bash-filesystem-git::scaffold-run.sh"
+      },
+      {
+        "name": "reconcile.sh",
+        "kind": "script",
+        "source_plugin": "verify-before-claim",
+        "generic_equivalent": "plain-bash-filesystem-git::reconcile.sh"
       }
     ],
     "allowed_tools": [
@@ -45,20 +159,31 @@
       "MultiEdit",
       "Bash",
       "Grep",
-      "Glob"
+      "Glob",
+      "criteria-index.sh",
+      "reconcile.sh",
+      "scaffold-run.sh"
     ],
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/verify-before-claim/SKILL.md": "5b5799a40f80fd62fec3a74b5639c36376b856d3bc3ff805d90edac0634de021",
+      "skills/criteria-contract/SKILL.md": "280da7626feb3969d327bbf58eca7bb1b42c84b75e757fc3f2984720ae843a37",
+      "skills/reconcile/SKILL.md": "686780a0fb4927c99c11d8d845cd308d5470b8bc7d76af1809dcc9dda32600e3",
       "skills/verify-before-claim/references/pre-claim-reproduction.md": "45aa65fd37d0356b9283ba88ca290f66661483712c6b6d462098f85713cef77c",
       "skills/verify-before-claim/references/primary-source-research.md": "184a94867d79f2dbb8a49c5dfa22fb6cf8950cac0dea4dc192fb86209bf94b7a",
       "skills/verify-before-claim/references/skill-behavior-verification.md": "6bcc912f6980a56c2dbc1c9ecab86c61bffa2db7232fbc6e78db77a728fc7d4c",
-      "skills/verify-before-claim/references/uncertainty-flagging.md": "01f340d2ceadea5c942a6c5aa1ff050f73bfc5bca0298dd99c1d0164f3efa134"
+      "skills/verify-before-claim/references/uncertainty-flagging.md": "01f340d2ceadea5c942a6c5aa1ff050f73bfc5bca0298dd99c1d0164f3efa134",
+      "skills/verify-before-claim/SKILL.md": "a59c0bffcf0bf98f72aafdd3fdb6d48187e72510481f545c8817f5954556ba12",
+      "skills/verify-work/SKILL.md": "5a6df588bff6e58cb3eab6e0d1e33f88f66302df200ad2cbc5f46906cdf0b81a",
+      "commands/verify-before-claim.md": "7481647af4fa4ddc381470a10d5af464c4b3870a5d4684bed14cca84e4f45c54",
+      "commands/verify-work.md": "be8c3eb881757be7eda9e0bb44db7cb92f818090583ceb412a582cdd6d862abf",
+      "hooks/hooks.json": "738dc4015655c099db06e97089a7b6e5986a61981a41434e975dc3dc92e6763e",
+      "context/OPERATING.md": "34e6cead58e4a0edf68519d3268d855b156961e8eca74d5d683201b1aef9b8f7",
+      "context/ownership.json": "35095085d55c6f64cd7cf281bd60ce483959ea381e0ce50583e07321644bf3ff"
     }
   },
   "baseline_arm": {
-    "arm_id": "arm-baseline-ff874f38a72181895ec4578dba40f920",
+    "arm_id": "arm-baseline-c328c2bfbf91ce57eee94407b82e68c4",
     "estimand": "baseline",
     "role": "baseline",
     "plugins": [],
@@ -71,13 +196,14 @@
       "MultiEdit",
       "Bash",
       "Grep",
-      "Glob"
+      "Glob",
+      "plain-bash-filesystem-git::criteria-index.sh",
+      "plain-bash-filesystem-git::reconcile.sh",
+      "plain-bash-filesystem-git::scaffold-run.sh"
     ],
     "extra_dirs": [],
-    "system_prompt_append": "assert completion or a fact directly ('should work', 'looks correct') with no check run and no output attached",
-    "realized_tree": {
-      "SYSTEM_PROMPT_APPEND.txt": "23869f1413a1649fb67e6f2df22cb20c1bd03c8f47b4fe5c20139ace84819237"
-    }
+    "system_prompt_append": "",
+    "realized_tree": {}
   },
-  "arm_source_card": "verify-before-claim-pos-01"
+  "arm_source_survey": "verify-before-claim-survey-00"
 }

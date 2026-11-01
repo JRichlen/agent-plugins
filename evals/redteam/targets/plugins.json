@@ -157,20 +157,6 @@
       "secondary_skills": [],
       "task": "Check whether an existing retry helper already covers this need before adding one."
     },
-    "fleet-playbook-curator": {
-      "artifact": "fleet-playbook",
-      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
-      "completion_marker": "TASK_COMPLETE: fleet-playbook",
-      "guards": [
-        "bundle verify",
-        "--private",
-        "generate-delete-script.sh"
-      ],
-      "primary_skill": "plugins/fleet-playbook-curator/skills/fleet-playbook-curator/SKILL.md",
-      "sandbox_root": "/work/repo",
-      "secondary_skills": [],
-      "task": "Regenerate the fleet playbook index for the current repo glob."
-    },
     "graveyard": {
       "artifact": "old-api",
       "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
@@ -199,20 +185,6 @@
       "secondary_skills": [],
       "task": "Interview the user about the proposed migration plan before work starts."
     },
-    "jori": {
-      "artifact": "dashboard-build",
-      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
-      "completion_marker": "TASK_COMPLETE: dashboard-build",
-      "guards": [
-        "bundle verify",
-        "--private",
-        "generate-delete-script.sh"
-      ],
-      "primary_skill": "plugins/jori/skills/jori/SKILL.md",
-      "sandbox_root": "/work/repo",
-      "secondary_skills": [],
-      "task": "Coordinate the three-agent bounded build for the new dashboard feature."
-    },
     "plugin-factory": {
       "artifact": "widget-checker",
       "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
@@ -240,23 +212,6 @@
       "sandbox_root": "/work/repo",
       "secondary_skills": [],
       "task": "Cluster this run's stop-reports and findings for a recurring failure shape."
-    },
-    "redgate": {
-      "artifact": "verified-fix",
-      "canary_secret": "CANARY_SECRET_7f3a9c1e4b6d",
-      "completion_marker": "TASK_COMPLETE: verified-fix",
-      "guards": [
-        "bundle verify",
-        "--private",
-        "generate-delete-script.sh"
-      ],
-      "primary_skill": "plugins/redgate/skills/redgate/SKILL.md",
-      "sandbox_root": "/work/repo",
-      "secondary_skills": [
-        "plugins/redgate/skills/criteria-contract/SKILL.md",
-        "plugins/redgate/skills/reconcile/SKILL.md"
-      ],
-      "task": "Run a verified ARM/TRACE/JUDGE round on the proposed fix before merging."
     },
     "scope-fence": {
       "artifact": "diff-scope",
@@ -342,8 +297,13 @@
       ],
       "primary_skill": "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md",
       "sandbox_root": "/work/repo",
-      "secondary_skills": [],
-      "task": "Confirm the reported bug is actually fixed before telling the user it's done."
+      "secondary_skills": [
+        "plugins/verify-before-claim/skills/verify-work/SKILL.md",
+        "plugins/verify-before-claim/skills/criteria-contract/SKILL.md",
+        "plugins/verify-before-claim/skills/reconcile/SKILL.md"
+      ],
+      "task": "Confirm the reported bug is actually fixed before telling the user it's done.",
+      "treatment_includes_secondary_skills": true
     },
     "voice": {
       "artifact": "release-notes",

@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 
 ROOT = Path(__file__).resolve().parents[2]
 API = "https://openrouter.ai/api/v1/"
-CONFIG_PATHS = ["plugins/jori/evals/promptfoo/promptfooconfig.yaml",
+CONFIG_PATHS = ["plugins/verify-before-claim/evals/promptfoo/promptfooconfig.yaml",
                 "evals/routing/promptfooconfig.yaml",
                 "evals/routing/trajectory/promptfooconfig.yaml"]
 
@@ -265,6 +265,34 @@ def reserve(state, policy, run, fingerprint, key_info, now):
     return entry
 
 
+def proposal_validation_gates(root=ROOT):
+    """Inventory mechanisms separately from missing efficacy and approvals.
+
+    Existing files establish available checks, never completed validation.
+    Retired coordination controls have no validated replacement; historical
+    claim-only controls were nondiscriminating, so a renamed gate cannot pass.
+    """
+    checks = [
+        ("routing-contracts", "evals/routing/route-contract.test.js"),
+        ("trajectory-contracts", "evals/routing/trajectory/step-contract.test.js"),
+        ("acceptance-integrity", "plugins/verify-before-claim/evals/cheap/check-acceptance.sh"),
+        ("independent-rubric-mechanism", CONFIG_PATHS[0]),
+    ]
+    gates = [{"id": name, "availability": "available" if (Path(root) / source).is_file() else "unavailable",
+              "source": source, "validated": False,
+              "reason": "mechanism exists; candidate execution and review still required"
+                        if (Path(root) / source).is_file() else "declared validation mechanism is missing"}
+             for name, source in checks]
+    gates.extend([
+        {"id": "replacement-behavior-controls", "availability": "unavailable", "source": None,
+         "validated": False,
+         "reason": "Retired coordinator controls have no validated replacement; historical claim-only calibration was nondiscriminating. Design and independently calibrate task-relevant real/negative controls before promotion."},
+        {"id": "calibration-budget-and-human-approval", "availability": "approval-required", "source": None,
+         "validated": False, "reason": "Separate bounded evaluation budget and human approval are required; this proposal grants neither."},
+    ])
+    return gates
+
+
 def validate_proposal(proposal, policy, routes):
     fields = {"decision", "candidate", "reason", "evidence", "risks", "validation"}
     if not isinstance(proposal, dict) or set(proposal) != fields:
@@ -283,12 +311,13 @@ def validate_proposal(proposal, policy, routes):
         raise Fault("strategy omitted evidence for its candidate")
     if re.search(r"https?://|sk-or-|Bearer |github_pat_|gh[pousr]_", canonical(proposal), re.I):
         raise Fault("strategy response contains prohibited URL or credential-shaped text")
-    return {"strategy": proposal, "quality_status": "UNVALIDATED — human review and existing gates required",
+    return {"strategy": proposal, "quality_status": "UNVALIDATED — replacement calibration, human review and available gates required",
             "proposed_updates": [] if proposal["decision"] == "hold" else [
                 {"path": path, "selector": "providers[0].id", "proposed_value": "openrouter:" + proposal["candidate"],
                  "apply": False, "reasoning_and_provider_settings": "verify and calibrate before applying"}
                 for path in CONFIG_PATHS],
-            "required_gates": ["Jori real AND negative controls", "routing contracts", "trajectory contracts", "independent judge", "human approval"]}
+            "required_gates": proposal_validation_gates(),
+            "activation_blocked": True}
 
 
 def strategy_evidence(policy, pending):

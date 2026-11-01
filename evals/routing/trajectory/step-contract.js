@@ -11,7 +11,7 @@
 //   STEP: action=<arm|trace|judge|gate|resume> | gate=<none|patch|minor|major> | disposition=<auto|silent|vetoed|approved|revised|declined|blocked> | proceed=<yes|no>
 //
 // `disposition` reuses the gates.log vocabulary already normative in
-// plugins/redgate/skills/redgate/SKILL.md (auto · silent/vetoed ·
+// plugins/verify-before-claim/skills/verify-work/SKILL.md (auto · silent/vetoed ·
 // approved/revised/declined), plus `blocked` for "the required decision or
 // artifact does not exist yet".
 //

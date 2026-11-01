@@ -1,7 +1,7 @@
 {
   "name": "delegated-intelligence",
-  "version": "0.1.0",
-  "description": "Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs.",
+  "version": "0.2.0",
+  "description": "Delegate independent work through bounded briefs, owned outputs and checked handbacks. Use when real workers help; keep small or tightly coupled work direct.",
   "author": {
     "name": "Jordan Richlen"
   },
@@ -15,7 +15,7 @@
     "multi-agent",
     "coordinator",
     "background",
-    "model-tiers"
+    "bounded-execution"
   ],
   "skills": "./skills/",
   "commands": "./commands/"

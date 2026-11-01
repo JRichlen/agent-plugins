@@ -87,22 +87,18 @@ def _verdict(repo_root, card_id, ws):
             and all(tier.get(key) for key in ("surface", "blind_spot", "red_control")) for tier in tiers)
     elif plugin == "find-before-build":
         observed = has("RECEIPT.md", r"Searched|legacy_retry") and has("RECEIPT.md", r"rg |manifest|utils/|blocking")
-    elif plugin == "fleet-playbook-curator":
-        claims = json_items("index.json", "claims")
-        observed = isinstance(claims, list) and any(isinstance(c, dict) and all(c.get(k) for k in ("repo", "path", "sha", "claim")) for c in claims)
     elif plugin == "graveyard":
         observed = has("delete-originals.sh", r"gh\s+repo\s+delete") and has("delete-originals.sh", r"bundle|unbundled|empty")
     elif plugin == "grill-me":
         observed = has("INTERVIEW.md", r"Q\d+") and has("INTERVIEW.md", r"➡️")
-    elif plugin == "jori":
-        cards = json_items("dashboard.json", "cards")
-        observed = isinstance(cards, list) and any(isinstance(c, dict) and all(c.get(k) for k in ("id", "owner", "state")) for c in cards)
     elif plugin == "plugin-factory":
         observed = bool(data("new-plugin.json")) or (bool(data("plugin.json")) and bool(data("marketplace-entry.json")) and has("invariant.md"))
         observed = observed or (has("new_plugin_json.txt") and has("marketplace_entry.txt"))
     elif plugin == "recurrence-detector":
         observed = has("candidates.md", r"PROMOTED|WATCHED") and has("candidates.md", r"cite:")
-    elif plugin == "redgate":
+    elif plugin == "verify-before-claim" and card_id.startswith("redgate-"):
+        # Stable legacy case IDs retain their original pinned-run adoption oracle.
+        # Package ownership changed; a claim receipt cannot stand in for this run.
         observed = any(re.search(r"^phase=", p.read_text(errors="replace"), re.M) for p in (ws/".redgate").glob("*/manifest"))
     elif plugin == "scope-fence":
         observed = has("diff.patch", r"^--- a/") and has("findings.md", r"Found out of scope:")

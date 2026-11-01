@@ -1,12 +1,12 @@
 """evals.agentic.framework.pairing -- arm construction and exposure parity
-(registry lane, part 2, contract §3.11).
+(registry lane, part 2, contract Â§3.11).
 
-This module builds the ``Arm`` objects the four estimands (benchmark-spec §4)
+This module builds the ``Arm`` objects the four estimands (benchmark-spec Â§4)
 compare: FULL_PACKAGE (the plugin installed whole), GUIDANCE_ONLY (prose
 only), COMPOSITION (two plugins together vs each alone vs neither), and
 VERSION (the same plugin at two git revisions) -- plus the single reusable
 no-skill BASELINE arm that both FULL_PACKAGE and GUIDANCE_ONLY subtract
-(benchmark-spec §4.2: "the SAME baseline B").
+(benchmark-spec Â§4.2: "the SAME baseline B").
 
 Design note carried forward for reviewers: ``build_arm``'s three required
 inputs are a ``Card`` (task/verifier identity plus, optionally, an
@@ -21,14 +21,14 @@ committed card yet, or a composition/version arm spanning plugin(s) the card
 does not name) capabilities are discovered structurally from the plugin's
 own manifest and filesystem via ``discover_plugin_capabilities`` -- this is
 what makes ``manifests/arms/*.json`` derivable for every roster plugin,
-including any that has no card yet (contract §8.4's honest partial-corpus
+including any that has no card yet (contract Â§8.4's honest partial-corpus
 state).
 
-Exposure parity (T16, contract §3.11 clause (c)): the baseline arm never
+Exposure parity (T16, contract Â§3.11 clause (c)): the baseline arm never
 receives a plugin's own capabilities, only the ``generic_equivalent`` string
 declared for each capability whose kind is ``script``/``mcp``/``tool``
 (``skill``/``command``/``hook`` capabilities have no baseline substitute --
-that omission IS the no-skill baseline, benchmark-spec §4.1). Every
+that omission IS the no-skill baseline, benchmark-spec Â§4.1). Every
 generated ``generic_equivalent`` embeds the capability's own name
 (``"plain-bash-filesystem-git::<name>"``, ``"generic-read-only-tool-surface::
 <name>"``) specifically so the substitution is always bijective: two
@@ -41,6 +41,7 @@ import dataclasses
 import hashlib
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
@@ -96,20 +97,20 @@ _SHARED_GENERIC_TOOLS: tuple[str, ...] = ("Read", "Write", "Edit", "MultiEdit", 
 _GENERIC_SCRIPT_PREFIX = "plain-bash-filesystem-git"
 _GENERIC_MCP_PREFIX = "generic-read-only-tool-surface"
 
-# Contract §11.4 UNKNOWN 5 / settled-unknowns.md item 6: the curated
+# Contract Â§11.4 UNKNOWN 5 / settled-unknowns.md item 6: the curated
 # script-dominant set whose guidance-only arm this module's `is_degenerate`
 # is expected to find inapplicable. `is_degenerate` re-verifies this
 # structurally against each plugin's REAL surface every time it is called
 # (see its docstring) rather than trusting the curation blindly.
 SCRIPT_DOMINANT_PLUGINS: frozenset[str] = frozenset(
-    {"agent-compiler", "graveyard", "redgate", "fleet-playbook-curator"}
+    {"agent-compiler", "graveyard"}
 )
 
 _STRATUM_FIELDS: tuple[str, ...] = ("provider", "model", "revision", "effort", "harness")
 
 
 # ---------------------------------------------------------------------------
-# Arm / Divergence (contract §3.11)
+# Arm / Divergence (contract Â§3.11)
 # ---------------------------------------------------------------------------
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -466,6 +467,61 @@ def _materialize_extra_dir(rel: str, repo_root: pathlib.Path, root: pathlib.Path
         _write_bytes(root, rel, src.read_bytes(), written)
 
 
+def _materialize_plugin_context(
+    source_plugin: str, repo_root: pathlib.Path, root: pathlib.Path,
+    written: dict[str, str], *, rev: str | None = None,
+) -> None:
+    """Copy selected package-owned declarative context; never arbitrary repo paths.
+
+    Full/guidance/version builders share containment, type and collision rules.
+    A version arm reads that revision's Git blobs, not today's generated core.
+    """
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", source_plugin):
+        raise ContractError("invalid package context owner: " + source_plugin)
+    repo_root = pathlib.Path(repo_root).resolve()
+    plugin_dir = repo_root / "plugins" / source_plugin
+    context = plugin_dir / "context"
+    entries: list[tuple[str, bytes]] = []
+    if rev is None:
+        if plugin_dir.is_symlink() or not plugin_dir.resolve().is_relative_to(repo_root / "plugins"):
+            raise ContractError("package context owner escapes plugins/: " + source_plugin)
+        if context.is_symlink():
+            raise ContractError("package context must not be a symlink: " + str(context))
+        if not context.exists():
+            return
+        if not context.is_dir():
+            raise ContractError("package context must be a real directory: " + str(context))
+        for path in sorted(context.rglob("*")):
+            if path.is_symlink() or not path.resolve().is_relative_to(context.resolve()):
+                raise ContractError("package context path escapes its owner: " + str(path))
+            if path.is_file():
+                entries.append((path.relative_to(context).as_posix(), path.read_bytes()))
+    else:
+        prefix = f"plugins/{source_plugin}/context/"
+        records = subprocess.run(["git", "ls-tree", "-rz", rev, "--", prefix],
+                                 cwd=repo_root, capture_output=True, check=True).stdout
+        for record in records.split(b"\0"):
+            if not record:
+                continue
+            meta, name = record.decode("utf-8").split("\t", 1)
+            mode, kind, sha = meta.split()
+            if mode not in {"100644", "100755"} or kind != "blob" or not name.startswith(prefix):
+                raise ContractError("invalid versioned package context: " + name)
+            data = subprocess.run(["git", "cat-file", "blob", sha], cwd=repo_root,
+                                  capture_output=True, check=True).stdout
+            entries.append((name[len(prefix):], data))
+    for rel, data in entries:
+        path = pathlib.PurePosixPath(rel)
+        if (path.is_absolute() or ".." in path.parts or "\\" in rel
+                or path.suffix.lower() not in {".md", ".json"}):
+            raise ContractError("package context must be contained Markdown/JSON: " + rel)
+        target = "context/" + rel
+        fingerprint = hashlib.sha256(data).hexdigest()
+        if target in written and written[target] != fingerprint:
+            raise ContractError("selected package contexts disagree: " + target)
+        _write_bytes(root, target, data, written)
+
+
 def _materialize_write(arm: Arm, workspace: pathlib.Path, *, rev: str | None = None) -> tuple[pathlib.Path, dict[str, str]]:
     workspace = pathlib.Path(workspace)
     root = workspace / arm.arm_id
@@ -481,6 +537,8 @@ def _materialize_write(arm: Arm, workspace: pathlib.Path, *, rev: str | None = N
     # tree/config, not the tool allowlist.
     for cap in arm.capabilities:
         _materialize_capability(cap, repo_root, root, written, rev=rev)
+    for source in sorted({c.source_plugin for c in arm.capabilities if c.source_plugin is not None}):
+        _materialize_plugin_context(source, repo_root, root, written, rev=rev)
     for rel_dir in arm.extra_dirs:
         _materialize_extra_dir(rel_dir, repo_root, root, written)
     if arm.system_prompt_append:
@@ -506,7 +564,7 @@ def materialize(arm: Arm, workspace: pathlib.Path) -> pathlib.Path:
 
 
 # ---------------------------------------------------------------------------
-# Baseline arm (the single reusable Estimand.BASELINE arm, benchmark-spec §4.2)
+# Baseline arm (the single reusable Estimand.BASELINE arm, benchmark-spec Â§4.2)
 # ---------------------------------------------------------------------------
 
 def _baseline_arm(subs: Sequence[str], workspace: pathlib.Path, *, prose: str = "") -> Arm:
@@ -548,7 +606,7 @@ def _full_package_arm(plugin_names: tuple[str, ...], caps: tuple[Capability, ...
 
 
 # ---------------------------------------------------------------------------
-# Guidance-only arm and tree (T17's degeneracy rule; benchmark-spec §4.2)
+# Guidance-only arm and tree (T17's degeneracy rule; benchmark-spec Â§4.2)
 # ---------------------------------------------------------------------------
 
 def _copy_markdown_only(src_dir: pathlib.Path, dst_root: pathlib.Path, rel_prefix: str, written: dict[str, str]) -> None:
@@ -603,6 +661,7 @@ def guidance_only_tree(plugin: PluginRef, workspace: pathlib.Path) -> pathlib.Pa
         if src.is_file():
             _write_bytes(root, f"commands/{command}.md", src.read_bytes(), written)
 
+    _materialize_plugin_context(plugin.name, repo_root, root, written)
     assert_guidance_only_tree_is_pure(root)
     return root
 
@@ -634,40 +693,36 @@ def _build_guidance_only_arm(card: Card, ref: PluginRef, workspace: pathlib.Path
 
 
 def is_degenerate(arm: Arm, card: Card) -> bool:
-    """True when a guidance-only arm cannot perform `card`'s task at all
-    because the plugin's real value is procedural (a script/hook/mcp
-    server), not prose a model could imitate by hand -- contract §11.4
-    UNKNOWN 5 / settled-unknowns.md item 6. Offline and without a model
-    call, true task-level degeneracy cannot be executed and observed; the
-    structural proxy used here is the curated `SCRIPT_DOMINANT_PLUGINS` set,
-    but it is not trusted blindly -- every call re-derives the plugin's REAL
-    capability surface and raises if the curation no longer matches reality
-    (the plugin now has no script/hook/mcp capability to withhold at all),
-    so a stale curation fails loudly instead of silently asserting a false
-    degeneracy."""
+    """Structural inapplicability for the selected task, not sibling methods.
+
+    A card explicitly selecting a script/hook/MCP procedure loses that procedure
+    in a guidance-only arm. Claim-only cards do not become inapplicable because
+    their package also contains acceptance scripts. This proxy is not measured
+    proof that a model could never reproduce a procedure manually.
+    """
     if arm.estimand is not Estimand.GUIDANCE_ONLY:
         return False
-    if card.plugin not in SCRIPT_DOMINANT_PLUGINS:
+    selected = [c for c in card.capabilities if c.kind in {"script", "hook", "mcp"}]
+    if not selected:
         return False
-
     repo_root = io.repo_root()
     roster = derive_roster(repo_root)
-    ref = next((r for r in roster if r.name == card.plugin), None)
-    if ref is None:
-        raise ContractError(f"is_degenerate: {card.plugin!r} is not in the live roster")
-    full_caps = discover_plugin_capabilities(ref, repo_root)
-    withheld_kinds = {c.kind for c in full_caps} & {"script", "hook", "mcp"}
-    if not withheld_kinds:
-        raise ContractError(
-            f"is_degenerate: {card.plugin!r} is in SCRIPT_DOMINANT_PLUGINS but its real "
-            "surface carries no script/hook/mcp capability to withhold -- the curated set "
-            "needs updating, this is not a real degeneracy"
-        )
+    for capability in selected:
+        owner = capability.source_plugin or card.plugin
+        ref = next((r for r in roster if r.name == owner), None)
+        if ref is None:
+            raise ContractError(f"is_degenerate: {owner!r} is not in the live roster")
+        surface = discover_plugin_capabilities(ref, repo_root)
+        if not any(c.kind == capability.kind and c.name == capability.name for c in surface):
+            raise ContractError(
+                f"is_degenerate: selected {capability.kind} {owner}/{capability.name} "
+                "does not resolve to a real procedure"
+            )
     return True
 
 
 # ---------------------------------------------------------------------------
-# build_arm dispatcher (contract §3.11)
+# build_arm dispatcher (contract Â§3.11)
 # ---------------------------------------------------------------------------
 
 def build_arm(
@@ -702,7 +757,7 @@ def build_arm(
 
 
 # ---------------------------------------------------------------------------
-# Composition arms (benchmark-spec §4.3)
+# Composition arms (benchmark-spec Â§4.3)
 # ---------------------------------------------------------------------------
 
 def composition_arms(
@@ -721,8 +776,8 @@ def composition_arms(
 
 
 # ---------------------------------------------------------------------------
-# Version arms (benchmark-spec §4.4) and the two-revision survey
-# (contract §11.4 UNKNOWN / settled-unknowns.md item 6)
+# Version arms (benchmark-spec Â§4.4) and the two-revision survey
+# (contract Â§11.4 UNKNOWN / settled-unknowns.md item 6)
 # ---------------------------------------------------------------------------
 
 def _assert_revision_resolves(repo_root: pathlib.Path, rev: str) -> None:
@@ -824,7 +879,7 @@ def _plugin_version_at(root: pathlib.Path, rev: str, rel: str) -> str | None:
 
 
 def survey_version_estimand_targets(repo_root: pathlib.Path | None = None) -> tuple[Mapping[str, str], ...]:
-    """Contract §11.4 / settled-unknowns.md item 6: `git log` over every
+    """Contract Â§11.4 / settled-unknowns.md item 6: `git log` over every
     roster plugin's `.claude-plugin/plugin.json`, looking for a consecutive
     pair of revisions that BOTH already carry the file (excluding the
     creation commit, whose "diff" is the whole plugin appearing from
@@ -859,10 +914,14 @@ def survey_version_estimand_targets(repo_root: pathlib.Path | None = None) -> tu
 
 
 # ---------------------------------------------------------------------------
-# Exposure parity (T16, contract §3.11 clause (c))
+# Exposure parity (T16, contract Â§3.11 clause (c))
 # ---------------------------------------------------------------------------
 
 def _is_permitted_tree_path(path: str, treatment: Arm) -> bool:
+    if path.startswith("context/"):
+        rel = pathlib.PurePosixPath(path)
+        return (path in treatment.realized_tree and ".." not in rel.parts
+                and "\\" not in path and rel.suffix.lower() in {".md", ".json"})
     for sub in ("skills/", "commands/", "hooks/", "agents/"):
         if path.startswith(sub):
             return True
@@ -928,7 +987,7 @@ def exposure_diff(treatment: Arm, baseline: Arm) -> tuple[Divergence, ...]:
             continue
         permitted = _is_permitted_tree_path(path, treatment)
         reason = (
-            "plugin's own skills/commands/hooks/agents surface or mcp config (clause a/b)"
+            "plugin's own skills/commands/hooks/agents/context surface or mcp config (clause a/b)"
             if permitted else "realized_tree divergence outside the plugin's own surface"
         )
         divergences.append(Divergence(f"realized_tree:{path}", t_hash or "<absent>", b_hash or "<absent>", permitted, reason))
@@ -1042,7 +1101,8 @@ def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, di
       full-package:   always "available" (every plugin can be installed whole).
       guidance-only:  "guidance-only-inapplicable" for the curated
                       script-dominant set (re-verified structurally, see
-                      is_degenerate); "available" otherwise.
+                      is_degenerate); mixed verification is task-dependent;
+                      "available" otherwise.
       composition:    single-plugin summary cannot name a partner; always
                       "n/a (needs a second plugin; see composition_arms)".
       version:        the two-revision survey's finding for this plugin, or
@@ -1089,7 +1149,9 @@ def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, di
 
         result[ref.name] = {
             "full-package": "available",
-            "guidance-only": "guidance-only-inapplicable" if degenerate else "available",
+            "guidance-only": ("task-dependent (claim guidance available; selected acceptance procedures withheld)"
+                              if ref.name == "verify-before-claim" else
+                              "guidance-only-inapplicable" if degenerate else "available"),
             "composition": "n/a (needs a second plugin; see composition_arms)",
             "version": version_status,
         }

@@ -16,6 +16,36 @@ workflows and eval packs by `evals/cheap/check-testing-doc.sh` on every
 > the inventory half of this order; the prose half (the tier tables below) is
 > on the PR author and reviewer.
 
+## Responsibility-refactor coverage
+
+The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old
+packs are removed, not counted as passing coverage. Existing source/receipt
+history remains explicit history. verify-before-claim now carries the optional
+acceptance kernel, integrity/guard controls and a scale pack alongside claim
+checking; the scale job is `acceptance contract scale (lifecycle stress)`.
+
+Selected delegation and verification packages carry generated core copies.
+Their packaged context files are behavior-bearing inputs; the behavior-surface
+map selects them. Core is exposed in the relevant agentic/verification inputs,
+not claimed effective merely because a prose pointer exists. Source-contract,
+mutation, projection and kernel checks establish deterministic properties, not
+model effectiveness or complete real-host qualification.
+
+Routing trajectory now has five cases and five repeats: at most 25 planned
+subject calls before transport retries. It covers an explicitly selected
+contract and a direct-work negative, not a universal round protocol. Provider,
+ceiling, repeat/concurrency and paid `if` gates remain unchanged by this refactor.
+The existing automatic grader/subject reachability jobs are not gated by the
+`paid-evals` label; approval for those calls is distinct from manual paid suites.
+Full red-team execution remains subject to its telemetry/dependency boundary.
+
+The bounded integration refinement adds operative-source/mutation controls for
+research's use of Core, delegation, offer-only review, scheduling authority and
+active-stop recovery. The cheap gate also checks selected-method guidance
+applicability: claim-only cards do not inherit sibling acceptance-script
+inapplicability. These checks establish source composition and structural
+classification, not model effectiveness or actual research dispatch.
+
 ## The tier map
 
 Cheapest first. Each tier catches a class of regression the tiers above it
@@ -23,7 +53,7 @@ structurally cannot.
 
 | Tier | Where | Cost | Fires | Required check? |
 |---|---|---|---|---|
-| [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, <1 min | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
+| [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, host-dependent | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
 | [agentic suite](#agentic-suite) | `evals/agentic/run.sh` | free, offline; `--gate` (what fires below) ~5-15s, full suite ~4-5 min (real promptfoo/docker subprocess) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
 | [red-team suite](#redteam-suite) | `evals/redteam/run.sh` | free, offline; `--gate` (what fires below) well under 1s, full suite real per-config promptfoo validate (materially more) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
@@ -36,7 +66,7 @@ structurally cannot.
 | [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
 | [calibration sheet](#calibration-sheet-manual-no-model-calls) | `calibration-sheet.yml` + `evals/paid/calibration/` | free (no model calls) | manual dispatch only | no — writes a blind sheet to a `calibration/<run-id>` branch for a human to label |
 | [grader agreement](#grader-agreement-manual-grading-only) | `grader-agreement.yml` + `evals/paid/calibration/regrade.sh` | grading spend only (no subject calls) | manual dispatch only | no — reports agreement and kappa between graders on a finished run's outputs |
-| [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
+| [scale](#scale-tier) | `plugins/{verify-before-claim,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/verify-before-claim/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
 | [model pricing](#model-pricing-monitor) | `model-pricing.yml` + `ci/model-pricing/` | metadata free; strategy default off/$0 | daily/manual on default branch after activation; offline tests on scoped PRs | no — stages review artifacts only |
@@ -66,9 +96,8 @@ that it is green because it did not run, never silently.
   `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
   the fail-closed guard — see
   [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
-  self-test, example-gallery sync/provenance, design-timeline sync/receipts
-  (`docs/timeline/`: page in sync with its decision data, every receipt
-  resolving), and the testing-doc drift guard defending this document.
+  self-test, example-gallery sync/provenance, and the testing-doc drift guard
+  defending this document.
   The model-pricing unit suite also exercises malformed prices, material-change
   thresholds, stale evidence, budget reservations/dedupe, and proposal authority.
 - **What it cannot prove.** Whether any load-bearing sentence still *means*
@@ -255,21 +284,15 @@ that it is green because it did not run, never silently.
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
-Jori's pack covers bounded delegated work, authority expansion, rough task-fit
-guidance that does not authorize provider/account changes, and GitHub Copilot
-HyDRA/HydraFusion control boundaries. The GitHub case requires an explicit
-distinction between those systems, treats undocumented per-leg/cap controls as
-unverified, and rejects invented CLI syntax or credit-to-dollar guarantees. Its
-four calibration rows replace both the skill and routing reference with
-invariant-free stubs, so a baseline that independently produces all
-Jori-specific controls fails as nondiscriminating.
-Its current subject is OpenRouter `z-ai/glm-5.3-flash`, with explicit `max`
-reasoning in the request; the independent Sonnet 5 rubric judge is unchanged.
-This setting change requires behavioral validation; cheap checks cannot prove
-GLM's quality or equivalent behavior to a previous subject.
-It is single-turn and tool-less: it does not prove real worker dispatch,
-persistent monitoring, provider availability, cross-provider equivalence,
-HydraFusion performance, cost savings, or a multi-round project outcome.
+The retired coordinator's behavioral pack is no longer current coverage.
+Current delegation has deterministic source/composition controls; these do not
+replace an empirical worker-dispatch or outcome comparison. The verification
+package's historical claim-only calibration was nondiscriminating, so it cannot
+be renamed into a replacement quality gate. Model-monitor proposals expose that
+replacement validation as unavailable and keep activation blocked; routing,
+trajectory and acceptance-integrity mechanisms remain available but unvalidated
+for each proposed subject. Independently calibrated task-relevant real/negative
+controls, a bounded evaluation budget and human review are still required.
 
 ## routing tier
 
@@ -300,11 +323,11 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   allowed; regrades from PR #93's live runs) — plus the fail-closed `route-contract.js` validator on every row
   (all 8 coherence rules, so "any value" never means "any junk") — catching
   the cross-plugin mis-routing that per-plugin packs are blind to, including
-  collapse-into-redgate and ceremony on work that warrants none. A second leg,
-  `evals/routing/trajectory/`, grades redgate's stateful gate behavior at
-  frozen decision points (`STEP:` line + `step-contract.js` cross-field
-  invariants: ARM before TRACE, explicit MAJOR stop, silence is not consent,
-  the gate survives resume). Trajectory slots are **behavior-pinned,
+  unnecessary verification envelopes and ceremony on direct work. A second leg,
+  `evals/routing/trajectory/`, grades selected acceptance-contract and core transition behavior at
+  fixed decision points (`STEP:` line + `step-contract.js` cross-field
+  invariants: a selected contract needs criteria before implementation, required scope/effect decisions cannot be inferred from silence,
+  the gate survives resume, and direct work avoids contract ceremony). Trajectory slots are **behavior-pinned,
   taxonomy-tolerant**: `proceed`/`disposition` are exact everywhere, while T1
   accepts `gate=none|major` and T4 accepts `action=resume|gate` (defensible
   alternate readings of the same stop, per the same regrade). Both legs grade
@@ -448,17 +471,17 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   across hundreds of randomized, isolated trials: agent-compiler kernel stress
   (seeded random registries up to 300 modules — byte-determinism,
   discovery-order independence, metamorphic hash invariance, fail-closed on
-  injected faults) and redgate round-lifecycle stress (red-from-birth, pin,
+  injected faults) and acceptance-contract lifecycle stress (red-from-birth, pin,
   drift, tamper → drift, stale evidence rejected, guard deny/allow matrix).
 - **What it cannot prove.** Model behavior — it is offline, stdlib-only
   stress of the deterministic machinery.
-- **Fires.** `scale.yml`, path-gated to `plugins/redgate/**` /
+- **Fires.** `scale.yml`, path-gated to `plugins/verify-before-claim/**` /
   `plugins/agent-compiler/**` / the workflow itself; **not** a required check
   — evidence, not a merge gate.
 - **Cost.** Free, offline, minutes.
 - **Local run.**
   ```sh
-  plugins/redgate/evals/scale/run.sh
+  plugins/verify-before-claim/evals/scale/run.sh
   plugins/agent-compiler/evals/scale/run.sh --sizes 40,120,300 --seeds 3
   ```
 
@@ -558,29 +581,28 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   slugs it would ping and needs no network or key.
 - **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
   and at the start of every `refresh-examples.yml` run.
-- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Cost.** A completion per distinct subject slug, with provider ceilings discovered from the active packs and bounded retry behavior. The reservation ceiling may exceed eight tokens; actual billed usage must be read from available provider/run evidence.
 - **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
 
 ## example gallery (refresh + pages)
 
 - **What it proves.** The published before/after gallery is a *verification
-  surface*: every card is a real, provenanced with-skill/without-skill pair
-  captured from a graded behavioral run — never hand-written — with the
-  subject, grader and judge models disclosed by role, and no model grading
-  its own family. `refresh-examples.yml` re-runs the packs on a biweekly
+  surface*: captured cards identify their graded behavioral run and disclose
+  the subject, grader and judge models by role, with no model grading its own
+  family. Clearly labeled seed examples illustrate the format and are not
+  measured behavioral evidence. `refresh-examples.yml` re-runs the packs on a biweekly
   schedule, records each snapshot's Actions `run_url`, keeps the raw
   `results.json` as a 90-day artifact, **Sigstore-attests every snapshot it
   wrote** (`actions/attest-build-provenance`, verifiable with
   `gh attestation verify … --signer-workflow`), and opens a **review-gated
   PR** (never pushes to main); `pages.yml` publishes `docs/` only after
   merge, re-verifying `docs/build-index.sh --check`,
-  `docs/build-examples.sh --check` and `docs/timeline/build-timeline.sh
-  --check` first — the landing page, the gallery and the design-trajectory
-  timeline are all generated surfaces. The cheap tier's gallery gate enforces
+  `docs/build-examples.sh --check` first — the landing page and gallery
+  are generated surfaces. The cheap tier's gallery gate enforces
   sync + role-by-role provenance offline (a graded snapshot whose subject and
   grader share a model family fails; so does a seed claiming an attestation),
   its pack gate refuses any promptfoo pack whose subject and grader share a
-  family, and its timeline gate enforces sync + receipts.
+  family.
 - **What it cannot prove.** That the captured pair is *representative* — a
   human reviews the transcript diffs before merge. And an attestation proves
   GitHub-hosted infrastructure produced the bytes in a run of the public
@@ -655,6 +677,8 @@ See [activation, state recovery, scope and limits](model-pricing.md).
 - **Cost.** One manual run of the skill.
 
 ## The statistical spine
+
+**Historical receipts:** the dated runs and retired package names in this section describe the configuration at the time. They are not current pack inventory, budget settings, or evidence that the integrated services improved behavior. Current pack membership is the machine-verified inventory below.
 
 Every LLM-driven tier shares the same statistical machinery, so no green is an
 uninterpretable n=1 and no required check goes red on the weather:
@@ -738,7 +762,7 @@ uninterpretable n=1 and no required check goes red on the weather:
   cannot be ruled out, and neither can luck.
 
   So the data cannot separate "S1 sits below its floor" from "S1 sits at its
-  floor and five runs of five sampled unluckily". The routing pack is BYTE-
+  floor and five runs of five sampled unluckily". The historical routing pack was BYTE-
   IDENTICAL across all five runs — nothing in `evals/routing/` was touched — so
   the 0.60 → 1.00 swing is sampling, not a change. The honest verdict is
   unresolved pending more samples, and at `repeat: 5` a scenario sitting near
@@ -953,30 +977,26 @@ uninterpretable n=1 and no required check goes red on the weather:
 
 Any **new** LLM tier inherits this spine wholesale.
 
-## Planned tiers (not yet live)
+## Not yet covered by current evidence
 
-Planned, not specified here — the linked issues own the design and
-[testing-plan.md](testing-plan.md) carries the phase-2 plan (what each layer
-proves, its harness, cost, sequencing, and the rules learned from landing
-RQ-002). Do **not** add these to the inventory block until they actually
-exist; when one goes live it moves into this document and out of the plan's
-"planned" list in the same PR:
+- Routing tests do not establish real multi-turn selection or benefit. Evaluate
+  missed routes, false positives, mixed-task transitions and the direct-work
+  control against the current ownership contract.
+- Handoffs must preserve evidence, uncertainty, pending decisions and in-flight
+  effects. Deterministic fixtures do not establish these properties in every host.
+- Native-host interruption, stop propagation, contract protection and permission
+  boundaries need actual supported-host runs. Record unavailable capabilities;
+  no finite roster establishes universal host parity.
+- The [synthetic re-entry pilot](designs/conversation-reentry-pilot.md) is a separate
+  exploratory proposal. PR129's frozen corpus and criteria remain unchanged.
+- Human grader-calibration measurements remain missing: workflows and blind
+  sheets are not labeled human evidence. See [issue102](https://github.com/JRichlen/agent-plugins/issues/102).
 
-- **L1 decision-point probes** — trajectory-prefix promptfoo scenarios that
-  freeze a fabricated mid-run transcript and assert on the single next move,
-  with a must-not-fire twin for every must-fire:
-  [#89](https://github.com/JRichlen/agent-plugins/issues/89).
-- **L2 plan-audit** — typed composition results and plan grading against a
-  labeled corpus; owned by [#88](https://github.com/JRichlen/agent-plugins/issues/88)
-  (see the scope split recorded on #89). (L3 trajectory/artifact audit and L4
-  cross-plugin composition are now **live** — [agentic suite](#agentic-suite),
-  `evals/agentic/` — see [testing-plan.md §1](testing-plan.md#1-where-the-baseline-actually-is).)
-- **Grader calibration measurements** — the human labels for the blind
-  sheets the calibration-sheet workflow draws, and the cross-grader and
-  self-consistency numbers the grader-agreement workflow produces; the
-  workflows exist (above), the measurements do not until someone labels a
-  sheet and dispatches a re-grade:
-  [#102](https://github.com/JRichlen/agent-plugins/issues/102).
+Existing trajectory, composition and agentic packs are listed above. Proposed
+extensions belong in the relevant issue or review; add them to the inventory
+only when implemented. Model/native execution still requires its applicable
+cost, action and disclosure authorization. Static checks and examples do not
+prove better task outcomes or lower accepted-work cost.
 
 ## Machine-verified inventory
 
@@ -1006,6 +1026,7 @@ eval-dir: evals/paid
 eval-dir: evals/redteam
 eval-dir: evals/routing
 eval-dir: evals/templates
+job: acceptance contract scale (lifecycle stress)
 job: agent-compiler scale (kernel stress)
 job: behavioral tier (promptfoo)
 job: behavioral tier — detect paid packs
@@ -1021,15 +1042,14 @@ job: counterfeit tier — run (corpus)
 job: deep tier (pier)
 job: deep tier — detect safety-path changes
 job: deep tier — pier run
-job: grader agreement — regrade and compare
 job: deploy
+job: grader agreement — regrade and compare
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
 job: install tier — install-smoke + evals
 job: model pricing — detect and stage
 job: model pricing — offline controls
 job: paid multi-plugin gate
-job: redgate scale (lifecycle stress)
 job: refresh
 job: routing tier (roster trigger routing)
 job: subject matrix —  (advisory)
@@ -1048,20 +1068,12 @@ pack: egress-gate/cheap
 pack: eval-ladder/cheap
 pack: find-before-build/cheap
 pack: find-before-build/promptfoo
-pack: fleet-playbook-curator/cheap
-pack: fleet-playbook-curator/pier
-pack: fleet-playbook-curator/promptfoo
 pack: graveyard/cheap
 pack: graveyard/pier
 pack: graveyard/promptfoo
 pack: grill-me/cheap
-pack: jori/cheap
-pack: jori/promptfoo
 pack: plugin-factory/cheap
 pack: recurrence-detector/cheap
-pack: redgate/cheap
-pack: redgate/promptfoo
-pack: redgate/scale
 pack: scope-fence/cheap
 pack: scope-fence/promptfoo
 pack: semver-gate/cheap
@@ -1073,6 +1085,7 @@ pack: tailscale-wif/promptfoo
 pack: tracer-bullets/cheap
 pack: verify-before-claim/cheap
 pack: verify-before-claim/promptfoo
+pack: verify-before-claim/scale
 pack: voice/cheap
 pack: voice/promptfoo
 pack: wave-research/cheap

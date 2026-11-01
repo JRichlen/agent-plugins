@@ -17,7 +17,7 @@ done
 group "egress-gate — invariant survives verbatim"
 INV='NEVER included in an outbound payload'
 has "$SKILL"  "$INV" "SKILL.md carries the never-in-payload invariant verbatim" "SKILL.md lost the never-in-payload invariant"
-has "$AGENTS" "$INV" "AGENTS.md carries the never-in-payload invariant verbatim" "AGENTS.md lost the never-in-payload invariant"
+has "$AGENTS" "skills/egress-gate/SKILL.md" "AGENTS.md points to the canonical method" "AGENTS.md lost its canonical method pointer"
 hasE "$SKILL" 'ALWAYS enumerated \(what, to whom\) before the' "SKILL.md requires enumeration BEFORE the transmitting call" "SKILL.md no longer requires pre-call enumeration"
 
 group "egress-gate — the gate is three ordered steps"

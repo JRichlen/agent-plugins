@@ -8,14 +8,17 @@
     "plugins/${plugin}/commands/**",
     "plugins/${plugin}/AGENTS.md",
     "plugins/${plugin}/hooks/**",
+    "plugins/${plugin}/context/**",
     "plugins/${plugin}/.claude-plugin/plugin.json",
     "plugins/${plugin}/evals/promptfoo/**",
     "evals/paid/**"
   ],
   "routing_paths": [
     "evals/routing/**",
+    "core/OPERATING.md",
+    "core/ownership.json",
     "plugins/*/skills/**/SKILL.md",
-    "plugins/redgate/skills/redgate/SKILL.md",
+    "plugins/verify-before-claim/skills/verify-work/SKILL.md",
     "plugins/*/.claude-plugin/plugin.json",
     ".claude-plugin/marketplace.json"
   ]

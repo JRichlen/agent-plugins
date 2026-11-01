@@ -29,7 +29,7 @@ providers:
     config:
       arm: treatment
       plugin: verify-before-claim
-      skillPath: "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md"
+      skillPath: "evals/redteam/configs/generated/treatment/verify-before-claim.md"
       ledgerDir: "{{env.REDTEAM_LEDGER_DIR}}"
 
 defaultTest:
