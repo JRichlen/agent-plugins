@@ -1,0 +1,25 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "do all the work yourself in one pass and write the result",
+      "kind": "skill",
+      "name": "delegated-intelligence",
+      "source_plugin": "delegated-intelligence"
+    }
+  ],
+  "card_id": "delegated-intelligence-pos-01",
+  "expected_boundary_verdict": "",
+  "fail_fixture": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-pos-01/fixtures/fail",
+  "holdout": false,
+  "kind": "positive",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "pass_fixture": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-pos-01/fixtures/pass",
+  "plugin": "delegated-intelligence",
+  "task_path": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-pos-01/task"
+}

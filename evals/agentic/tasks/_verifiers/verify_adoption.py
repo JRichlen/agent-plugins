@@ -60,6 +60,13 @@ def _verdict(repo_root, card_id, ws):
         observed = has("consolidation-map.md", r"^Before \d+ \| After") and has("consolidation-map.md", r"^- (keep|new|absorb|merge-into|deprecate|retire)\s")
     elif plugin == "context-handoff":
         observed = (has("HANDOFF.md", r"^# Handoff") and has("HANDOFF.md", r"References|Commit:")) or has("DECISION_LOG.md", r"^CONTINUE:")
+    elif plugin == "delegated-intelligence":
+        # A brief file naming a tier and an output path is the delegation's shape;
+        # it does not show the work landed or the briefs are good (that is the
+        # outcome oracle's job, and the brief's contract is the cheap tier's).
+        briefs = list((ws / "briefs").glob("*.md")) if (ws / "briefs").is_dir() else []
+        observed = any(re.search(r"^TIER:\s*(haiku|sonnet|opus)\b", b.read_text(errors="replace"), re.I | re.M)
+                       and re.search(r"^OUTPUT PATH:\s*\S", b.read_text(errors="replace"), re.I | re.M) for b in briefs)
     elif plugin == "dev-diary":
         observed = any("tl;dr" in p.read_text(errors="replace").lower() for p in (ws/"entries").glob("**/*.md"))
     elif plugin == "diagnosing-bugs":

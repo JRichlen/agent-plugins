@@ -126,6 +126,7 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | codebase-design | Candidate designs with design dimensions |
 | consolidation-map | Counts line plus disposition rows in a consolidation map |
 | context-handoff | Referenced handoff or ordered decision log |
+| delegated-intelligence | Status board with a tier and output path per task, plus a brief file per relaunched task |
 | dev-diary | Dated diary entry with a summary |
 | diagnosing-bugs | Numbered hypotheses and falsifying checks |
 | docs-hygiene | Instruction-file change from supplied input, or an ambiguity question |

@@ -20,7 +20,7 @@
     "full-package": "available",
     "guidance-only": "available",
     "composition": "n/a (needs a second plugin; see composition_arms)",
-    "version": "unavailable (no two-revision target identified)"
+    "version": "available (c5e9ee1..0f0eb6f)"
   },
   "full_package_arm": {
     "arm_id": "arm-full-wave-research-3690b193cd65c47a9bff3101f2935c5c",
@@ -50,7 +50,7 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/wave-research/SKILL.md": "0cf79a1b8a12d0f915dff12fbe8653ffbd2578b867bce99ab74629f4c0c6bf77",
+      "skills/wave-research/SKILL.md": "c3ba13c21503a26e10a44b40fd92309f64eb126a63235541fd4e13b66b35c7a0",
       "skills/wave-research/references/fan-out-discipline.md": "559e027cdac5156f9452cfd5d4eaa383608bf16814745a1383046063e42965ed",
       "skills/wave-research/references/strategy-a-derived-verify.md": "8498cb147cf34186b6e9fb578e486b9eb88c3e4103de61f7ecd6ec792d81740d",
       "skills/wave-research/references/strategy-b-pipelined-verdict-wins.md": "b2dc48d289af4c3af0cc76e7846d36db6719d093d997e49ce6ffef68abadc2bc",

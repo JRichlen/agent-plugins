@@ -1040,6 +1040,7 @@ pack: agent-compiler/scale
 pack: codebase-design/cheap
 pack: consolidation-map/cheap
 pack: context-handoff/cheap
+pack: delegated-intelligence/cheap
 pack: dev-diary/cheap
 pack: diagnosing-bugs/cheap
 pack: docs-hygiene/cheap

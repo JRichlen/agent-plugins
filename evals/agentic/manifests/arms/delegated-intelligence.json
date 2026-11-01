@@ -1,0 +1,81 @@
+{
+  "plugin": "delegated-intelligence",
+  "directory": "plugins/delegated-intelligence",
+  "version": "0.1.0",
+  "derived_capabilities": [
+    {
+      "name": "delegated-intelligence",
+      "kind": "skill",
+      "source_plugin": "delegated-intelligence",
+      "generic_equivalent": null
+    },
+    {
+      "name": "delegated-intelligence",
+      "kind": "command",
+      "source_plugin": "delegated-intelligence",
+      "generic_equivalent": null
+    }
+  ],
+  "estimand_availability": {
+    "full-package": "available",
+    "guidance-only": "available",
+    "composition": "n/a (needs a second plugin; see composition_arms)",
+    "version": "unavailable (no two-revision target identified)"
+  },
+  "full_package_arm": {
+    "arm_id": "arm-full-delegated-intelligence-0ac6f0bf1185a8095fb586f289075df6",
+    "estimand": "full-package",
+    "role": "treatment",
+    "plugins": [
+      "delegated-intelligence"
+    ],
+    "revisions": {},
+    "capabilities": [
+      {
+        "name": "delegated-intelligence",
+        "kind": "skill",
+        "source_plugin": "delegated-intelligence",
+        "generic_equivalent": "do all the work yourself in one pass and write the result"
+      }
+    ],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "",
+    "realized_tree": {
+      "skills/delegated-intelligence/SKILL.md": "34bef3e5beab690bf67f52cfff3f7ae7d99caadd0dd8c4a4342bdc709296bcf0",
+      "skills/delegated-intelligence/references/recovery.md": "b57a83cf923910a6cf82fb34290895890cf505d02815319c72d9007f05949541",
+      "skills/delegated-intelligence/references/templates.md": "eae8e6cb6d845b9b2c61fae6c5f6befc3e32cf651103c0765e3490ab9d4fafab"
+    }
+  },
+  "baseline_arm": {
+    "arm_id": "arm-baseline-83da350adf2e54215cb193be82fe93d5",
+    "estimand": "baseline",
+    "role": "baseline",
+    "plugins": [],
+    "revisions": {},
+    "capabilities": [],
+    "allowed_tools": [
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "Bash",
+      "Grep",
+      "Glob"
+    ],
+    "extra_dirs": [],
+    "system_prompt_append": "do all the work yourself in one pass and write the result",
+    "realized_tree": {
+      "SYSTEM_PROMPT_APPEND.txt": "c8547b478a00f11ded285abf5b2dff2849cb10a9d420d69dcefabcc2cfdcc6c4"
+    }
+  },
+  "arm_source_card": "delegated-intelligence-pos-01"
+}
