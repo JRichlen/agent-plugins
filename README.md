@@ -49,6 +49,7 @@ multiple machines and want it to resolve identically every time.
 | [**eval-ladder**](plugins/eval-ladder/) | Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing or auditing a test/eval strategy. |
 | [**consolidation-map**](plugins/consolidation-map/) | Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages. |
 | [**wave-research**](plugins/wave-research/) | Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups. |
+| [**delegated-intelligence**](plugins/delegated-intelligence/) | Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry

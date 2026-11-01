@@ -50,8 +50,9 @@ or a multi-agent deep dive with rival hypotheses.
 
 If a delegation or coordination skill is installed, use it for briefs, tiers,
 budgets, handbacks and recovery; otherwise follow the Delegation minimum
-below. If installed, the `second-opinion` skill can serve as the independent
-verifier and `human-voice` can shape check-ins and the final report.
+below. `delegated-intelligence` is the optional execution layer. If installed,
+the `second-opinion` skill can serve as the independent verifier and
+`human-voice` can shape check-ins and the final report.
 
 ## Defaults
 

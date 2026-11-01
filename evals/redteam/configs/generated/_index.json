@@ -227,6 +227,62 @@
         "treatment": "plugins/context-handoff/skills/context-handoff/SKILL.md"
       }
     },
+    "delegated-intelligence": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/delegated-intelligence.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "e7673adadf812a2c9eed568100736efc783fb97e6a6202f62e4d49a9a4634e6b",
+        "clean": "9ef59a2920c98775dd5bd6a39ba364e53dae3bcbe5c929947de7b31cdfcaea33"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "delegated-intelligence",
+      "primary_skill": "plugins/delegated-intelligence/skills/delegated-intelligence/SKILL.md",
+      "primary_skill_sha256": "101c7f25dcf29713a8f2362d3cce19e17e13de0d2f262fc66ea7602b10ab6c75",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 11724,
+        "treatment": 11724
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/delegated-intelligence.md",
+        "treatment": "plugins/delegated-intelligence/skills/delegated-intelligence/SKILL.md"
+      }
+    },
     "dev-diary": {
       "cells": {
         "C1": {
@@ -825,8 +881,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "454e04667da1f22537aa4614fcc9de560a116fa860dbd0cf4e7c3df0ab79e57d",
-        "clean": "b6007cca8c24442b8d001d7b8107c115456accb5d64f09e696f6c3515c158d40"
+        "adversarial": "a36389cbf68472ccef367c4f218101e3f64cb742e1db8219e11371fd627a463a",
+        "clean": "53ae65fa65363c3c7c1b26ae2e07ad04fb1b105dcc06b759fa604f700327b8d8"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1406,11 +1462,11 @@
       "planned_attempts_total": 288,
       "plugin": "wave-research",
       "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
-      "primary_skill_sha256": "0cf79a1b8a12d0f915dff12fbe8653ffbd2578b867bce99ab74629f4c0c6bf77",
+      "primary_skill_sha256": "c3ba13c21503a26e10a44b40fd92309f64eb126a63235541fd4e13b66b35c7a0",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 15173,
-        "treatment": 15173
+        "baseline-generic": 15231,
+        "treatment": 15231
       },
       "secondary_skills": [],
       "skill_paths": {

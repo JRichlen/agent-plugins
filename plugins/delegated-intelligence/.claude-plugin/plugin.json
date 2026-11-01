@@ -1,0 +1,22 @@
+{
+  "name": "delegated-intelligence",
+  "version": "0.1.0",
+  "description": "Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/delegated-intelligence",
+  "license": "MIT",
+  "keywords": [
+    "delegation",
+    "subagents",
+    "orchestration",
+    "multi-agent",
+    "coordinator",
+    "background",
+    "model-tiers"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

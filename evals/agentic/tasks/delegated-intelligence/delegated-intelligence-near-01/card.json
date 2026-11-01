@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "do all the work yourself in one pass and write the result",
+      "kind": "skill",
+      "name": "delegated-intelligence",
+      "source_plugin": "delegated-intelligence"
+    }
+  ],
+  "card_id": "delegated-intelligence-near-01",
+  "expected_boundary_verdict": "one-known-file-answered-inline-without-fan-out",
+  "fail_fixture": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "I need billing's request_timeout for a reply I am typing now. It is in services/billing.conf. Put the number in answer.txt.",
+    "Quick one: what is request_timeout in services/billing.conf? Write just the number to answer.txt, I need it right away."
+  ],
+  "pass_fixture": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-near-01/fixtures/pass",
+  "plugin": "delegated-intelligence",
+  "task_path": "evals/agentic/tasks/delegated-intelligence/delegated-intelligence-near-01/task"
+}
