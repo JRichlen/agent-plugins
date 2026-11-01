@@ -238,6 +238,162 @@ merged-away 0, retired 1, new 0). Every before-inventory entity appears once:
 has not occurred. PR150's proposed new package is outside today's before inventory.
 No unratified disposition is counted as a completed retirement.
 
+## Proposed complete-portfolio overhaul
+
+This section is a planning alternative, not authorization to implement an
+overhaul. It accounts for the 26-plugin baseline, including the separately
+staged fleet retirement. Keep the actual map above distinct from this target.
+The proposed host names below are distribution packages, not new routers or
+new procedures. Preserve separate skill identities and commands inside them.
+The target must earn its migration through the gates below; eight packages is
+a proposed distribution count, not an assertion that eight is optimal.
+
+| Baseline entity | Proposed disposition / destination | Why and retained boundary | Dependency / migration proof |
+|---|---|---|---|
+| graveyard | keep | Distinct repository archive/delete workflow and guarded deletion invariant | Keep command, script paths, bundle verification and safety/deep coverage |
+| plugin-factory | merge-into agent-tooling | Retain package scaffolding as a separate authoring skill, not compiler behavior | Preserve scaffolder command, skeleton contract and marketplace-wiring tests |
+| tailscale-wif | keep | Specialized secretless identity setup with its own provider contract | Preserve explicit setup/troubleshooting invocation and provider-specific constraints |
+| fleet-playbook-curator | retire | Bounded local source retirement; generic delta reference already has a surviving home | Preserve pinned source archive; leave all installed/copied deployments alone |
+| dev-diary | merge-into knowledge | Keep episodic journal and revision skills distinct from instruction audit and learning | Preserve diary destinations, explicit interview flow and private data boundaries |
+| voice | keep | Human prose, machine artifacts, wording pass and offer-only review remain distinct skills | Preserve per-element ownership; no automatic second-opinion invocation |
+| grill-me | merge-into work-methods | Optional plan interrogation, scaled to uncertainty and stakes | Preserve explicit invocation and bounded questions; no universal interview gate |
+| tracer-bullets | merge-into work-methods | Technique for a real end-to-end slice, not a name for all work | Preserve its trigger and success criterion; mixed-task route coverage |
+| semver-gate | merge-into assurance | Action authority and prove-the-undo stay separate selectable procedures over a core boundary | Preserve original skill/command names and restoration proof; no authority from routing |
+| verify-before-claim | merge-into assurance | Truthful claim obligation is always binding; detailed checking procedure loads when needed | Preserve direct evidence and residual uncertainty; do not conflate with independent judge |
+| diagnosing-bugs | merge-into work-methods | Ranked falsifiable hypotheses and regression proof remain a debugging method | Preserve evidence reuse criteria, red/green proof and instrumentation sweep |
+| docs-hygiene | merge-into knowledge | Audits instruction documents against reality; not general document authoring | Preserve drift checks and live-source references; negative controls for ordinary writing |
+| context-handoff | merge-into work-methods | Phase-boundary continuation and pointer-only handoff stay distinct | Preserve ordered tree, handoff paths and explicit source reading |
+| codebase-design | merge-into work-methods | Interface alternatives and seam selection are contextual design work | Preserve multi-design gate at qualifying interfaces; no activation for every edit |
+| wayfinder | merge-into work-methods | Multi-session typed decision map, not an execution coordinator | Preserve ticket identities, dependencies and explicit planning-only exit |
+| scope-fence | merge-into work-methods | Scope invariant in core; detailed diff/exhaust method selected for bounded changes | Preserve unrelated-work protection, hunk traceability and findings record |
+| find-before-build | merge-into work-methods | Search-before-new-abstraction technique, distinct from bug diagnosis | Preserve search receipts and triggers; avoid requiring another search on valid evidence |
+| egress-gate | merge-into assurance | Egress authority/data invariant in core; payload inspection method when transmitting | Preserve destination/payload checks; no skill-trigger-only permission gate |
+| stop-rule | merge-into work-methods | One retry/halting policy, contextual failure report | Preserve bounds and exhausted-loop escalation; remove duplicate retry policies from extracted methods |
+| redgate | merge-into assurance, deferred until parity | Keep frozen evidence-contract skills as optional envelope; no new governor | Preserve paths/hooks/run ledger until migration tests pass; simplify driver under issue 135 first |
+| recurrence-detector | merge-into knowledge | Sourced repeated observations propose improvements without automatic adoption | Preserve threshold/provenance, negative results, delta and gate-report consumers |
+| jori | merge-into agent-tooling, deferred until parity | Extract bounded execution as a shared method; retire coordinator identity/package | Preserve explicit entry point/activation migration; reconcile PR150, no parallel peer package |
+| agent-compiler | merge-into agent-tooling | Canonical versioned composition/compiler remains distinct from scaffolding and coordination | Preserve deterministic images, provenance, effect ceilings, MCP and CLI APIs |
+| eval-ladder | merge-into assurance | Chooses evidence proportional to the claim; separate from executing a pinned verifier | Preserve its scope, negative controls and coverage limitations |
+| consolidation-map | merge-into knowledge | Inventory/disposition bookkeeping stays a reusable skill | Preserve one row per entity and reconciliation failure; no inferred user decisions |
+| wave-research | keep | Staged adversarial research and absorbed fan-out templates remain a specialist | Preserve source diversity, adversarial verifier, template paths and actual worker attribution |
+
+Proposed new distribution hosts: **work-methods** (nine source packages),
+**assurance** (five), **knowledge** (four), **agent-tooling** (three).
+The four retained distributions are voice, wave-research, graveyard and
+tailscale-wif. Reconciliation: 26 = 4 kept + 21 merged-away + 1 retired;
+8 = 4 kept + 4 new distributions. Every merge target survives. No skill count
+reduction is implied by the package count; unused skill retirement requires
+its own evidence and loss disclosure. This would remove twenty-one distribution
+identities while preserving discoverable skill identities, not flatten their
+instructions into eight giant always-loaded files.
+
+### Core, selection and ownership
+
+Use one canonical operating/routing source in the existing composition system,
+with generated or explicitly maintained host projections. Do not introduce
+another marketplace-wide router identity. The core names the authority boundary,
+truthful evidence/provenance, scope/data constraints, user override/precedence,
+and compact dispatch cues. It points at full procedures rather than copying them.
+Moving a rule out of a full skill does not remove its binding invariant.
+
+| Activation class | Entry and scope | Owner / exit |
+|---|---|---|
+| Always-on invariant | Authority, permission/data boundaries, no invented evidence or work; concise specialist-dispatch cues | Main assistant throughout; never grants additional actions |
+| Explicit user | Named skill or requested method, within that request's scope | Selected skill owns its procedure; exit on completed goal, stop condition or user correction |
+| Implied contextual | Task/activity/context selects the smallest applicable specialist | One domain owner; load its body/relevant reference only; exit when that unit finishes |
+| Dependency | A selected procedure requests another method or guard | Caller retains objective/authority; callee returns a bounded result, not a new governing mandate |
+| State/risk gate | Transition or effect triggers confirmation/integrity rules regardless of topic | Authority stays with the main assistant and person; no suppression by a technique or worker |
+| Offer-only | Suggest review such as second-opinion; activation waits for acceptance | Remains inactive until accepted, then returns to original owner |
+
+Precedence: higher-priority instructions and explicit user authorization govern;
+a selector cannot override a denial, manufacture consent or change a spending
+limit. Among eligible methods, explicit invocation wins over inferred preference
+unless incompatible with binding constraints. If two methods compete, pick one
+specialist and a minimal subordinate set using the existing specialist/envelope/
+guards/interaction-owner contract. Uncertainty about a material authority change
+returns to the person; routine implementation choices remain with the assistant.
+Check that active methods still serve the current objective at phase boundaries;
+do not leave a technique's cadence running after its unit is complete.
+
+Perspectives such as security, usability or cost should normally be short
+references or compiler views over the current task, with evidence obligations
+and allowed effects. A perspective is not another coordinator, an automatic
+model switch, a permission source, or an independent reviewer simply because
+it has a different name. A technique selection index is justified only for
+demonstrated missed/mixed routes; the current tracer-bullets route already exists.
+
+### Host/provider adapters
+
+Keep canonical behavior separate from host projection: skill metadata,
+explicit command aliases, AGENTS entry points, optional hooks, CLI/MCP wiring
+and availability checks. Pin source versions and projection generation; record
+where a host relies on prose rather than enforcement. Never claim installed
+behavior solely from repository presence. Preserve configured model/provider
+choices; model tiers remain task-specific hypotheses, not global substitutions.
+
+Adapters must expose actual availability of background workers, structured
+questions, tool/effect restrictions, file sharing and independent review. Without
+workers, use honest sequential passes only where independence is unnecessary;
+do not relabel them independent verification. If a required integrity or approval
+guarantee cannot be enforced, disclose the limitation and stop that gated action.
+No provider-adapter work here authorizes external transmission, paid calls,
+global installation or changes to account/security defaults.
+
+### Migration order and acceptance
+
+1. **Freeze baseline and inventory.** Pin current source, known installed entry
+   points and source-package maps. Preserve PR129's corpus/criteria separately.
+   Distinguish proposed PR150 from main. No inferred fleet/deployment inventory.
+2. **Land the bounded fleet retirement after its free gate passes.** Preserve
+   source and generic delta home, reconcile catalog/coverage/generators and show
+   a real restore rehearsal. No deployed automation cleanup in this slice.
+3. **Prove core/context assembly on each supported host.** Inventory current
+   assembly first, then stage a minimal projection diff and dry-run installation.
+   Test always-on guards when no skill activates, explicit override, offer-only
+   acceptance and denied actions. User approval precedes live core activation.
+4. **Consolidate distribution one host at a time.** Prefer byte-preserving
+   moves first; keep skill/command identities or explicit compatibility aliases.
+   Reconcile public paths, scripts, hooks, MCP schemas, references, rosters,
+   generated assets, examples and coverage in the same change. Do not mix a
+   packaging move with broad method rewrites. Record any unavoidable break.
+5. **Reconcile coordinator work.** Extract Jori/PR150 shared execution, choose
+   one owner, and verify real dispatch/recovery before retiring Jori packaging.
+   Avoid automatic observers, premium verification or schedules without the
+   required request/budget. Fix outstanding PR150 findings before reuse.
+6. **Simplify then move Redgate.** Use issue 135's efficient-versus-reckless
+   cases; preserve existing pinned runs/hooks/independence through migration.
+   Keep its CLI paths until old and new invocation paths pass matched checks.
+7. **Run the re-entry pilot independently.** Development labels are exploratory;
+   independent held-out improvement is required before scoped adoption. Neither
+   package consolidation nor shorter descriptions proves user benefit.
+8. **Retire compatibility only with consumer evidence.** Publish a migration
+   window and exact restore revision; do not silently erase old commands,
+   installed fragments or archives. Negative or inconclusive evidence defers
+   removal rather than being called a successful overhaul.
+
+Every migration needs free structural/install/generator checks, source-to-target
+counts and mutation controls for load-bearing guards. Compare with a clean
+baseline to separate pre-existing failures. The repository's required free gate
+must pass before committing plugin/eval changes. No new eval tier is implied;
+coverage changes update docs/testing.md. Behavioral/model evaluations are
+separately input- and budget-authorized, with actual dispatch/provenance evidence.
+Test false positives, missed routes, mixed tasks, known low-risk corrections,
+tiny high-risk changes, handoff recovery, unauthorized worker instructions,
+drift and missing independent review. Record skipped checks as not run.
+
+Evaluate accepted-work cost, rework, user editing/understanding and context
+loaded, not package count or token count alone. Reuse issue 123's trace-source
+distinctions; synthetic fixtures prove predicates, not production benefit.
+Keep real/private evidence out of public examples without separate permission.
+
+Rollback is per isolated migration: pinned baseline source, restore rehearsal,
+catalog/aliases and generated artifacts restored together, followed by free
+checks and a supported invocation. Existing global projections and copied
+deployments require separate, explicitly authorized restoration. Stop rollout
+on lost authority/provenance, broken existing entry points, weaker guard
+coverage or inaccurate status. Preserve evidence and return to the last accepted
+projection rather than rewriting history or tuning a frozen held-out set.
+
 ## Publication boundary found during this work
 
 At the inspected main SHA, `.github/workflows/evals.yml:21-26` triggers on
