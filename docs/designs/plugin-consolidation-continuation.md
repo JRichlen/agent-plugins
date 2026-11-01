@@ -43,8 +43,10 @@ contract where evidence identifies a gap, rather than adding another peer router
 Routing eligibility never grants action authority. Keep offer-only actions
 offer-only, even if their subject matter matches a context selector.
 
-Recommend **Jori's eventual merge into agent-compiler's optional behavior
-registry**, after a supported command and activation migration is demonstrated.
+Recommend **Jori's eventual absorption into the Collaboration distribution as
+a bounded execution method**, after a supported command and activation migration
+is demonstrated. Reusable invariants may also be represented in the existing
+compiler; compiler installation must not be required merely to use a skill.
 Keep its package available during that migration. Do not merge PR150 as a second
 peer coordinator unchanged. Reuse its recovery, brief and file-handback work in
 the optional method, with attribution, once its outstanding review findings are
@@ -59,11 +61,10 @@ mechanism. Existing claim checking cannot substitute for frozen independent
 verification. Do not port Redgate's entire driver into another plugin and call
 that consolidation.
 
-The next target is 24 installable plugins if Jori merges into the existing
-compiler after the fleet curator retirement and PR150 adds no new package. Redgate's later packaging is deliberately
-unsettled. Growing the catalog from 26 to 27 plugins by adding another coordinator
-is not the target, and fewer names
-alone is not evidence of improved behavior.
+The complete target below proposes nine install units, conditional on replacement
+and migration evidence. Redgate's move into Assurance remains deferred until
+parity is demonstrated. Adding another peer coordinator is not the target, and
+fewer names alone is not evidence of improved behavior.
 
 ## Implemented local slice: retire fleet-playbook-curator
 
@@ -127,10 +128,12 @@ identities or the full verification driver for every task.
 
 ## Minimal optional coordination contract to implement next
 
-Proposed home: `plugins/agent-compiler/registry/behaviors/discipline/`, using its
-existing versioned rule/probe format. This proposal does not write or compile
-a runtime module. Exact IDs, dependencies and source provenance are established
-in the migration PR, not embedded into generated agents by hand.
+Proposed method home: Collaboration, alongside separately selected planning and
+handoff skills. Reusable rule/probe units may use the existing compiler registry
+format, without making the compiler a prerequisite for skill use. This proposal
+does not write or compile a runtime module. Exact IDs, dependencies and source
+provenance are established in the migration PR, not embedded into generated
+agents by hand.
 
 1. Choose inline or delegate by dependency, uncertainty and total accepted-work
    cost. A simple task stays direct; tightly coupled work has one owner. Respect
@@ -164,7 +167,7 @@ test for rule 5 and cannot establish rules 1-4.
 | `/jori` and named skill invocation | A documented compatible entry point resolves to the optional method; explicit invocation still works on supported harnesses | Restore package/catalog from the migration base commit |
 | Explicit global activation fragment | Inventory known activation references with the user; show a proposed replacement diff; no silent global edits | Keep the original fragment and a copy of any user-approved changed file |
 | Codex implicit invocation | Make the intended activation choice explicit; compare small inline, coupled and delegated cases before changing `allow_implicit_invocation` | Restore `skills/jori/agents/openai.yaml` from the migration base |
-| Versioned compiler behavior | Registry resolves dependency/effect ceilings; deterministic compile/render with provenance; no hand-edited output | Recompile the previously accepted query against the pinned baseline registry |
+| Versioned compiler behavior, where used | Registry resolves dependency/effect ceilings; deterministic compile/render with provenance; no hand-edited output | Recompile the previously accepted query against the pinned baseline registry |
 | Brief/recovery behavior | Free fixture checks plus separately authorized matched real-worker evidence: interrupted, empty, stale, injected, dishonest-done and complete outputs; independent verification is actually independent | Use legacy entry point; retain original artifacts; no relaunch solely because board state differs |
 | Catalog, CI and consumers | Reconcile manifests, pricing config references, routing roster, arm manifests, red-team configs, docs, install smoke and coverage inventory together; record intentional historical mentions | Revert one isolated migration commit, regenerate using baseline tools and rerun free checks |
 
@@ -228,14 +231,13 @@ merged-away 0, retired 1, new 0). Every before-inventory entity appears once:
 | keep | redgate | compatibility retained; simplification proposed |
 | keep | recurrence-detector | unchanged |
 | keep | jori | migration prerequisite remains open |
-| keep | agent-compiler | proposed future absorber; no registry edit |
+| keep | agent-compiler | future Agent tooling member; no registry edit |
 | keep | eval-ladder | unchanged |
 | keep | consolidation-map | unchanged |
 | keep | wave-research | retain PR149 absorption |
 
-26 = 25 + 0 + 1; 25 = 25 + 0. Proposed future Jori absorption would be
-25 = 24 kept + 1 merged-away + 0 retired, then 24 = 24 + 0 new. That absorption
-has not occurred. PR150's proposed new package is outside today's before inventory.
+26 = 25 + 0 + 1; 25 = 25 + 0. Future absorptions are reconciled separately below
+and have not occurred. PR150's proposed new package is outside today's before inventory.
 No unratified disposition is counted as a completed retirement.
 
 ## Proposed complete-portfolio overhaul
@@ -245,8 +247,8 @@ overhaul. It accounts for the 26-plugin baseline, including the separately
 staged fleet retirement. Keep the actual map above distinct from this target.
 The proposed host names below are distribution packages, not new routers or
 new procedures. Preserve separate skill identities and commands inside them.
-The target must earn its migration through the gates below; eight packages is
-a proposed distribution count, not an assertion that eight is optimal.
+The target must earn its migration through the gates below; nine install units
+is a proposed distribution count, not an assertion that nine is optimal.
 
 | Baseline entity | Proposed disposition / destination | Why and retained boundary | Dependency / migration proof |
 |---|---|---|---|
@@ -254,38 +256,53 @@ a proposed distribution count, not an assertion that eight is optimal.
 | plugin-factory | merge-into agent-tooling | Retain package scaffolding as a separate authoring skill, not compiler behavior | Preserve scaffolder command, skeleton contract and marketplace-wiring tests |
 | tailscale-wif | keep | Specialized secretless identity setup with its own provider contract | Preserve explicit setup/troubleshooting invocation and provider-specific constraints |
 | fleet-playbook-curator | retire | Bounded local source retirement; generic delta reference already has a surviving home | Preserve pinned source archive; leave all installed/copied deployments alone |
-| dev-diary | merge-into knowledge | Keep episodic journal and revision skills distinct from instruction audit and learning | Preserve diary destinations, explicit interview flow and private data boundaries |
+| dev-diary | merge-into learning | Keep episodic journal and revision skills distinct from recurrence analysis | Preserve diary destinations, explicit interview flow and private data boundaries |
 | voice | keep | Human prose, machine artifacts, wording pass and offer-only review remain distinct skills | Preserve per-element ownership; no automatic second-opinion invocation |
-| grill-me | merge-into work-methods | Optional plan interrogation, scaled to uncertainty and stakes | Preserve explicit invocation and bounded questions; no universal interview gate |
-| tracer-bullets | merge-into work-methods | Technique for a real end-to-end slice, not a name for all work | Preserve its trigger and success criterion; mixed-task route coverage |
+| grill-me | merge-into collaboration | Optional plan interrogation, scaled to uncertainty and stakes | Preserve explicit invocation and bounded questions; no universal interview gate |
+| tracer-bullets | merge-into engineering | Technique for a real end-to-end slice, not a name for all work | Preserve its trigger and success criterion; mixed-task route coverage |
 | semver-gate | merge-into assurance | Action authority and prove-the-undo stay separate selectable procedures over a core boundary | Preserve original skill/command names and restoration proof; no authority from routing |
 | verify-before-claim | merge-into assurance | Truthful claim obligation is always binding; detailed checking procedure loads when needed | Preserve direct evidence and residual uncertainty; do not conflate with independent judge |
-| diagnosing-bugs | merge-into work-methods | Ranked falsifiable hypotheses and regression proof remain a debugging method | Preserve evidence reuse criteria, red/green proof and instrumentation sweep |
-| docs-hygiene | merge-into knowledge | Audits instruction documents against reality; not general document authoring | Preserve drift checks and live-source references; negative controls for ordinary writing |
-| context-handoff | merge-into work-methods | Phase-boundary continuation and pointer-only handoff stay distinct | Preserve ordered tree, handoff paths and explicit source reading |
-| codebase-design | merge-into work-methods | Interface alternatives and seam selection are contextual design work | Preserve multi-design gate at qualifying interfaces; no activation for every edit |
-| wayfinder | merge-into work-methods | Multi-session typed decision map, not an execution coordinator | Preserve ticket identities, dependencies and explicit planning-only exit |
-| scope-fence | merge-into work-methods | Scope invariant in core; detailed diff/exhaust method selected for bounded changes | Preserve unrelated-work protection, hunk traceability and findings record |
-| find-before-build | merge-into work-methods | Search-before-new-abstraction technique, distinct from bug diagnosis | Preserve search receipts and triggers; avoid requiring another search on valid evidence |
+| diagnosing-bugs | merge-into engineering | Ranked falsifiable hypotheses and regression proof remain a debugging method | Preserve evidence reuse criteria, red/green proof and instrumentation sweep |
+| docs-hygiene | merge-into agent-tooling | Audits instruction documents against reality; not general document authoring | Preserve drift checks and live-source references; negative controls for ordinary writing |
+| context-handoff | merge-into collaboration | Phase-boundary continuation and pointer-only handoff stay distinct | Preserve ordered tree, handoff paths and explicit source reading |
+| codebase-design | merge-into engineering | Interface alternatives and seam selection are contextual design work | Preserve multi-design gate at qualifying interfaces; no activation for every edit |
+| wayfinder | merge-into collaboration | Multi-session typed decision map, not an execution coordinator | Preserve ticket identities, dependencies and explicit planning-only exit |
+| scope-fence | merge-into assurance | Scope invariant in core; detailed diff/exhaust method selected for bounded changes | Preserve unrelated-work protection, hunk traceability and findings record |
+| find-before-build | merge-into engineering | Search-before-new-abstraction technique, distinct from bug diagnosis | Preserve search receipts and triggers; avoid requiring another search on valid evidence |
 | egress-gate | merge-into assurance | Egress authority/data invariant in core; payload inspection method when transmitting | Preserve destination/payload checks; no skill-trigger-only permission gate |
-| stop-rule | merge-into work-methods | One retry/halting policy, contextual failure report | Preserve bounds and exhausted-loop escalation; remove duplicate retry policies from extracted methods |
+| stop-rule | merge-into assurance | One retry/halting policy, contextual failure report | Preserve bounds and exhausted-loop escalation; remove duplicate retry policies from extracted methods |
 | redgate | merge-into assurance, deferred until parity | Keep frozen evidence-contract skills as optional envelope; no new governor | Preserve paths/hooks/run ledger until migration tests pass; simplify driver under issue 135 first |
-| recurrence-detector | merge-into knowledge | Sourced repeated observations propose improvements without automatic adoption | Preserve threshold/provenance, negative results, delta and gate-report consumers |
-| jori | merge-into agent-tooling, deferred until parity | Extract bounded execution as a shared method; retire coordinator identity/package | Preserve explicit entry point/activation migration; reconcile PR150, no parallel peer package |
+| recurrence-detector | merge-into learning | Sourced repeated observations propose improvements without automatic adoption | Preserve threshold/provenance, negative results, delta and gate-report consumers |
+| jori | merge-into collaboration, deferred until parity | Extract bounded execution as a shared method; retire coordinator identity/package | Preserve explicit entry point/activation migration; reconcile PR150, no parallel peer package |
 | agent-compiler | merge-into agent-tooling | Canonical versioned composition/compiler remains distinct from scaffolding and coordination | Preserve deterministic images, provenance, effect ceilings, MCP and CLI APIs |
-| eval-ladder | merge-into assurance | Chooses evidence proportional to the claim; separate from executing a pinned verifier | Preserve its scope, negative controls and coverage limitations |
-| consolidation-map | merge-into knowledge | Inventory/disposition bookkeeping stays a reusable skill | Preserve one row per entity and reconciliation failure; no inferred user decisions |
+| eval-ladder | merge-into agent-tooling | Chooses evidence proportional to the claim; separate from executing a pinned verifier | Preserve its scope, negative controls and coverage limitations |
+| consolidation-map | merge-into agent-tooling | Inventory/disposition bookkeeping stays a reusable skill | Preserve one row per entity and reconciliation failure; no inferred user decisions |
 | wave-research | keep | Staged adversarial research and absorbed fan-out templates remain a specialist | Preserve source diversity, adversarial verifier, template paths and actual worker attribution |
 
-Proposed new distribution hosts: **work-methods** (nine source packages),
-**assurance** (five), **knowledge** (four), **agent-tooling** (three).
-The four retained distributions are voice, wave-research, graveyard and
-tailscale-wif. Reconciliation: 26 = 4 kept + 21 merged-away + 1 retired;
-8 = 4 kept + 4 new distributions. Every merge target survives. No skill count
-reduction is implied by the package count; unused skill retirement requires
-its own evidence and loss disclosure. This would remove twenty-one distribution
-identities while preserving discoverable skill identities, not flatten their
-instructions into eight giant always-loaded files.
+Proposed new distribution hosts: **collaboration** (four source plugins),
+**engineering** (four), **assurance** (six), **agent-tooling** (five), and
+**learning** (two). Keep existing package IDs **voice** (Communication),
+**wave-research** (Research), **graveyard** and **tailscale-wif**; the last two
+remain specialty opt-ins. Thus seven capability bundles plus two specialties
+provide nine install units. Reconciliation: 26 = 4 kept + 21 merged-away + 1
+retired; 9 = 4 kept + 5 new distributions. Every merge target survives. These
+are 25 retained source-plugin lineages, not a count of skills or capabilities;
+several source plugins already contain multiple skills. No skill count reduction
+is implied. Unused skill retirement needs its own evidence and loss disclosure.
+Preserve distinct discoverable skills rather than making nine always-loaded files.
+
+Agent tooling is the least cohesive proposed bundle: compiler/scaffolding fit
+together, but instruction audit and evaluation selection also serve consumers
+who are not building agents. Keep those skills independently discoverable and
+avoid requiring compiler setup to use them. Reconsider this grouping if install
+burden or route confusion outweighs distribution savings.
+
+Cross-bundle calls need an explicit dependency contract. Collaboration and
+Engineering consume Assurance; Learning consumes scope/verification exhaust.
+Distinguish required installed dependencies from supported fallbacks; test both
+and fail clearly for missing required guarantees. Do not assume another bundle
+is present merely because a reference points at it. Critical invariants remain
+in core even when the detailed Assurance procedure is not selected.
 
 ### Core, selection and ownership
 
@@ -338,6 +355,12 @@ do not relabel them independent verification. If a required integrity or approva
 guarantee cannot be enforced, disclose the limitation and stop that gated action.
 No provider-adapter work here authorizes external transmission, paid calls,
 global installation or changes to account/security defaults.
+
+Host qualification must also cover path ordering, executable/symlink support,
+line endings and script dependencies used by hashes and validation. Matching
+logical prose is insufficient if a host computes a different evidence digest.
+Keep such compatibility findings separate from behavioral benefit and never
+refresh frozen evidence simply to hide a host mismatch.
 
 ### Migration order and acceptance
 
