@@ -83,6 +83,25 @@ reward opposite behavior, and stop-rule also varies the declared-bound context;
 these are not identical-input common-rubric efficacy trials. No new model trial or human calibration was performed for
 that recovery. Read [gallery maintenance](examples/README.md) for interpretation.
 
+## Configured comparison planning
+
+The [comparison planner](../evals/experiments/README.md) is free and executes no
+models. Its initial matrix selects zero cells with zero caps. Frozen source
+hashes, explicit selection, retry/token counts, unknown-price handling and
+same-family rejection are source/arithmetic controls, not validated model
+compatibility, human calibration, a tournament result or authority to spend.
+Provider batch mode is unsupported and fails closed; no sync fallback is used.
+
+## Routing fixture semantics
+
+The [routing source guide](../evals/routing/README.md) owns tuple distinctions.
+The review clarification makes criteria agreement and the proposed widening
+explicit, and aligns design-walkthrough/direct-PATCH labels with the written
+contract. Composition and unauthorized-action rejections remain. Providers,
+thresholds, repetitions and spending gates are unchanged. Prior failed outputs
+are not retroactively passes; no new live routing run is claimed by these free
+source/oracle checks.
+
 ## Responsibility-refactor coverage
 
 The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old
@@ -1093,6 +1112,7 @@ of these, update this block (and the prose above) in the same PR;
 eval-dir: evals/agentic
 eval-dir: evals/cheap
 eval-dir: evals/counterfeits
+eval-dir: evals/experiments
 eval-dir: evals/paid
 eval-dir: evals/redteam
 eval-dir: evals/routing

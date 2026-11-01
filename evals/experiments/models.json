@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "models": {
+    "qwen-configured": {
+      "provider": "openrouter:qwen/qwen3.8-flash",
+      "revision": null,
+      "family": "qwen",
+      "roles": [
+        "subject"
+      ],
+      "effort": null,
+      "tokenizer": "not recorded",
+      "compatibility": "configured in existing packs; tournament compatibility not run",
+      "pricing": {
+        "input_per_million": null,
+        "output_per_million": null,
+        "evidence": "Rates must be bound to exact route/context/tier in ci/model-pricing before estimating."
+      }
+    },
+    "haiku45-configured": {
+      "provider": "anthropic:messages:claude-haiku-4-5-20251001",
+      "revision": "20251001",
+      "family": "anthropic",
+      "roles": [
+        "judge"
+      ],
+      "effort": null,
+      "tokenizer": "not recorded",
+      "compatibility": "configured in existing packs; tournament compatibility not run",
+      "pricing": {
+        "input_per_million": null,
+        "output_per_million": null,
+        "evidence": "Direct Anthropic rates require their own current evidence; OpenRouter rates do not establish this bill."
+      }
+    }
+  }
+}

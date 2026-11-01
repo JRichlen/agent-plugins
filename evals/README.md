@@ -40,3 +40,7 @@ claim broad efficacy or universal host parity from a green structural check.
 Model calls require cost authorization and any applicable disclosure consent.
 Keep paid labels, provider boundaries and workflow gates intact. Do not substitute
 an unpinned evaluator or suppress failed checks to obtain a green result.
+
+For future side-by-side model work, start with the free
+[explicit comparison planner](experiments/README.md). It changes no model default
+and provides no live execution adapter or paid authority.

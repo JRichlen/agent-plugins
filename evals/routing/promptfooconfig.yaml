@@ -328,7 +328,8 @@ tests:
         Our payment webhook handler double-charges maybe one in 500 requests and
         I can't reproduce it locally. Find the cause, and I want falsifiable
         acceptance criteria plus a regression test verified by someone other
-        than whoever writes the fix before we call it done.
+        than whoever writes the fix before we call it done. Before implementation,
+        ask me to agree the proposed acceptance criteria.
     assert:
       - type: regex
         value: 'ROUTE:\s*specialist=diagnosing-bugs\s*\|\s*envelope=verify-work\s*\|\s*guards=(?:[a-z0-9-]+,)*verify-before-claim(?:,[a-z0-9-]+)*\s*\|\s*interaction_owner=verify-work\s*$'
@@ -337,9 +338,8 @@ tests:
   # floor. Nontrivial design work with no evidence-contract need must NOT
   # acquire a verify-work envelope merely because it is nontrivial. A router that
   # learned "nontrivial ⇒ verify-work" fails here.
-  # interaction_owner=codebase-design (live-run relabel, PR #93): "walk me
-  # through" is a blocking interactive design conversation the specialist owns
-  # when no envelope fires — per the written interaction_owner definition.
+  # A walkthrough alone does not create a blocking decision. The router prompt
+  # defines this slot by pending authority, not by conversational tone.
   - description: "S2 COMPOSITION-NEGATIVE — interface design with no evidence contract → codebase-design alone"
     vars:
       request: >-
@@ -347,7 +347,7 @@ tests:
         the interface should be shaped before I write it.
     assert:
       - type: regex
-        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=(?:none|find-before-build)\s*\|\s*interaction_owner=codebase-design\s*$'
+        value: 'ROUTE:\s*specialist=codebase-design\s*\|\s*envelope=none\s*\|\s*guards=(?:none|find-before-build)\s*\|\s*interaction_owner=none\s*$'
 
   # Risk/permission checks do not by themselves select a formal acceptance contract.
   - description: "S4 COMPOSITION — mass repo retirement → graveyard plus the semver-gate guard; no formal contract requested (prove-the-undo rehearsal)"

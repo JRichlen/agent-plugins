@@ -39,11 +39,10 @@ const EXPECTED = [
   // the specialist owns interaction)
   'ROUTE: specialist=grill-me | envelope=none | guards=none | interaction_owner=grill-me',
   'ROUTE: specialist=docs-hygiene | envelope=none | guards=none | interaction_owner=none',
-  // S1 / S2 / S4 composition labels (S2's owner relabeled to the specialist
-  // after the live run — an interactive walk-through with no envelope)
+  // S1 / S2 / S4 composition labels. S2 has no required human decision.
   'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=verify-before-claim | interaction_owner=verify-work',
-  'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design',
-  'ROUTE: specialist=codebase-design | envelope=none | guards=find-before-build | interaction_owner=codebase-design',
+  'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=none',
+  'ROUTE: specialist=codebase-design | envelope=none | guards=find-before-build | interaction_owner=none',
   'ROUTE: specialist=graveyard | envelope=none | guards=semver-gate | interaction_owner=graveyard',
   // 2 migrated calibration negatives + S3 (all-none)
   'ROUTE: specialist=none | envelope=none | guards=none | interaction_owner=none',
@@ -213,14 +212,15 @@ for (const [name, skill, line, expected] of LEGACY_CASES) {
 // discipline a "new RateLimiter … before I write it" request legitimately
 // triggers (live run 33669538778: 2/5 rows) — and nothing else.
 const s2Regex = cfgRegexes.find((r) => r.includes('specialist=codebase-design'));
-const s2 = (guards, env = 'none', owner = 'codebase-design') =>
+const s2 = (guards, env = 'none', owner = 'none') =>
   new RegExp(s2Regex).test(`ROUTE: specialist=codebase-design | envelope=${env} | guards=${guards} | interaction_owner=${owner}`);
 check('S2 accepts guards=none', Boolean(s2Regex) && s2('none'));
 check('S2 accepts the find-before-build guard alone', Boolean(s2Regex) && s2('find-before-build'));
 check('S2 rejects any other guard (scope-fence)', Boolean(s2Regex) && !s2('scope-fence'));
 check('S2 rejects find-before-build beside another guard', Boolean(s2Regex) && !s2('find-before-build,scope-fence'));
 check('S2 rejects an envelope (the negative under test)', Boolean(s2Regex) && !s2('none', 'verify-work', 'verify-work'));
-check('S2 rejects interaction_owner=none', Boolean(s2Regex) && !s2('none', 'none', 'none'));
+check('S2 accepts no blocking interaction owner', Boolean(s2Regex) && s2('none', 'none', 'none'));
+check('S2 rejects inventing a blocking walkthrough decision', Boolean(s2Regex) && !s2('none', 'none', 'codebase-design'));
 check('S2 rejects specialist=grill-me (the interview pull)', Boolean(s2Regex) &&
   !new RegExp(s2Regex).test('ROUTE: specialist=grill-me | envelope=none | guards=codebase-design | interaction_owner=grill-me'));
 
