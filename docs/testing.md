@@ -41,6 +41,15 @@ and preserves raw result artifacts on failure. Required behavioral/deep aggregat
 fail as blocked when their cheap dependency fails; a canceled superseded run does
 not report a fresh verdict. See the CI runbook for stacked-event cancellation.
 
+## Release-candidate boundary
+
+The [candidate builder](../release/README.md) packages exact Git objects with
+file hashes/modes and deterministic archive metadata. Its free `verify` job
+runs actual temporary-Git tests; manual `stage` uploads a source artifact only.
+Neither job publishes a release, calls a model, grants write permissions or
+establishes host/behavioral readiness. Existing failed and skipped checks remain
+separate evidence. No manual candidate dispatch was required to test the builder.
+
 ## Responsibility-refactor coverage
 
 The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old
@@ -1058,6 +1067,7 @@ job: behavioral tier — detect paid packs
 job: behavioral tier — promptfoo
 job: build
 job: calibration sheet — draw and commit
+job: candidate packaging contracts (offline)
 job: cheap tier (deterministic, offline)
 job: confirm grader model resolves
 job: confirm subject model resolves (advisory)
@@ -1077,6 +1087,7 @@ job: model pricing — offline controls
 job: paid multi-plugin gate
 job: refresh
 job: routing tier (roster trigger routing)
+job: stage source candidate (not a release)
 job: subject matrix —  (advisory)
 job: subject matrix — detect packs
 pack: agent-compiler/cheap
@@ -1122,6 +1133,7 @@ workflow: grader-agreement.yml
 workflow: model-pricing.yml
 workflow: pages.yml
 workflow: refresh-examples.yml
+workflow: release-candidate.yml
 workflow: scale.yml
 workflow: subject-matrix.yml
 ```

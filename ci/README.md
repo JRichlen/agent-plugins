@@ -24,6 +24,7 @@ authorization gate, then report pass, failure or skip and preserve its evidence.
 | Main-rooted PR, including native stack layers | Deterministic, install and selected counterfeit/scale checks | Reachability probes; behavioral, routing and deep subject legs require the existing same-repo `paid-evals` gate | None |
 | Push to main | Same applicable checks | Changed-surface model legs can run automatically | Pages is a separate existing workflow |
 | Scheduled gallery refresh | Selection, capture launch and the full cheap gate before spending; generated output checked afterward | Selected valid packs, existing cadence and providers | Review PR only; merge publishes Pages |
+| Candidate packaging | Free Git/object/byte tests on affected PRs | None | [Source artifact only](../release/README.md), manual staging |
 | Manual evaluation workflows | Workflow-specific checks | Some spend; inspect inputs and the coverage reference first | No permission implied by this table |
 
 Do not add a paid label or dispatch a suite merely to obtain a green badge.

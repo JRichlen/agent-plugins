@@ -1,0 +1,62 @@
+name: release-candidate
+
+on:
+  pull_request:
+    paths:
+      - 'release/**'
+      - 'ci/tests/**'
+      - '.github/workflows/release-candidate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'release/**'
+      - 'ci/tests/**'
+      - '.github/workflows/release-candidate.yml'
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Full 40-character commit SHA to package (candidate only)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: candidate packaging contracts (offline)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: real Git packaging tests
+        run: python3 -m unittest discover -s ci/tests -p 'test_release.py'
+
+  stage:
+    name: stage source candidate (not a release)
+    if: github.event_name == 'workflow_dispatch'
+    needs: [verify]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: build from committed bytes without executing the candidate
+        env:
+          CANDIDATE_SHA: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'Full lowercase SHA required'; exit 2; }
+          python3 release/build_candidate.py --revision "$CANDIDATE_SHA" --output "$RUNNER_TEMP/candidate"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-candidate-${{ inputs.commit }}
+          path: ${{ runner.temp }}/candidate/
+          if-no-files-found: error
+          retention-days: 30
+      - name: record the review boundary
+        run: |
+          echo 'Source candidate only. No tag, release, registry publication or deployment was created.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Review the manifest, exact-head checks, host qualification and rollback before authorizing publication.' >> "$GITHUB_STEP_SUMMARY"
