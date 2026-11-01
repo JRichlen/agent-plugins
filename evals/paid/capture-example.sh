@@ -95,8 +95,14 @@ def provider_id(r):
 def gradeable(r):
     return isinstance(r.get("success"), bool) and r.get("failureReason") != 2 and bool(out_of(r).strip())
 
-real = next((r for r in rows if r.get("success") is True and gradeable(r) and not uses_stub(r) and var(r, "question")), None)
-stub = next((r for r in rows if gradeable(r) and uses_stub(r) and real and var(r, "question") == var(real, "question") and provider_id(r) == provider_id(real)), None)
+real = stub = None
+for candidate in rows:
+    if candidate.get("success") is not True or not gradeable(candidate) or uses_stub(candidate) or not var(candidate, "question"):
+        continue
+    control = next((row for row in rows if gradeable(row) and uses_stub(row) and var(row, "question") == var(candidate, "question") and provider_id(row) == provider_id(candidate)), None)
+    if control is not None:
+        real, stub = candidate, control
+        break
 if not real or not stub:
     # A skip used to be one opaque line, so two full refresh runs (2026-09-01 and
     # 2026-09-08) captured nothing across all 12 packs and still reported success —

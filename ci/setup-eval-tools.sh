@@ -5,18 +5,25 @@ set -euo pipefail
 : "${GITHUB_ENV:?GITHUB_ENV is required}"
 : "${GITHUB_PATH:?GITHUB_PATH is required}"
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+python3 "$root/ci/check_toolchain.py" --root "$root"
 tools="$RUNNER_TEMP/pinned-tools"
 mkdir -p "$tools"
 cp "$root/ci/tools/package.json" "$root/ci/tools/package-lock.json" "$tools/"
-sudo apt-get update -qq
-sudo apt-get install -y bubblewrap patch
+case "${EVAL_OFFLINE_SANDBOX:-true}" in true|false) ;; *) echo 'invalid offline sandbox selection' >&2; exit 2;; esac
+if [ "${EVAL_OFFLINE_SANDBOX:-true}" = true ]; then
+  sudo apt-get update -qq
+  sudo apt-get install -y bubblewrap patch
+fi
 npm ci --prefix "$tools" --ignore-scripts --no-audit --no-fund \
   --userconfig "$root/ci/tools/empty.npmrc" --registry https://registry.npmjs.org
 # The locked Claude wrapper ships a placeholder. Its inspected installer only
 # copies the already-installed platform binary; it makes no network/model call.
+python3 "$root/ci/check_toolchain.py" --root "$root" --modules "$tools/node_modules"
 node "$tools/node_modules/@anthropic-ai/claude-code/install.cjs"
-python3 - "$tools/node_modules/@anthropic-ai/claude-code/bin/claude.exe" <<'PY'
-import sys
+python3 - "$tools/node_modules/.bin/claude" <<'PY'
+import os, sys
+if not os.access(sys.argv[1], os.X_OK):
+    raise SystemExit("Claude launcher is not executable")
 with open(sys.argv[1], 'rb') as source:
     if source.read(4) != b'\x7fELF':
         raise SystemExit('Claude platform installation did not produce a Linux ELF binary')
@@ -30,10 +37,15 @@ for (const pkg of ['promptfoo','@anthropic-ai/claude-code','@openai/codex']) {
   process.stdout.write(pkg + ' ' + data.version + '\n');
 }
 JS
+node "$root/ci/tools-smoke.cjs" "$tools/node_modules"
 echo "PROMPTFOO_HOME=$tools/node_modules/promptfoo" >> "$GITHUB_ENV"
 echo "$tools/node_modules/.bin" >> "$GITHUB_PATH"
 # Existing sandbox adapters deliberately allow only /usr/bin:/bin.
-sudo ln -sf "$(command -v node)" /usr/bin/node
+if [ "${EVAL_OFFLINE_SANDBOX:-true}" = true ]; then
+  sudo ln -sf "$(command -v node)" /usr/bin/node
+fi
 python3 "$root/evals/redteam/bin/provision-logger.py" \
   --promptfoo-home "$tools/node_modules/promptfoo" --apply
-bash "$root/ci/provision-bubblewrap.sh"
+if [ "${EVAL_OFFLINE_SANDBOX:-true}" = true ]; then
+  bash "$root/ci/provision-bubblewrap.sh"
+fi

@@ -23,7 +23,7 @@ authorization gate, then report pass, failure or skip and preserve its evidence.
 |---|---|---|---|
 | Main-rooted PR, including native stack layers | Deterministic, install and selected counterfeit/scale checks | Reachability probes; behavioral, routing and deep subject legs require the existing same-repo `paid-evals` gate | None |
 | Push to main | Same applicable checks | Changed-surface model legs can run automatically | Pages is a separate existing workflow |
-| Scheduled gallery refresh | Selection, capture-launch and pipeline contracts before spending | Selected valid packs, existing cadence and providers | Review PR only; merge publishes Pages |
+| Scheduled gallery refresh | Selection, capture launch and the full cheap gate before spending; generated output checked afterward | Selected valid packs, existing cadence and providers | Review PR only; merge publishes Pages |
 | Manual evaluation workflows | Workflow-specific checks | Some spend; inspect inputs and the coverage reference first | No permission implied by this table |
 
 Do not add a paid label or dispatch a suite merely to obtain a green badge.
@@ -52,8 +52,14 @@ compare an identical clean-main run before calling a failure pre-existing.
 Node pin from `evals/redteam/pin.json`, installs the exact
 [`tools/package-lock.json`](tools/package-lock.json) into runner temp with
 general lifecycle scripts disabled, explicitly runs the inspected locked Claude
-platform-copy installer, verifies its ELF header without invoking the CLI, and provisions the existing logger and bubblewrap
-adapters. Update the manifest and lock together. Never regenerate pins from
+platform-copy installer, verifies its executable ELF binary without invoking the
+CLI, and provisions the existing logger and, for offline jobs, bubblewrap adapters.
+[`lifecycle-policy.json`](tools/lifecycle-policy.json) records every locked package
+with an install script and the one approved invocation. New lifecycle entries
+fail policy checks until reviewed. The security overrides pin patched
+`simple-git` and its argument parser; the free Git API smoke checks read-only
+operations and unsafe editor/trailer rejection without initializing Promptfoo.
+Update the manifest, lock and applicable policy together. Never regenerate pins from
 whatever happens to be installed locally.
 
 [`eval-profile.sh`](eval-profile.sh) supplies fresh empty Promptfoo, Claude and
@@ -89,3 +95,9 @@ before touching local branches. `sync` rebases and pushes; it is not a status
 command. Some versions can report an aborted sync with exit zero. Inspect actual
 state, reconcile partial pushes before retrying, and never force-rewrite shared
 history without permission. Do not prune branches unless deletion is intended.
+
+Opening and then linking a draft can emit both `opened` and `stacked` events.
+The existing concurrency group cancels the superseded run. Check the surviving
+exact-head run rather than rerunning a canceled one. Aggregates report a failed
+cheap dependency as blocked; canceled runs do not fabricate a new verdict.
+Keep `stacked` coverage: membership changes must inherit the trunk's checks.

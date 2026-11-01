@@ -49,6 +49,8 @@ jobs:
             --github-output "$GITHUB_OUTPUT" --report "$RUNNER_TEMP/refresh-preflight.json"
       - name: free pipeline contracts
         run: python3 -m unittest discover -s ci/tests -p 'test_*.py'
+      - name: full free gate before any model calls
+        run: evals/cheap/run.sh
       - name: preflight — the subject model must be callable before spending
         # The refresh is the workflow that actually spends the budget, so the
         # reachability check belongs HERE, not only in evals.yml (caught in
@@ -85,7 +87,7 @@ jobs:
             # One eval per pack is enough to capture a representative pair. A pack
             # that errors does not abort the run — its previous snapshot stands.
             rc=0
-            ( cd "plugins/$p/evals/promptfoo" && npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json ) || rc=$?
+            ( cd "plugins/$p/evals/promptfoo" && node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c promptfooconfig.yaml --output results.json ) || rc=$?
             [ "$rc" -eq 0 ] || echo "::warning::$p: promptfoo exited $rc — capture will explain what that left behind"
             # Provenance the reader can follow back: the run URL (this log), the
             # grader read from the pack itself, and a promise of attestation that

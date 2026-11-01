@@ -44,6 +44,10 @@ keeping both sides of a conflict. Follow the
 and run its checks. Coordinate published stack changes before any rebase or
 history rewrite.
 
+Behavior claims also need task-relevant real/control evidence and meaningful
+mutation or counterexample checks. Human judge calibration is separate from
+model agreement; the [testing reference](docs/testing.md) owns those limits.
+
 ## Working in a PR stack
 
 Create a linear dependency chain and keep each PR's base on the previous layer.

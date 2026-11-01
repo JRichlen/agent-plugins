@@ -1853,7 +1853,10 @@ txt = open(wf).read()
 # Position of the cleanup (an rm of the packs' results.json) and of the step
 # that runs this tier. Compared by offset, so ordering is what is enforced.
 clean = re.search(r"rm\s+-[a-zA-Z]*f[a-zA-Z]*\s+[^\n]*plugins/\*/evals/promptfoo/results\.json", txt)
-tier  = re.search(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M)
+# A pre-spend gate has no generated results yet. Cleanup must precede the
+# final post-generation gate; the earlier gate must remain free-before-paid.
+tiers = list(re.finditer(r"^\s*run:\s*evals/cheap/run\.sh\s*$", txt, re.M))
+tier = tiers[-1] if tiers else None
 if not clean:
     print("  FAIL refresh-examples.yml never removes plugins/*/evals/promptfoo/results.json — the cheap tier will fail on every packed plugin and the refresh will open no PR"); sys.exit(1)
 if not tier:
@@ -2489,10 +2492,14 @@ fi
 # REPO-level gate: needs a real .git, so it is inert in the synthetic
 # counterfeit root, which is not itself a git worktree.
 if [ -e ".git" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if [ -e .git ] && [ -f .github/actions/setup-eval-tools/action.yml ]; then
   group "workflow contracts — free-before-paid and capture launch"
-  if python3 -m unittest discover -s ci/tests -p 'test_*.py'; then ok "workflow contracts"; else bad "workflow contracts failed"; fi
-fi
+  if [ ! -f ci/tests/test_workflows.py ] || [ ! -f .github/actions/setup-eval-tools/action.yml ]; then
+    bad "workflow contracts: required runner or composite action missing"
+  elif python3 -m unittest discover -s ci/tests -p 'test_*.py'; then
+    ok "workflow contracts"
+  else
+    bad "workflow contracts failed"
+  fi
 
 group "gitignored generated content is not tracked"
   _gi_hits="$(git ls-files -z 2>/dev/null | git check-ignore --no-index -z --stdin 2>/dev/null | tr '\0' '\n' | grep -v '^$')"

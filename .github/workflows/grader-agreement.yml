@@ -46,11 +46,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup-eval-tools
         with:
-          # promptfoo 0.122.0 declares engines.node >=22.22.0 (see evals.yml); a
-          # bare major could resolve to an older 22.x from a runner cache.
-          node-version: '>=22.22.0 <23'
+          offline-sandbox: false
       - name: ensure PyYAML (the overlay script reads the pack config with it)
         run: python3 -c 'import yaml' 2>/dev/null || python3 -m pip install --user pyyaml
       - name: validate the dispatch inputs
@@ -135,7 +133,7 @@ jobs:
             for label in $labels; do
               if [ "$label" = "self" ]; then g="$own"; else g="$GRADER"; fi
               cfg="$(bash "$cal/regrade.sh" "$pack" "$res" --grader "$g" --label "$label")"
-              ( cd "$pack" && npx --yes promptfoo@0.122.0 eval -c "$(basename "$cfg")" --output "results.regrade.$label.json" ) \
+              ( cd "$pack" && node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c "$(basename "$cfg")" --output "results.regrade.$label.json" ) \
                 || echo "::warning::promptfoo exited non-zero on $p/$label — agreement.py on the verdicts decides"
               cp "$pack/results.regrade.$label.json" "$out/" 2>/dev/null || true
               if ! python3 "$cal/sample-for-labelling.py" "$pack/results.regrade.$label.json" --n 1000000 --seed 0 --model-graded-only --sheet "$out/x.sheet.json" --verdicts "$out/verdicts.$label.json" >/dev/null; then

@@ -1,5 +1,10 @@
 name: Pinned offline evaluation tools
 description: Install locked tools into runner temp with fresh profiles; never run a model.
+inputs:
+  offline-sandbox:
+    description: Provision the qualified Linux sandbox for offline gates
+    default: 'true'
+    required: false
 runs:
   using: composite
   steps:
@@ -15,6 +20,10 @@ runs:
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ steps.pins.outputs.node }}
+        cache: npm
+        cache-dependency-path: ci/tools/package-lock.json
     - uses: ./.github/actions/eval-profile
     - shell: bash
+      env:
+        EVAL_OFFLINE_SANDBOX: ${{ inputs.offline-sandbox }}
       run: bash ci/setup-eval-tools.sh

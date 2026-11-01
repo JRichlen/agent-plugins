@@ -8,7 +8,12 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
 
-def preflight(root, selected="", bash="bash"):
+def preflight(root, selected="", bash=None):
+    if bash is None:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+        from ci.host_tools import select_bash
+        bash = select_bash()
     root = Path(root).resolve()
     discovery = subprocess.run([bash, "evals/paid/discover-paid-packs.sh", "promptfoo"],
                                cwd=root, capture_output=True, text=True, check=True)
@@ -32,7 +37,7 @@ def preflight(root, selected="", bash="bash"):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--selected", default="")
-    parser.add_argument("--bash", default="bash", help="Bash executable (override for Git Bash on Windows)")
+    parser.add_argument("--bash", default=None, help="Bash executable (override for Git Bash on Windows)")
     parser.add_argument("--github-output", type=Path)
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()

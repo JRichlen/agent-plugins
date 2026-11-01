@@ -7,9 +7,11 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+import copy
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-BASH = os.environ.get("TEST_BASH", "bash")
+BASH = None
 
 def load(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -19,40 +21,74 @@ def load(name, path):
 
 refresh = load("refresh_preflight", ROOT / "evals/paid/preflight_refresh.py")
 schedule = load("paid_schedule", ROOT / "ci/check_paid_scheduling.py")
+BASH = load("host_tools", ROOT / "ci/host_tools.py").select_bash()
 
 class WorkflowContracts(unittest.TestCase):
     def test_paid_gates_are_preserved_and_follow_free_checks(self):
         text = (ROOT / ".github/workflows/evals.yml").read_text(encoding="utf-8")
         self.assertEqual(schedule.check_text(text), [])
+        jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
         for name in ("grader-model", "subject-model", "routing-eval"):
-            self.assertEqual(schedule._field(schedule._job(text, name), "needs", 4), "[cheap]")
-        self.assertIn("cheap", schedule._field(schedule._job(text, "deep-run"), "needs", 4))
-        self.assertEqual(text.count("uses: ./.github/actions/setup-eval-tools"), 2)
-        self.assertEqual(text.count("uses: ./.github/actions/eval-profile"), 3)
+            self.assertEqual(jobs[name]["needs"], ["cheap"])
+        for name in ("behavioral", "deep"):
+            self.assertIn("cheap", jobs[name]["needs"])
+            self.assertIn("!cancelled()", jobs[name]["if"])
+            step = jobs[name]["steps"][0]
+            self.assertIn("needs.cheap.result", step["env"]["CHEAP"])
+            # Execute the actual aggregate script with a failed dependency; no
+            # fake provider is involved, and it must fail before later branches.
+            outcome = subprocess.run([BASH, "-c", step["run"]], env={**os.environ, "CHEAP": "failure"}, capture_output=True)
+            self.assertNotEqual(outcome.returncode, 0)
+            self.assertIn(b"blocked by cheap", outcome.stdout)
+        for name in ("behavioral-run", "routing-eval"):
+            setup = [step for step in jobs[name]["steps"] if step.get("uses") == "./.github/actions/setup-eval-tools"]
+            self.assertEqual(len(setup), 1)
+            self.assertEqual(setup[0]["with"]["offline-sandbox"], "false")
+        paths = jobs["counterfeit-detect"]["steps"][1]["with"]["filters"]
+        for surface in (".github/actions/**", "ci/setup-eval-tools.sh", "ci/eval-profile.sh", "ci/tools/**"):
+            self.assertIn(surface, paths)
 
-    def test_refresh_launch_checks_precede_any_spend(self):
+    def test_refresh_launch_and_full_free_gate_precede_any_spend(self):
         text = (ROOT / ".github/workflows/refresh-examples.yml").read_text(encoding="utf-8")
-        self.assertLess(text.index("preflight_refresh.py"), text.index("run: evals/paid/check-subject-model.sh"))
-        self.assertLess(text.index("preflight_refresh.py"), text.index("npx --yes promptfoo"))
-        self.assertIn('bash evals/paid/capture-example.sh', text)
-        self.assertIn("if: always()\n        uses: actions/upload-artifact@v4", text)
+        steps = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]["refresh"]["steps"]
+        scripts = [(index, step.get("run", "")) for index, step in enumerate(steps)]
+        preflight = next(i for i, script in scripts if "preflight_refresh.py" in script)
+        full_free = [i for i, script in scripts if script.strip() == "evals/cheap/run.sh"]
+        ping = next(i for i, script in scripts if "check-subject-model.sh" in script)
+        paid = next(i for i, script in scripts if 'entrypoint.js" eval' in script)
+        self.assertLess(preflight, ping)
+        self.assertLess(full_free[0], ping)
+        self.assertLess(ping, paid)
+        self.assertGreater(full_free[-1], paid)
+        cleanup = next(i for i, script in scripts if "rm -fv plugins/*/evals/promptfoo/results.json" in script)
+        self.assertLess(paid, cleanup)
+        self.assertLess(cleanup, full_free[-1])
+        self.assertTrue(any(step.get("uses") == "actions/upload-artifact@v4" and step.get("if") == "always()" for step in steps))
 
-    def test_tool_lock_and_setup_do_not_initialize_promptfoo(self):
-        package = json.loads((ROOT / "ci/tools/package.json").read_text(encoding="utf-8"))
-        lock = json.loads((ROOT / "ci/tools/package-lock.json").read_text(encoding="utf-8"))
+    def test_manual_evaluators_use_the_same_locked_tools(self):
+        for name in ("subject-matrix.yml", "grader-agreement.yml"):
+            text = (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
+            jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
+            self.assertNotIn("npx --yes promptfoo", text)
+            self.assertIn('node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval', text)
+            self.assertTrue(any(step.get("uses") == "./.github/actions/setup-eval-tools" for job in jobs.values() for step in job["steps"]))
+
+    def test_tool_lock_and_reviewed_lifecycle_policy(self):
+        policy = load("toolchain", ROOT / "ci/check_toolchain.py")
+        self.assertEqual(policy.check(ROOT), [])
         pin = json.loads((ROOT / "evals/redteam/pin.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["dependencies"], lock["packages"][""]["dependencies"])
+        package = json.loads((ROOT / "ci/tools/package.json").read_text(encoding="utf-8"))
         self.assertEqual(package["dependencies"]["promptfoo"], pin["promptfoo"]["version"])
-        for name, version in package["dependencies"].items():
-            self.assertEqual(lock["packages"]["node_modules/" + name]["version"], version)
         setup = (ROOT / "ci/setup-eval-tools.sh").read_text(encoding="utf-8")
         self.assertIn("--ignore-scripts", setup)
-        self.assertIn("npm ci", setup)
-        self.assertIn("@anthropic-ai/claude-code/install.cjs", setup)
+        self.assertIn("check_toolchain.py", setup)
+        self.assertIn(".bin/claude", setup)
         self.assertIn("source.read(4)", setup)
         self.assertNotIn("npm rebuild", setup)
         self.assertNotIn("entrypoint.js", setup)
-        self.assertNotIn("--version", setup)
+        # Missing infrastructure must not turn the repository gate into a skip.
+        gate = (ROOT / "evals/cheap/run.sh").read_text(encoding="utf-8")
+        self.assertIn("required runner or composite action missing", gate)
 
 class RefreshPreflight(unittest.TestCase):
     def setUp(self):
@@ -122,5 +158,14 @@ class CaptureEligibility(unittest.TestCase):
                     output = root / label.replace(" ", "-")
                     subprocess.run([BASH, (ROOT / "evals/paid/capture-example.sh").as_posix(), result.as_posix(), "test", "--pack", root.as_posix(), "--out", output.as_posix()], check=True, capture_output=True)
                     self.assertEqual((output / "test.json").exists(), expected)
+
+    def test_later_matching_pair_is_not_lost_to_an_unpaired_first_row(self):
+        with tempfile.TemporaryDirectory(prefix="capture-later-") as folder:
+            root = Path(folder)
+            (root / "promptfooconfig.yaml").write_text("defaultTest:\n  options:\n    provider:\n      id: anthropic:messages:claude-test\n", encoding="utf-8")
+            rows = [{"vars": {"skill": skill, "question": question}, "provider": {"id": "openrouter:qwen/test"}, "response": {"output": "fixture"}, "success": True} for skill, question in (("real", "unpaired"), ("real", "paired"), ("calibration", "paired"))]
+            (root / "results.json").write_text(json.dumps({"results": {"results": rows}}), encoding="utf-8")
+            subprocess.run([BASH, (ROOT / "evals/paid/capture-example.sh").as_posix(), (root / "results.json").as_posix(), "test", "--pack", root.as_posix(), "--out", (root / "out").as_posix()], check=True, capture_output=True)
+            self.assertEqual(json.loads((root / "out/test.json").read_text(encoding="utf-8"))["prompt"], "paired")
 
 if __name__ == "__main__": unittest.main()

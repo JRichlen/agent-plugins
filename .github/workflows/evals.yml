@@ -96,6 +96,10 @@ jobs:
               - 'evals/agentic/**'
               - 'evals/redteam/**'
               - 'ci/provision-bubblewrap.sh'
+              - '.github/actions/**'
+              - 'ci/setup-eval-tools.sh'
+              - 'ci/eval-profile.sh'
+              - 'ci/tools/**'
               - '.github/workflows/evals.yml'
               - 'plugins/**'
 
@@ -230,9 +234,14 @@ jobs:
     needs: [cheap]
     runs-on: ubuntu-latest
     # Secrets aren't available to fork PRs, so only run where they are.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - uses: actions/checkout@v4
+      - name: require successful free checks
+        env:
+          CHEAP: ${{ needs.cheap.result }}
+        run: |
+          test "$CHEAP" = success || { echo '::error::blocked by cheap checks'; exit 1; }
       - name: ping the configured grader model
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -376,7 +385,9 @@ jobs:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/eval-profile
+      - uses: ./.github/actions/setup-eval-tools
+        with:
+          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -399,20 +410,6 @@ jobs:
               - 'plugins/${{ matrix.plugin }}/.claude-plugin/plugin.json'
               - 'plugins/${{ matrix.plugin }}/evals/promptfoo/**'
               - 'evals/paid/**'
-      - uses: actions/setup-node@v4
-        if: steps.touched.outputs.paid == 'true'
-        with:
-          # 22, not 20. promptfoo 0.122.0 declares engines.node >=22.22.0, so on
-          # node 20 `npx promptfoo eval` aborts before making a single model call:
-          #   "promptfoo requires a supported Node.js runtime. Detected: v20.x"
-          # This tier was silently dead until a PR actually touched a plugin with a
-          # promptfoo pack — see this job's pinned-version note below.
-          node-version: 22
-      # A skipped leg and a passed leg are both reported as a green check, which
-      # is how this tier stayed green for weeks while being completely unable to
-      # run. Cost is why it skips (real API spend per plugin per run) and that
-      # tradeoff is fine — silently looking identical to a real pass is not. Say
-      # which one happened, out loud, in the check output.
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.paid != 'true'
         run: |
@@ -445,7 +442,7 @@ jobs:
         # real arbiter: it excludes FAULTs and scores a per-scenario floor over the
         # valid samples. A total crash that writes no results.json still fails,
         # because pass-rate.sh exits non-zero on a missing/unreadable file.
-        run: npx --yes promptfoo@0.122.0 eval --max-concurrency 1 --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
+        run: node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval --max-concurrency 1 --output results.json || echo "::warning::promptfoo exited non-zero — the statistical gate scores results.json and decides this leg"
       - name: statistical gate (per-scenario pass rate, FAULT-excluding)
         if: steps.touched.outputs.paid == 'true'
         # repeat:3 in each pack expands every scenario into 3 rows. This enforces a
@@ -536,18 +533,20 @@ jobs:
     # REQUIRED status check. always() + the assess table below mean an empty pack
     # set (fromJSON('[]') → run skipped), a fork PR, or an untouched plugin all
     # report green, while a real promptfoo failure reports red. Never left hanging.
-    needs: [behavioral-detect, behavioral-run, grader-model]
-    if: always()
+    needs: [cheap, behavioral-detect, behavioral-run, grader-model]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess behavioral tier outcome
         env:
+          CHEAP: ${{ needs.cheap.result }}
           DETECT: ${{ needs.behavioral-detect.result }}
           RUN: ${{ needs.behavioral-run.result }}
           GRADER: ${{ needs.grader-model.result }}
           PLUGINS: ${{ needs.behavioral-detect.outputs.plugins }}
         run: |
           set -euo pipefail
+          test "$CHEAP" = success || { echo "::error::blocked by cheap checks ($CHEAP)"; exit 1; }
           echo "detect=$DETECT  run=$RUN  grader=$GRADER  plugins=$PLUGINS"
           if [ "$DETECT" != "success" ]; then
             echo "::error::behavioral-detect did not succeed ($DETECT) — fail-closed paid discovery tripped or errored."
@@ -586,7 +585,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/eval-profile
+      - uses: ./.github/actions/setup-eval-tools
+        with:
+          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -612,10 +613,6 @@ jobs:
       - name: roster is in sync before spending on a model call
         if: steps.touched.outputs.routing == 'true'
         run: evals/routing/gen-roster.sh --check
-      - uses: actions/setup-node@v4
-        if: steps.touched.outputs.routing == 'true'
-        with:
-          node-version: 22
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.routing != 'true'
         run: |
@@ -644,7 +641,7 @@ jobs:
         # distinction unreachable. Only a missing/empty results.json (the eval
         # itself never ran) fails this step.
         run: |
-          npx --yes promptfoo@0.122.0 eval --max-concurrency 1 -c promptfooconfig.yaml --output results.json \
+          node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval --max-concurrency 1 -c promptfooconfig.yaml --output results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s results.json
       - name: promptfoo eval (acceptance transitions)
@@ -658,7 +655,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PROMPTFOO_RETRY_5XX: "true"
         run: |
-          npx --yes promptfoo@0.122.0 eval --max-concurrency 1 -c promptfooconfig.yaml --output trajectory-results.json \
+          node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval --max-concurrency 1 -c promptfooconfig.yaml --output trajectory-results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s trajectory-results.json
       - name: statistical gate (per-scenario k-of-N pass rate)
@@ -932,18 +929,20 @@ jobs:
     # This is the REQUIRED status check. It always runs and always reports, so the
     # branch-protection gate is never left hanging on a job that was conditionally
     # skipped. It fails only if the pier run itself failed.
-    needs: [deep-detect, deep-run]
-    if: always()
+    needs: [cheap, deep-detect, deep-run]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess deep tier outcome
         env:
+          CHEAP: ${{ needs.cheap.result }}
           DETECT: ${{ needs.deep-detect.result }}
           RUN: ${{ needs.deep-run.result }}
           CHANGED: ${{ needs.deep-detect.outputs.changed }}
           ENABLED: ${{ needs.deep-detect.outputs.enabled }}
         run: |
           set -euo pipefail
+          test "$CHEAP" = success || { echo "::error::blocked by cheap checks ($CHEAP)"; exit 1; }
           echo "detect=$DETECT  run=$RUN  safety-paths-changed=$CHANGED  gate-enabled=$ENABLED"
           if [ "$DETECT" != "success" ]; then
             echo "::error::deep-detect did not succeed ($DETECT) — cannot trust the gate."

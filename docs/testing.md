@@ -28,11 +28,18 @@ and routing wait for the deterministic cheap job; existing label/fork gates,
 providers and concurrency ceilings are unchanged. Each layer can still make
 reachability calls, so stack size matters to cost. Skip is not behavioral success.
 
-Offline jobs share a locked tool setup and fresh empty profiles. Provisioning
+Offline and Promptfoo model jobs share a locked tool setup and fresh empty profiles.
+Only offline jobs provision the qualified Linux sandbox. Lifecycle scripts are
+disabled except the explicitly hash-reviewed Claude platform-copy installer;
+its result must be an executable Linux binary. Patched Git dependencies have a
+read-only API and unsafe-option smoke check. Provisioning
 checks package versions without initializing Promptfoo. Runtime diagnostics are
 subject to the pinned tool's known opt-out limitation; the fail-closed offline
 wrapper remains in place. The gallery refresh validates selection and capture
-launch before any paid call and preserves raw result artifacts on failure.
+launch and the full cheap gate before any paid call, then checks generated output
+and preserves raw result artifacts on failure. Required behavioral/deep aggregates
+fail as blocked when their cheap dependency fails; a canceled superseded run does
+not report a fresh verdict. See the CI runbook for stacked-event cancellation.
 
 ## Responsibility-refactor coverage
 
