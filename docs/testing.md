@@ -18,6 +18,8 @@ workflows and eval packs by `evals/cheap/check-testing-doc.sh` on every
 
 ## Pipeline operation
 
+Calibration artifact producers bind results to checkout SHA, repository, run/attempt, pack and SHA-256. The manual sheet workflow validates those receipts, samples with the trusted dispatch sampler, and creates a new branch with a create-only lease. Existing branches and source sheet paths are refused so human labels cannot be overwritten. Old artifacts without receipts require explicit manual recovery, not a paid rerun. Offline workflow controls run through `ci/tests/test_calibration.py`; transport provenance does not establish grader calibration or supply missing human labels. See [calibration maintenance](../evals/paid/calibration/README.md).
+
 For event selection, costs, artifacts and recovery, start with the
 [CI runbook](../ci/README.md). The inventory below remains the reference for
 coverage and evidence limits.
