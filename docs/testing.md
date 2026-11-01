@@ -149,7 +149,10 @@ that it is green because it did not run, never silently.
   `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
   the fail-closed guard — see
   [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
-  self-test, example-gallery sync/provenance, and the testing-doc drift guard
+  self-test, example-gallery sync/provenance, Agent Plugins 1.0 projection
+  sync (`ci/agent_plugins.py --check`: every registered plugin's generated root
+  `plugin.json`/`mcp.json` matches its `.claude-plugin/plugin.json` and the
+  spec's closed-manifest, name and MCP rules), and the testing-doc drift guard
   defending this document.
   The model-pricing unit suite also exercises malformed prices, material-change
   thresholds, stale evidence, budget reservations/dedupe, and proposal authority.

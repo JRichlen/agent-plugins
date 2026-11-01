@@ -19,6 +19,13 @@ are unavailable. Work directly when delegation is unnecessary; where a required
 independent check or integrity guarantee is unavailable, stop that gated action
 and return the exact missing capability.
 
+Each registered plugin also ships a generated Agent Plugins 1.0 root
+`plugin.json` (and `mcp.json` for MCP servers) from `ci/agent_plugins.py`, so a
+client implementing that spec discovers its `skills/` and MCP servers. Commands,
+hooks and agents stay in the Claude Code layout; the spec's v1 component types
+do not cover them, so a spec-only client loads skills and MCP servers only.
+Spec validity is checked offline; loading in each named client is not.
+
 Treat path ordering, line endings, executable bits, symlinks and script dependencies
 as qualification concerns. Portable prose alone does not prove portable execution.
 No adapter grants permissions, spends money, installs globally or runs a monitor.
