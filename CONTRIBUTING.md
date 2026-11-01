@@ -7,7 +7,7 @@ its owning code, and link outward when another component owns the rule.
 |---|---|---|
 | Plugin behavior | `plugins/<name>/skills/` and its actual command/host adapters | Plugin README, [Core](core/OPERATING.md), relevant eval pack |
 | Plugin usage | `plugins/<name>/README.md` | A runnable task and its limits |
-| Generated catalog or gallery | The owning `docs/build-*.sh` and source data | [Gallery source](docs/build-examples.sh) |
+| Generated catalog or gallery | The owning `docs/build-*.sh` and source data | [Documentation sources](docs/README.md) |
 | Tests or CI | `evals/` or `ci/`, workflow only for orchestration | [Eval selection](evals/README.md), [CI runbook](ci/README.md) |
 | Installation metadata | Plugin manifest and marketplace entries | [Plugin factory](plugins/plugin-factory/README.md) |
 

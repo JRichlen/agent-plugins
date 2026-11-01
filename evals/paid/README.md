@@ -44,3 +44,6 @@ The refresh workflow preserves raw results even when later steps fail and
 attests only snapshots written by that run. A zero-capture run fails. A reviewed
 gallery change merges separately from evaluation execution; no script here
 authorizes a paid run or a merge.
+
+For offline recovery with unknown original capture time, use the
+[gallery maintenance procedure](../../docs/examples/README.md#capture-and-recover).

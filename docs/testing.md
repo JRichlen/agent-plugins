@@ -50,6 +50,20 @@ Neither job publishes a release, calls a model, grants write permissions or
 establishes host/behavioral readiness. Existing failed and skipped checks remain
 separate evidence. No manual candidate dispatch was required to test the builder.
 
+## Guided docs and recovered examples
+
+The free pipeline contracts check the newcomer documentation's local links and
+anchors, capture eligibility, and recovery provenance against real process/Git
+seams. Page generators still own derived counts and presentation. The obsolete
+gallery phase/count plan was removed; its historical states remain in Git.
+
+Five active-plugin examples were recovered offline from retained run41280016961
+artifact13073393801, using the original source config. They are explicitly
+recovered/unattested with unknown original capture time and source row/file
+identities. Every recovered pair passed on both arms; this is not discriminating
+efficacy evidence. No new model trial or human calibration was performed for
+that recovery. Read [gallery maintenance](examples/README.md) for interpretation.
+
 ## Responsibility-refactor coverage
 
 The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old

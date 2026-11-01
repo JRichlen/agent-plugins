@@ -32,7 +32,7 @@
   pre { background:var(--code-bg); border-radius:8px; padding:.7rem .9rem; overflow-x:auto;
     font:12.5px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
   pre code { background:none; padding:0; font-size:inherit; }
-    nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
+    nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
   nav.site .brand { font-weight:800; letter-spacing:-.01em; color:var(--fg); text-decoration:none; }
   nav.site .site-links { display:flex; gap:.15rem; flex-wrap:wrap; margin-left:auto; }
   nav.site .site-links a { color:var(--muted); text-decoration:none; padding:.25rem .6rem; border-radius:6px; }
@@ -88,24 +88,29 @@
 </style>
 </head>
 <body>
-<nav class="site" aria-label="Site"><a class="brand" href="">agent-plugins</a><div class="site-links"><a href="" class="cur" aria-current="page">Home</a><a href="examples/">Examples</a><a href="agent-compiler/">agent-compiler</a><a href="https://github.com/JRichlen/agent-plugins" class="ext" rel="noopener">GitHub ↗</a></div></nav>
+<nav class="site" aria-label="Site"><a class="brand" href="">agent-plugins</a><div class="site-links"><a href="" class="cur" aria-current="page">Home</a><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/getting-started.md">Start here</a><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/guides/README.md">Guides</a><a href="#plugins">Plugins</a><a href="examples/">Evidence</a><a href="https://github.com/JRichlen/agent-plugins/blob/main/CONTRIBUTING.md">Contribute</a><a href="https://github.com/JRichlen/agent-plugins" class="ext" rel="noopener">GitHub ↗</a></div></nav>
 <div class="wrap">
 
 <header class="hero">
   <h1>agent-plugins</h1>
   <p class="sub">A shared operating contract and task methods for AI-assisted work. Start with the outcome,
-  use the smallest useful method, and inspect the result. This draft has 24 registered plugins;
-  13 have an example and 10 carry model-evaluation packs. Presence is not proof of execution or host parity.
-  <a href="https://github.com/JRichlen/agent-plugins/blob/main/README.md">Start with the walkthrough</a> or <a href="https://github.com/JRichlen/agent-plugins/blob/main/core/OPERATING.md">inspect the core</a>.</p>
+  use the smallest useful method, and inspect the result. The catalog has 24 registered plugins;
+  16 have an example and 10 carry model-evaluation packs. Presence is not proof of execution or host parity.
+  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/getting-started.md">Try the first task</a> or <a href="https://github.com/JRichlen/agent-plugins/blob/main/core/OPERATING.md">inspect the core</a>.</p>
 </header>
 
 <div class="install">
   <div><span class="lbl">Claude Code</span><pre>/plugin marketplace add JRichlen/agent-plugins
 /plugin install &lt;name&gt;@jrichlen</pre></div>
-  <div><span class="lbl">Any harness, via APM (pin the SHA)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
+  <div><span class="lbl">APM source resolution (host support varies)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
 </div>
 
-<h2>Explore further</h2>
+<h2>Choose your next step</h2>
+<div class="cards">
+  <a class="card" href="https://github.com/JRichlen/agent-plugins/blob/main/docs/getting-started.md"><span class="lbl">Start here</span><h3>Find existing code</h3><p>A five-minute source-loaded task, actual findings, installation choices and undo.</p></a>
+  <a class="card" href="https://github.com/JRichlen/agent-plugins/blob/main/docs/guides/README.md"><span class="lbl">Guides</span><h3>Bug, feature, handoff</h3><p>Follow real repository work, with evidence and boundaries at each stage.</p></a>
+</div>
+<h2>Inspect the evidence</h2>
 <div class="cards">
   <a class="card" href="examples/"><span class="lbl">Evidence</span><h3>Before &amp; after examples</h3><p>Paired examples with evidence labels and provenance. Some entries are ungraded seeds; inspect the source rather than assuming measured benefit.</p></a>
   <a class="card" href="https://github.com/JRichlen/agent-plugins/blob/main/docs/testing.md"><span class="lbl">Reference</span><h3>How every change is checked</h3><p>The full inventory of eval tiers, what each proves and what it structurally cannot, when it fires and what it costs — the doc the cheap tier itself keeps in sync with the workflows.</p></a>
@@ -116,13 +121,13 @@
   <a class="card deep" href="agent-compiler/"><span class="lbl">Deep dive</span><h3>agent-compiler</h3><p>Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, a stdlib-only kernel resolves modules and fails closed on conflicts, and out comes an immutable AgentImage with per-line provenance.</p></a>
 </div>
 
-<h2>All plugins <small><span id="n"></span></small></h2>
+<h2 id="plugins">All plugins <small><span id="n"></span></small></h2>
 <input id="q" class="search js-only" type="search" placeholder="Filter by name, description or keyword" aria-label="Filter plugins">
 <ol class="catalog">
   <li class="plugin" data-q="agent-compiler compile deterministic, content-hashed agents from small behavior modules: a typed agentquery in, an immutable agentimage and rendered harness-native subagent out; fails closed on conflicts. agent-compiler behavior-modules deterministic provenance effect-ceiling agent-image persona">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler">agent-compiler</a> <span class="ver">v0.3.0</span></h3>
-      <div class="tags"><a class="tag ex strong" href="examples/#agent-compiler" title="before/after example — judged divergence: strong; seed"><span class="dot strong"></span>strong</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
+      <div class="tags"><a class="tag ex unjudged" href="examples/#agent-compiler" title="before/after example — divergence not judged; recovered, unattested"><span class="dot unjudged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
     </div>
     <p>Compile deterministic, content-hashed agents from small behavior modules: a typed AgentQuery in, an immutable AgentImage and rendered harness-native subagent out; fails closed on conflicts.</p>
     <p class="p-links"><code>/plugin install agent-compiler@jrichlen</code> · <a href="agent-compiler/">deep dive</a></p>
@@ -130,7 +135,7 @@
   <li class="plugin" data-q="codebase-design before writing a new interface (module boundary, class api, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. use for &quot;design it twice&quot;. interface-design api-design deep-modules seam-design design-comparison">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/codebase-design">codebase-design</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex subtle" href="examples/#codebase-design" title="before/after example — judged divergence: subtle; seed"><span class="dot subtle"></span>subtle</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex subtle" href="examples/#codebase-design" title="before/after example — judged difference (not benefit): subtle; seed"><span class="dot subtle"></span>subtle</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Before writing a new interface (module boundary, class API, function signature, or service contract) that at least two call sites will depend on, that crosses a module/service/team/persistence boundary, or that will be expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Use for &quot;design it twice&quot;.</p>
     <p class="p-links"><code>/plugin install codebase-design@jrichlen</code></p>
@@ -146,7 +151,7 @@
   <li class="plugin" data-q="context-handoff walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, adrs, issues, commits, and diffs referenced by path or url, never copied inline. context handoff session-lifecycle phase-boundary compact clear delegate">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/context-handoff">context-handoff</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#context-handoff" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex moderate" href="examples/#context-handoff" title="before/after example — judged difference (not benefit): moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline.</p>
     <p class="p-links"><code>/plugin install context-handoff@jrichlen</code></p>
@@ -162,7 +167,7 @@
   <li class="plugin" data-q="dev-diary keep a scannable developer journal that writes itself: discover the day&#x27;s work from sessions, commits and prompts, interview the user, record a dated entry. ships /dev-diary and /dev-diary-review. diary journal changelog standup dev-log retrospective dev-diary-review">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/dev-diary">dev-diary</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#dev-diary" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex moderate" href="examples/#dev-diary" title="before/after example — judged difference (not benefit): moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Keep a scannable developer journal that writes itself: discover the day&#x27;s work from sessions, commits and prompts, interview the user, record a dated entry. Ships /dev-diary and /dev-diary-review.</p>
     <p class="p-links"><code>/plugin install dev-diary@jrichlen</code></p>
@@ -178,7 +183,7 @@
   <li class="plugin" data-q="docs-hygiene audits claude.md/agents.md/skill.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files. use to audit docs or when instruction files contradict each other. agents-md claude-md skill-md instruction-files staleness contradiction-resolution docs-audit onboarding">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/docs-hygiene">docs-hygiene</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex subtle" href="examples/#docs-hygiene" title="before/after example — judged divergence: subtle; seed"><span class="dot subtle"></span>subtle</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex subtle" href="examples/#docs-hygiene" title="before/after example — judged difference (not benefit): subtle; seed"><span class="dot subtle"></span>subtle</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files. Use to audit docs or when instruction files contradict each other.</p>
     <p class="p-links"><code>/plugin install docs-hygiene@jrichlen</code></p>
@@ -202,7 +207,7 @@
   <li class="plugin" data-q="find-before-build search for the existing implementation before writing a new one: name the searches run for an existing helper, abstraction, or pattern and what they returned. reuse duplication search-first abstraction dependencies dry">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/find-before-build">find-before-build</a> <span class="ver">v0.0.1</span></h3>
-      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
+      <div class="tags"><a class="tag ex unjudged" href="examples/#find-before-build" title="before/after example — divergence not judged; recovered, unattested"><span class="dot unjudged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
     </div>
     <p>Search for the existing implementation before writing a new one: name the searches run for an existing helper, abstraction, or pattern and what they returned.</p>
     <p class="p-links"><code>/plugin install find-before-build@jrichlen</code></p>
@@ -218,7 +223,7 @@
   <li class="plugin" data-q="grill-me interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch&#x27;s stakes (reversibility x blast radius) while offering a recommendation at almost every step. use on &quot;grill me&quot; or &quot;stress-test this plan&quot;. interview planning design-review stakes-triage devils-advocate">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/grill-me">grill-me</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex stark" href="examples/#grill-me" title="before/after example — judged divergence: stark; seed"><span class="dot stark"></span>stark</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex stark" href="examples/#grill-me" title="before/after example — judged difference (not benefit): stark; seed"><span class="dot stark"></span>stark</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch&#x27;s stakes (reversibility x blast radius) while offering a recommendation at almost every step. Use on &quot;grill me&quot; or &quot;stress-test this plan&quot;.</p>
     <p class="p-links"><code>/plugin install grill-me@jrichlen</code></p>
@@ -226,7 +231,7 @@
   <li class="plugin" data-q="plugin-factory scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first skill.md, agents.md symlinks, command stub, and a red-by-default eval, wired into the marketplace. plugin scaffold generator marketplace skill bootstrap">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/plugin-factory">plugin-factory</a> <span class="ver">v1.1.0</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#plugin-factory" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex moderate" href="examples/#plugin-factory" title="before/after example — judged difference (not benefit): moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first SKILL.md, AGENTS.md symlinks, command stub, and a red-by-default eval, wired into the marketplace.</p>
     <p class="p-links"><code>/plugin install plugin-factory@jrichlen</code></p>
@@ -234,7 +239,7 @@
   <li class="plugin" data-q="recurrence-detector close the growth loop&#x27;s detect step: cluster the exhaust every run sheds (stop-reports, scope-fence findings, unmet criteria, diary entries) by failure shape and surface repeat shapes as named candidate invariants. proposes; never scaffolds. use when asking what keeps going wrong. recurrence growth-loop detect failure-shape invariant-mining memory meta">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/recurrence-detector">recurrence-detector</a> <span class="ver">v0.0.1</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#recurrence-detector" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex moderate" href="examples/#recurrence-detector" title="before/after example — judged difference (not benefit): moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Close the growth loop&#x27;s DETECT step: cluster the exhaust every run sheds (stop-reports, scope-fence findings, unmet criteria, diary entries) by failure shape and surface repeat shapes as named candidate invariants. Proposes; never scaffolds. Use when asking what keeps going wrong.</p>
     <p class="p-links"><code>/plugin install recurrence-detector@jrichlen</code></p>
@@ -250,7 +255,7 @@
   <li class="plugin" data-q="semver-gate classify a candidate action as patch/minor/major (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. use mid-task when unsure how much autonomy to take. autonomy semver escalation blast-radius human-in-the-loop decision-gate rollback restore irreversible backup-verification rehearsal safety prove-the-undo">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/semver-gate">semver-gate</a> <span class="ver">v1.1.0</span></h3>
-      <div class="tags"><a class="tag ex untagged" href="examples/#prove-the-undo" title="before/after example — described without a one-word grade; seed"><span class="dot untagged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
+      <div class="tags"><a class="tag ex unjudged" href="examples/#semver-gate" title="before/after example — divergence not judged; recovered, unattested"><span class="dot unjudged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
     </div>
     <p>Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting, and rehearse the rollback of any irreversible one — name the restore path and exercise it. Use mid-task when unsure how much autonomy to take.</p>
     <p class="p-links"><code>/plugin install semver-gate@jrichlen</code></p>
@@ -258,7 +263,7 @@
   <li class="plugin" data-q="stop-rule a halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report state with hypotheses. halting retry-loops attempt-bound stop-and-report ci discipline">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/stop-rule">stop-rule</a> <span class="ver">v0.0.1</span></h3>
-      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
+      <div class="tags"><a class="tag ex unjudged" href="examples/#stop-rule" title="before/after example — divergence not judged; recovered, unattested"><span class="dot unjudged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
     </div>
     <p>A halting discipline for iterative fix loops: after a bounded number of failed attempts at the same objective, stop and report state with hypotheses.</p>
     <p class="p-links"><code>/plugin install stop-rule@jrichlen</code></p>
@@ -274,7 +279,7 @@
   <li class="plugin" data-q="tracer-bullets ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. use when scoping new work or de-risking unknowns. tracer-bullets pragmatic-programmer scoping prototyping investigation research">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/tracer-bullets">tracer-bullets</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#tracer-bullets" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
+      <div class="tags"><a class="tag ex moderate" href="examples/#tracer-bullets" title="before/after example — judged difference (not benefit): moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span></div>
     </div>
     <p>Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work or de-risking unknowns.</p>
     <p class="p-links"><code>/plugin install tracer-bullets@jrichlen</code></p>
@@ -306,7 +311,7 @@
   <li class="plugin" data-q="wayfinder chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. plans; never executes. planning tickets dependency-graph frontier multi-session dispatch task-breakdown roadmap">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/wayfinder">wayfinder</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
+      <div class="tags"><a class="tag ex unjudged" href="examples/#wayfinder" title="before/after example — divergence not judged; recovered, unattested"><span class="dot unjudged"></span>example</a><span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span></div>
     </div>
     <p>Chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. Plans; never executes.</p>
     <p class="p-links"><code>/plugin install wayfinder@jrichlen</code></p>
@@ -318,7 +323,7 @@
   script in <code>docs/</code>; the offline eval tier fails any commit whose page drifts from its data, and the Pages workflow re-checks before it deploys.
   <ul>
     <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/build-index.sh">build-index.sh</a> — this page, from <code>marketplace.json</code>, the snapshots and the packs</li>
-    <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/DESIGN.md">why it looks the way it does</a>)</li>
+    <li><a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/examples/README.md">capture and evidence limits</a>)</li>
   </ul>
 </div>
 

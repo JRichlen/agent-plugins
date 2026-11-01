@@ -62,10 +62,10 @@ case "$ATTEST" in github|none) ;; *) echo "capture-example: --attestation must b
 mkdir -p "$OUT"
 
 python3 - "$RESULTS" "$PLUGIN" "$OUT" "$COMMIT" "$CAPTURED" "$RUN_URL" "$ATTEST" "$PACK" <<'PY'
-import collections, json, os, re, sys
+import collections, hashlib, json, os, re, sys
 results, plugin, outdir, commit, captured, run_url, attest, pack = sys.argv[1:9]
 try:
-    doc = json.load(open(results))
+    doc = json.load(open(results, encoding="utf-8"))
 except Exception as e:
     print(f"capture-example: cannot parse {results}: {e}", file=sys.stderr); sys.exit(2)
 
@@ -156,7 +156,7 @@ def grader_from_pack(pack_dir):
         return None
     try:
         import yaml
-        doc = yaml.safe_load(open(cfg))
+        doc = yaml.safe_load(open(cfg, encoding="utf-8"))
         prov = (((doc or {}).get("defaultTest") or {}).get("options") or {}).get("provider")
         if isinstance(prov, dict):
             return prov.get("id")
@@ -166,7 +166,7 @@ def grader_from_pack(pack_dir):
         pass
     # PyYAML unavailable or an odd shape: fall back to the unambiguous marker
     # the CI grader-model job also greps for.
-    m = re.search(r"id:\s*(anthropic:messages:[^\s]+)", open(cfg).read())
+    m = re.search(r"id:\s*(anthropic:messages:[^\s]+)", open(cfg, encoding="utf-8").read())
     return m.group(1) if m else None
 
 subject = provider_id(real)
@@ -189,6 +189,9 @@ snap = {
     "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub)},
     "provenance": {
         "source": "promptfoo",
+        "results_sha256": hashlib.sha256(open(results, "rb").read()).hexdigest(),
+        "source_rows": {"with_skill": {"index": rows.index(real), "id": real.get("id")},
+                        "without_skill": {"index": rows.index(stub), "id": stub.get("id")}},
         "workflow": (re.search(r"/actions/runs/\d+", run_url) and "github-actions") if run_url else None,
         "subject_model": subject,
         "grader_model": grader + " (llm-rubric)",
@@ -202,8 +205,8 @@ snap = {
     },
 }
 path = os.path.join(outdir, f"{plugin}.json")
-json.dump(snap, open(path, "w"), indent=2, ensure_ascii=False)
-open(path, "a").write("\n")
+json.dump(snap, open(path, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
+open(path, "a", encoding="utf-8").write("\n")
 print(f"capture-example: wrote {path} (with_skill pass={snap['with_skill']['graded']['pass']}, "
       f"without_skill pass={snap['without_skill']['graded']['pass']}; subject={subject}; grader={grader})")
 PY
