@@ -41,7 +41,7 @@ triage examples, fact-finding rules) lives in `skills/grill-me/references/`
 and loads only when a session actually needs it — that's the token-efficiency
 half of the design, not a missing feature.
 
-## Differentiation — why this isn't second-opinion or orchestrate
+## Differentiation — why this isn't second-opinion or wave-research
 
 Two other plugins in this marketplace sit near this one. Neither does what
 grill-me does:
@@ -51,10 +51,9 @@ grill-me does:
   that **already exists** — it batches fact-checks against sources, adds
   scoped advisor personas, and re-emits the response as
   Verified/Flagged/Conflict with a mandatory delta. It never runs unbidden.
-- **orchestrate** (`plugins/orchestration-patterns`, mid-rename from
-  `orchestration-patterns` — same plugin, in-flight name) is a **Workflow-tool
-  template** for fanning research out across multiple subagents and
-  adversarially verifying the claims that research surfaces.
+- **wave-research** (`plugins/wave-research`) is a staged research method with
+  **Workflow-tool templates** for fanning research out across multiple
+  subagents and adversarially verifying the claims that research surfaces.
 
 grill-me is neither of those. It is a **single-session, no-subagents-required,
 live conversational interrogation of a plan**, conducted directly with the

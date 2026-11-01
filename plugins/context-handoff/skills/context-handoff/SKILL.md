@@ -12,7 +12,7 @@ At every phase boundary, the continue / clear / handoff / delegate / compact cho
 
 ## Not this
 
-- **Not `orchestrate`.** orchestrate answers a strictly later, narrower
+- **Not `wave-research`.** wave-research answers a strictly later, narrower
   question: given that you're about to fan out subagents on a research-and-
   verify job, how do you structure that fan-out so plausible-but-wrong
   findings don't survive (frozen ground-truth context, per-stage schemas,
@@ -22,8 +22,8 @@ At every phase boundary, the continue / clear / handoff / delegate / compact cho
   independent of whether the eventual shape is a multi-agent fan-out at all.
   The two touch at exactly one point: if this skill's tree routes to DELEGATE
   and the delegated work happens to be a research-and-verify fan-out, reach
-  for orchestrate's templates to shape it. context-handoff never prescribes
-  fan-out internals; orchestrate never asks whether a fan-out should start.
+  for wave-research's templates to shape it. context-handoff never prescribes
+  fan-out internals; wave-research never asks whether a fan-out should start.
 - **Not `dev-diary`.** dev-diary produces a human-readable, first-person,
   past-tense journal entry summarizing a whole day's work, written for the
   user's future self to skim days later — narrative synthesis and judgment
@@ -108,8 +108,8 @@ delegate's corpus read once, rather than interrogated over and over?
 
 If yes → delegate via the harness's fan-out primitive (Task tool / Workflow
 tool / equivalent). If the delegated work is itself a multi-agent
-research-and-verify fan-out, reach for the `orchestrate` plugin's templates
-to shape it — context-handoff decides IF/whether to delegate, orchestrate
+research-and-verify fan-out, reach for the `wave-research` plugin's templates
+to shape it — context-handoff decides IF/whether to delegate, wave-research
 governs HOW a research fan-out runs once delegation is chosen. Do not inline
 fan-out mechanics here.
 

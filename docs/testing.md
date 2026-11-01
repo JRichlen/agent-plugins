@@ -1056,7 +1056,6 @@ pack: graveyard/promptfoo
 pack: grill-me/cheap
 pack: jori/cheap
 pack: jori/promptfoo
-pack: orchestrate/cheap
 pack: plugin-factory/cheap
 pack: recurrence-detector/cheap
 pack: redgate/cheap

@@ -14,7 +14,7 @@
 # BOTH the structural wiring (three reference files exist and are actually
 # named in SKILL.md's procedure) and the content invariants (the type-lock
 # rule, the frontier definition, the cycle check, the fog-of-war test, and
-# the differentiation from orchestrate/grill-me are all present as real,
+# the differentiation from wave-research/grill-me are all present as real,
 # specific prose — not generic file-existence boilerplate).
 
 SKILL="$PLUGIN_DIR/skills/wayfinder/SKILL.md"
@@ -224,21 +224,21 @@ else
   bad "SKILL.md's procedure (step 0) is MISSING the exactly-one-status-label-per-ticket rule"
 fi
 
-# --- differentiation: 'Not this' section names both orchestrate and grill-me
+# --- differentiation: 'Not this' section names both wave-research and grill-me
 # The design brief is explicit this is load-bearing, and its precedent
 # (verify-before-claim) requires both names to actually appear inside a
 # '## Not this' section, not merely somewhere in the file.
-group "wayfinder — differentiation names both orchestrate and grill-me"
+group "wayfinder — differentiation names both wave-research and grill-me"
 NOT_THIS_BLOCK="$(awk '/^## Not this/{flag=1; next} /^## /{flag=0} flag' "$SKILL")"
 if printf '%s' "$NOT_THIS_BLOCK" | grep -q .; then
   ok "SKILL.md has a non-empty '## Not this' section"
 else
   bad "SKILL.md has NO '## Not this' section (or it is empty)"
 fi
-if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'orchestrate'; then
-  ok "'## Not this' names orchestrate"
+if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'wave-research'; then
+  ok "'## Not this' names wave-research"
 else
-  bad "'## Not this' does NOT name orchestrate"
+  bad "'## Not this' does NOT name wave-research"
 fi
 if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'grill-me'; then
   ok "'## Not this' names grill-me"
@@ -255,7 +255,7 @@ else
   bad "'## Not this' does NOT immediately follow '## Invariant' — got order: $(printf '%s' "$HEADINGS_ORDER" | tr '\n' ' | ')"
 fi
 
-# --- 'Not this' claims about orchestrate/grill-me are accurate, not just present
+# --- 'Not this' claims about wave-research/grill-me are accurate, not just present
 # A confident-but-wrong differentiation is a documented failure mode for this
 # build. The PRIOR version of this group never opened wayfinder's own
 # SKILL.md at all — it only grepped the neighbours' files for strings
@@ -276,31 +276,33 @@ group "wayfinder — 'Not this' claims check out against the real neighbouring p
 # the summary sentence — the same substrate-restatement trap this whole pass
 # is fixing, just one section down. Anchoring stop-markers to the next
 # bullet/paragraph keeps each check honest about which text it's reading.
-ORCH_CLAIM_BLOCK="$(awk '/^- \*\*orchestrate\*\*/{flag=1} /^- \*\*grill-me\*\*/{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
+ORCH_CLAIM_BLOCK="$(awk '/^- \*\*wave-research\*\*/{flag=1} /^- \*\*grill-me\*\*/{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
 GRILLME_CLAIM_BLOCK="$(awk '/^- \*\*grill-me\*\*/{flag=1} /^The load-bearing distinction/{flag=0} flag' "$SKILL" | tr -s '[:space:]' ' ')"
 
-ORCHESTRATE_PATH=""
-for cand in "$PLUGIN_DIR/../orchestrate/skills/orchestrate/SKILL.md" "plugins/orchestrate/skills/orchestrate/SKILL.md"; do
-  [ -f "$cand" ] && ORCHESTRATE_PATH="$cand" && break
+# The 'dimensions' input is documented in wave-research's fan-out reference
+# (SKILL.md points at it), so that is the file the claim is corroborated against.
+WAVE_PATH=""
+for cand in "$PLUGIN_DIR/../wave-research/skills/wave-research/references/fan-out-discipline.md" "plugins/wave-research/skills/wave-research/references/fan-out-discipline.md"; do
+  [ -f "$cand" ] && WAVE_PATH="$cand" && break
 done
-if [ -n "$ORCHESTRATE_PATH" ]; then
-  if printf '%s' "$ORCH_CLAIM_BLOCK" | grep -qF 'no persistent state across sessions'; then
-    ok "wayfinder's OWN orchestrate paragraph claims it has no persistent state across sessions"
+if [ -n "$WAVE_PATH" ]; then
+  if printf '%s' "$ORCH_CLAIM_BLOCK" | grep -qF 'no concept of a ticket type, a dependency graph, or a frontier spanning many efforts'; then
+    ok "wayfinder's OWN wave-research paragraph claims it has no ticket type, dependency graph or cross-effort frontier"
   else
-    bad "wayfinder's orchestrate paragraph no longer claims no persistent state across sessions — differentiation may now be false or gutted"
+    bad "wayfinder's wave-research paragraph no longer claims it has no ticket type, dependency graph or cross-effort frontier — differentiation may now be false or gutted"
   fi
   if printf '%s' "$ORCH_CLAIM_BLOCK" | grep -qE 'caller-supplied .dimensions. list'; then
-    ok "wayfinder's OWN orchestrate paragraph attributes the 'dimensions' input to orchestrate"
-    if grep -qF 'dimensions' "$ORCHESTRATE_PATH"; then
-      ok "orchestrate's real SKILL.md corroborates: it genuinely takes a 'dimensions' input"
+    ok "wayfinder's OWN wave-research paragraph attributes the 'dimensions' input to wave-research"
+    if grep -qF 'dimensions' "$WAVE_PATH"; then
+      ok "wave-research's fan-out reference corroborates: its templates genuinely take a 'dimensions' input"
     else
-      bad "orchestrate's real SKILL.md does NOT mention 'dimensions' — wayfinder's claim is stale"
+      bad "wave-research's fan-out reference does NOT mention 'dimensions' — wayfinder's claim is stale"
     fi
   else
-    bad "wayfinder's orchestrate paragraph no longer attributes the 'dimensions' input to orchestrate"
+    bad "wayfinder's wave-research paragraph no longer attributes the 'dimensions' input to wave-research"
   fi
 else
-  bad "could not locate orchestrate's real SKILL.md to check wayfinder's claim against"
+  bad "could not locate wave-research's fan-out reference to check wayfinder's claim against"
 fi
 
 GRILLME_PATH=""

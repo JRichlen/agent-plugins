@@ -50,9 +50,9 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/wayfinder/SKILL.md": "5802bfdc7f27114f758e29fb4bca8bda32a4b755b5004d993ba2c756f33384e4",
+      "skills/wayfinder/SKILL.md": "e3c3f6880776a3fc4957e337c430071e5d4230fcd8971bfddb912018be8d28d4",
       "skills/wayfinder/references/fog-of-war.md": "2573a54ebdf7a57ea938bcdc8d38e762bf230205559e750000c4a3f73218b9e4",
-      "skills/wayfinder/references/task-breakdown.md": "a613b5455bb0aeb5cd6b265546e9330d1fc5f0177c74e284f5e1f5cb464e677f",
+      "skills/wayfinder/references/task-breakdown.md": "ff4ef2bdb560ff4785897b1777fffd78d54978d2024757c89986f472ae74311b",
       "skills/wayfinder/references/ticket-taxonomy.md": "c58257497f94cf1b704c092bf5672feb2bb873e8abede0ba1b4246bb04d1b7e9"
     }
   },

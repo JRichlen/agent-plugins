@@ -202,14 +202,14 @@ else
   bad "SKILL.md does not warn against the most common HANDOFF misuse"
 fi
 
-# --- DELEGATE branch defers fan-out mechanics to orchestrate, doesn't inline
+# --- DELEGATE branch defers fan-out mechanics to wave-research, doesn't inline
 # them ------------------------------------------------------------------------
-group "context-handoff — DELEGATE branch defers fan-out internals to orchestrate"
+group "context-handoff — DELEGATE branch defers fan-out internals to wave-research"
 DELEGATE_BLOCK_FLAT="$(awk '/^### 4\. DELEGATE/{flag=1; next} /^### 5\./{flag=0} flag' "$SKILL" | tr '\n' ' ')"
-if printf '%s' "$DELEGATE_BLOCK_FLAT" | grep -qi 'orchestrate'; then
-  ok "DELEGATE branch names the orchestrate plugin"
+if printf '%s' "$DELEGATE_BLOCK_FLAT" | grep -qi 'wave-research'; then
+  ok "DELEGATE branch names the wave-research plugin"
 else
-  bad "DELEGATE branch does not name the orchestrate plugin"
+  bad "DELEGATE branch does not name the wave-research plugin"
 fi
 if printf '%s' "$DELEGATE_BLOCK_FLAT" | grep -qiE 'do not inline fan-out mechanics'; then
   ok "DELEGATE branch explicitly declines to inline fan-out mechanics"
@@ -225,10 +225,10 @@ if printf '%s' "$NOT_THIS_BLOCK" | grep -q .; then
 else
   bad "SKILL.md has NO '## Not this' section (or it is empty)"
 fi
-if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'orchestrate'; then
-  ok "'## Not this' names orchestrate"
+if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'wave-research'; then
+  ok "'## Not this' names wave-research"
 else
-  bad "'## Not this' does NOT name orchestrate"
+  bad "'## Not this' does NOT name wave-research"
 fi
 if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'dev-diary'; then
   ok "'## Not this' names dev-diary"
@@ -236,18 +236,18 @@ else
   bad "'## Not this' does NOT name dev-diary"
 fi
 
-# --- frontmatter description stays out of orchestrate/dev-diary's trigger
+# --- frontmatter description stays out of wave-research/dev-diary's trigger
 # vocabulary (keeps skill selection unambiguous, per the differentiation plan)
 group "context-handoff — frontmatter description avoids neighbours' trigger vocabulary"
 FRONTMATTER="$(awk '/^---$/{n++; next} n==1' "$SKILL")"
 FORBIDDEN=0
 for phrase in "fan out subagents" "research and verify" "diary" "journal" "what did I do today"; do
   if printf '%s' "$FRONTMATTER" | grep -qi "$phrase"; then
-    bad "SKILL.md frontmatter description uses '$phrase', which is orchestrate's/dev-diary's trigger vocabulary"
+    bad "SKILL.md frontmatter description uses '$phrase', which is wave-research's/dev-diary's trigger vocabulary"
     FORBIDDEN=1
   fi
 done
-[ "$FORBIDDEN" -eq 0 ] && ok "SKILL.md frontmatter description avoids orchestrate's and dev-diary's trigger phrases"
+[ "$FORBIDDEN" -eq 0 ] && ok "SKILL.md frontmatter description avoids wave-research's and dev-diary's trigger phrases"
 
 # --- deterministic check 4 (design brief Part 6.4, the "stretch check" made
 # real): the pointer-only size-check rule is machine-checkable, proven by

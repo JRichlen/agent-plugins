@@ -1,7 +1,7 @@
 {
   "plugin": "wave-research",
   "directory": "plugins/wave-research",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "derived_capabilities": [
     {
       "name": "wave-research",
@@ -50,7 +50,11 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/wave-research/SKILL.md": "18baf1f28bb58c67439d0733aeba51a41e41e031b5d111a176fae4667781f859"
+      "skills/wave-research/SKILL.md": "e27aa6b58430ff629e6ed9bda643b07da6c3ee3674def2876ed55ad51d665ad6",
+      "skills/wave-research/references/fan-out-discipline.md": "559e027cdac5156f9452cfd5d4eaa383608bf16814745a1383046063e42965ed",
+      "skills/wave-research/references/strategy-a-derived-verify.md": "8498cb147cf34186b6e9fb578e486b9eb88c3e4103de61f7ecd6ec792d81740d",
+      "skills/wave-research/references/strategy-b-pipelined-verdict-wins.md": "b2dc48d289af4c3af0cc76e7846d36db6719d093d997e49ce6ffef68abadc2bc",
+      "skills/wave-research/references/worked-example-observability.md": "a9a8858a04f448876ff27037fae42bdc8942e359acacc5d1be7e83e810c5950a"
     }
   },
   "baseline_arm": {

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>agent-plugins — a cross-harness agent plugin marketplace</title>
-<meta name="description" content="27 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
+<meta name="description" content="26 plugins for Claude Code and any coding agent that reads SKILL.md and AGENTS.md, each with evals, real before/after examples, and a design record.">
 <style>
   :root {
     --bg:#f7f6f3; --fg:#1a1a1a; --muted:#5f5e5a; --card:#ffffff; --line:#e3e1dc; --line-strong:#cfccc4;
@@ -93,9 +93,9 @@
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A marketplace of 27 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
+  <p class="sub">A marketplace of 26 plugins for <a href="https://docs.claude.com/en/docs/claude-code">Claude Code</a> that also work with any coding agent
   (Codex, Cursor, Gemini, …) through standard <code>SKILL.md</code> + <code>AGENTS.md</code> entry points. Every plugin is gated by evals;
-  15 of them have a published before/after example with the models disclosed; 13 are graded by a model in CI on every change.</p>
+  14 of them have a published before/after example with the models disclosed; 13 are graded by a model in CI on every change.</p>
 </header>
 
 <div class="install">
@@ -232,14 +232,6 @@
     <p>Coordinate complex work with bounded agents, evidence, and proportional dashboards.</p>
     <p class="p-links"><code>/plugin install jori@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="orchestrate two reusable multi-agent orchestration templates for research-and-verify work on claude code&#x27;s workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don&#x27;t survive. ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example. orchestration multi-agent workflow research verification subagents">
-    <div class="p-head">
-      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/orchestrate">orchestrate</a> <span class="ver">v1.0.0</span></h3>
-      <div class="tags"><a class="tag ex moderate" href="examples/#orchestrate" title="before/after example — judged divergence: moderate; seed"><span class="dot moderate"></span>moderate</a><span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span></div>
-    </div>
-    <p>Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code&#x27;s Workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don&#x27;t survive. Ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example.</p>
-    <p class="p-links"><code>/plugin install orchestrate@jrichlen</code></p>
-  </li>
   <li class="plugin" data-q="plugin-factory scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first skill.md, agents.md symlinks, command stub, and a red-by-default eval, wired into the marketplace. plugin scaffold generator marketplace skill bootstrap">
     <div class="p-head">
       <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/plugin-factory">plugin-factory</a> <span class="ver">v1.1.0</span></h3>
@@ -320,12 +312,12 @@
     <p>Route every response element to exactly one voice: prose to human-voice, machine-read artifacts to machine-voice; plus ai-writing-mistakes (wording pass) and second-opinion (offer-only validation).</p>
     <p class="p-links"><code>/plugin install voice@jrichlen</code></p>
   </li>
-  <li class="plugin" data-q="wave-research stress-test a contested thesis with staged, adversarial research (rival hypotheses, ach matrix, checkpoints) before believing it. not for lookups. research adversarial falsifiable hypotheses ach-matrix checkpoints thesis">
+  <li class="plugin" data-q="wave-research stress-test a contested thesis with staged, adversarial research (rival hypotheses, ach matrix, checkpoints), plus fan-out research-and-verify workflow templates. not for lookups. research adversarial falsifiable hypotheses ach-matrix checkpoints thesis orchestration multi-agent workflow verification subagents">
     <div class="p-head">
-      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/wave-research">wave-research</a> <span class="ver">v0.0.1</span></h3>
+      <h3><a href="https://github.com/JRichlen/agent-plugins/tree/main/plugins/wave-research">wave-research</a> <span class="ver">v0.1.0</span></h3>
       <div class="tags"><span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span><span class="tag none" title="no behavioral pack yet — cheap (offline) tier only">cheap tier only</span></div>
     </div>
-    <p>Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups.</p>
+    <p>Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints), plus fan-out research-and-verify Workflow templates. Not for lookups.</p>
     <p class="p-links"><code>/plugin install wave-research@jrichlen</code></p>
   </li>
   <li class="plugin" data-q="wayfinder chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. plans; never executes. planning tickets dependency-graph frontier multi-session dispatch task-breakdown roadmap">

@@ -135,7 +135,6 @@ never consumes `events.jsonl`; the old fictional corpus ledgers have been remove
 | graveyard | Reviewable deletion script with archive/unbundled handling |
 | grill-me | Interview questions and recorded answers |
 | jori | Work cards with IDs, owners, and states |
-| orchestrate | Claim-specific evidence and verdict artifact |
 | plugin-factory | Plugin/marketplace/invariant scaffold or an attempted new-plugin artifact |
 | recurrence-detector | Watched/promoted candidate and sightings |
 | redgate | Actual run directory and phase manifest |

@@ -84,8 +84,9 @@ them:
 
 - **second-opinion** is post-hoc, offer-only, and requires a subagent tool —
   it re-validates a verdict that already exists, on request.
-- **orchestrate** is a Workflow-tool template for fanning research out across
-  multiple subagents and adversarially verifying their claims.
+- **wave-research** is a staged research method, with Workflow-tool templates,
+  for fanning research out across multiple subagents and adversarially
+  verifying their claims.
 
 `verify-before-claim` runs inline, in the main thread, unprompted, by the same
 agent making the claim, using direct checks rather than dispatched subagents.

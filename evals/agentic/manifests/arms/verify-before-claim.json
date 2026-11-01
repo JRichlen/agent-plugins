@@ -50,7 +50,7 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/verify-before-claim/SKILL.md": "c9a441d3532f0b0075104c650afee006e26ffd107a1a3bbed9c86d106a04ea46",
+      "skills/verify-before-claim/SKILL.md": "5b5799a40f80fd62fec3a74b5639c36376b856d3bc3ff805d90edac0634de021",
       "skills/verify-before-claim/references/pre-claim-reproduction.md": "45aa65fd37d0356b9283ba88ca290f66661483712c6b6d462098f85713cef77c",
       "skills/verify-before-claim/references/primary-source-research.md": "184a94867d79f2dbb8a49c5dfa22fb6cf8950cac0dea4dc192fb86209bf94b7a",
       "skills/verify-before-claim/references/skill-behavior-verification.md": "6bcc912f6980a56c2dbc1c9ecab86c61bffa2db7232fbc6e78db77a728fc7d4c",

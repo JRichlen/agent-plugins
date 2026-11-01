@@ -75,7 +75,7 @@ class CorpusEvidenceIntegrity(unittest.TestCase):
         outcome = verifier("verify_outcome")
         # These pass/fail fixtures share the actual deliverable bytes. It must
         # still be supplied by the subject; agreement is not a helper declaration.
-        for card_id in ("graveyard-neg-01", "jori-neg-01", "orchestrate-neg-01"):
+        for card_id in ("graveyard-neg-01", "jori-neg-01"):
             with self.subTest(card=card_id), tempfile.TemporaryDirectory() as tmp:
                 self.assertFalse(outcome._verdict(ROOT, card_id, pathlib.Path(tmp))[0])
 
@@ -179,13 +179,6 @@ gh repo delete acme/empty-scratch --yes
             self.assertFalse(adoption._verdict(ROOT, card["card_id"], ws)[0])
             (ws / "client.py").write_text("def fetch(client, url):\n    return client.get(url)\n")
             self.assertFalse(outcome._verdict(ROOT, card["card_id"], ws)[0])
-
-    def test_cache_recommendation_has_no_hardcoded_winner(self):
-        outcome = verifier("verify_outcome")
-        with tempfile.TemporaryDirectory() as tmp:
-            ws = pathlib.Path(tmp)
-            (ws / "outcome.md").write_text("Recommendation: in-process LRU, provisionally, for a small single-process deployment needing simple local caching. Memcached transaction support remains unverified and did not determine this recommendation.")
-            self.assertTrue(outcome._verdict(ROOT, "orchestrate-pos-01", ws)[0])
 
     def test_undo_requires_executable_rehearsal_not_zero_difference_claim(self):
         outcome = verifier("verify_outcome")

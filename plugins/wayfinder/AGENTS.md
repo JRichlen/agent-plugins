@@ -7,7 +7,7 @@ Chart a multi-session effort as a labeled map of typed decision tickets (grillin
 Read `skills/wayfinder/SKILL.md` and follow it — it is the authoritative
 description of this plugin's workflow and the invariant it defends. It leads
 with the Invariant, then a "Not this" section distinguishing wayfinder from
-`orchestrate` and `grill-me` (adjacent-looking plugins in this same
+`wave-research` and `grill-me` (adjacent-looking plugins in this same
 marketplace), then the charting procedure (steps 0-5) with pointers into
 three reference files:
 

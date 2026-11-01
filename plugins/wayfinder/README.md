@@ -28,12 +28,12 @@ Modeled directly on Jordan's `homelab-board` discipline — labels (or a
 over the store, never the store itself.
 
 wayfinder never executes the work it charts. It hands dispatch off — to the
-user, to `orchestrate`, or to plain parallel agent calls — bound by one rule:
+user, to `wave-research`, or to plain parallel agent calls — bound by one rule:
 only the frontier, never a ticket whose dependency is still open.
 
 See `skills/wayfinder/SKILL.md` for the full procedure and its "Not this"
-section distinguishing wayfinder from `orchestrate` (single-session
-research-and-verify fan-out, no persistent ticket state) and `grill-me`
+section distinguishing wayfinder from `wave-research` (research-and-verify
+of one thesis, no ticket state) and `grill-me`
 (single-session live interrogation of one plan, no ticket store).
 
 ## License

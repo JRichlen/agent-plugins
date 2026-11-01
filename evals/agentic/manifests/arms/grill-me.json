@@ -50,7 +50,7 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/grill-me/SKILL.md": "3a028c2350a64c0bf1eab4a65ac8f9c70334b3bd79dcf1102c62e849f8ca65a0",
+      "skills/grill-me/SKILL.md": "5e6114e654504be5e48136ba7e7d7050045f9b191e5ba1449432b13166e035bc",
       "skills/grill-me/references/fact-finding.md": "d85c5c6d3e3502081aa06f331f8d2c8eb88f681ac69fff14ad94ea8a18a8a6db",
       "skills/grill-me/references/path-consent.md": "eeae650458989f97974a45dbf66bf1d7345ab6f303fcf8885061a87c9c6edc89",
       "skills/grill-me/references/stakes-examples.md": "40cfd3857ad91f9074e044a27c4e839237e5bef77cffc42dcb8287197a004c00",
