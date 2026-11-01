@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "eval-ladder",
+  "version": "0.0.1",
+  "description": "Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing or auditing a test/eval strategy.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/eval-ladder",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "evals",
+    "testing-strategy",
+    "llm-as-judge",
+    "coverage-audit",
+    "pass-at-k",
+    "test-tiers"
+  ]
+}

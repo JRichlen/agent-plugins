@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "context-handoff",
+  "version": "1.0.0",
+  "description": "Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/context-handoff",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "context",
+    "handoff",
+    "session-lifecycle",
+    "phase-boundary",
+    "compact",
+    "clear",
+    "delegate"
+  ]
+}

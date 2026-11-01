@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "wave-research",
+  "version": "0.1.0",
+  "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints), plus fan-out research-and-verify Workflow templates. Not for lookups.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/wave-research",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "research",
+    "adversarial",
+    "falsifiable",
+    "hypotheses",
+    "ach-matrix",
+    "checkpoints",
+    "thesis",
+    "orchestration",
+    "multi-agent",
+    "workflow",
+    "verification",
+    "subagents"
+  ]
+}

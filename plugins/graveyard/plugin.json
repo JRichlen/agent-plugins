@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "graveyard",
+  "version": "1.0.0",
+  "description": "Archive old GitHub repositories into a single private graveyard repo as restorable git bundles, then safely delete the originals. Captures full history (branches, tags, PR refs) and never deletes an original until its backup is verified.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/graveyard",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "github",
+    "backup",
+    "archive",
+    "git-bundle",
+    "cleanup",
+    "repository-management"
+  ]
+}
