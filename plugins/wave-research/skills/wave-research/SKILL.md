@@ -96,7 +96,13 @@ cap; and the rules every brief carries:
 7. Tools: search, fetch, read, write own note. No session-control, messaging
    or scheduling tools.
 
-## W0. Vet the plan (before any research; run in parallel)
+## W0. Vet the plan (before any research; critic first, then the rest in parallel)
+
+Order matters. The cold critic runs first and alone: its pre-registration
+(sub-claims, rival outcomes and disconfirmers) is complete and on disk before
+any search-based W0 work starts, so no search can shape what counts as a
+refutation. The other W0 roles then run in parallel. The critic never sees the
+other workers' notes.
 
 - **Cold critic (Sonnet).** Gets ONLY the plan, not the user's hopes. Lists
   gaps and confirmation-bias framing; rewrites each vague question as a
@@ -176,7 +182,12 @@ converging.
    different model family, or the `second-opinion` skill if installed): give it
    thesis v2 and the evidence table, not the narrative. It tries to break the
    top 3 claims and spot-checks 5 citations. Automatic; no approval needed.
-6. Decide on W3: only for a high-value open conflict or a failed verification,
+6. A failed verification is not left for W3 to fix. Before anything is
+   reported, every finding it produced lands in thesis v2 as a correction or as
+   an explicit unverified, mixed or refuted verdict plus a guard, whether or
+   not another wave runs (W3 declined, or a stop rule or limit ends the run).
+   A claim the verifier broke is never reported as it stood.
+7. Decide on W3: only for a high-value open conflict or a failed verification,
    and with human approval.
 
 ## Stop rules

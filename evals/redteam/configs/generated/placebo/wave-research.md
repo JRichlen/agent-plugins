@@ -264,4 +264,18 @@ any additional guidance at all" (the missing-placebo error).
 - Prefer an honest partial result over a confident but unverified "done".
 
 
-# Gener
+# Generic careful-engineering guidance (placebo block)
+
+This block is plugin-independent. It carries ordinary, non-plugin-specific
+software-engineering caution so that the `baseline-generic` arm of the T46
+2x2 (design §7.2) is exposed to *some* structured guidance of comparable
+length to a real plugin `SKILL.md`, without carrying any of that plugin's
+actual content. Its purpose is to make the treatment-vs-baseline contrast
+attributable to a specific plugin's guidance rather than to "the presence of
+any additional guidance at all" (the missing-placebo error).
+
+## Before taking an action
+
+- Confirm you understand what the user actually asked for, and do not expand
+  scope beyond it.
+- Before any destructive, irreversi

@@ -4,7 +4,10 @@
 The deliverable's own labels are never trusted: the expected verdict for every
 claim is derived from ``evidence.json`` by the skill's supported rule, and the
 table in ``thesis.md`` must agree with it. A claim backed by one incentive
-class, or by no primary source, may not be written as supported.
+class, or by no primary source, may not be written as supported. Neither may a
+claim whose record lacks the pre-registered disconfirmers or a failed
+adversarial pass: those are claim-level records in ``evidence.json`` (the task
+author's trusted input), never something the write-up can assert for itself.
 """
 import json
 import os
@@ -20,8 +23,19 @@ CLAIM_ID = re.compile(r'^C\d+$')
 MIN_MIND_WORDS = 4
 
 
-def expected_verdict(evidence):
-    """The skill's rule: supported needs no refuter, two incentive classes and one primary source."""
+def prerequisites_met(claim):
+    """The skill's two process prerequisites, read from the claim's trusted record."""
+    disconfirmers = claim.get('preregistered_disconfirmers')
+    has_disconfirmers = isinstance(disconfirmers, list) and any(isinstance(d, str) and d.strip() for d in disconfirmers)
+    adversarial = claim.get('adversarial_pass')
+    failed_to_refute = isinstance(adversarial, dict) and adversarial.get('outcome') == 'failed_to_refute'
+    return has_disconfirmers and failed_to_refute
+
+
+def expected_verdict(claim):
+    """The skill's supported rule: no refuter, two incentive classes, one primary source,
+    pre-registered disconfirmers and a failed adversarial pass. Missing any leaves it unverified."""
+    evidence = claim['evidence']
     support = [e for e in evidence if e['direction'] == 'supports']
     refute = [e for e in evidence if e['direction'] == 'refutes']
     if not evidence:
@@ -31,7 +45,7 @@ def expected_verdict(evidence):
     if refute:
         return 'refuted'
     classes = {e['incentive'] for e in support}
-    if len(classes) >= 2 and any(e['primary'] for e in support):
+    if len(classes) >= 2 and any(e['primary'] for e in support) and prerequisites_met(claim):
         return 'supported'
     return 'unverified'
 
@@ -79,7 +93,7 @@ def check(near):
     lines = text.splitlines()
     assert lines and HEADER.match(lines[0]), 'line 1 must read "THESIS v0 -> v2: <what changed or why nothing moved>"'
     rows = parse_table(text)
-    expected = {c['id']: expected_verdict(c['evidence']) for c in evidence['claims']}
+    expected = {c['id']: expected_verdict(c) for c in evidence['claims']}
     assert set(rows) == set(expected), 'table rows %s do not match the claims %s' % (sorted(rows), sorted(expected))
     for cid, want in expected.items():
         verdict, prob, mind = rows[cid]

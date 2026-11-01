@@ -1,6 +1,10 @@
 {
   "claims": [
     {
+      "adversarial_pass": {
+        "outcome": "failed_to_refute",
+        "summary": "A search for reports of throughput collapsing below 10k rps on one node found none."
+      },
       "evidence": [
         {
           "direction": "supports",
@@ -14,10 +18,14 @@
           "id": "E2",
           "incentive": "practitioner",
           "primary": false,
-          "summary": "A blog post reproduces 9.6k rps on similar hardware."
+          "summary": "A blog post reproduces 10.1k rps on similar hardware."
         }
       ],
       "id": "C1",
+      "preregistered_disconfirmers": [
+        "A reproduction on similar hardware below 8k rps.",
+        "A published run where the limiter drops requests below 10k rps at one node."
+      ],
       "text": "Sustains 10,000 requests per second on one node."
     },
     {

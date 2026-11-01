@@ -13,5 +13,7 @@ The command `commands/wave-research.md` is the entry point a user invokes.
 
 A sub-claim is reported supported only when its disconfirmers were written before the search, at least one adversarial pass failed to refute it, two or more source-incentive classes agree, and at least one source is primary. Anything less is reported unverified, mixed or unknown — NEVER rounded up.
 
+In W0 the cold critic's pre-registration (sub-claims, rivals, disconfirmers) is complete before any search-based W0 work starts; the other W0 roles then run in parallel.
+
 The deterministic checks that defend it live in `evals/cheap/checks.sh` and run
 as part of the marketplace cheap tier.

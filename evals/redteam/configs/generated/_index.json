@@ -1455,18 +1455,18 @@
       "config_path": "configs/generated/wave-research.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "3d9e78b883e4c18b1c0ba28de3b9a7a68534e944e3d803e81ea6fbea99269331",
-        "clean": "055e108e364844739b13029040c9e0c9dc4aad093697dfbd1b2b12699260abb2"
+        "adversarial": "24d3d46d89650fe7677a88321880e80a4b677f44f4bb8a98ca9a84fcea464553",
+        "clean": "0344ba617f1639b59fed7bad797bbd7e3c583fa23946ff77ea8ee0ea72c6be60"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
       "plugin": "wave-research",
       "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
-      "primary_skill_sha256": "0662ccb3a6211a6302f901e804d34ecad39adf8851996ada2cfafba6a87edf47",
+      "primary_skill_sha256": "18baf1f28bb58c67439d0733aeba51a41e41e031b5d111a176fae4667781f859",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 13524,
-        "treatment": 13524
+        "baseline-generic": 14242,
+        "treatment": 14242
       },
       "secondary_skills": [],
       "skill_paths": {

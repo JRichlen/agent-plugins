@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -39,6 +40,20 @@ def adopted(card, text):
         (pathlib.Path(tmp) / "thesis.md").write_text(text)
         env = {**os.environ, "AGENTIC_CARD_ID": card}
         return subprocess.run([sys.executable, str(ADOPT), tmp], env=env, capture_output=True, text=True).returncode == 0
+
+
+def with_inputs(edit):
+    """A temp copy of the pos card's evidence.json after ``edit(data)``; returns the TemporaryDirectory."""
+    tmp = tempfile.TemporaryDirectory()
+    data = json.loads((TASKS / POS / "task/evidence.json").read_text())
+    edit(data)
+    (pathlib.Path(tmp.name) / "evidence.json").write_text(json.dumps(data))
+    return tmp
+
+
+def unverified_c1(text):
+    """The pass fixture with C1 written as unverified and named in GUARDS."""
+    return swap(swap(text, "| C1 | supported | 0.80", "| C1 | unverified | 0.50"), "GUARDS: C2 rests", "GUARDS: C1 lacks its pre-registration record; C2 rests")
 
 
 def swap(text, old, new):
@@ -99,14 +114,76 @@ class Positive(unittest.TestCase):
         self.assertFalse(grade(POS, empty_header))
 
     def test_expected_verdicts_follow_the_evidence_not_the_table(self):
-        """Flip C2 to two incentive classes in a copy of the inputs: the old 'unverified' is now wrong."""
-        with tempfile.TemporaryDirectory() as tmp:
-            data = json.loads((TASKS / POS / "task/evidence.json").read_text())
+        """Flip C2 to two incentive classes in a copy of the inputs: the old 'unverified' is now wrong.
+
+        C2 only becomes supportable once its record also carries the two process prerequisites.
+        """
+        def edit(data):
             data["claims"][1]["evidence"][1]["incentive"] = "practitioner"
-            (pathlib.Path(tmp) / "evidence.json").write_text(json.dumps(data))
+            data["claims"][1]["preregistered_disconfirmers"] = ["A node-failure run that loses or double-counts increments."]
+            data["claims"][1]["adversarial_pass"] = {"outcome": "failed_to_refute", "summary": "No failure report found."}
+        with with_inputs(edit) as tmp:
             self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
             self.assertTrue(grade(POS, swap(swap(fixture(POS, "pass"), "| C2 | unverified | 0.45", "| C2 | supported | 0.70"),
                                             "C2 rests on vendor material alone; ", ""), inputs=tmp))
+
+    def test_c1_evidence_actually_meets_its_threshold(self):
+        """C1 claims 10,000 rps; every piece of evidence marked as supporting it must report at least that."""
+        data = json.loads((TASKS / POS / "task/evidence.json").read_text())
+        c1 = data["claims"][0]
+        figures = [float(m.group(1)) * 1000 for e in c1["evidence"] if e["direction"] == "supports"
+                   for m in [re.search(r"([\d.]+)k rps", e["summary"])] if m]
+        self.assertEqual(len(figures), 2)
+        self.assertTrue(all(f >= 10000 for f in figures), figures)
+
+
+class EarnedSupported(unittest.TestCase):
+    """'supported' needs the claim's pre-registered disconfirmers and a failed adversarial pass, as well as the evidence."""
+
+    def test_the_card_records_both_prerequisites_for_c1(self):
+        c1 = json.loads((TASKS / POS / "task/evidence.json").read_text())["claims"][0]
+        self.assertTrue(c1["preregistered_disconfirmers"])
+        self.assertEqual(c1["adversarial_pass"]["outcome"], "failed_to_refute")
+
+    def test_supported_is_rejected_when_the_disconfirmers_are_absent(self):
+        with with_inputs(lambda d: d["claims"][0].pop("preregistered_disconfirmers")) as tmp:
+            self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
+            self.assertTrue(grade(POS, unverified_c1(fixture(POS, "pass")), inputs=tmp))
+
+    def test_supported_is_rejected_when_the_adversarial_pass_is_absent(self):
+        with with_inputs(lambda d: d["claims"][0].pop("adversarial_pass")) as tmp:
+            self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
+            self.assertTrue(grade(POS, unverified_c1(fixture(POS, "pass")), inputs=tmp))
+
+    def test_supported_is_rejected_when_both_prerequisites_are_absent(self):
+        def edit(d):
+            d["claims"][0].pop("preregistered_disconfirmers")
+            d["claims"][0].pop("adversarial_pass")
+        with with_inputs(edit) as tmp:
+            self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
+            self.assertTrue(grade(POS, unverified_c1(fixture(POS, "pass")), inputs=tmp))
+
+    def test_an_empty_or_unsuccessful_record_does_not_count(self):
+        for edit in (lambda d: d["claims"][0].update(preregistered_disconfirmers=[]),
+                     lambda d: d["claims"][0].update(preregistered_disconfirmers=["  "]),
+                     lambda d: d["claims"][0].update(adversarial_pass={"outcome": "refuted", "summary": "x"}),
+                     lambda d: d["claims"][0].update(adversarial_pass={"summary": "ran, no outcome recorded"})):
+            with with_inputs(edit) as tmp:
+                self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
+                self.assertTrue(grade(POS, unverified_c1(fixture(POS, "pass")), inputs=tmp))
+
+    def test_a_write_up_cannot_supply_the_prerequisites_itself(self):
+        """Claiming a pre-registration in thesis.md does not stand in for the claim record."""
+        text = swap(fixture(POS, "pass"), "GUARDS:", "GUARDS: C1 disconfirmers were pre-registered and the adversarial pass failed to refute it;")
+        with with_inputs(lambda d: d["claims"][0].pop("adversarial_pass")) as tmp:
+            self.assertFalse(grade(POS, text, inputs=tmp))
+
+    def test_a_refuting_source_still_outranks_the_prerequisites(self):
+        def edit(d):
+            d["claims"][0]["evidence"].append({"direction": "refutes", "id": "E99", "incentive": "critic", "primary": True, "summary": "A run at 6k rps."})
+        with with_inputs(edit) as tmp:
+            self.assertFalse(grade(POS, fixture(POS, "pass"), inputs=tmp))
+            self.assertTrue(grade(POS, swap(unverified_c1(fixture(POS, "pass")), "| C1 | unverified | 0.50", "| C1 | mixed | 0.50"), inputs=tmp))
 
 
 class NearMiss(unittest.TestCase):
@@ -124,6 +201,16 @@ class Adoption(unittest.TestCase):
         self.assertTrue(adopted(POS, fixture(POS, "pass")))
         self.assertTrue(adopted(POS, fixture(NEAR, "near-fail")))
         self.assertFalse(adopted(POS, fixture(POS, "fail")))
+
+    def test_compact_table_spacing_is_still_adopted(self):
+        """The outcome grader tolerates `|C1|supported|...`; the adoption observer must too."""
+        compact = re.sub(r"^\| (C\d+) \| (\w+) \| ([\d.]+) \| ", r"|\1|\2|\3| ", fixture(POS, "pass"), flags=re.M)
+        self.assertIn("|C1|supported|0.80|", compact)
+        self.assertTrue(adopted(POS, compact))
+        self.assertTrue(grade(POS, compact))
+        spaced = re.sub(r"^\| (C\d+) \|", r"|   \1   |", fixture(POS, "pass"), flags=re.M)
+        self.assertTrue(adopted(POS, spaced))
+        self.assertFalse(adopted(POS, re.sub(r"^\| C\d+ \|.*$", "", fixture(POS, "pass"), flags=re.M)))
 
     def test_negative_fail_fixture_carries_the_unwanted_artifact(self):
         self.assertTrue(adopted(NEG, (TASKS / NEG / "fixtures/fail/thesis.md").read_text()))
