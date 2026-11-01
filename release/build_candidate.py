@@ -23,6 +23,8 @@ def build(repo: Path, revision: str, output: Path) -> dict:
     tree = git(repo, "rev-parse", commit + "^{tree}").decode().strip()
     epoch = int(git(repo, "show", "-s", "--format=%ct", commit))
     records = git(repo, "ls-tree", "-rz", "--full-tree", commit).split(b"\0")
+    symlinks = {record.split(b"\t", 1)[1].decode("utf-8") for record in records
+                if record and record.startswith(b"120000 ")}
     files = []
     archive = io.BytesIO()
     prefix = "agent-plugins-" + commit[:12]
@@ -47,13 +49,21 @@ def build(repo: Path, revision: str, output: Path) -> dict:
                 target = data.decode("utf-8")
                 # Reject absolute and escaping symlinks without dereferencing.
                 target_path = PurePosixPath(target)
-                depth = len(path.parent.parts)
+                resolved = list(path.parent.parts)
                 if target_path.is_absolute() or "\\" in target:
                     raise ValueError("unsafe symlink: " + name)
                 for part in target_path.parts:
-                    depth += -1 if part == ".." else (0 if part == "." else 1)
-                    if depth < 0:
-                        raise ValueError("escaping symlink: " + name)
+                    if part == "..":
+                        if not resolved:
+                            raise ValueError("escaping symlink: " + name)
+                        resolved.pop()
+                    elif part != ".":
+                        resolved.append(part)
+                        # Lexical normalization cannot model alias/.. safely.
+                        # Conservative policy: no committed symlink component,
+                        # including a final link, may be traversed by a target.
+                        if "/".join(resolved) in symlinks:
+                            raise ValueError("symlink-component traversal: " + name)
                 item.type = tarfile.SYMTYPE
                 item.linkname = target
                 item.mode = 0o777
@@ -71,15 +81,14 @@ def build(repo: Path, revision: str, output: Path) -> dict:
     manifest = {"schema": 1, "kind": "source-candidate", "commit": commit, "tree": tree,
                 "archive": archive_name, "archive_sha256": hashlib.sha256(payload).hexdigest(),
                 "files": files, "qualification": "Not a release or proof of host/behavioral effectiveness."}
-    output.mkdir(parents=True, exist_ok=True)
-    for name in (archive_name, "manifest.json", "SHA256SUMS"):
-        if (output / name).exists():
-            raise FileExistsError("refusing to overwrite candidate: " + str(output / name))
+    # Refuse even an existing empty directory or dangling directory symlink.
+    # Exclusive file creation also refuses a raced-in dangling file symlink.
+    output.mkdir(parents=True, exist_ok=False)
     manifest_bytes = (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode()
-    (output / archive_name).write_bytes(payload)
-    (output / "manifest.json").write_bytes(manifest_bytes)
-    (output / "SHA256SUMS").write_text(
-        f"{manifest['archive_sha256']}  {archive_name}\n{hashlib.sha256(manifest_bytes).hexdigest()}  manifest.json\n", encoding="utf-8", newline="\n")
+    for name, content in ((archive_name, payload), ("manifest.json", manifest_bytes),
+                          ("SHA256SUMS", f"{manifest['archive_sha256']}  {archive_name}\n{hashlib.sha256(manifest_bytes).hexdigest()}  manifest.json\n".encode())):
+        with (output / name).open("xb") as destination:
+            destination.write(content)
     return manifest
 
 

@@ -67,6 +67,34 @@ class Candidate(unittest.TestCase):
             candidate.build(self.repo, "HEAD", self.root / "unsafe")
         self.assertFalse((self.root / "unsafe").exists())
 
+    def test_alias_dotdot_escape_is_rejected_before_output(self):
+        for name, target in (("alias", b"."), ("escape", b"alias/..")):
+            oid = subprocess.run(["git", "-C", str(self.repo), "hash-object", "-w", "--stdin"], input=target, capture_output=True, check=True).stdout.decode().strip()
+            self.git("update-index", "--add", "--cacheinfo", "120000," + oid + "," + name)
+        self.git("-c", "user.name=Candidate test", "-c", "user.email=candidate@example.invalid", "commit", "-qm", "alias escape")
+        with self.assertRaisesRegex(ValueError, "symlink-component traversal"):
+            candidate.build(self.repo, "HEAD", self.root / "alias-output")
+        self.assertFalse((self.root / "alias-output").exists())
+
+    def test_dangling_manifest_link_never_creates_external_file(self):
+        output = self.root / "existing-output"
+        output.mkdir()
+        external = self.root / "outside-manifest.json"
+        try:
+            (output / "manifest.json").symlink_to(external)
+        except OSError as error:
+            self.skipTest("host cannot create filesystem symlinks: " + str(error))
+        with self.assertRaises(FileExistsError):
+            candidate.build(self.repo, "HEAD", output)
+        self.assertFalse(external.exists())
+
+    def test_existing_empty_output_directory_is_not_adopted(self):
+        output = self.root / "empty-output"
+        output.mkdir()
+        with self.assertRaises(FileExistsError):
+            candidate.build(self.repo, "HEAD", output)
+        self.assertEqual(list(output.iterdir()), [])
+
 
 if __name__ == "__main__":
     unittest.main()

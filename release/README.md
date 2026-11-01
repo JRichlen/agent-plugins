@@ -32,12 +32,15 @@ cd /tmp/plugin-candidate
 sha256sum -c SHA256SUMS
 ```
 
-Use a new output directory. The builder reads Git objects, never the dirty
+Use a nonexistent output directory; even an existing empty directory is refused. The builder reads Git objects, never the dirty
 working tree, and does not execute the selected candidate. It writes a tar.gz,
 `manifest.json` and `SHA256SUMS`. The manifest records the exact commit/tree,
 every source file's Git blob, bytes, mode and SHA-256. Timestamps, ownership and
 compression headers are fixed; executable bits and safe relative symlinks are
-preserved. Unsupported submodules or escaping links fail closed.
+preserved. Unsupported submodules, escaping links and targets traversing any
+committed symlink component fail closed; chained symlinks are conservatively
+unsupported. Files are created exclusively, so dangling output links are not
+followed.
 
 The archive is a source snapshot of the entire tracked tree, not a compiled or
 independently signed product. Checksums detect changed bytes but do not prove
