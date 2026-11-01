@@ -118,11 +118,11 @@ jobs:
 
   counterfeit:
     name: counterfeit tier
-    # REQUIRED status check. Always runs and always reports, so a corpus-skip on a
+    # REQUIRED status check. Reports on non-canceled runs, so a corpus-skip on a
     # docs-only PR can never leave branch protection waiting. Fails only if the
     # detect step broke or the corpus run itself found the gate no longer rejects.
     needs: [counterfeit-detect, counterfeit-run]
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess counterfeit tier outcome
@@ -196,11 +196,11 @@ jobs:
 
   install:
     name: install tier (marketplace install-smoke + per-plugin evals)
-    # REQUIRED status check. always() + the assess table below mean an empty
+    # REQUIRED status check. !cancelled() + the assess table below mean an empty
     # marketplace (fromJSON('[]') → run skipped) reports green, while any plugin's
     # failed install-smoke or eval leg reports red. Never left hanging on a skip.
     needs: [install-detect, install-run]
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess install tier outcome
@@ -530,7 +530,7 @@ jobs:
 
   behavioral:
     name: behavioral tier (promptfoo)
-    # REQUIRED status check. always() + the assess table below mean an empty pack
+    # REQUIRED status check. !cancelled() + the assess table below mean an empty pack
     # set (fromJSON('[]') → run skipped), a fork PR, or an untouched plugin all
     # report green, while a real promptfoo failure reports red. Never left hanging.
     needs: [cheap, behavioral-detect, behavioral-run, grader-model]
