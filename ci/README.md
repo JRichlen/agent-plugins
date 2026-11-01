@@ -51,7 +51,8 @@ compare an identical clean-main run before calling a failure pre-existing.
 [`setup-eval-tools`](../.github/actions/setup-eval-tools/action.yml) reads the
 Node pin from `evals/redteam/pin.json`, installs the exact
 [`tools/package-lock.json`](tools/package-lock.json) into runner temp with
-lifecycle scripts disabled, and provisions the existing logger and bubblewrap
+general lifecycle scripts disabled, explicitly runs the inspected locked Claude
+platform-copy installer, verifies its ELF header without invoking the CLI, and provisions the existing logger and bubblewrap
 adapters. Update the manifest and lock together. Never regenerate pins from
 whatever happens to be installed locally.
 

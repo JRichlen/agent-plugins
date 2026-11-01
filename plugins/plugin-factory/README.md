@@ -47,6 +47,25 @@ human replaces the stub with real deterministic checks for its invariant. That
 guarantees no plugin ever ships with zero safety coverage. Run `evals/cheap/run.sh`
 — a freshly scaffolded plugin is *expected* to be red until you write its checks.
 
+## Reconcile marketplace changes
+
+When `.claude-plugin/marketplace.json` conflicts with another contribution:
+
+1. Compare the current source and both changes by plugin name and source path.
+   Preserve distinct intended active registrations, deduplicate the same
+   identity, and resolve version/description differences against the owning
+   plugin manifest. Never keep conflicting duplicates or restore retired entries
+   just to remove conflict markers.
+2. Check that each retained source resolves to one matching plugin manifest and
+   that its name, version and description agree. Do not discard a distinct new
+   plugin merely because another entry was added nearby.
+3. From the repository root, run `bash ci/install-smoke.sh` and
+   `bash evals/cheap/run.sh`. Report actual failures and inspect the resulting diff.
+
+Fetch and inspect trunk before choosing how to integrate it. For a published
+stack, coordinate any rebase/history rewrite first; the
+[CI stack guide](../../ci/README.md#working-in-a-pr-stack) owns those operations.
+
 ## License
 
 MIT

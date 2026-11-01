@@ -48,6 +48,9 @@ class WorkflowContracts(unittest.TestCase):
         setup = (ROOT / "ci/setup-eval-tools.sh").read_text(encoding="utf-8")
         self.assertIn("--ignore-scripts", setup)
         self.assertIn("npm ci", setup)
+        self.assertIn("@anthropic-ai/claude-code/install.cjs", setup)
+        self.assertIn("source.read(4)", setup)
+        self.assertNotIn("npm rebuild", setup)
         self.assertNotIn("entrypoint.js", setup)
         self.assertNotIn("--version", setup)
 

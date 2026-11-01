@@ -12,6 +12,15 @@ sudo apt-get update -qq
 sudo apt-get install -y bubblewrap patch
 npm ci --prefix "$tools" --ignore-scripts --no-audit --no-fund \
   --userconfig "$root/ci/tools/empty.npmrc" --registry https://registry.npmjs.org
+# The locked Claude wrapper ships a placeholder. Its inspected installer only
+# copies the already-installed platform binary; it makes no network/model call.
+node "$tools/node_modules/@anthropic-ai/claude-code/install.cjs"
+python3 - "$tools/node_modules/@anthropic-ai/claude-code/bin/claude.exe" <<'PY'
+import sys
+with open(sys.argv[1], 'rb') as source:
+    if source.read(4) != b'\x7fELF':
+        raise SystemExit('Claude platform installation did not produce a Linux ELF binary')
+PY
 # Static version inspection does not initialize the CLI or its analytics.
 node - "$tools/node_modules" <<'JS'
 const fs = require('fs');

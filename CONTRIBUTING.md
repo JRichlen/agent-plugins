@@ -36,6 +36,14 @@ Green aggregates may represent skips. A maintainer must decide whether additiona
 behavioral evidence is needed and authorize its cost; do not manually run paid
 suites or move untrusted code into a secrets-bearing context to obtain a badge.
 
+## Reconcile marketplace changes
+
+Resolve `.claude-plugin/marketplace.json` by registration identity, not by
+keeping both sides of a conflict. Follow the
+[entry-by-entry recovery procedure](plugins/plugin-factory/README.md#reconcile-marketplace-changes)
+and run its checks. Coordinate published stack changes before any rebase or
+history rewrite.
+
 ## Working in a PR stack
 
 Create a linear dependency chain and keep each PR's base on the previous layer.
