@@ -16,6 +16,24 @@ workflows and eval packs by `evals/cheap/check-testing-doc.sh` on every
 > the inventory half of this order; the prose half (the tier tables below) is
 > on the PR author and reviewer.
 
+## Pipeline operation
+
+For event selection, costs, artifacts and recovery, start with the
+[CI runbook](../ci/README.md). The inventory below remains the reference for
+coverage and evidence limits.
+
+Free correctness runs on every layer of a native main-rooted PR stack. The
+`stacked` event refreshes checks when linkage changes. Grader/subject reachability
+and routing wait for the deterministic cheap job; existing label/fork gates,
+providers and concurrency ceilings are unchanged. Each layer can still make
+reachability calls, so stack size matters to cost. Skip is not behavioral success.
+
+Offline jobs share a locked tool setup and fresh empty profiles. Provisioning
+checks package versions without initializing Promptfoo. Runtime diagnostics are
+subject to the pinned tool's known opt-out limitation; the fail-closed offline
+wrapper remains in place. The gallery refresh validates selection and capture
+launch before any paid call and preserves raw result artifacts on failure.
+
 ## Responsibility-refactor coverage
 
 The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old

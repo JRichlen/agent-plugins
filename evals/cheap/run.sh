@@ -2489,7 +2489,12 @@ fi
 # REPO-level gate: needs a real .git, so it is inert in the synthetic
 # counterfeit root, which is not itself a git worktree.
 if [ -e ".git" ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  group "gitignored generated content is not tracked"
+  if [ -e .git ] && [ -f .github/actions/setup-eval-tools/action.yml ]; then
+  group "workflow contracts — free-before-paid and capture launch"
+  if python3 -m unittest discover -s ci/tests -p 'test_*.py'; then ok "workflow contracts"; else bad "workflow contracts failed"; fi
+fi
+
+group "gitignored generated content is not tracked"
   _gi_hits="$(git ls-files -z 2>/dev/null | git check-ignore --no-index -z --stdin 2>/dev/null | tr '\0' '\n' | grep -v '^$')"
   if [ -z "$_gi_hits" ]; then
     ok "no tracked file matches a .gitignore pattern"

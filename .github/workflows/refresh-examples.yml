@@ -39,9 +39,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+      - uses: ./.github/actions/setup-eval-tools
+      - name: free preflight — selection, mode and capture launch
+        id: preflight
+        env:
+          REQUESTED_PLUGINS: ${{ github.event.inputs.plugins }}
+        run: |
+          python3 evals/paid/preflight_refresh.py --selected "$REQUESTED_PLUGINS" \
+            --github-output "$GITHUB_OUTPUT" --report "$RUNNER_TEMP/refresh-preflight.json"
+      - name: free pipeline contracts
+        run: python3 -m unittest discover -s ci/tests -p 'test_*.py'
       - name: preflight — the subject model must be callable before spending
         # The refresh is the workflow that actually spends the budget, so the
         # reachability check belongs HERE, not only in evals.yml (caught in
@@ -56,7 +63,7 @@ jobs:
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          SELECTED: ${{ github.event.inputs.plugins }}
+          SELECTED: ${{ steps.preflight.outputs.selected }}
         run: |
           set -uo pipefail
           # Which plugins: the dispatch input, else every plugin with a valid
@@ -73,7 +80,7 @@ jobs:
           stamp="$(mktemp)"; touch "$stamp"
           for p in $plugins; do
             cfg="plugins/$p/evals/promptfoo/promptfooconfig.yaml"
-            [ -f "$cfg" ] || { echo "::warning::$p has no promptfoo pack — skipping"; continue; }
+            [ -f "$cfg" ] || { echo "::error::validated pack disappeared: $p"; exit 1; }
             echo "::group::eval $p"
             # One eval per pack is enough to capture a representative pair. A pack
             # that errors does not abort the run — its previous snapshot stands.
@@ -83,7 +90,7 @@ jobs:
             # Provenance the reader can follow back: the run URL (this log), the
             # grader read from the pack itself, and a promise of attestation that
             # the step below keeps — the job fails, and no PR opens, if it doesn't.
-            evals/paid/capture-example.sh "plugins/$p/evals/promptfoo/results.json" "$p" \
+            bash evals/paid/capture-example.sh "plugins/$p/evals/promptfoo/results.json" "$p" \
               --commit "${{ github.sha }}" --captured-at "$ts" \
               --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
               --attestation github || true
@@ -106,6 +113,7 @@ jobs:
         # The results.json files are the primary evidence the snapshots are
         # cut from; the snapshot's run_url points at this run, and this artifact
         # is what a reader downloads to check the pair against its source.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: promptfoo-results

@@ -22,8 +22,12 @@ on:
   push:
     branches: [main]
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [opened, synchronize, reopened, labeled, stacked]
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
 
 concurrency:
   group: evals-${{ github.ref }}
@@ -38,45 +42,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full history: the timeline guard verifies /commit/<sha> receipts
-          # against the object store, which a depth-1 checkout cannot see.
+          # Full history supports changed-path selection and source receipts.
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: install the pinned offline tooling the agentic and red-team gates verify against
-        # The always-on gate is host-portable, not host-free: evals/redteam checks
-        # the promptfoo 0.122.0 pin by package.json + dist-manifest digest at
-        # PROMPTFOO_HOME, and the agentic adapter lane reads the INSTALLED
-        # claude/codex --help to refuse any driver flag the binaries do not
-        # support (T25). Install exactly the pinned versions into the runner's
-        # temp dir (never npx, never @latest) and export the two locations. No
-        # login, no model call: --help and --version are all the gate touches.
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y bubblewrap patch
-          mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4 winston@3.19.0 winston-transport@4.9.0
-          echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
-          # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
-          # /usr/bin:/bin (contract 10.1) -- it never inherits the runner's PATH.
-          # The npm codex wrapper is a `#!/usr/bin/env node` script, so node must
-          # be reachable on that allowlisted PATH; expose the setup-node binary
-          # there (a provisioning step, not a framework change).
-          sudo ln -sf "$(command -v node)" /usr/bin/node
-          # Diagnostics only: prove the three binaries answer --version/--help here.
-          export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
-          node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
-          claude --version
-          codex --version || true
-          codex exec --help 2>&1 | head -5 || true
-      - name: apply the pinned logger lifecycle correction
-        run: python3 evals/redteam/bin/provision-logger.py --promptfoo-home "$PROMPTFOO_HOME" --apply
-      - name: provision scoped bubblewrap namespaces and prove the positive baseline
-        run: bash ci/provision-bubblewrap.sh
+      - uses: ./.github/actions/setup-eval-tools
       - name: run cheap eval gate
         run: evals/cheap/run.sh
       - name: verify task grading, uncertainty, and computation isolation
@@ -140,42 +108,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - name: install the pinned offline tooling the agentic and red-team gates verify against
-        # The always-on gate is host-portable, not host-free: evals/redteam checks
-        # the promptfoo 0.122.0 pin by package.json + dist-manifest digest at
-        # PROMPTFOO_HOME, and the agentic adapter lane reads the INSTALLED
-        # claude/codex --help to refuse any driver flag the binaries do not
-        # support (T25). Install exactly the pinned versions into the runner's
-        # temp dir (never npx, never @latest) and export the two locations. No
-        # login, no model call: --help and --version are all the gate touches.
-        run: |
-          set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y bubblewrap patch
-          mkdir -p "$RUNNER_TEMP/pinned-tools" && cd "$RUNNER_TEMP/pinned-tools"
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund --no-save promptfoo@0.122.0 @anthropic-ai/claude-code@2.1.263 @openai/codex@0.153.4 winston@3.19.0 winston-transport@4.9.0
-          echo "PROMPTFOO_HOME=$RUNNER_TEMP/pinned-tools/node_modules/promptfoo" >> "$GITHUB_ENV"
-          echo "$RUNNER_TEMP/pinned-tools/node_modules/.bin" >> "$GITHUB_PATH"
-          # The adapter driver runs each CLI under an env ALLOWLIST whose PATH is
-          # /usr/bin:/bin (contract 10.1) -- it never inherits the runner's PATH.
-          # The npm codex wrapper is a `#!/usr/bin/env node` script, so node must
-          # be reachable on that allowlisted PATH; expose the setup-node binary
-          # there (a provisioning step, not a framework change).
-          sudo ln -sf "$(command -v node)" /usr/bin/node
-          # Diagnostics only: prove the three binaries answer --version/--help here.
-          export PATH="$RUNNER_TEMP/pinned-tools/node_modules/.bin:$PATH"
-          node "$RUNNER_TEMP/pinned-tools/node_modules/promptfoo/dist/src/entrypoint.js" --version
-          claude --version
-          codex --version || true
-          codex exec --help 2>&1 | head -5 || true
-      - name: apply the pinned logger lifecycle correction
-        run: python3 evals/redteam/bin/provision-logger.py --promptfoo-home "$PROMPTFOO_HOME" --apply
-      - name: provision scoped bubblewrap namespaces and prove the positive baseline
-        run: bash ci/provision-bubblewrap.sh
+      - uses: ./.github/actions/setup-eval-tools
       - name: prove the cheap gate discriminates (counterfeit corpus)
         run: evals/counterfeits/run.sh
 
@@ -294,6 +227,7 @@ jobs:
     # This is the check that answers "is the grader slug a real, reachable id?" without
     # depending on the OpenRouter subject model at all.
     name: confirm grader model resolves
+    needs: [cheap]
     runs-on: ubuntu-latest
     # Secrets aren't available to fork PRs, so only run where they are.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -372,6 +306,7 @@ jobs:
     # to the behavioral aggregate's needs + assess, exactly as grader-model is)
     # is a one-line change and an owner decision.
     name: confirm subject model resolves (advisory)
+    needs: [cheap]
     runs-on: ubuntu-latest
     # Secrets aren't available to fork PRs, so only run where they are.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -441,6 +376,7 @@ jobs:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-profile
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -646,9 +582,11 @@ jobs:
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
        contains(github.event.pull_request.labels.*.name, 'paid-evals'))
+    needs: [cheap]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-profile
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -925,7 +863,7 @@ jobs:
 
   deep-run:
     name: deep tier — pier run (${{ matrix.plugin }})
-    needs: [deep-detect]
+    needs: [deep-detect, cheap]
     # Run only when the gate switch is ON, AND the safety surface changed, AND
     # there are pier packs, AND secrets are available (fork PRs get no secrets —
     # same policy as the other tiers). The `enabled` clause is the off switch; it
@@ -949,6 +887,7 @@ jobs:
         plugin: ${{ fromJSON(needs.deep-detect.outputs.plugins) }}
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/eval-profile
       - uses: dorny/paths-filter@v3
         id: touched
         with:

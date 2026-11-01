@@ -12,7 +12,7 @@
 #
 # It pairs the plugin's real-skill scenario with its negative-control
 # (calibration / stub) scenario from the SAME results file:
-#   with_skill    = a passing real-skill test row (the skill steered the output)
+#   with_skill    = a passing real-skill test row (not proof the skill caused success)
 #   without_skill = the calibration row (same bait, generic stub — the
 #                   naturally-helpful baseline the skill is measured against)
 # and writes docs/examples/data/<plugin>.json with both outputs, both grades,
@@ -42,6 +42,7 @@ set -uo pipefail
 RESULTS=""; PLUGIN=""; OUT="docs/examples/data"; COMMIT=""; CAPTURED=""; RUN_URL=""; ATTEST="none"; PACK=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --help|-h) echo "usage: capture-example.sh RESULTS.json PLUGIN [--out DIR] [--commit SHA] [--captured-at ISO8601] [--run-url URL] [--attestation github|none] [--pack DIR]"; exit 0 ;;
     --out)         OUT="${2:?}"; shift 2 ;;
     --commit)      COMMIT="${2:?}"; shift 2 ;;
     --captured-at) CAPTURED="${2:?}"; shift 2 ;;
@@ -87,8 +88,15 @@ def uses_stub(r):
     s = var(r, "skill") or ""
     return "calibration" in str(s).lower() or "stub" in str(desc(r)).lower()
 
-real = next((r for r in rows if r.get("success") and not uses_stub(r) and var(r, "question")), None)
-stub = next((r for r in rows if uses_stub(r) and var(r, "question")), None)
+def provider_id(r):
+    p = r.get("provider")
+    return (p.get("id") if isinstance(p, dict) else p) or "unknown"
+
+def gradeable(r):
+    return isinstance(r.get("success"), bool) and r.get("failureReason") != 2 and bool(out_of(r).strip())
+
+real = next((r for r in rows if r.get("success") is True and gradeable(r) and not uses_stub(r) and var(r, "question")), None)
+stub = next((r for r in rows if gradeable(r) and uses_stub(r) and real and var(r, "question") == var(real, "question") and provider_id(r) == provider_id(real)), None)
 if not real or not stub:
     # A skip used to be one opaque line, so two full refresh runs (2026-09-01 and
     # 2026-09-08) captured nothing across all 12 packs and still reported success —
@@ -117,14 +125,13 @@ if not real or not stub:
         print("  cause: every real-skill row FAILED — a snapshot needs at least one passing one")
         for why, n in reasons.most_common(3):
             print(f"    x{n}: {why}")
+    if real and not stub and stubs:
+        print("  cause: NO gradeable calibration row with the same question and provider — refusing an unmatched comparison")
     if not stubs:
         print("  cause: NO stub/calibration row — the pack has no negative control to pair against")
     print("  the previous snapshot (if any) stands; nothing was overwritten")
     sys.exit(0)
 
-def provider_id(r):
-    p = r.get("provider")
-    return (p.get("id") if isinstance(p, dict) else p) or "unknown"
 
 def family(model_id):
     """Vendor/family of a provider id: 'anthropic:messages:claude-x' -> anthropic;
