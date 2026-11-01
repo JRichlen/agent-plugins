@@ -459,6 +459,7 @@ jobs:
               - 'plugins/${{ matrix.plugin }}/commands/**'
               - 'plugins/${{ matrix.plugin }}/AGENTS.md'
               - 'plugins/${{ matrix.plugin }}/hooks/**'
+              - 'plugins/${{ matrix.plugin }}/context/**'
               - 'plugins/${{ matrix.plugin }}/.claude-plugin/plugin.json'
               - 'plugins/${{ matrix.plugin }}/evals/promptfoo/**'
               - 'evals/paid/**'
@@ -664,8 +665,10 @@ jobs:
           filters: |
             routing:
               - 'evals/routing/**'
+              - 'core/OPERATING.md'
+              - 'core/ownership.json'
               - 'plugins/*/skills/**/SKILL.md'
-              - 'plugins/redgate/skills/redgate/SKILL.md'
+              - 'plugins/verify-before-claim/skills/verify-work/SKILL.md'
               - 'plugins/*/.claude-plugin/plugin.json'
               - '.claude-plugin/marketplace.json'
       - name: roster is in sync before spending on a model call
@@ -706,9 +709,9 @@ jobs:
           npx --yes promptfoo@0.122.0 eval --max-concurrency 1 -c promptfooconfig.yaml --output results.json \
             || echo "promptfoo exited non-zero — verdict delegated to the statistical gate"
           test -s results.json
-      - name: promptfoo eval (redgate trajectory)
+      - name: promptfoo eval (acceptance transitions)
         if: steps.touched.outputs.routing == 'true'
-        # Second behavioral run of this job (RQ-002): the bounded redgate
+        # Second behavioral run of this job (RQ-002): the selected acceptance-contract
         # trajectory pack — frozen transcript prefixes graded by a typed STEP:
         # line, same deterministic-contract discipline as the routing pack.
         # Same exit-code delegation as above: the statistical gate is the arbiter.

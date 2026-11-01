@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# Mock gh for the hermetic sandbox. The curator consumes pre-gathered
-# context.json/diff.json, so no real GitHub call is needed; any stray call is a
-# no-op that must not reach the network.
-echo "mock gh (offline sandbox): $*" >&2
-exit 0

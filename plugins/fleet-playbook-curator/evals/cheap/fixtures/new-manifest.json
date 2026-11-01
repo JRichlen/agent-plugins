@@ -1,8 +1,0 @@
-{
-  "as_of": "2026-02-01T00:00:00Z",
-  "members": [
-    {"node_id": "R_A", "name": "a", "full_name": "o/a", "default_branch": "main", "head_sha": "aaa2222", "pushed_at": "2026-02-01T00:00:00Z", "archived": false, "private": true},
-    {"node_id": "R_C", "name": "c-new", "full_name": "o/c-new", "default_branch": "main", "head_sha": "ccc1111", "pushed_at": "2026-01-01T00:00:00Z", "archived": false, "private": true},
-    {"node_id": "R_D", "name": "d", "full_name": "o/d", "default_branch": "main", "head_sha": "ddd1111", "pushed_at": "2026-02-01T00:00:00Z", "archived": false, "private": true}
-  ]
-}

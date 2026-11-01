@@ -2,9 +2,8 @@
 
 Every generated page (docs/build-examples.sh, docs/build-index.sh,
 docs/timeline/build-timeline.sh) imports this so the top navigation, the
-colour tokens and the base typography are identical across the site; the two
-hand-written deep-dive pages (docs/redgate/, docs/agent-compiler/) paste the
-same markup in by hand. No timestamps, no randomness: the output is a pure
+colour tokens and the base typography are identical across the site; the hand-maintained compiler page consumes the
+same navigation markup. No timestamps, no randomness: the output is a pure
 function of its inputs so every page stays byte-reproducible.
 """
 import html
@@ -16,7 +15,6 @@ PAGES = [
     ("home",     "Home",           ""),
     ("examples", "Examples",       "examples/"),
     ("timeline", "Timeline",       "timeline/"),
-    ("redgate",  "redgate",        "redgate/"),
     ("compiler", "agent-compiler", "agent-compiler/"),
 ]
 

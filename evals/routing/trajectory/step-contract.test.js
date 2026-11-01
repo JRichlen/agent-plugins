@@ -32,6 +32,7 @@ const EXPECTED = [
   ['T2', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
   ['T3 (blocked)', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
   ['T3 (declined)', 'STEP: action=gate | gate=major | disposition=declined | proceed=no'],
+  ['direct bounded work', 'STEP: action=trace | gate=none | disposition=approved | proceed=yes'],
   ['T4', 'STEP: action=resume | gate=major | disposition=blocked | proceed=no'],
   ['T4 (step named by the re-raised gate)', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
 ];

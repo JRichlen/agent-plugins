@@ -2631,6 +2631,13 @@ else
   bad "redteam suite gate: evals/redteam/run.sh is missing"
 fi
 
+# Canonical core is repository-owned; synthetic plugin-only roots do not adopt it.
+if grep -q 'core/OPERATING.md' "$REPO_ROOT/AGENTS.md" 2>/dev/null; then
+  group "shared core projections and filesystem controls"
+  if python3 core/sync.py --check; then ok "packaged core matches its canonical sources"; else bad "packaged core source drift"; fi
+  if python3 -m unittest core.test_sync; then ok "core projection mutation/path controls"; else bad "core projection controls failed"; fi
+fi
+
 # --- 23. Gitignored generated content is never left tracked ------------------
 # .gitignore documents directories as generated and "never committed" — eval
 # artifacts, promptfoo debug/error logs, canary/listener output, under

@@ -1,17 +1,11 @@
-# AGENTS.md — scope-fence
+# scope-fence repository entry point
 
-Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding (ticket, note, diary entry) — never fixed in the same change. Use when starting any bounded task, when tempted to 'fix it while I'm here', or when reviewing whether a diff crept beyond its mandate.
+Load [the authoritative method](skills/scope-fence/SKILL.md) before applying this
+plugin. Its entry conditions, action boundaries, procedure and exit live there;
+this discovery file does not maintain a second policy copy. Follow its links to
+references only as needed. The user entry point is
+[the command](commands/scope-fence.md).
 
-## How to use it
-
-Read `skills/scope-fence/SKILL.md` and follow it — it is the authoritative
-description of this plugin's workflow and the invariant it defends.
-
-The command `commands/scope-fence.md` is the entry point a user invokes.
-
-## The invariant this plugin defends
-
-Every hunk in the produced diff ALWAYS traces to the stated task; out-of-scope discoveries are ALWAYS recorded as findings and NEVER folded into the same change.
-
-The deterministic checks that defend it live in `evals/cheap/checks.sh` and run
-as part of the marketplace cheap tier.
+Run the package's `evals/cheap/checks.sh` through the repository cheap runner
+when changing it; see [testing](../../docs/testing.md) for additional checks and
+host limitations.

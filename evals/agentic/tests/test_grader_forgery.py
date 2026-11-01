@@ -30,7 +30,7 @@ class GraderForgery(unittest.TestCase):
         cases = {
             "plugin-factory-pos-01": {"plugin.json": "NOT JSON\n"},
             "wayfinder-pos-01": {"tickets.json": "NOT JSON\n"},
-            "jori-near-01": {"dashboard.json": "NOT JSON\n"},
+            "eval-ladder-pos-01": {"eval-plan.json": "NOT JSON\n"},
             "agent-compiler-pos-01": {"rendered.md": "imageHash: totally-made-up\n"},
         }
         for card, edits in cases.items():
@@ -79,7 +79,7 @@ class GraderForgery(unittest.TestCase):
         self.assertFalse(self.grade("scope-fence-pos-01", {"diff.patch": patch})[0])
 
     def test_correct_originals_still_pass(self):
-        for card in ("plugin-factory-pos-01", "wayfinder-pos-01", "jori-near-01", "agent-compiler-pos-01",
+        for card in ("plugin-factory-pos-01", "wayfinder-pos-01", "eval-ladder-pos-01", "agent-compiler-pos-01",
                      "codebase-design-pos-01", "find-before-build-pos-01", "diagnosing-bugs-pos-01",
                      "verify-before-claim-pos-01", "scope-fence-pos-01"):
             with self.subTest(card=card):

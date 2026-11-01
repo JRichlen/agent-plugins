@@ -1,137 +1,260 @@
 # agent-plugins
 
-**Jordan Richlen's Claude Code plugin marketplace.**
+A shared operating contract and task methods for AI-assisted work.
 
-A single marketplace hosting a growing set of plugins. Each lives under
-`plugins/<name>/` with its own manifest, and is registered in
-[`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) so it can be
-installed by name.
+Describe the outcome you want. Use the smallest useful method, stay within the
+accepted scope, and return a result that can be inspected and continued. Shared
+rules have one owner; detailed procedures are selected for the task.
 
-## Install
+This draft implements those boundaries in repository instructions and services.
+It does not install the core into a host or establish identical behavior across
+coding assistants. [Current status and migration](#current-status-and-migration)
+separate the changes from the remaining qualification work.
 
-The native path below is the primary, zero-dependency way to install from this
-marketplace. [Install with APM](#install-with-apm) further down is an
-alternative worth knowing about if you manage the same plugin set across
-multiple machines and want it to resolve identically every time.
+## Start with the work
 
-```sh
+> Fix the CSV export bug, explain the change, and update the documentation.
+
+For a clear, bounded task, the path may simply be to do the work and check it.
+Request a particular method when you want one. You should not need to learn a
+coordinator's persona or a universal protocol before describing the outcome.
+
+## Follow one task
+
+This is a fictional walkthrough of intended use, not a recorded test run.
+
+1. **Establish the objective.** Keep the reported bug, documentation request,
+   constraints and completion condition together. Ask for a consequential
+   missing decision or required approval.
+2. **Diagnose before changing.** Reproduce the failure and test plausible causes.
+   Reuse an existing implementation when it fits.
+3. **Make a focused fix.** Preserve unrelated work. Use delegated help when
+   independent assignments justify the brief and integration work.
+4. **Verify the claim.** Check the regression and relevant behavior. A worker's
+   success report remains a report until its evidence is checked.
+5. **Change stages.** Pass verified findings and remaining limits to
+   documentation work. Do not turn an unresolved hypothesis into the explanation
+   of a fix. Ordinary document authoring does not require an instruction-file audit.
+6. **Hand back useful state.** Say what changed, what was checked, what remains
+   uncertain and whether anything needs a decision.
+
+If supported by actual checks, the result could be:
+
+> CSV export now preserves labels containing commas. The regression failed
+> before the fix and passes now. The export tests pass, and the documentation
+> reflects the change. Production data has not been checked.
+
+That can be enough. You can also inspect the diff, commands, source evidence,
+worker handbacks and method choice. Required approvals, material cost, privacy
+exposure and verification limits stay visible at every depth.
+
+## One system with clear responsibilities
+
+| Layer | Responsibility | Source |
+|---|---|---|
+| Core | Intent, scope, authority, shared task state and method-selection boundaries | [Operating contract](core/OPERATING.md) and [ownership index](core/ownership.json) |
+| Shared services | Bounded delegation, continuity and reusable verification operations | [Delegate work](plugins/delegated-intelligence/), [continue or hand off](plugins/context-handoff/), [check evidence](plugins/verify-before-claim/) |
+| Playbooks | The task procedure for planning, research, debugging, implementation or instruction maintenance | [Choose by need](#choose-by-need) |
+| Techniques | A focused approach within a task, such as a retained end-to-end slice, comparison or review perspective | [Tracer bullets](plugins/tracer-bullets/) and the selected playbook's references |
+| Host adapters | Reviewable projections of the core for a host's discovery, tools and instructions | [Adapters](core/adapters/) |
+
+Evidence, knowledge and decisions connect these layers through existing task,
+project and decision records. They are not another coordinator or an autonomous
+self-rewriting subsystem. Each method should finish or hand off without leaving
+its entire procedure active for the next stage.
+
+## Choose by need
+
+| What you need | Start here |
+|---|---|
+| Clarify a consequential plan | [grill-me](plugins/grill-me/) |
+| Map work across sessions | [wayfinder](plugins/wayfinder/) |
+| Diagnose a failure | [diagnosing-bugs](plugins/diagnosing-bugs/) |
+| Build one useful end-to-end slice | [tracer-bullets](plugins/tracer-bullets/) |
+| Choose an interface | [codebase-design](plugins/codebase-design/) |
+| Find existing code before adding more | [find-before-build](plugins/find-before-build/) |
+| Test a contested claim | [wave-research](plugins/wave-research/) |
+| Delegate independent work | [delegated-intelligence](plugins/delegated-intelligence/) |
+| Check completion evidence or use an explicit acceptance contract | [verify-before-claim](plugins/verify-before-claim/) |
+| Resume or hand off | [context-handoff](plugins/context-handoff/) |
+| Audit stale instruction files | [docs-hygiene](plugins/docs-hygiene/) |
+| Write or revise prose | Ordinary authoring, with [voice](plugins/voice/) when useful |
+| Learn from completed work | [dev-diary](plugins/dev-diary/) and [recurrence-detector](plugins/recurrence-detector/) |
+
+## Choose the depth you want
+
+**Get the result:** describe the outcome and constraints; receive the result,
+essential limits and any decision you need to make.
+
+**Understand the work:** ask why a method was selected, what changed, which
+alternatives were considered or where uncertainty remains.
+
+**Inspect the evidence:** follow actual sources, artifacts, diffs, test results
+and worker handbacks.
+
+**Customize the system:** inspect the core, activation/exit contracts, host
+adapters and checks before changing behavior.
+
+These choices apply per task. Explanation length does not determine verification
+depth or require a heavier workflow.
+
+<details>
+<summary>How methods enter, finish and hand off</summary>
+
+Core distinguishes an explicit request, task match, dependency, state/risk check,
+always-on invariant and offer-only capability. Selection never grants authority.
+
+A playbook owns its task procedure. Shared services return evidence and gaps to
+their caller. The [ownership index](core/ownership.json) records service entry
+and exit conditions. A perspective changes what is inspected; it does not gain
+control over the whole task.
+
+Use the existing task record when tracking is needed. On a stop, account for
+workers and in-flight actions; some actions may be non-cancellable or have an
+uncertain outcome. Report that state rather than implying rollback.
+
+</details>
+
+<details>
+<summary>How decisions and knowledge improve without collecting duplicate rules</summary>
+
+Record an observation with its source and scope. Compare it with prior evidence.
+Revise the affected decision or method, check the change and retain a restore
+path. Recurrence-detector proposes candidates from repeated sourced observations;
+it does not silently install a lesson as universal policy.
+
+Prefer improving or retiring an existing responsibility before adding another.
+Keep temporary task state distinct from established knowledge and behavioral
+instructions. Reuse existing records and the compiler where they fit.
+
+</details>
+
+<details>
+<summary>What verification can and cannot establish</summary>
+
+[Claim checking](plugins/verify-before-claim/) ties a statement to checks actually
+run and preserves uncertainty. Its optional verify-work method adds executable
+acceptance criteria and independent verification when that contract is selected.
+It is not a mandatory lifecycle for every task.
+
+Structural checks, model evaluations and real-host runs provide different
+evidence. A skipped job is not a completed evaluation. A file or report does not
+by itself prove the result correct. A sequential self-review is not independent
+verification.
+
+See the [testing inventory](docs/testing.md), [evaluation instructions](evals/README.md)
+and [example gallery](https://jrichlen.github.io/agent-plugins/examples/).
+Some gallery entries are ungraded seeds; inspect their provenance.
+
+Voice's second-opinion requires a direct request or accepted offer and a real
+worker tool. It cannot simulate dispatched validation when that tool is absent.
+
+</details>
+
+<details>
+<summary>Install one method or inspect another host</summary>
+
+For a debugging task in Claude Code:
+
+~~~text
 /plugin marketplace add JRichlen/agent-plugins
-/plugin install <name>@jrichlen
-```
+/plugin install diagnosing-bugs@jrichlen
+~~~
 
-## Plugins
+Choose the installed command from the "/" menu and give it the outcome request.
+For another method, install its catalog name as <name>@jrichlen.
 
-| Plugin | What it does |
-|--------|--------------|
-| [**graveyard**](plugins/graveyard/) | Archive old GitHub repositories into a single private graveyard repo as restorable git bundles, then safely delete the originals. Captures full history (branches, tags, PR refs) and never deletes an original until its backup is verified. |
-| [**plugin-factory**](plugins/plugin-factory/) | Scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first SKILL.md, AGENTS.md symlinks, command stub, and a red-by-default eval, wired into the marketplace. |
-| [**tailscale-wif**](plugins/tailscale-wif/) | Set up and troubleshoot secretless GitHub Actions → Tailscale auth via Workload Identity Federation (WIF): GitHub OIDC exchanged for short-lived Tailscale tokens, with no stored API keys or OAuth secrets. |
-| [**fleet-playbook-curator**](plugins/fleet-playbook-curator/) | Deploy daily GitHub automation that curates a living, self-invalidating operating index (a 'fleet playbook') for a glob of repos — always pointing at the repos as the source of truth, never posing as it. |
-| [**dev-diary**](plugins/dev-diary/) | Keep a scannable developer journal that writes itself: discover the day's work from sessions, commits and prompts, interview the user, record a dated entry. Ships /dev-diary and /dev-diary-review. |
-| [**voice**](plugins/voice/) | Route every response element to exactly one voice: prose to human-voice, machine-read artifacts to machine-voice; plus ai-writing-mistakes (wording pass) and second-opinion (offer-only validation). |
-| [**grill-me**](plugins/grill-me/) | Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch's stakes (reversibility x blast radius) while offering a recommendation at almost every step. |
-| [**tracer-bullets**](plugins/tracer-bullets/) | Ship the thinnest end-to-end slice through a system first, then widen it in place — for both software delivery and open-ended investigation/research. Use when scoping new work or de-risking unknowns. |
-| [**semver-gate**](plugins/semver-gate/) | Classify a candidate action as PATCH/MINOR/MAJOR (semver-style blast-radius test) before acting — act silently on PATCH, flag-and-stage MINOR, stop for explicit human sign-off on MAJOR — and, as a second skill, `prove-the-undo`: rehearse the rollback of any irreversible action by naming the restore path and exercising it, never proceeding on the strength of 'a backup exists'. The general form of graveyard's archive-then-verify discipline. |
-| [**verify-before-claim**](plugins/verify-before-claim/) | Never assert a fact, completion, or reproduction claim without naming and running the specific check that would prove it false, first. |
-| [**diagnosing-bugs**](plugins/diagnosing-bugs/) | Diagnose a bug by writing ranked, falsifiable hypotheses before any code change, tagging temporary debug instrumentation for a zero-tolerance sweep, and gating the regression test to a red-then-green proof at the confirmed seam. Use when fixing or root-causing a bug. |
-| [**docs-hygiene**](plugins/docs-hygiene/) | Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files. Use to audit docs or when instruction files contradict each other. |
-| [**context-handoff**](plugins/context-handoff/) | Walk the ordered continue, clear, handoff, delegate, compact decision tree at a phase boundary, and keep any handoff artifact pointer-only — settled specs, plans, ADRs, issues, commits, and diffs referenced by path or URL, never copied inline. |
-| [**codebase-design**](plugins/codebase-design/) | Before committing to a new interface — a module boundary, class API, or function signature that 2+ call sites will depend on, that crosses a service/team/persistence boundary, or that's expensive to change later — produce 3+ radically different candidate designs and compare them on depth, locality, and seam placement before picking one. Never let the first workable interface ship unexamined, and never a test at an unconfirmed seam. |
-| [**wayfinder**](plugins/wayfinder/) | Chart a multi-session effort as a labeled map of typed decision tickets (grilling / prototype / research / task) with explicit dependencies and an open frontier agents self-assign into. Plans; never executes. |
-| [**scope-fence**](plugins/scope-fence/) | Keep every hunk of the diff traceable to the stated task: anything discovered outside scope is recorded as a finding — never fixed in the same change, and the fence widens only on the user's explicit instruction. |
-| [**find-before-build**](plugins/find-before-build/) | Search for the existing implementation before writing a new one: name the searches you ran and what they returned before introducing any helper, wrapper, utility, or dependency — and never build a parallel version of a found, usable equivalent. |
-| [**egress-gate**](plugins/egress-gate/) | Before any call that transmits repo or user content off-machine, state what is being sent and to whom — permission modes gate the call, this gates the content; secrets and out-of-scope content never ride in an outbound payload. |
-| [**stop-rule**](plugins/stop-rule/) | A halting discipline for iterative fix loops: declare an attempt bound up front, count honestly, and at the bound stop and report state with ranked hypotheses — never attempt N+1 on momentum. |
-| [**redgate**](plugins/redgate/) | Run any idea through Red Gate: rounds of ARM/TRACE/JUDGE with graduated autonomy — round gates classified PATCH/MINOR/MAJOR via semver-gate, so derived work auto-passes inside a human-approved mandate while scout decisions, plan approval, and irreversible actions always block on the human. Cross-harness (Claude Code, Codex, Copilot via APM); the red gate is executed, not asked. |
-| [**recurrence-detector**](plugins/recurrence-detector/) | Close the growth loop's DETECT step: cluster the exhaust every run sheds (stop-reports, findings, unmet criteria, diary entries) by failure shape, and surface any shape seen at least 3 times as a named candidate invariant with its sightings cited. Proposes; never scaffolds. |
-| [**jori**](plugins/jori/) | Coordinate complex work with bounded agents, evidence, and proportional dashboards. |
-| [**agent-compiler**](plugins/agent-compiler/) | Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, then a stdlib-only kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage with per-line provenance. |
-| [**eval-ladder**](plugins/eval-ladder/) | Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing or auditing a test/eval strategy. |
-| [**consolidation-map**](plugins/consolidation-map/) | Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages. |
-| [**wave-research**](plugins/wave-research/) | Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups. |
-| [**delegated-intelligence**](plugins/delegated-intelligence/) | Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs. |
+The repository also documents [APM](https://github.com/microsoft/apm) installation:
 
-Every plugin ships as a Claude Code plugin **and** works with any coding agent
-(Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry
-point. The core logic is plain, portable `bash`.
-
-## Install with APM
-
-This section is an **alternative** install path, not a replacement for
-`/plugin marketplace add` above, which stays the primary zero-dependency route.
-Reach for this when you provision the same set of plugins on more than one
-machine and want every machine to end up running identical plugin code.
-
-[APM](https://github.com/microsoft/apm) (the Agent Package Manager) has a
-first-class `marketplace_plugin` resolver that reads this repo's
-[`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) directly —
-this marketplace needs no separate APM-specific manifest to be installable
-with it.
-
-```sh
+~~~sh
 apm install JRichlen/agent-plugins/plugins/<name>
-```
-
-That form is **unpinned**: it resolves against `main` at install/update time,
-which means two machines running that exact command on different days can
-silently end up with different plugin code — main moves. For a reproducible
-setup, pin the dependency to a commit SHA instead:
-
-```sh
 apm install JRichlen/agent-plugins/plugins/<name>#<sha>
-```
+~~~
 
-For example:
+The second form pins the source revision. Keep the lockfile and use
+`apm install --frozen` for the locked set; it does not make host tools or model
+behavior identical.
 
-```sh
-apm install JRichlen/agent-plugins/plugins/graveyard#621d9bae97200b8aeb2a9525a763c04fd126e203
-```
+Other hosts can read SKILL.md and AGENTS.md, but tool support and enforcement
+differ. The core adapters here are reviewable repository artifacts, not a live
+installation. Selected services carry generated core-contract copies; enabling
+always-on host instructions remains a separate reviewed adoption step.
+[Claude Code's documentation](https://code.claude.com/docs/en/plugins) explains
+its current plugin naming and loading behavior.
 
-Pinning writes that exact form into `apm.yml`/`apm.lock.yaml`, so every machine
-that runs `apm install --frozen` resolves to the same plugin code — not
-"whatever `main` happened to be that day."
+</details>
 
-## The documentation site
+## Current status and migration
 
-[jrichlen.github.io/agent-plugins](https://jrichlen.github.io/agent-plugins/)
-is generated from this repository: a catalog of every plugin, real
-[before/after examples](https://jrichlen.github.io/agent-plugins/examples/)
-for each skill with the subject, grader and judge models disclosed and a
-verification path back to the CI run that produced them, the
-[design timeline](https://jrichlen.github.io/agent-plugins/timeline/), and
-deep dives on redgate and agent-compiler. The pages are rendered by scripts in
-`docs/` and the cheap tier fails any commit that lets them drift from their
-data.
+The inspected main revision
+[`2ff596c`](https://github.com/JRichlen/agent-plugins/tree/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d)
+contains 27 source plugins, including the merged delegation service from PR150.
+This draft has 24 registered plugins after retiring the Jori, Redgate and fleet
+curator products. The first two are dissolved into shared owners; they are not
+wholesale renamed clones. Old names remain only in explicit migration notices,
+compatibility paths and historical evidence.
 
-## Repository layout
+See the [coordination migration](docs/migrations/coordination.md),
+[verification migration](docs/migrations/verification.md) and
+[fleet retirement](docs/retirements/fleet-playbook-curator.md).
+Repository retirement does not uninstall existing copies, edit global activation
+fragments or stop external jobs.
 
-```
-agent-plugins/
-├── .claude-plugin/marketplace.json   # registry: every plugin, name + source path
-├── AGENTS.md                         # cross-harness entry point + eval governance
-├── plugins/
-│   └── graveyard/                    # one directory per plugin (self-contained)
-│       ├── .claude-plugin/plugin.json
-│       ├── skills/  commands/  docs/
-│       └── README.md
-└── evals/                            # three-tier eval suite (see evals/README.md)
-```
+The [responsibility plan](docs/designs/plugin-consolidation-continuation.md)
+supersedes the earlier nine-bundle packaging hypothesis. Fewer repeated policies
+and conflicting owners matter more than the package count.
 
-## Adding a plugin
+Qualification is still in progress. Focused structural checks are not proof of
+behavioral improvement or complete host parity. The required full gate and host
+adoption limits must be reported with the implementation. The frozen
+[PR129 experiment](https://github.com/JRichlen/agent-plugins/pull/129) remains
+separate from the [synthetic re-entry pilot](docs/designs/conversation-reentry-pilot.md).
 
-1. Create `plugins/<new>/` with its own `.claude-plugin/plugin.json`.
-2. Add a matching entry to `marketplace.json` whose `source` is `./plugins/<new>`.
-3. Run `evals/cheap/run.sh` — it verifies the wiring resolves.
+## Full catalog
 
-## Evals
+<details>
+<summary>Browse the 24 registered plugins in this draft</summary>
 
-Changes are gated by a three-tier eval suite, cheapest first — deterministic
-checks, then behavioral (promptfoo) LLM grading, then deep sandboxed
-cross-harness runs (pier). This is how the marketplace keeps safety-critical
-behavior (like graveyard never deleting an unbacked repo) from regressing. See
-[`evals/README.md`](evals/README.md) and the governance section of
-[`AGENTS.md`](AGENTS.md).
+| Plugin | Purpose |
+|---|---|
+| [**graveyard**](plugins/graveyard/) | Archive repositories as restorable bundles and prepare guarded deletion scripts. |
+| [**plugin-factory**](plugins/plugin-factory/) | Scaffold a plugin with manifests, entry points and checks that start red. |
+| [**tailscale-wif**](plugins/tailscale-wif/) | Set up secretless GitHub Actions authentication to Tailscale. |
+| [**dev-diary**](plugins/dev-diary/) | Discuss what mattered in the day's work and record or revise a journal entry. |
+| [**voice**](plugins/voice/) | Improve prose and machine-facing output; includes explicitly requested second-opinion review. |
+| [**grill-me**](plugins/grill-me/) | Examine a plan through questions scaled to uncertainty and stakes. |
+| [**tracer-bullets**](plugins/tracer-bullets/) | Build one real end-to-end slice and expand it. |
+| [**semver-gate**](plugins/semver-gate/) | Classify action risk and rehearse restoration before irreversible changes. |
+| [**verify-before-claim**](plugins/verify-before-claim/) | Check completion evidence; optionally establish and verify executable acceptance criteria. |
+| [**diagnosing-bugs**](plugins/diagnosing-bugs/) | Test possible causes, make a focused fix and demonstrate regression coverage. |
+| [**docs-hygiene**](plugins/docs-hygiene/) | Audit instruction files against current repository behavior and resolve contradictions. |
+| [**context-handoff**](plugins/context-handoff/) | Choose how to continue at a phase boundary and pass source references onward. |
+| [**codebase-design**](plugins/codebase-design/) | Compare materially different interface designs before choosing one. |
+| [**wayfinder**](plugins/wayfinder/) | Map a larger effort into decisions and dependent work across sessions. |
+| [**scope-fence**](plugins/scope-fence/) | Keep diffs tied to the agreed task and record unrelated findings. |
+| [**find-before-build**](plugins/find-before-build/) | Assess existing implementations before introducing another one. |
+| [**egress-gate**](plugins/egress-gate/) | Inspect outbound content and its destination before transmission. |
+| [**stop-rule**](plugins/stop-rule/) | Bound repeated attempts and return an evidence-backed stop report. |
+| [**recurrence-detector**](plugins/recurrence-detector/) | Propose improvements from repeated sourced failure patterns. |
+| [**agent-compiler**](plugins/agent-compiler/) | Compose versioned behaviors into reproducible definitions with provenance and effect limits. |
+| [**eval-ladder**](plugins/eval-ladder/) | Choose proportionate checks and describe their coverage gaps. |
+| [**consolidation-map**](plugins/consolidation-map/) | Account for every entity in a consolidation and reconcile its disposition. |
+| [**wave-research**](plugins/wave-research/) | Examine a contested claim through rival explanations and sourced adversarial review. |
+| [**delegated-intelligence**](plugins/delegated-intelligence/) | Brief real workers, own outputs, integrate evidence and recover only invalid work. |
+
+</details>
+
+## Maintaining the system
+
+Start with [AGENTS.md](AGENTS.md). Change the canonical owner of a responsibility,
+update its callers, and run the required checks. [core/sync.py](core/sync.py)
+generates the packaged contract copies; do not edit them independently.
+
+The [documentation site](https://jrichlen.github.io/agent-plugins/) is generated
+from committed sources. Its [timeline](https://jrichlen.github.io/agent-plugins/timeline/)
+preserves decisions and corrections. Historical protocol documents explain prior
+work; they are not current governing instructions.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

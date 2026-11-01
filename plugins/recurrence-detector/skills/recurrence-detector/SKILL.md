@@ -26,7 +26,8 @@ output is a proposal a human and `plugin-factory` dispose of.
 ## Why this exists
 
 A system that learns needs a step between *remembering* and *building*.
-`dev-diary` and `fleet-playbook-curator` remember; `plugin-factory` builds.
+`dev-diary` records work; citation-backed project logs retain index changes;
+`plugin-factory` builds.
 Nothing reads a month of exhaust and says **"this failure shape has appeared
 four times — here is the invariant that would prevent it."** Until that
 exists, the human is the detector: a fine bootstrap and a real bottleneck.
@@ -45,7 +46,7 @@ one.
 1. **Gather** the exhaust: `stop-rule` reports, `scope-fence` findings and
    `BACKLOG.md`, unmet criteria and `gates.log` from `.redgate/*/`, diary
    entries, and any typed deltas (see the `consolidate-delta` references in
-   `dev-diary` and `fleet-playbook-curator` — deltas are what make this
+   `dev-diary`; retain source citations on index deltas — deltas make this
    greppable rather than a re-read of prose). For the gate ledgers, run
    `scripts/gate-report.sh`: it tallies gates per class, breaks down the
    recorded human dispositions, and flags **approval fatigue** — a MAJOR

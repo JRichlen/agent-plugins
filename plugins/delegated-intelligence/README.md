@@ -1,41 +1,39 @@
-# delegated-intelligence
+# Delegate independent work
 
-Run large or multi-part work in background subagents so the main thread keeps talking with the user. Covers model tiers, briefs, handbacks, budgets and recovery. Not for small known-file jobs.
+Use this service when a bounded part of a task benefits from real workers.
+It supplies briefs, output ownership, integration and recovery. Small or tightly
+coupled work can stay direct.
 
-## Install
+## Install and use
 
-```
+```text
 /plugin marketplace add JRichlen/agent-plugins
 /plugin install delegated-intelligence@jrichlen
 ```
 
-## What is in it
+Choose its installed command from the host's command menu. See the
+[method](skills/delegated-intelligence/SKILL.md) for entry, acceptance and exit.
 
-- The coordinator method: `skills/delegated-intelligence/SKILL.md` (an
-  inline-or-delegate rule, Haiku/Sonnet/Opus tiers, a self-contained brief
-  contract, tool scoping, search budgets, short handbacks to files, disjoint
-  outputs, a task board, recovery after failure or restart, verification and a
-  trust boundary). Entry point: `/delegated-intelligence`.
-- Templates and the recovery playbook under
-  `skills/delegated-intelligence/references/`.
+The service reuses the current task record. Shared rules and state come from
+[core](context/OPERATING.md); persistent plans belong to Wayfinder, retry
+bounds to stop-rule and completion checks to verify-before-claim. It introduces
+no mandatory board, model-brand tier ladder, automatic review or scheduler.
 
-PORTABILITY: prose and files only. On a harness without background subagents, one
-agent runs each brief as a separate pass that starts from the files.
+## Compatibility and limits
 
-## Neighbours
+The former Jori product is retired. Its duplicated coordinator identity,
+boards, tiers and observer policy were removed. Useful whole-cycle cost and
+proportional-record guidance now belongs to this execution method. See the
+[migration](../../docs/migrations/coordination.md).
 
-`jori` coordinates complex work with bounded agents, evidence and dashboards;
-`context-handoff` decides at a phase boundary whether to delegate;
-`wave-research` supplies a staged research plan. This skill is how a delegated
-job is briefed, budgeted, handed back and recovered. See the skill's
-`## Not this`.
+Real dispatch requires real worker tools. A file or worker report alone does
+not prove the result correct. The templates and free checks do not establish
+behavioral benefit or cross-host runtime parity.
 
-## Status
-
-Implemented. `evals/cheap/checks.sh` carries deterministic checks for this
-plugin's invariant (see `AGENTS.md`) and runs as part of the marketplace cheap
-tier. There is no behavioral (promptfoo) pack yet.
+The packaged core is a generated copy of the repository source. Installation
+does not activate always-on host instructions; that requires separate reviewed
+host adoption.
 
 ## License
 
-MIT
+MIT.

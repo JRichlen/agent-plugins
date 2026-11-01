@@ -60,10 +60,10 @@ MUTANTS = FIXTURES / "mutants"
 
 AGENT_COMPILER_HOOKS_DIR = REPO_ROOT / "plugins" / "agent-compiler" / "hooks"
 REDGATE_GUARD_SCRIPT = (
-    REPO_ROOT / "plugins" / "redgate" / "hooks" / "hooks-handlers" / "guard-redgate-paths.sh"
+    REPO_ROOT / "plugins" / "verify-before-claim" / "hooks" / "hooks-handlers" / "guard-acceptance-paths.sh"
 )
 REDGATE_SESSION_SCRIPT = (
-    REPO_ROOT / "plugins" / "redgate" / "hooks" / "hooks-handlers" / "session-start.sh"
+    REPO_ROOT / "plugins" / "verify-before-claim" / "hooks" / "hooks-handlers" / "session-start.sh"
 )
 VOICE_SESSION_SCRIPT = REPO_ROOT / "plugins" / "voice" / "hooks-handlers" / "session-start.sh"
 MCP_SERVER = REPO_ROOT / "plugins" / "agent-compiler" / "scripts" / "mcp_server.py"
@@ -109,8 +109,8 @@ class HookDiscoveryAndExec(_PidLeakMixin, unittest.TestCase):
         expected = {
             ("agent-compiler", "UserPromptSubmit", ""),
             ("agent-compiler", "PreToolUse", "Write|Edit|MultiEdit"),
-            ("redgate", "PreToolUse", "Write|Edit|MultiEdit|NotebookEdit"),
-            ("redgate", "SessionStart", "startup|clear|compact"),
+            ("verify-before-claim", "PreToolUse", "Write|Edit|MultiEdit|NotebookEdit"),
+            ("verify-before-claim", "SessionStart", "startup|clear|compact"),
             ("voice", "SessionStart", "startup|clear|compact"),
         }
         self.assertEqual(seen, expected)
@@ -179,7 +179,7 @@ class HookDiscoveryAndExec(_PidLeakMixin, unittest.TestCase):
         # handler, redgate's two included, must resolve to a real script.
         # A 127 here means a hooks.json command points at a path that does
         # not exist -- the exact defect the first version of this test caught.
-        redgate_results = [r for r in results if r.spec.plugin == "redgate"]
+        redgate_results = [r for r in results if r.spec.plugin == "verify-before-claim"]
         self.assertEqual(len(redgate_results), 2)
         for r in results:
             self.assertNotEqual(
@@ -294,7 +294,7 @@ class RedgateWriteGuard(_PidLeakMixin, unittest.TestCase):
 
     @staticmethod
     def _run_guard(script: pathlib.Path, cwd: pathlib.Path, file_path) -> "HookResult":
-        spec = HookSpec(plugin="redgate", event="PreToolUse",
+        spec = HookSpec(plugin="verify-before-claim", event="PreToolUse",
                          matcher="Write|Edit|MultiEdit|NotebookEdit",
                          command=f"bash {script}", source_file=str(script))
         payload = {"session_id": "s", "transcript_path": "/tmp/t", "cwd": str(cwd),

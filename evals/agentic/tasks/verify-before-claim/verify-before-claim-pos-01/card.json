@@ -6,6 +6,66 @@
       "kind": "skill",
       "name": "verify-before-claim",
       "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "write explicit acceptance criteria and a verification plan using ordinary files",
+      "kind": "skill",
+      "name": "verify-work",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "author and hash-pin CRITERIA.md and check.sh manually using shell tools",
+      "kind": "skill",
+      "name": "criteria-contract",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "independently rehash criteria and checker, run the checker and inspect fresh evidence",
+      "kind": "skill",
+      "name": "reconcile",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "plain-bash-filesystem-git::scaffold-run.sh",
+      "kind": "script",
+      "name": "scaffold-run.sh",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "plain-bash-filesystem-git::criteria-index.sh",
+      "kind": "script",
+      "name": "criteria-index.sh",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "plain-bash-filesystem-git::reconcile.sh",
+      "kind": "script",
+      "name": "reconcile.sh",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "refuse changes to ratified acceptance criteria and checker during active verification work",
+      "kind": "hook",
+      "name": "hooks/PreToolUse",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "read saved run manifests and report unfinished pinned verification work at session start",
+      "kind": "hook",
+      "name": "hooks/SessionStart",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "invoke a written claim-checking procedure directly",
+      "kind": "command",
+      "name": "verify-before-claim",
+      "source_plugin": "verify-before-claim"
+    },
+    {
+      "generic_equivalent": "invoke a manual fixed-criteria verification procedure directly",
+      "kind": "command",
+      "name": "verify-work",
+      "source_plugin": "verify-before-claim"
     }
   ],
   "card_id": "verify-before-claim-pos-01",

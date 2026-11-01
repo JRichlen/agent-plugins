@@ -5,7 +5,7 @@
       "generic_equivalent": "manual CRITERIA.md + check.sh authored and pinned by hand with sha256sum",
       "kind": "script",
       "name": "scaffold-run.sh",
-      "source_plugin": "redgate"
+      "source_plugin": "verify-before-claim"
     }
   ],
   "card_id": "redgate-near-02",
@@ -24,6 +24,6 @@
     "The notify-service round is pinned and green on its two criteria. A new mid-round ask ('also add a retry') comes in -- fold it into the current pass, silently skip it, or flag it as a separate WIDEN needing its own MAJOR confirmation?"
   ],
   "pass_fixture": "evals/agentic/tasks/redgate/redgate-near-02/fixtures/pass",
-  "plugin": "redgate",
+  "plugin": "verify-before-claim",
   "task_path": "evals/agentic/tasks/redgate/redgate-near-02/task"
 }

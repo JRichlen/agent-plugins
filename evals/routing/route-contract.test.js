@@ -6,7 +6,7 @@
 //   2. a malformed/ambiguous fixture set REJECTS — each of the 8 fail-closed
 //      rules exercised individually;
 //   3. the S1 legacy-string negative control: the old single-skill
-//      representation (`ROUTE: diagnosing-bugs`, `ROUTE: redgate`) cannot
+//      representation (`ROUTE: diagnosing-bugs`, `ROUTE: verify-work`) cannot
 //      satisfy the composition contract — deterministic proof (no spend) that
 //      the old schema is insufficient for S1.
 // Wired into evals/cheap/run.sh (RQ-002 section). Exit 0 = all green.
@@ -24,7 +24,7 @@ function check(name, cond, detail) {
 }
 
 const roster = rc.loadRoster(path.join(HERE, 'roster.txt'));
-check('roster loads as a closed vocabulary', roster.size >= 20 && roster.has('redgate') && roster.has('diagnosing-bugs'));
+check('roster loads as a closed vocabulary', roster.size >= 20 && roster.has('verify-work') && roster.has('diagnosing-bugs'));
 
 // ── 1. Every scenario's expected line validates ─────────────────────────────
 const EXPECTED = [
@@ -41,10 +41,10 @@ const EXPECTED = [
   'ROUTE: specialist=docs-hygiene | envelope=none | guards=none | interaction_owner=none',
   // S1 / S2 / S4 composition labels (S2's owner relabeled to the specialist
   // after the live run — an interactive walk-through with no envelope)
-  'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate',
+  'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=verify-before-claim | interaction_owner=verify-work',
   'ROUTE: specialist=codebase-design | envelope=none | guards=none | interaction_owner=codebase-design',
   'ROUTE: specialist=codebase-design | envelope=none | guards=find-before-build | interaction_owner=codebase-design',
-  'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate | interaction_owner=redgate',
+  'ROUTE: specialist=graveyard | envelope=none | guards=semver-gate | interaction_owner=graveyard',
   // 2 migrated calibration negatives + S3 (all-none)
   'ROUTE: specialist=none | envelope=none | guards=none | interaction_owner=none',
 ];
@@ -82,20 +82,20 @@ const REJECTS = [
   // rule 3 — name outside the roster (closed vocabulary)
   ['unknown skill name', 'ROUTE: specialist=made-up-skill | envelope=none | guards=none | interaction_owner=none', 'rule 3'],
   ['unknown guard name', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=not-a-skill | interaction_owner=none', 'rule 3'],
-  // rule 4 — redgate may never occupy specialist
-  ['redgate as specialist', 'ROUTE: specialist=redgate | envelope=none | guards=none | interaction_owner=redgate', 'rule 4'],
+  // rule 4 — verify-work may never occupy specialist
+  ['verify-work as specialist', 'ROUTE: specialist=verify-work | envelope=none | guards=none | interaction_owner=verify-work', 'rule 4'],
   // rule 5 — a skill in two slots (the hedging router)
   ['same skill in specialist and guards', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=diagnosing-bugs | interaction_owner=none', 'rule 5'],
-  ['same skill in envelope and guards', 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=redgate | interaction_owner=redgate', 'rule 5'],
+  ['same skill in envelope and guards', 'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=verify-work | interaction_owner=verify-work', 'rule 5'],
   // rule 6 — interaction_owner outside specialist ∪ envelope
   ['guard as interaction owner', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=verify-before-claim | interaction_owner=verify-before-claim', 'rule 6'],
   ['absent skill as interaction owner', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=none | interaction_owner=grill-me', 'rule 6'],
   // rule 7 — a slot mixing none with a name
   ['guards mixes none with a name', 'ROUTE: specialist=diagnosing-bugs | envelope=none | guards=none,verify-before-claim | interaction_owner=none', 'rule 7'],
-  ['envelope mixes a name with none', 'ROUTE: specialist=diagnosing-bugs | envelope=redgate,none | guards=none | interaction_owner=redgate', 'rule 7'],
+  ['envelope mixes a name with none', 'ROUTE: specialist=diagnosing-bugs | envelope=verify-work,none | guards=none | interaction_owner=verify-work', 'rule 7'],
   // rule 8 — set slots sorted and deduped
-  ['guards unsorted', 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate,egress-gate | interaction_owner=redgate', 'rule 8'],
-  ['guards duplicated', 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate,semver-gate | interaction_owner=redgate', 'rule 8'],
+  ['guards unsorted', 'ROUTE: specialist=graveyard | envelope=none | guards=semver-gate,egress-gate | interaction_owner=graveyard', 'rule 8'],
+  ['guards duplicated', 'ROUTE: specialist=graveyard | envelope=none | guards=semver-gate,semver-gate | interaction_owner=graveyard', 'rule 8'],
 ];
 for (const [name, output, rule] of REJECTS) {
   const v = rc.validateRoute(output, roster);
@@ -110,7 +110,7 @@ for (const [name, output, rule] of REJECTS) {
 // insufficient, with no model spend.
 const s1Regex = cfgRegexes.find((r) => r.includes('specialist=diagnosing-bugs'));
 check('found S1 scenario regex in the config', Boolean(s1Regex));
-for (const legacy of ['ROUTE: diagnosing-bugs', 'ROUTE: redgate']) {
+for (const legacy of ['ROUTE: diagnosing-bugs', 'ROUTE: verify-work']) {
   const v = rc.validateRoute(legacy, roster);
   check(`legacy string fails the contract: "${legacy}"`, v.pass === false, `accepted: ${v.reason}`);
   if (s1Regex) {
@@ -118,7 +118,7 @@ for (const legacy of ['ROUTE: diagnosing-bugs', 'ROUTE: redgate']) {
   }
 }
 // The correct composed answer, for contrast, passes both.
-const s1Line = 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate';
+const s1Line = 'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=verify-before-claim | interaction_owner=verify-work';
 check('S1 composed line passes contract AND scenario regex',
   rc.validateRoute(s1Line, roster).pass === true && Boolean(s1Regex) && new RegExp(s1Regex).test(s1Line));
 
@@ -131,21 +131,21 @@ const s4Regex = cfgRegexes.find((r) => r.includes('specialist=graveyard'));
 check('found S4 scenario regex in the config', Boolean(s4Regex));
 const SUBSET_CASES = [
   ['S1 accepts defensible extra guards (live-run modal answer)',
-    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule,verify-before-claim | interaction_owner=redgate', true],
+    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=scope-fence,stop-rule,verify-before-claim | interaction_owner=verify-work', true],
   ['S1 still requires verify-before-claim present',
-    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=redgate | guards=scope-fence,stop-rule | interaction_owner=redgate', false],
+    s1Regex, 'ROUTE: specialist=diagnosing-bugs | envelope=verify-work | guards=scope-fence,stop-rule | interaction_owner=verify-work', false],
   ['S4 accepts semver-gate + extras (the plugin carrying the prove-the-undo rehearsal)',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=scope-fence,semver-gate,verify-before-claim | interaction_owner=redgate', true],
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=none | guards=scope-fence,semver-gate,verify-before-claim | interaction_owner=graveyard', true],
   ['S4 accepts semver-gate with an extra before it',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=egress-gate,semver-gate | interaction_owner=redgate', true],
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=none | guards=egress-gate,semver-gate | interaction_owner=graveyard', true],
   ['S4 accepts the canonical guard alone',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=semver-gate | interaction_owner=redgate', true],
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=none | guards=semver-gate | interaction_owner=graveyard', true],
   ['S4 rejects a guard list without semver-gate',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=scope-fence,verify-before-claim | interaction_owner=redgate', false],
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=none | guards=scope-fence,verify-before-claim | interaction_owner=graveyard', false],
   ['S4 rejects guards=none (semver-gate required)',
-    s4Regex, 'ROUTE: specialist=graveyard | envelope=redgate | guards=none | interaction_owner=redgate', false],
+    s4Regex, 'ROUTE: specialist=graveyard | envelope=none | guards=none | interaction_owner=graveyard', false],
   ['S4 rejects the collapse (envelope present, specialist missing)',
-    s4Regex, 'ROUTE: specialist=none | envelope=redgate | guards=semver-gate | interaction_owner=redgate', false],
+    s4Regex, 'ROUTE: specialist=none | envelope=verify-work | guards=semver-gate | interaction_owner=verify-work', false],
 ];
 for (const [name, regex, line, expected] of SUBSET_CASES) {
   const got = Boolean(regex) && new RegExp(regex).test(line);
@@ -160,8 +160,8 @@ for (const [name, regex, line, expected] of SUBSET_CASES) {
 // structural contract allows (which still rejects incoherent tuples).
 const legacyRegex = (name) => cfgRegexes.find((r) => r.includes(`specialist=${name}\\s`));
 const LEGACY_CASES = [
-  ['semver-gate (irreversible-delete row) accepts the live modal composition (redgate envelope + owner)',
-    'semver-gate', 'ROUTE: specialist=semver-gate | envelope=redgate | guards=verify-before-claim | interaction_owner=redgate', true],
+  ['semver-gate (irreversible-delete row) accepts the live modal composition (verify-work envelope + owner)',
+    'semver-gate', 'ROUTE: specialist=semver-gate | envelope=verify-work | guards=verify-before-claim | interaction_owner=verify-work', true],
   ['semver-gate still accepts the canonical all-none tuple',
     'semver-gate', 'ROUTE: specialist=semver-gate | envelope=none | guards=none | interaction_owner=none', true],
   ['semver-gate accepts the specialist as interaction owner',
@@ -219,7 +219,7 @@ check('S2 accepts guards=none', Boolean(s2Regex) && s2('none'));
 check('S2 accepts the find-before-build guard alone', Boolean(s2Regex) && s2('find-before-build'));
 check('S2 rejects any other guard (scope-fence)', Boolean(s2Regex) && !s2('scope-fence'));
 check('S2 rejects find-before-build beside another guard', Boolean(s2Regex) && !s2('find-before-build,scope-fence'));
-check('S2 rejects an envelope (the negative under test)', Boolean(s2Regex) && !s2('none', 'redgate', 'redgate'));
+check('S2 rejects an envelope (the negative under test)', Boolean(s2Regex) && !s2('none', 'verify-work', 'verify-work'));
 check('S2 rejects interaction_owner=none', Boolean(s2Regex) && !s2('none', 'none', 'none'));
 check('S2 rejects specialist=grill-me (the interview pull)', Boolean(s2Regex) &&
   !new RegExp(s2Regex).test('ROUTE: specialist=grill-me | envelope=none | guards=codebase-design | interaction_owner=grill-me'));
@@ -227,7 +227,7 @@ check('S2 rejects specialist=grill-me (the interview pull)', Boolean(s2Regex) &&
 // ── Round-trip: the promptfoo entry point agrees with validateRoute ─────────
 const asAssertion = rc(EXPECTED[0], { vars: {} });
 check('promptfoo assertion entry point passes a valid line', asAssertion.pass === true);
-const asAssertionBad = rc('ROUTE: redgate', { vars: {} });
+const asAssertionBad = rc('ROUTE: verify-work', { vars: {} });
 check('promptfoo assertion entry point fails a legacy line', asAssertionBad.pass === false);
 
 console.log(`\nroute-contract.test: ${pass} passed, ${fail} failed`);

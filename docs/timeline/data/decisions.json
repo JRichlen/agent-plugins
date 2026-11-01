@@ -509,7 +509,7 @@
         },
         {
           "label": "redgate SKILL",
-          "path": "plugins/redgate/skills/redgate/SKILL.md"
+          "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/skills/redgate/SKILL.md"
         }
       ],
       "curated": true,
@@ -559,7 +559,7 @@
         },
         {
           "label": "where the checks landed",
-          "path": "plugins/redgate/evals/cheap/checks.sh"
+          "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/evals/cheap/checks.sh"
         }
       ],
       "curated": true,
@@ -580,7 +580,7 @@
         },
         {
           "label": "where the checks landed",
-          "path": "plugins/redgate/evals/cheap/checks.sh"
+          "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/evals/cheap/checks.sh"
         }
       ],
       "curated": false,
@@ -798,7 +798,7 @@
         },
         {
           "label": "redgate gauntlet",
-          "path": "plugins/redgate/evals/scale/run.sh"
+          "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/evals/scale/run.sh"
         },
         {
           "label": "agent-compiler gauntlet",
@@ -1001,7 +1001,7 @@
         },
         {
           "label": "redgate driver skill",
-          "path": "plugins/redgate/skills/redgate/SKILL.md"
+          "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/skills/redgate/SKILL.md"
         },
         {
           "label": "protocol: graduated autonomy",
@@ -1698,7 +1698,7 @@
         "receipts": [
           {
             "label": "redgate gauntlet (RUNS default)",
-            "path": "plugins/redgate/evals/scale/run.sh"
+            "url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/redgate/evals/scale/run.sh"
           },
           {
             "label": "scale workflow defaults",

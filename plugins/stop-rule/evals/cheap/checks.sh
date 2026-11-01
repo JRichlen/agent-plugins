@@ -17,7 +17,7 @@ done
 group "stop-rule — invariant survives verbatim"
 INV='NEVER a further attempt on momentum'
 has "$SKILL"  "$INV" "SKILL.md carries the never-on-momentum invariant verbatim" "SKILL.md lost the never-on-momentum invariant"
-has "$AGENTS" "$INV" "AGENTS.md carries the never-on-momentum invariant verbatim" "AGENTS.md lost the never-on-momentum invariant"
+has "$AGENTS" "skills/stop-rule/SKILL.md" "AGENTS.md points to the canonical method" "AGENTS.md lost its canonical method pointer"
 hasE "$SKILL" 'counted against a bound declared up' "SKILL.md requires the bound be declared up front" "SKILL.md no longer requires an up-front bound"
 hasE "$SKILL" 'ALWAYS produces a stop-and-report' "SKILL.md makes the stop-report mandatory at the bound" "SKILL.md no longer mandates the stop-report"
 

@@ -915,7 +915,7 @@ class ExposureParityProbeCoversEveryArm(unittest.TestCase):
 
         run_py = runner()
         source = REPO_ROOT / "evals" / "agentic" / "manifests" / "arms"
-        for plugin in ("voice", "jori", "redgate"):
+        for plugin in ("voice", "diagnosing-bugs", "verify-before-claim"):
             with self.subTest(plugin=plugin), tempfile.TemporaryDirectory() as tmp:
                 root = pathlib.Path(tmp)
                 staged = root / "evals" / "agentic" / "manifests" / "arms"

@@ -1,7 +1,0 @@
-{
-  "claims": [
-    {"repo":"o/new-svc","path":"README.md","sha":"nnn1111","curated_at":"2026-07-14","claim":"entrypoint"},
-    {"repo":"o/upd-svc","path":"site.yml","sha":"uuu2222","curated_at":"2026-07-14","claim":"main playbook"},
-    {"repo":"o/gone-svc","path":"(manifest)","sha":"ggg1111","curated_at":"2026-07-14","claim":"left the fleet"}
-  ]
-}

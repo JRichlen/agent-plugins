@@ -121,7 +121,7 @@ class EstimandArms(unittest.TestCase):
     def test_four_estimands_are_distinct_and_correctly_shaped(self):
         card = _card("graveyard-pos-01")
         ref = _ref("graveyard")
-        other = _ref("redgate")
+        other = _ref("verify-before-claim")
 
         with tempfile.TemporaryDirectory() as tmp:
             workspace = pathlib.Path(tmp)
@@ -147,8 +147,8 @@ class EstimandArms(unittest.TestCase):
             empty, p_only, q_only, p_and_q = pairing.composition_arms(ref, other, card, workspace)
             self.assertEqual(empty.plugins, ())
             self.assertEqual(p_only.plugins, ("graveyard",))
-            self.assertEqual(q_only.plugins, ("redgate",))
-            self.assertEqual(p_and_q.plugins, ("graveyard", "redgate"))
+            self.assertEqual(q_only.plugins, ("verify-before-claim",))
+            self.assertEqual(p_and_q.plugins, ("graveyard", "verify-before-claim"))
             hashes = {a.config_hash() for a in (empty, p_only, q_only, p_and_q)}
             self.assertEqual(len(hashes), 4, "composition_arms must return 4 distinctly-shaped arms")
             # p_and_q must actually carry BOTH plugins' capabilities, not just one --
@@ -156,7 +156,7 @@ class EstimandArms(unittest.TestCase):
             # interaction from main effect (contract §3.11).
             pq_sources = {c.source_plugin for c in p_and_q.capabilities}
             self.assertIn("graveyard", pq_sources)
-            self.assertIn("redgate", pq_sources)
+            self.assertIn("verify-before-claim", pq_sources)
 
             # --- version ------------------------------------------------------
             # Uses the FULL discovered capability set (skill/command/script),
@@ -250,8 +250,8 @@ class GuidanceOnlyDegeneracy(unittest.TestCase):
         """A plugin NOT in the curated script-dominant set must not be
         reported degenerate -- a check that always returns True would be
         vacuous."""
-        card = _card("jori-pos-01")
-        ref = _ref("jori")
+        card = _card("diagnosing-bugs-pos-01")
+        ref = _ref("diagnosing-bugs")
         with tempfile.TemporaryDirectory() as tmp:
             arm = pairing.build_arm(card, Estimand.GUIDANCE_ONLY, (ref,), workspace=pathlib.Path(tmp))
             self.assertFalse(pairing.is_degenerate(arm, card))
@@ -485,8 +485,8 @@ class ConfigHashExcludesArmId(unittest.TestCase):
         """CV-06's exact reproduction: the SAME revision on both sides of a
         version comparison must not silently produce 'two distinct arms'
         (previously guaranteed only by the nondeterministic arm_id)."""
-        ref = _ref("jori")
-        card = _card("jori-pos-01")
+        ref = _ref("diagnosing-bugs")
+        card = _card("diagnosing-bugs-pos-01")
         head = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
         ).stdout.strip()
@@ -500,8 +500,8 @@ class ConfigHashExcludesArmId(unittest.TestCase):
         distinct, non-raising arms -- proving the rejection above is about
         the revisions being identical, not that version_arms has been made
         to always refuse."""
-        ref = _ref("jori")
-        full_caps_card = dataclasses.replace(_card("jori-pos-01"), capabilities=pairing.discover_plugin_capabilities(ref, REPO_ROOT))
+        ref = _ref("diagnosing-bugs")
+        full_caps_card = dataclasses.replace(_card("diagnosing-bugs-pos-01"), capabilities=pairing.discover_plugin_capabilities(ref, REPO_ROOT))
         head = subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True,
         ).stdout.strip()
@@ -573,8 +573,8 @@ class CommittedManifestsAreReproducible(unittest.TestCase):
         """The primitive CV-16 actually requires: two independent calls to
         build_arm with the SAME configuration must mint the SAME arm_id --
         the exact property `new_id`'s uuid4 could never have satisfied."""
-        card = _card("jori-pos-01")
-        ref = _ref("jori")
+        card = _card("diagnosing-bugs-pos-01")
+        ref = _ref("diagnosing-bugs")
         with tempfile.TemporaryDirectory() as tmp1, tempfile.TemporaryDirectory() as tmp2:
             a = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=pathlib.Path(tmp1))
             b = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=pathlib.Path(tmp2))
@@ -586,7 +586,7 @@ class CommittedManifestsAreReproducible(unittest.TestCase):
         arm_id to one constant."""
         with tempfile.TemporaryDirectory() as tmp:
             ws = pathlib.Path(tmp)
-            a = pairing.build_arm(_card("jori-pos-01"), Estimand.FULL_PACKAGE, (_ref("jori"),), workspace=ws)
+            a = pairing.build_arm(_card("diagnosing-bugs-pos-01"), Estimand.FULL_PACKAGE, (_ref("diagnosing-bugs"),), workspace=ws)
             b = pairing.build_arm(_card("graveyard-pos-01"), Estimand.FULL_PACKAGE, (_ref("graveyard"),), workspace=ws)
         self.assertNotEqual(a.arm_id, b.arm_id)
 
@@ -628,8 +628,8 @@ class ExposureParityFullRoster(unittest.TestCase):
         counterfeit-25 shape) fails this same sweep for a real roster
         plugin -- proving the sweep actually exercises assert_exposure_parity
         rather than vacuously passing every plugin."""
-        ref = _ref("jori")
-        card = _card("jori-pos-01")
+        ref = _ref("diagnosing-bugs")
+        card = _card("diagnosing-bugs-pos-01")
         with tempfile.TemporaryDirectory() as tmp:
             ws = pathlib.Path(tmp)
             treatment = pairing.build_arm(card, Estimand.FULL_PACKAGE, (ref,), workspace=ws)

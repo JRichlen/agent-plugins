@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "contract": "core/OPERATING.md",
+  "activationClasses": {
+    "explicit": "The person names or directly requests a method within the accepted scope.",
+    "implied": "Task, activity or context selects a method without expanding authority.",
+    "dependency": "An active method calls a bounded subordinate procedure and retains its objective.",
+    "state-risk": "A transition or effect requires a check regardless of the topic or selected method.",
+    "always-on-invariant": "A shared obligation remains binding without loading every detailed procedure.",
+    "offer-only": "A direct request or accepted offer is required before execution."
+  },
+  "taskState": {
+    "record": "Use the existing task or project record only when tracking is needed.",
+    "fields": ["id", "objective", "owner", "scope", "state", "evidence", "next_action", "decision_required"],
+    "states": ["assigned", "running", "returned", "verified", "blocked", "stopped"],
+    "rules": [
+      "A returned report does not itself make the unit verified.",
+      "Verification names actual checks and preserves their limits.",
+      "A required independent check must be performed by an independent party.",
+      "Blocked or stopped work must still account for in-flight actions and workers."
+    ]
+  },
+  "responsibilities": {
+    "intent-scope-authority": {"owner": "core", "source": "core/OPERATING.md", "activation": ["always-on-invariant"]},
+    "task-state-and-provenance": {"owner": "core", "source": "core/OPERATING.md", "activation": ["always-on-invariant"]},
+    "method-routing-and-interaction": {"owner": "core", "source": "core/OPERATING.md", "activation": ["always-on-invariant"]},
+    "delegation-execution": {"owner": "delegated-intelligence", "source": "plugins/delegated-intelligence/skills/delegated-intelligence/SKILL.md", "activation": ["explicit", "implied", "dependency"]},
+    "persistent-planning": {"owner": "wayfinder", "source": "plugins/wayfinder/skills/wayfinder/SKILL.md", "activation": ["explicit", "implied"]},
+    "diff-scope": {"owner": "scope-fence", "source": "plugins/scope-fence/skills/scope-fence/SKILL.md", "activation": ["state-risk", "dependency"]},
+    "action-risk-and-restoration": {"owner": "semver-gate", "source": "plugins/semver-gate/skills/semver-gate/SKILL.md", "activation": ["state-risk", "dependency"]},
+    "outbound-content": {"owner": "egress-gate", "source": "plugins/egress-gate/skills/egress-gate/SKILL.md", "activation": ["state-risk", "dependency"]},
+    "retry-bounds": {"owner": "stop-rule", "source": "plugins/stop-rule/skills/stop-rule/SKILL.md", "activation": ["state-risk", "dependency"]},
+    "claim-integrity": {"owner": "core", "source": "core/OPERATING.md", "activation": ["always-on-invariant"]},
+    "claim-checking": {"owner": "verify-before-claim", "source": "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md", "activation": ["state-risk", "dependency"]},
+    "acceptance-verification": {"owner": "verify-before-claim", "source": "plugins/verify-before-claim/skills/verify-work/SKILL.md", "activation": ["explicit", "dependency", "state-risk"]},
+    "continuity": {"owner": "context-handoff", "source": "plugins/context-handoff/skills/context-handoff/SKILL.md", "activation": ["state-risk", "explicit", "dependency"]},
+    "learning-proposals": {"owner": "recurrence-detector", "source": "plugins/recurrence-detector/skills/recurrence-detector/SKILL.md", "activation": ["explicit", "implied"]},
+    "episodic-record": {"owner": "dev-diary", "source": "plugins/dev-diary/skills/dev-diary/SKILL.md", "activation": ["explicit"]},
+    "optional-second-opinion": {"owner": "voice", "source": "plugins/voice/skills/second-opinion/SKILL.md", "activation": ["offer-only"]}
+  },
+  "services": [
+    {
+      "id": "delegation",
+      "owner": "delegated-intelligence",
+      "entrypoint": "delegated-intelligence",
+      "source": "plugins/delegated-intelligence/skills/delegated-intelligence/SKILL.md",
+      "routingRole": "specialist",
+      "activation": ["explicit", "implied", "dependency"],
+      "enterWhen": "A bounded unit benefits from actual independent assignments and the required worker tools are available.",
+      "exitWhen": "Assignments are returned and reconciled, or blocked/stopped with every worker and in-flight action accounted for.",
+      "returns": ["output references", "reported versus checked evidence", "remaining gaps", "next action"],
+      "requires": ["core/OPERATING.md", "stop-rule for retry limits", "verify-before-claim for completion claims"]
+    },
+    {
+      "id": "acceptance-verification",
+      "owner": "verify-before-claim",
+      "entrypoint": "verify-work",
+      "source": "plugins/verify-before-claim/skills/verify-work/SKILL.md",
+      "routingRole": "envelope",
+      "activation": ["explicit", "dependency", "state-risk"],
+      "enterWhen": "The accepted task needs an explicit executable acceptance contract and the required independent verification can actually be supplied.",
+      "exitWhen": "The selected contract returns a verdict with evidence, or reports an unmet prerequisite or harness fault without claiming success.",
+      "returns": ["contract reference", "verifier identity", "verdict", "evidence references", "limits or faults"],
+      "requires": ["core/OPERATING.md", "actual verifier execution", "independent party when the contract requires independence"]
+    },
+    {
+      "id": "continuity",
+      "owner": "context-handoff",
+      "entrypoint": "context-handoff",
+      "source": "plugins/context-handoff/skills/context-handoff/SKILL.md",
+      "routingRole": "specialist",
+      "activation": ["state-risk", "explicit", "dependency"],
+      "enterWhen": "A phase boundary requires choosing how work continues or a concrete handoff must travel to another session or owner.",
+      "exitWhen": "The continuation choice is made and the receiving owner has live source references, evidence limits and pending actions.",
+      "returns": ["continuation choice", "source pointers when a handoff is needed", "verified findings versus hypotheses", "pending or uncertain effects"],
+      "requires": ["core/OPERATING.md", "the existing project record when one is used"]
+    }
+  ],
+  "adapters": {
+    "claude-code": "core/adapters/claude-code.md",
+    "codex": "core/adapters/codex.md",
+    "copilot": "core/adapters/copilot.md",
+    "portable": "core/adapters/portable.md"
+  }
+}

@@ -16,7 +16,7 @@ from email.utils import parsedate_to_datetime
 
 ROOT = Path(__file__).resolve().parents[2]
 API = "https://openrouter.ai/api/v1/"
-CONFIG_PATHS = ["plugins/jori/evals/promptfoo/promptfooconfig.yaml",
+CONFIG_PATHS = ["plugins/verify-before-claim/evals/promptfoo/promptfooconfig.yaml",
                 "evals/routing/promptfooconfig.yaml",
                 "evals/routing/trajectory/promptfooconfig.yaml"]
 

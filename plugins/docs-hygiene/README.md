@@ -34,7 +34,7 @@ did:
   the incident is history, not a live bug — verify it yourself with
   `git show 1d6d73f^:README.md` against
   `git show 1d6d73f^:.claude-plugin/marketplace.json`.
-- **`plugins/fleet-playbook-curator/README.md`** asserted a "Freshly
+- **[The retired fleet-playbook-curator README](https://github.com/JRichlen/agent-plugins/blob/0f0eb6f172e1e2d06396011a78e689f06ca48969/plugins/fleet-playbook-curator/README.md)** asserted a "Freshly
   scaffolded... intentionally RED" status long after its evals were written
   and green across all three tiers. Its README now records that correction
   in place instead of quietly editing it away — the "explicitly flagged"
@@ -46,12 +46,7 @@ incidents in this repository's history.
 
 ## What this isn't
 
-- **Not fleet-playbook-curator.** That plugin builds and maintains a
-  separate, cron-driven index repo describing a *glob of other repos* from
-  the outside — it never edits a fleet member's own instruction files, and
-  explicitly declares `source-of-truth: false`. docs-hygiene is the inverse:
-  it audits and edits the instruction files that already live *inside* one
-  target repo, in place, on demand, with no cron and no separate repo.
+- **Not a scheduled cross-repo index.** Such an index points to other repositories and may declare `source-of-truth: false`; docs-hygiene repairs the actual instruction files in one repo on demand. The former fleet-playbook-curator package is retired; this skill does not replace its discovery, cron, or citation-ledger automation.
 - **Not plugin-factory.** plugin-factory generates a new plugin's
   `SKILL.md`/`AGENTS.md` skeleton at scaffold time. docs-hygiene audits
   *existing* instruction files, at any later time, in any repo.

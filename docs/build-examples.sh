@@ -2,8 +2,8 @@
 #
 # build-examples.sh — generate the before/after example gallery for GitHub Pages.
 #
-# Reads every committed snapshot in docs/examples/data/*.json (each a REAL,
-# provenanced with-skill / without-skill model run — see capture-example.sh) and
+# Reads committed snapshots in docs/examples/data/*.json (captured model pairs
+# or explicitly labeled ungraded seeds — see capture-example.sh) and
 # each plugin's SKILL.md description, and writes a single self-contained,
 # theme-aware static page to docs/examples/index.html. No external assets, no
 # build step, no network — GitHub Pages serves the file as-is.
@@ -489,7 +489,7 @@ TEMPLATE = string.Template('''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Skill examples — before &amp; after · agent-plugins</title>
-<meta name="description" content="Real, provenanced with-skill / without-skill model runs for every skill in the agent-plugins marketplace, with the models disclosed by role and a verification path back to the CI run.">
+<meta name="description" content="Paired with-skill / without-skill examples for the skills shown, with captured runs and ungraded seeds labeled separately and evidence links where available.">
 <style>$css</style>
 </head>
 <body>
@@ -517,7 +517,7 @@ $nav
 <main>
 <header class="top">
   <h1>Skill examples — before &amp; after</h1>
-  <p class="sub">One real prompt per skill, answered twice by the same model: once with the skill injected, once with a generic stub.
+  <p class="sub">For each skill shown, compare a prompt with the skill injected and with a generic stub. Captured runs and ungraded seed examples are labeled separately.
   The judge's verdict comes first; the full transcripts and the original prompt are one click away; every card ends with who answered,
   who graded, who judged, and the commands that check it.</p>
   <div class="stats">

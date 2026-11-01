@@ -319,8 +319,8 @@ print(f'''<!doctype html>
   <h2>The story in {word(len(acts))} acts, {word(len(eras))} eras</h2>
   <ul>
 {skim}
-  <p class="gloss">Vocabulary — ARM / TRACE / JUDGE, WITNESS, MANDATE, MAJOR, envelope — is defined in the
-  <a href="https://github.com/JRichlen/agent-plugins/blob/main/docs/red-gate-glossary.md">Red Gate glossary</a>.</p>
+  <p class="gloss">Historical vocabulary — ARM / TRACE / JUDGE, WITNESS, MANDATE, MAJOR, envelope — is defined in the
+  <a href="https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/docs/red-gate-glossary.md">historical protocol glossary</a>.</p>
     <li class="act"><a href="#methodology"><strong>Where the checks stand today</strong></a> — the ladder the story built, rung by rung, with what each cannot show.</li>
     <li class="act"><a href="#horizon"><strong>Planned, not built</strong></a> — {word(len((data.get("horizon") or {{}}).get("items", [])))} planned turns of the question, receipted to their issues and the phase-2 plan. None exists yet.</li>
     <li class="act"><a href="#corrections"><strong>Corrections</strong></a> — what the fact-check of this page's own draft changed, with the receipt for each.</li>

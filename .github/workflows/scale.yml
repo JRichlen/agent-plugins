@@ -9,7 +9,7 @@
 #     metamorphic hash invariance, provenance on every unit, effects inside the
 #     ceiling, and exact-code fail-closed on injected faults.
 #
-#   plugins/redgate/evals/scale/  randomized runs through the whole round
+#   plugins/verify-before-claim/evals/scale/  randomized runs through the whole round
 #     lifecycle: red-from-birth, pin, unmet-vs-drift, partial progress, green,
 #     criteria/checker tamper -> drift, stale evidence -> rejected, and the
 #     guard handler's deny/allow matrix.
@@ -23,12 +23,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'plugins/redgate/**'
+      - 'plugins/verify-before-claim/**'
       - 'plugins/agent-compiler/**'
       - '.github/workflows/scale.yml'
   pull_request:
     paths:
-      - 'plugins/redgate/**'
+      - 'plugins/verify-before-claim/**'
       - 'plugins/agent-compiler/**'
       - '.github/workflows/scale.yml'
   workflow_dispatch:
@@ -67,12 +67,12 @@ jobs:
           path: agent-compiler-scale-report.json
           if-no-files-found: ignore
 
-  redgate-scale:
-    name: redgate scale (lifecycle stress)
+  acceptance-scale:
+    name: acceptance contract scale (lifecycle stress)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: run the round-lifecycle stress suite
         env:
           RUNS: ${{ github.event.inputs.rg_runs || '25' }}
-        run: plugins/redgate/evals/scale/run.sh
+        run: plugins/verify-before-claim/evals/scale/run.sh

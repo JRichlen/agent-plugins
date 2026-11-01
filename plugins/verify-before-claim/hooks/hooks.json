@@ -1,0 +1,27 @@
+{
+  "description": "Protect pinned acceptance artifacts and announce unfinished acceptance cases. Claude Code hooks enforce file_path writes; other hosts require their own supported enforcement.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/hooks-handlers/guard-acceptance-paths.sh\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/hooks-handlers/session-start.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}

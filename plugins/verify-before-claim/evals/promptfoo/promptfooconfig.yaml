@@ -1,5 +1,12 @@
 # yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
 #
+# Exposure change: this pack now includes the packaged canonical operating
+# contract as well as the claim-check procedure. Historical negative calibration
+# findings below describe the earlier skill-only exposure and are not comparable
+# evidence for this integration. No new model run has been performed. This
+# tool-less pack does not establish execution, independent review or kernel safety.
+# Provider settings, token caps, repetitions and concurrency remain unchanged.
+#
 # Behavioral tier for the 'verify-before-claim' plugin.
 #
 # ============================================================================
@@ -196,6 +203,7 @@ defaultTest:
     # The skill is the system-under-test: inject its real text so a drift in
     # the prose (e.g. dropping the "must not be asserted as settled" clause,
     # or the anti-pattern list) fails here.
+    core: file://../../context/OPERATING.md
     skill: file://../../skills/verify-before-claim/SKILL.md
     # Default environment: no tool of any kind. Two of three cases use this;
     # the bug-report case overrides it with a tool-present-but-not-yet-run

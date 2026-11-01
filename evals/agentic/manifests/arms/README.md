@@ -77,3 +77,20 @@ copy of `graveyard.json`'s `baseline_arm.allowed_tools`, adding a tool that
 is not the declared `generic_equivalent` of any `full_package_arm`
 capability -- the "unmatched widening" defect `pairing.assert_exposure_parity`
 must reject.
+
+## Consolidated verification owner
+
+The retired Redgate package has no live arm manifest. Its eight original
+`redgate-*` cases retain their identities and frozen fixture bytes, but dispatch
+through `verify-before-claim.json`, selected by their current `card.plugin`.
+That manifest is generated from the expanded, schema-validated canonical
+`verify-before-claim-pos-01` card. It includes both claim checking and the
+selected pinned-verification skills, scripts and hooks with declared baseline
+substitutes. This is a new package treatment; earlier Redgate results cannot
+qualify it. Fleet curator and Jori have no active arms after retirement.
+
+Arm generation uses `pairing.build_arm`, `discover_plugin_capabilities` and
+`assert_exposure_parity`; it is independent of grading fixture correctness.
+Passing generation does not mean `validate.load_cards` or the full corpus passed.
+The Windows fixture-fingerprint limitation is left visible and never repaired
+by re-freezing reference evidence during this migration.

@@ -18,7 +18,7 @@ done
 group "scope-fence — invariant survives verbatim"
 INV='ALWAYS recorded as findings and NEVER folded'
 has "$SKILL"  "$INV" "SKILL.md carries the never-folded-in invariant verbatim" "SKILL.md lost the never-folded-in invariant"
-has "$AGENTS" "$INV" "AGENTS.md carries the never-folded-in invariant verbatim" "AGENTS.md lost the never-folded-in invariant"
+has "$AGENTS" "skills/scope-fence/SKILL.md" "AGENTS.md points to the canonical method" "AGENTS.md lost its canonical method pointer"
 hasE "$SKILL" 'ALWAYS traces to the stated task' "SKILL.md requires every hunk trace to the stated task" "SKILL.md no longer requires hunk-to-task tracing"
 hasE "$SKILL" 'ALWAYS recorded as findings' "SKILL.md requires discoveries be recorded as findings" "SKILL.md no longer requires recording findings"
 

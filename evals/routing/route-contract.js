@@ -16,7 +16,7 @@
 //   2. the line does not match the canonical anchored regex (missing key,
 //      wrong order, unknown separator);
 //   3. any name is not in evals/routing/roster.txt (the closed vocabulary);
-//   4. `redgate` occupies `specialist` (it is a protocol layer, never the
+//   4. `verify-work` occupies `specialist` (it is a protocol layer, never the
 //      domain procedure — its own contract: "not the universal domain router");
 //   5. any skill appears in more than one of specialist/envelope/guards
 //      (the hedging router);
@@ -87,9 +87,9 @@ function validateRoute(output, roster) {
     if (!roster.has(n)) return { pass: false, reason: `rule 3: '${n}' is not in the roster (closed vocabulary)` };
   }
 
-  // rule 4 — redgate never occupies specialist
-  if (specialist === 'redgate') {
-    return { pass: false, reason: "rule 4: redgate may never occupy 'specialist' — it is a protocol layer, not a domain procedure" };
+  // rule 4 — verify-work never occupies specialist
+  if (specialist === 'verify-work') {
+    return { pass: false, reason: "rule 4: verify-work may never occupy 'specialist' — it is a protocol layer, not a domain procedure" };
   }
 
   // rule 5 — no skill in more than one of specialist/envelope/guards

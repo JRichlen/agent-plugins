@@ -1,6 +1,0 @@
-{
-  "claims": [
-    {"repo":"o/new-svc","path":"README.md","sha":"nnn1111","curated_at":"2026-07-14","claim":"entrypoint"},
-    {"repo":"o/gone-svc","path":"README.md","sha":"ggg1111","curated_at":"2026-07-14","claim":"said it was retiring, folding config into arc"}
-  ]
-}

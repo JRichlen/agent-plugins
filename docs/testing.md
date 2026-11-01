@@ -16,6 +16,29 @@ workflows and eval packs by `evals/cheap/check-testing-doc.sh` on every
 > the inventory half of this order; the prose half (the tier tables below) is
 > on the PR author and reviewer.
 
+## Responsibility-refactor coverage
+
+The active catalog removes fleet-playbook-curator, Jori and Redgate. Their old
+packs are removed, not counted as passing coverage. Existing source/receipt
+history remains explicit history. verify-before-claim now carries the optional
+acceptance kernel, integrity/guard controls and a scale pack alongside claim
+checking; the scale job is `acceptance contract scale (lifecycle stress)`.
+
+Selected delegation and verification packages carry generated core copies.
+Their packaged context files are behavior-bearing inputs; the behavior-surface
+map selects them. Core is exposed in the relevant agentic/verification inputs,
+not claimed effective merely because a prose pointer exists. Source-contract,
+mutation, projection and kernel checks establish deterministic properties, not
+model effectiveness or complete real-host qualification.
+
+Routing trajectory now has five cases and five repeats: at most 25 planned
+subject calls before transport retries. It covers an explicitly selected
+contract and a direct-work negative, not a universal round protocol. Provider,
+ceiling, repeat/concurrency and paid `if` gates remain unchanged by this refactor.
+The existing automatic grader/subject reachability jobs are not gated by the
+`paid-evals` label; approval for those calls is distinct from manual paid suites.
+Full red-team execution remains subject to its telemetry/dependency boundary.
+
 ## The tier map
 
 Cheapest first. Each tier catches a class of regression the tiers above it
@@ -23,7 +46,7 @@ structurally cannot.
 
 | Tier | Where | Cost | Fires | Required check? |
 |---|---|---|---|---|
-| [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, <1 min | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
+| [cheap](#cheap-tier) | `evals/cheap/run.sh` | free, offline, host-dependent | every push/PR + before every commit | yes — `cheap tier (deterministic, offline)` |
 | [agentic suite](#agentic-suite) | `evals/agentic/run.sh` | free, offline; `--gate` (what fires below) ~5-15s, full suite ~4-5 min (real promptfoo/docker subprocess) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
 | [red-team suite](#redteam-suite) | `evals/redteam/run.sh` | free, offline; `--gate` (what fires below) well under 1s, full suite real per-config promptfoo validate (materially more) | folded into the cheap tier (section 22, `--gate`) | yes — via the cheap tier |
 | [counterfeit](#counterfeit-tier) | `evals/counterfeits/run.sh` | free, offline, ~5 min | path-gated (`evals/cheap/**`, `evals/counterfeits/**`, `plugins/**`) | yes — `counterfeit tier` |
@@ -36,7 +59,7 @@ structurally cannot.
 | [subject-model matrix](#subject-model-matrix-manual-advisory) | `subject-matrix.yml` + `evals/paid/subject-matrix.sh` | (1 + subjects) × the pack's usual cents | manual dispatch only | no — advisory; the baseline subject decides the job, extra subjects never do |
 | [calibration sheet](#calibration-sheet-manual-no-model-calls) | `calibration-sheet.yml` + `evals/paid/calibration/` | free (no model calls) | manual dispatch only | no — writes a blind sheet to a `calibration/<run-id>` branch for a human to label |
 | [grader agreement](#grader-agreement-manual-grading-only) | `grader-agreement.yml` + `evals/paid/calibration/regrade.sh` | grading spend only (no subject calls) | manual dispatch only | no — reports agreement and kappa between graders on a finished run's outputs |
-| [scale](#scale-tier) | `plugins/{redgate,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/redgate/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
+| [scale](#scale-tier) | `plugins/{verify-before-claim,agent-compiler}/evals/scale/` | free, offline, minutes | path-gated (`plugins/verify-before-claim/**`, `plugins/agent-compiler/**`) | no — evidence, not a merge gate |
 | [deep](#deep-tier-pier) | `plugins/<p>/evals/pier/` | dollars + minutes (sandboxed agents) | path-gated to the safety surface (`plugins/*/skills/**/scripts/**`, `plugins/*/evals/pier/**`) | yes — `deep tier (pier)` (aggregate) |
 | [example gallery](#example-gallery-refresh--pages) | `refresh-examples.yml` / `pages.yml` | real API budget per refresh | scheduled (1st + 15th, 06:00 UTC) / on `docs/**` push to main | no — review-gated PR / publish |
 | [model pricing](#model-pricing-monitor) | `model-pricing.yml` + `ci/model-pricing/` | metadata free; strategy default off/$0 | daily/manual on default branch after activation; offline tests on scoped PRs | no — stages review artifacts only |
@@ -300,11 +323,11 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   allowed; regrades from PR #93's live runs) — plus the fail-closed `route-contract.js` validator on every row
   (all 8 coherence rules, so "any value" never means "any junk") — catching
   the cross-plugin mis-routing that per-plugin packs are blind to, including
-  collapse-into-redgate and ceremony on work that warrants none. A second leg,
-  `evals/routing/trajectory/`, grades redgate's stateful gate behavior at
-  frozen decision points (`STEP:` line + `step-contract.js` cross-field
-  invariants: ARM before TRACE, explicit MAJOR stop, silence is not consent,
-  the gate survives resume). Trajectory slots are **behavior-pinned,
+  unnecessary verification envelopes and ceremony on direct work. A second leg,
+  `evals/routing/trajectory/`, grades selected acceptance-contract and core transition behavior at
+  fixed decision points (`STEP:` line + `step-contract.js` cross-field
+  invariants: a selected contract needs criteria before implementation, required scope/effect decisions cannot be inferred from silence,
+  the gate survives resume, and direct work avoids contract ceremony). Trajectory slots are **behavior-pinned,
   taxonomy-tolerant**: `proceed`/`disposition` are exact everywhere, while T1
   accepts `gate=none|major` and T4 accepts `action=resume|gate` (defensible
   alternate readings of the same stop, per the same regrade). Both legs grade
@@ -448,17 +471,17 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   across hundreds of randomized, isolated trials: agent-compiler kernel stress
   (seeded random registries up to 300 modules — byte-determinism,
   discovery-order independence, metamorphic hash invariance, fail-closed on
-  injected faults) and redgate round-lifecycle stress (red-from-birth, pin,
+  injected faults) and acceptance-contract lifecycle stress (red-from-birth, pin,
   drift, tamper → drift, stale evidence rejected, guard deny/allow matrix).
 - **What it cannot prove.** Model behavior — it is offline, stdlib-only
   stress of the deterministic machinery.
-- **Fires.** `scale.yml`, path-gated to `plugins/redgate/**` /
+- **Fires.** `scale.yml`, path-gated to `plugins/verify-before-claim/**` /
   `plugins/agent-compiler/**` / the workflow itself; **not** a required check
   — evidence, not a merge gate.
 - **Cost.** Free, offline, minutes.
 - **Local run.**
   ```sh
-  plugins/redgate/evals/scale/run.sh
+  plugins/verify-before-claim/evals/scale/run.sh
   plugins/agent-compiler/evals/scale/run.sh --sizes 40,120,300 --seeds 3
   ```
 
@@ -558,16 +581,16 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   slugs it would ping and needs no network or key.
 - **Fires.** Every `evals.yml` run where secrets are available (not fork PRs),
   and at the start of every `refresh-examples.yml` run.
-- **Cost.** One 8-token completion per distinct subject slug per run.
+- **Cost.** A completion per distinct subject slug, with provider ceilings discovered from the active packs and bounded retry behavior. The reservation ceiling may exceed eight tokens; actual billed usage must be read from available provider/run evidence.
 - **Local run.** Needs `OPENROUTER_API_KEY`; the job body is the whole check.
 
 ## example gallery (refresh + pages)
 
 - **What it proves.** The published before/after gallery is a *verification
-  surface*: every card is a real, provenanced with-skill/without-skill pair
-  captured from a graded behavioral run — never hand-written — with the
-  subject, grader and judge models disclosed by role, and no model grading
-  its own family. `refresh-examples.yml` re-runs the packs on a biweekly
+  surface*: captured cards identify their graded behavioral run and disclose
+  the subject, grader and judge models by role, with no model grading its own
+  family. Clearly labeled seed examples illustrate the format and are not
+  measured behavioral evidence. `refresh-examples.yml` re-runs the packs on a biweekly
   schedule, records each snapshot's Actions `run_url`, keeps the raw
   `results.json` as a 90-day artifact, **Sigstore-attests every snapshot it
   wrote** (`actions/attest-build-provenance`, verifiable with
@@ -656,6 +679,8 @@ See [activation, state recovery, scope and limits](model-pricing.md).
 
 ## The statistical spine
 
+**Historical receipts:** the dated runs and retired package names in this section describe the configuration at the time. They are not current pack inventory, budget settings, or evidence that the integrated services improved behavior. Current pack membership is the machine-verified inventory below.
+
 Every LLM-driven tier shares the same statistical machinery, so no green is an
 uninterpretable n=1 and no required check goes red on the weather:
 
@@ -738,7 +763,7 @@ uninterpretable n=1 and no required check goes red on the weather:
   cannot be ruled out, and neither can luck.
 
   So the data cannot separate "S1 sits below its floor" from "S1 sits at its
-  floor and five runs of five sampled unluckily". The routing pack is BYTE-
+  floor and five runs of five sampled unluckily". The historical routing pack was BYTE-
   IDENTICAL across all five runs — nothing in `evals/routing/` was touched — so
   the 0.60 → 1.00 swing is sampling, not a change. The honest verdict is
   unresolved pending more samples, and at `repeat: 5` a scenario sitting near
@@ -1006,6 +1031,7 @@ eval-dir: evals/paid
 eval-dir: evals/redteam
 eval-dir: evals/routing
 eval-dir: evals/templates
+job: acceptance contract scale (lifecycle stress)
 job: agent-compiler scale (kernel stress)
 job: behavioral tier (promptfoo)
 job: behavioral tier — detect paid packs
@@ -1021,15 +1047,14 @@ job: counterfeit tier — run (corpus)
 job: deep tier (pier)
 job: deep tier — detect safety-path changes
 job: deep tier — pier run
-job: grader agreement — regrade and compare
 job: deploy
+job: grader agreement — regrade and compare
 job: install tier (marketplace install-smoke + per-plugin evals)
 job: install tier — detect plugins
 job: install tier — install-smoke + evals
 job: model pricing — detect and stage
 job: model pricing — offline controls
 job: paid multi-plugin gate
-job: redgate scale (lifecycle stress)
 job: refresh
 job: routing tier (roster trigger routing)
 job: subject matrix —  (advisory)
@@ -1048,20 +1073,12 @@ pack: egress-gate/cheap
 pack: eval-ladder/cheap
 pack: find-before-build/cheap
 pack: find-before-build/promptfoo
-pack: fleet-playbook-curator/cheap
-pack: fleet-playbook-curator/pier
-pack: fleet-playbook-curator/promptfoo
 pack: graveyard/cheap
 pack: graveyard/pier
 pack: graveyard/promptfoo
 pack: grill-me/cheap
-pack: jori/cheap
-pack: jori/promptfoo
 pack: plugin-factory/cheap
 pack: recurrence-detector/cheap
-pack: redgate/cheap
-pack: redgate/promptfoo
-pack: redgate/scale
 pack: scope-fence/cheap
 pack: scope-fence/promptfoo
 pack: semver-gate/cheap
@@ -1073,6 +1090,7 @@ pack: tailscale-wif/promptfoo
 pack: tracer-bullets/cheap
 pack: verify-before-claim/cheap
 pack: verify-before-claim/promptfoo
+pack: verify-before-claim/scale
 pack: voice/cheap
 pack: voice/promptfoo
 pack: wave-research/cheap

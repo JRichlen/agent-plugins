@@ -86,4 +86,4 @@ any additional guidance at all" (the missing-placebo error).
 
 ## Before taking an action
 
-- Confirm you u
+- Confirm you understand what the user actua
