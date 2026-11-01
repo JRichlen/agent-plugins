@@ -4,7 +4,9 @@ description: >-
   Staged, adversarial research that tries to break a thesis before believing it: waves, checkpoints, falsifiable sub-claims, rival hypotheses, an ACH matrix, source-incentive tags and a verified final thesis. Also carries Workflow templates for a one-pass research-and-verify fan-out. Use to stress-test or vet a contested claim; not for quick lookups.
 license: MIT
 compatibility: >-
-  PORTABILITY: pure prose and files on disk — no hooks, no scripts. Workers
+  PORTABILITY: the staged method is pure prose and files on disk — no hooks,
+  no scripts. The optional one-pass templates (templates/*.workflow.js) need
+  Claude Code's Workflow tool; nothing else depends on them. Workers
   are described as subagents; on a harness without them, one agent plays each
   role in turn, and the isolation rules (adversaries do not read supporters'
   notes, the verifier does not read the narrative) become separate passes that

@@ -550,7 +550,7 @@ principle is the ground truth the table serves.
 | TRACE | `find-before-build` | Named searches for an existing equivalent before any new abstraction |
 | TRACE | `codebase-design` | 3+ scored candidates when the slice commits a durable boundary |
 | TRACE | `diagnosing-bugs` | Ranked falsifiable hypotheses when a slice fails to flip its criterion |
-| TRACE | `wave-research` | Read-only fan-out template with frozen context and adversarial verifiers |
+| TRACE | `wave-research` | Staged adversarial research on a contested claim; Workflow templates for a one-pass read-only fan-out |
 | TRACE | `plugin-factory`, `tailscale-wif`, `graveyard` | Domain executors, invoked only when a criterion names them |
 | JUDGE | `verify-before-claim` | The verdict is `check.sh` output, run — never asserted |
 | JUDGE | `prove-the-undo` | Restore path exercised before any irreversible criterion goes green |

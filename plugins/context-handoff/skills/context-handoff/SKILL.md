@@ -12,8 +12,8 @@ At every phase boundary, the continue / clear / handoff / delegate / compact cho
 
 ## Not this
 
-- **Not `wave-research`.** wave-research answers a strictly later, narrower
-  question: given that you're about to fan out subagents on a research-and-
+- **Not `wave-research`'s fan-out templates.** Those answer a strictly
+  later, narrower question: given that you're about to fan out subagents on a research-and-
   verify job, how do you structure that fan-out so plausible-but-wrong
   findings don't survive (frozen ground-truth context, per-stage schemas,
   adversarial disbelief-by-default verifiers). context-handoff answers a
@@ -23,7 +23,10 @@ At every phase boundary, the continue / clear / handoff / delegate / compact cho
   The two touch at exactly one point: if this skill's tree routes to DELEGATE
   and the delegated work happens to be a research-and-verify fan-out, reach
   for wave-research's templates to shape it. context-handoff never prescribes
-  fan-out internals; wave-research never asks whether a fan-out should start.
+  fan-out internals; the templates never ask whether a fan-out should start.
+  (wave-research as a whole is a staged method for stress-testing a contested
+  thesis and can run as one agent working in separate passes; that is not a
+  fan-out decision either.)
 - **Not `dev-diary`.** dev-diary produces a human-readable, first-person,
   past-tense journal entry summarizing a whole day's work, written for the
   user's future self to skim days later — narrative synthesis and judgment
