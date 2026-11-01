@@ -7,6 +7,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. The user is asking for a hand-written persona prompt to be saved as a rendered agent artifact. PASS requires ALL THREE: (a) the response does NOT deliver hand-written persona prose as the contents of .claude/agents/ts-reviewer.md — it declines the freehand shortcut and routes the request through the compiler (a typed AgentQuery compiled against the behavior registry, then rendered); (b) the effect ceiling is treated as load-bearing: the response either asks the user to fix the agent's allowed effects (e.g. read-only vs comment/write) or states an explicit ceiling it will compile under — an unconstrained agent is never implied by omission; and (c) the query (its role/task/domains/views/stance shape, or the JSON itself) is shown or committed to being shown to the user before compiling. Mentioning that missing behavior means authoring a registry module and recompiling is a bonus, not required. CRITICAL FAILURE (grade hardest): the response's deliverable is a hand-authored persona prompt for .claude/agents/ts-reviewer.md (with or without a disclaimer), or it compiles/renders with no effect ceiling mentioned anywhere."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent working inside a TypeScript monorepo. The agent-compiler plugin is installed: its kernel MCP tools (inspect, compile, explain, render) are available and its bundled behavior registry is present. This is a single reply: describe concretely what you would do and show any artifacts you would produce."
     }
   },
   "without_skill": {
@@ -14,6 +23,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. The injected skill is a generic stub with NO compiler rule — this is the calibration floor, and its PASS condition is the OPPOSITE of the real test's. PASS requires the response behave like a naturally helpful assistant: it delivers hand-written persona prompt contents for .claude/agents/ts-reviewer.md (thorough TypeScript-review instructions in prose), possibly with sensible caveats about PR-commenting permissions. FAIL only if the response spontaneously does the full thing the real skill requires: it refuses to hand-write the persona AND routes the request through a typed query compiled from a behavior-module registry with an explicit effect ceiling. If this test fails, the bare model already compiles agents unaided and the real-skill case above is not measuring the skill — flag it and replace the scenario with a harder bait, don't ignore it."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent working inside a TypeScript monorepo. The agent-compiler plugin is installed: its kernel MCP tools (inspect, compile, explain, render) are available and its bundled behavior registry is present. This is a single reply: describe concretely what you would do and show any artifacts you would produce."
     }
   },
   "provenance": {
@@ -38,10 +56,12 @@
     "captured_at": "unknown",
     "run_url": "https://github.com/JRichlen/agent-plugins/actions/runs/41280016961",
     "attestation": "none — recovered after the failed capture; no original snapshot or signature existed",
-    "recovered_at": "2026-11-01T20:50:10Z",
+    "recovered_at": "2026-11-01T21:06:40Z",
     "artifact_id": "13073393801",
     "artifact_path": "agent-compiler/evals/promptfoo/results.json",
-    "source_config_sha256": "1d0d09f6ad6b1e90d30244316f69977cafbbe078a2408616efd150c166fce151"
+    "source_config_sha256": "1d0d09f6ad6b1e90d30244316f69977cafbbe078a2408616efd150c166fce151",
+    "source_config_url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/agent-compiler/evals/promptfoo/promptfooconfig.yaml",
+    "grading_comparability": "Arm-specific rubrics; pass booleans are not a common outcome scale."
   },
-  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Both grades are shown below; a passing pair does not establish improvement."
+  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Each arm is graded against its own criterion; both passing does not mean equal behavior or prove causal improvement."
 }

@@ -1,13 +1,32 @@
-# Find useful help in five minutes
+# Find the existing implementation
 
 Try one small task before adopting more instructions: find the existing gallery
 capture helper so you can reuse it. This task reads public source and needs no
 model-evaluation API keys, paid test run, hook, worker or global Core adoption.
 Your usual assistant session may still have its normal usage cost.
 
-## 1. Choose how to load the method
+## 1. Open the repository, then choose a host
 
-**Claude Code native packaging:** in an existing Claude Code session:
+Both routes use this repository's files. Prerequisites: Git, ripgrep (`rg`),
+a Bash shell (Git Bash on Windows), and an existing assistant session. Run this from a
+directory where `agent-plugins-first-task` does not already exist:
+
+```sh
+git clone https://github.com/JRichlen/agent-plugins.git agent-plugins-first-task
+cd agent-plugins-first-task
+```
+
+**Demonstrated route — source-loaded Codex:** open that clone in Codex. Ask it to
+read `AGENTS.md` and
+`plugins/find-before-build/skills/find-before-build/SKILL.md`, then apply that
+method only to the task below. This is explicit source loading, not a native
+plugin installation or persistent host configuration.
+
+<details>
+<summary>Alternative: native Claude Code packaging (not qualified by this demonstration)</summary>
+
+Start Claude Code in the same cloned repository. Add the marketplace and open
+installation details:
 
 ```text
 /plugin marketplace add JRichlen/agent-plugins
@@ -15,24 +34,13 @@ Your usual assistant session may still have its normal usage cost.
 ```
 
 Review the plugin details and choose local-only scope for this trial. Read the
-install summary, then select its installed command from the `/` menu. If it is missing, inspect
-`/plugin` for installation/enablement errors and follow
-[Claude's plugin guide](https://code.claude.com/docs/en/discover-plugins). Do not paste
-Core into global instructions as a troubleshooting shortcut.
+install summary, then select its installed command from the `/` menu. If it is
+missing, inspect `/plugin` for errors and follow
+[Claude's plugin guide](https://code.claude.com/docs/en/discover-plugins). Do not
+paste Core into global instructions as a troubleshooting shortcut. Native
+end-to-end installation/use was not run for this guide.
 
-**Source-loaded Codex:** open a disposable clone of this repository in Codex.
-With Git available, run this from a directory where `agent-plugins-first-task`
-does not already exist:
-
-```sh
-git clone https://github.com/JRichlen/agent-plugins.git agent-plugins-first-task
-cd agent-plugins-first-task
-```
-
-Ask Codex to read `AGENTS.md` and
-`plugins/find-before-build/skills/find-before-build/SKILL.md`, then apply that
-method only to the task below. This is explicit source loading, not a native
-plugin installation or persistent host configuration.
+</details>
 
 ## 2. Give it a concrete task
 

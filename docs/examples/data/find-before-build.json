@@ -7,6 +7,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. An existing equivalent (`withRetry` in src/lib/net.js) does the job the user needs; the ONLY gap is that it is callback-style rather than async/await. Judging that gap to be taste rather than unusability is the model's own work here — the scenario no longer asserts the helper is correct, current or in-use, because saying so handed the floor the skill's conclusion. SKILL.md is explicit that preference/style/not-invented-here is not unusability. PASS requires the response NOT deliver a new parallel retry utility as the solution: it must point at `withRetry` and use/extend/wrap it at the call site (a thin local promisification AT the call site, or extending net.js itself, is acceptable reuse), and treat the wish for a cleaner API as a recorded finding or proposed separate refactor of the existing helper — not a second implementation shipped next to the first. CRITICAL FAILURE (grade hardest): the response writes the requested new standalone retry util (whatever it is named, wherever it is placed) while `withRetry` remains in place, i.e. the codebase ends up with two parallel retry implementations."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent in a large Node.js monorepo you did not write. You know the repo contains `src/lib/net.js`, which exports `withRetry(fn, cb, opts)` — a callback-style exponential-backoff retry helper. This is a single reply with no tool round-trips."
     }
   },
   "without_skill": {
@@ -14,6 +23,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response; ignore any reasoning preamble. The injected skill is a generic stub with NO search-before-build rule — this is the calibration floor. This test's PASS condition is the OPPOSITE of the real test: PASS requires the response behave like a naturally helpful assistant and deliver the requested new async/await retry utility (it may mention `withRetry` exists, as long as it still ships the new standalone util the user asked for). FAIL only if the response spontaneously does the full thing the real skill requires: declines to add a parallel implementation, reuses/extends `withRetry` instead, and treats the cleaner-API wish as a separate proposed refactor. If this test STILL fails after the de-leak recorded in the header, the bare model refuses parallel builds unaided on a stimulus that no longer states the skill's conclusion — that is the finding. Do not redraft a third time: escalate it as the retire-or-keep decision the owner already made for semver-gate's and scope-fence's floors."
+      }
+    ],
+    "comparison_inputs": {
+      "environment": "you are an AI coding agent in a large Node.js monorepo you did not write. You know the repo contains `src/lib/net.js`, which exports `withRetry(fn, cb, opts)` — a callback-style exponential-backoff retry helper. This is a single reply with no tool round-trips."
     }
   },
   "provenance": {
@@ -38,10 +56,12 @@
     "captured_at": "unknown",
     "run_url": "https://github.com/JRichlen/agent-plugins/actions/runs/41280016961",
     "attestation": "none — recovered after the failed capture; no original snapshot or signature existed",
-    "recovered_at": "2026-11-01T20:50:10Z",
+    "recovered_at": "2026-11-01T21:06:40Z",
     "artifact_id": "13073393801",
     "artifact_path": "find-before-build/evals/promptfoo/results.json",
-    "source_config_sha256": "67d75bd5169bdd6ab23372a2979bb36e393f6172159214ad19fb5a9f18d74495"
+    "source_config_sha256": "67d75bd5169bdd6ab23372a2979bb36e393f6172159214ad19fb5a9f18d74495",
+    "source_config_url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/find-before-build/evals/promptfoo/promptfooconfig.yaml",
+    "grading_comparability": "Arm-specific rubrics; pass booleans are not a common outcome scale."
   },
-  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Both grades are shown below; a passing pair does not establish improvement."
+  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Each arm is graded against its own criterion; both passing does not mean equal behavior or prove causal improvement."
 }

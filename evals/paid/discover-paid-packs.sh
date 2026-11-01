@@ -103,6 +103,9 @@ discover() {
   local plugins=()
   local line name src packdir
   while IFS= read -r line; do
+    # Windows Python emits CRLF even under Git Bash. The CR is a line ending,
+    # not part of the marketplace path; retaining it silently hides all packs.
+    line="${line%$'\r'}"
     name="${line%%$'\t'*}"
     src="${line#*$'\t'}"
     packdir="$root/$src/evals/$tier"

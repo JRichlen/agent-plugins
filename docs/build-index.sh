@@ -74,6 +74,10 @@ DEEP_BLURB = {
     "agent-compiler": "Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, a stdlib-only kernel resolves modules and fails closed on conflicts, and out comes an immutable AgentImage with per-line provenance.",
 }
 
+# The root README owns the plain-language user catalog; routing metadata stays
+# in manifests. Reuse that catalog rather than maintaining another summary map.
+readme = open(os.path.join(root, "README.md"), encoding="utf-8").read()
+user_purposes = dict(re.findall(r"\| \[\*\*([^*]+)\*\*\]\([^)]*\) \| ([^\n]+) \|", readme))
 rows = []
 for p in plugins:
     name = p["name"]
@@ -101,7 +105,7 @@ for p in plugins:
       <h3><a href="{REPO}/tree/main/plugins/{esc(name)}">{esc(name)}</a> <span class="ver">v{esc(p.get("version","?"))}</span></h3>
       <div class="tags">{ex_html}{pack_html}</div>
     </div>
-    <p>{esc(p.get("description",""))}</p>
+    <p>{esc(user_purposes.get(name, p.get("description","")))}</p>
     <p class="p-links"><code>/plugin install {esc(name)}@jrichlen</code>{deep_html}</p>
   </li>''')
 
@@ -183,21 +187,25 @@ $nav
 
 <header class="hero">
   <h1>agent-plugins</h1>
-  <p class="sub">A shared operating contract and task methods for AI-assisted work. Start with the outcome,
-  use the smallest useful method, and inspect the result. The catalog has $n_plugins registered plugins;
-  $n_ex have an example and $n_pack carry model-evaluation packs. Presence is not proof of execution or host parity.
+  <p class="sub">Find help for a bug, a small change, a difficult question or a handoff.
+  Try one source-loaded task, see the result and its limits, then go deeper when useful.
+  Choose from $n_plugins task-method plugins; no architecture lesson is required to begin.
   <a href="$repo/blob/main/docs/getting-started.md">Try the first task</a> or <a href="$repo/blob/main/core/OPERATING.md">inspect the core</a>.</p>
 </header>
 
+<details>
+<summary>Native packaging and other installation routes</summary>
 <div class="install">
   <div><span class="lbl">Claude Code</span><pre>/plugin marketplace add JRichlen/agent-plugins
 /plugin install &lt;name&gt;@jrichlen</pre></div>
   <div><span class="lbl">APM source resolution (host support varies)</span><pre>apm install JRichlen/agent-plugins/plugins/&lt;name&gt;#&lt;sha&gt;</pre></div>
 </div>
+<p>Installation availability does not establish host behavior. <a href="$repo/blob/main/docs/getting-started.md#what-is-qualified">Check qualification and removal</a>.</p>
+</details>
 
 <h2>Choose your next step</h2>
 <div class="cards">
-  <a class="card" href="$repo/blob/main/docs/getting-started.md"><span class="lbl">Start here</span><h3>Find existing code</h3><p>A five-minute source-loaded task, actual findings, installation choices and undo.</p></a>
+  <a class="card" href="$repo/blob/main/docs/getting-started.md"><span class="lbl">Start here</span><h3>Find existing code</h3><p>A source-loaded first task, actual findings, installation choices and undo.</p></a>
   <a class="card" href="$repo/blob/main/docs/guides/README.md"><span class="lbl">Guides</span><h3>Bug, feature, handoff</h3><p>Follow real repository work, with evidence and boundaries at each stage.</p></a>
 </div>
 <h2>Inspect the evidence</h2>

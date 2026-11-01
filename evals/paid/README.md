@@ -31,8 +31,9 @@ Use the config from that source revision, not a newer pack. The tool selects a
 passing real-skill row and a nonempty, nonfaulted calibration row for the same
 question and subject provider. It refuses undisclosed or same-family grading.
 No usable pair leaves the previous snapshot unchanged. Inspect the copied
-outputs and grades before publication; a pair where both pass is useful
-negative evidence about discrimination, not proof of improvement.
+outputs and grades before publication; the real and calibration arms can use opposite rubrics. Two passes mean each
+met its own criterion; compare criteria, inputs and outputs before interpreting
+them. They are not a shared quality score or proof of improvement.
 
 The capture time is when capture happened, never an invented evaluation time.
 Do not pass `--attestation github` locally: only the workflow that actually

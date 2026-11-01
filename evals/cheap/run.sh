@@ -1694,15 +1694,17 @@ if [ ! -e docs/build-examples.sh ]; then
   ok "example gallery: not present in this root — nothing to check"
 elif [ ! -x docs/build-examples.sh ]; then
   bad "examples: build-examples.sh exists but is not executable — chmod +x it"
-elif docs/build-examples.sh --check >/dev/null 2>&1; then
+elif docs/build-examples.sh --check; then
   ok "examples: index.html is in sync with docs/examples/data/"
 else
-  bad "examples: index.html is STALE — run docs/build-examples.sh"
+  bad "examples: generator check failed; inspect stderr above for render failure versus stale output"
 fi
 if [ -e docs/build-examples.sh ]; then
 python3 - "$REPO_ROOT" <<'PYE'
 import glob, json, os, re, sys
 root = sys.argv[1]
+sys.path.insert(0, os.path.join(root, "evals", "paid"))
+from recover_examples import validate_recovered
 fail = 0
 found = 0
 for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json"))):
@@ -1757,9 +1759,7 @@ for f in sorted(glob.glob(os.path.join(root, "docs", "examples", "data", "*.json
                 prob.append("recovery must preserve unknown original capture time")
             if str(prov.get("attestation") or "").startswith("github"):
                 prob.append("recovery cannot claim a snapshot attestation")
-            for key in ("recovered_at", "artifact_id", "artifact_path", "results_sha256", "source_config_sha256", "source_rows"):
-                if not prov.get(key):
-                    prob.append("recovery missing " + key)
+            prob.extend(validate_recovered(prov))
     elif "seed" in src:
         # An ungraded seed may not pose as more than it is.
         if prov.get("same_family_judge") is not True and "none" not in str(prov.get("judge_model")).lower() and "not recorded" not in str(prov.get("judge_model")).lower():

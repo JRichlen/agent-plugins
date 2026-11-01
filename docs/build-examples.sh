@@ -71,7 +71,7 @@ def desc_of(plugin):
     p = skill_path(plugin)
     if not p:
         return ""
-    txt = open(p).read()
+    txt = open(p, encoding="utf-8").read()
     m = re.search(r'description:\s*>?-?\s*\n?(.*?)(?:\nlicense:|\ncompatibility:|\n---)', txt, re.S)
     if not m:
         return ""
@@ -223,9 +223,15 @@ for s in snaps:
         verify = (f"sha256sum docs/examples/data/{plugin}.json      # expect {s['_sha256']}\n"
                   f"git log --format='%H %an %ad' -- docs/examples/data/{plugin}.json   # who committed it, and when\n"
                   f"# no attestation exists for a seed: the git history above is the whole provenance")
+    def criteria(side):
+        arm = s.get(side) or {}
+        return esc(json.dumps({"criteria": arm.get("criteria") or "not recorded", "context": arm.get("comparison_inputs") or {}}, indent=2, ensure_ascii=False))
+    source_config = prov.get("source_config_url") or (f"{REPO}/blob/{commit}/plugins/{plugin}/evals/promptfoo/promptfooconfig.yaml" if re.fullmatch(r"[0-9a-f]{40}", commit) and kind != "seed" else "")
+    criterion_details = (f'<details><summary>Per-arm criteria and context (grades use different rubrics)</summary><p><a href="{esc(source_config)}">Original source config</a>. Compare criteria and inputs before interpreting booleans. Full source rows remain in the referenced results artifact.</p><h4>With skill</h4><pre>{criteria("with_skill")}</pre><h4>Calibration control</h4><pre>{criteria("without_skill")}</pre></details>' if kind == "recovered" else "")
     with_out = (s.get("with_skill") or {}).get("output", "")
     without_out = (s.get("without_skill") or {}).get("output", "")
     prompt = s.get("prompt") or ""
+    inputs_notice = ('<p class="who">Inputs differ: inspect the per-arm context below; the shared user question is not the complete model input.</p>' if (s.get("with_skill") or {}).get("comparison_inputs") != (s.get("without_skill") or {}).get("comparison_inputs") else '')
     cards.append(f'''
 <article class="card" id="{esc(plugin)}" data-div="{esc(div)}" data-src="{esc(kind)}">
   <header class="card-head">
@@ -245,16 +251,17 @@ for s in snaps:
   </div>
   <p class="scenario"><span class="lbl">Scenario</span>{esc(s.get("scenario", ""))}</p>
   <details class="prompt">
-    <summary><span class="lbl">Prompt</span><span class="preview">{esc(short(prompt, 150))}</span><span class="meta">{len(prompt)} chars · verbatim</span></summary>
+    <summary><span class="lbl">Shared user question</span><span class="preview">{esc(short(prompt, 150))}</span><span class="meta">{len(prompt)} chars · verbatim</span></summary>
     <div class="promptbody">{esc(prompt)}</div>
   </details>
+{inputs_notice}
   <div class="compare clamped">
     <div class="col without">
-      <div class="col-head"><span>Without the skill</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>Calibration control · control criterion</span>{grade_badge((s.get("without_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(without_out)}</div>
     </div>
     <div class="col with">
-      <div class="col-head"><span>With the skill</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
+      <div class="col-head"><span>With the skill · skill criterion</span>{grade_badge((s.get("with_skill") or {}).get("graded"))}</div>
       <div class="body">{render_output(with_out)}</div>
     </div>
     <div class="compare-tools js-only">
@@ -263,6 +270,7 @@ for s in snaps:
       <span class="sizes">{len(without_out):,} / {len(with_out):,} chars</span>
     </div>
   </div>
+{criterion_details}
   <details class="prov">
     <summary><span class="lbl">Provenance</span>who answered, who graded, who judged — and how to verify this pair</summary>
     <dl>
@@ -326,7 +334,7 @@ def first_provider(txt):
 
 pack_subjects, pack_graders = set(), set()
 for cfg in sorted(glob.glob(os.path.join(root, "plugins", "*", "evals", "promptfoo", "promptfooconfig.yaml"))):
-    txt = open(cfg).read()
+    txt = open(cfg, encoding="utf-8").read()
     subj = first_provider(txt)
     g = re.search(r"id:\s*(anthropic:messages:\S+)", txt)
     if subj: pack_subjects.add(subj)
@@ -531,7 +539,7 @@ $nav
   who graded, who judged, and the commands that check it.</p>
   <p><strong>Difference is not benefit.</strong> Strong/stark labels describe transcript divergence.
   Recovered pairs have grades from the source results, unknown original capture times and no snapshot attestation.
-  Among recovered pairs, $n_nondiscriminating pass on both arms; those tests do not discriminate improvement.</p>
+  The recovered real and calibration arms use opposite-behavior rubrics. Both can pass while behaving differently; the grades are not a common quality scale. Stop-rule also varies the declared attempt-bound context.</p>
   <div class="stats">
     <span><b>$count</b>example$plural</span>
     <span><b>$n_attested</b>CI-graded &amp; attested</span>
@@ -609,7 +617,7 @@ print(TEMPLATE.substitute(
     css=CSS, js=JS, nav=nav("examples", "../"), repo=REPO,
     filters=filters_html, count=count, plural="s" if count != 1 else "",
     side_items="\n".join(side_items),
-    n_nondiscriminating=sum(1 for s in snaps if source_kind(s) == "recovered" and (s.get("with_skill") or {}).get("graded", {}).get("pass") is True and (s.get("without_skill") or {}).get("graded", {}).get("pass") is True), n_recovered=kinds["recovered"], n_attested=kinds["attested"], n_graded=kinds["graded"], n_seed=kinds["seed"], spread=esc(spread),
+    n_recovered=kinds["recovered"], n_attested=kinds["attested"], n_graded=kinds["graded"], n_seed=kinds["seed"], spread=esc(spread),
     packs_n=packs_n,
     pack_subjects=esc(", ".join(sorted(pack_subjects)) or "none"),
     pack_graders=esc(", ".join(sorted(pack_graders)) or "none"),

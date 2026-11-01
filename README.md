@@ -7,23 +7,43 @@ Start with the task. You can ask for a method explicitly and inspect how it
 works when you need more control. Shared scope, authority and evidence rules
 have one owner; a plugin supplies the detailed method.
 
-**[Try a five-minute first task](docs/getting-started.md)** ·
-[Choose by need](#choose-by-need) · [See real walkthroughs](docs/guides/README.md)
+**[Try a first task](docs/getting-started.md)** ·
+[Choose by need](#choose-by-need) · [Follow the guides](docs/guides/README.md)
 
 ## Try it
 
-In Claude Code, add the marketplace and install one method:
+Open a disposable clone in Codex:
+
+```sh
+git clone https://github.com/JRichlen/agent-plugins.git agent-plugins-first-task
+cd agent-plugins-first-task
+```
+
+Ask it to read `AGENTS.md` and
+`plugins/find-before-build/skills/find-before-build/SKILL.md`, then:
+
+> Before adding another gallery capture helper, find the existing one. Show the
+> searches and what can be reused. Do not edit files or run models.
+
+The [first-task guide](docs/getting-started.md) shows actual search results from
+source-loaded Codex, how to check and undo the exercise, and host limits. No
+plugin or global instruction is installed by this route.
+
+<details>
+<summary>Prefer native Claude Code packaging?</summary>
+
+Start Claude Code in the cloned repository, then:
 
 ```text
 /plugin marketplace add JRichlen/agent-plugins
 /plugin install find-before-build@jrichlen
 ```
 
-Ask: “Before adding another gallery capture helper, find the existing one and
-show what can be reused.” The [first-task guide](docs/getting-started.md) includes
-source-loaded Codex use, actual search results, removal and host limits. These
-commands describe native Claude packaging; this task's recorded demonstration
-used Codex reading the source, not a tested native Claude installation.
+Review the details and choose local-only scope for the trial. Native Claude
+installation/use was not tested in the recorded Codex demonstration; see the
+[host guide](docs/getting-started.md) for qualification and removal.
+
+</details>
 
 ## See what happens
 

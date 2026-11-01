@@ -185,8 +185,8 @@ snap = {
     "plugin": plugin,
     "scenario": desc(real),
     "prompt": (var(real, "question") or "").strip(),
-    "with_skill":    {"output": out_of(real).strip(), "graded": graded(real)},
-    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub)},
+    "with_skill": {"output": out_of(real).strip(), "graded": graded(real), "criteria": (real.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (real.get("vars") or {}).items() if k not in ("skill", "question")}},
+    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub), "criteria": (stub.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (stub.get("vars") or {}).items() if k not in ("skill", "question")}},
     "provenance": {
         "source": "promptfoo",
         "results_sha256": hashlib.sha256(open(results, "rb").read()).hexdigest(),

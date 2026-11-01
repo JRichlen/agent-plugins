@@ -10,6 +10,16 @@ spec.loader.exec_module(docs)
 
 
 class GuidedDocs(unittest.TestCase):
+    def test_markdown_anchor_and_link_forms(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "source.md"
+            path.write_text('# Same `code` [link](else.md) ###\n# Same `code` [link](else.md)\n<a name="manual"></a>\n~~~md\n# Ignored\n~~~\n', encoding="utf-8")
+            self.assertEqual(docs.anchors(path), {"same-code-link", "same-code-link-1", "manual"})
+        links = docs.markdown_links('[title](<target.md#head> "Title")\n[full][id]\n[id][]\n[id]\n[id]: target.md#head "Title"\n~~~\n[ignored](bad.md)\n~~~\n<a href="html.md">HTML</a>')
+        self.assertEqual(links.count("target.md#head"), 4)
+        self.assertIn("html.md", links)
+        self.assertNotIn("bad.md", links)
+
     def test_real_guided_path_resolves(self):
         self.assertEqual(docs.check(), [])
 

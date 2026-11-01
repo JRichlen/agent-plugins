@@ -1,6 +1,8 @@
 # Follow a real piece of work
 
-These walkthroughs use repository changes and available evidence. They are
+The bug and feature walkthroughs use completed repository changes and available
+evidence. The handoff guide is an explicitly labeled template for a review
+boundary, not a claim that an independent review has completed. They are
 scoped demonstrations, not fabricated before/after transcripts or controlled
 proof that a skill improves outcomes.
 

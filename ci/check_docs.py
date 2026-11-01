@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Check the guided documentation path's local links and generated site links."""
 from html.parser import HTMLParser
+import html
+import unicodedata
 from pathlib import Path
 import re
 import sys
@@ -12,15 +14,65 @@ GUIDES = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/getting-starte
           "docs/examples/README.md"]
 
 
+def prose(text):
+    """Remove fenced code; support backtick and tilde fences independently."""
+    result, fence = [], None
+    for line in text.splitlines():
+        match = re.match(r"^ {0,3}(`{3,}|~{3,})", line)
+        if match:
+            marker = match[1]
+            if fence is None:
+                fence = marker
+            elif marker[0] == fence[0] and len(marker) >= len(fence):
+                fence = None
+            continue
+        if fence is None:
+            result.append(line)
+    return "\n".join(result)
+
+
+def markdown_links(text):
+    """Links used by these guides, including titled/angle and reference links.
+
+    This is a bounded source check, not a claim of complete CommonMark parity.
+    """
+    text = prose(text)
+    definitions = {}
+    for match in re.finditer(r'^ {0,3}\[([^]\n]+)\]:\s*<?([^\s>]+)>?', text, re.M):
+        definitions[' '.join(match[1].lower().split())] = match[2]
+    body = re.sub(r'^ {0,3}\[[^]\n]+\]:.*$', '', text, flags=re.M)
+    targets = re.findall(r'!?\[[^]\n]*\]\(\s*<?([^\s>]+?)>?(?:\s+["\'][^\n]*?["\'])?\s*\)', body)
+    for match in re.finditer(r'(?<!!)\[([^]\n]+)\](?:\[([^]\n]*)\])?(?!\()', body):
+        key = ' '.join((match[2] or match[1]).lower().split())
+        if key in definitions:
+            targets.append(definitions[key])
+    parser = Links()
+    parser.feed(body)
+    return targets + parser.links
+
+
 def anchors(path):
-    text = path.read_text(encoding="utf-8")
-    if path.suffix == ".html":
-        return set(re.findall(r'\bid=["\']([^"\']+)', text))
-    found = set()
-    for title in re.findall(r"^#{1,6} (.+)$", re.sub(r"```.*?```", "", text, flags=re.S), re.M):
-        title = re.sub(r"[^\w\- ]", "", title.lower()).replace(" ", "-")
-        found.add(title)
-    found.update(re.findall(r'<a\s+(?:id|name)=["\']([^"\']+)', text))
+    text = prose(path.read_text(encoding="utf-8"))
+    parser = Links()
+    parser.feed(text)
+    found = set(parser.ids)
+    if path.suffix == '.html':
+        return found
+    counts = {}
+    for title in re.findall(r"^ {0,3}#{1,6}\s+(.+?)\s*$", text, re.M):
+        title = re.sub(r'\s+#+\s*$', '', title)
+        title = re.sub(r'!?\[([^]]+)\]\([^)]*\)', r'\1', title)
+        title = re.sub(r'<[^>]+>', '', title)
+        title = html.unescape(title).lower()
+        title = ''.join(c for c in title if c in '-_ ' or unicodedata.category(c)[0] in 'LN')
+        base = title.replace(' ', '-')
+        count = counts.get(base, 0)
+        candidate = base if count == 0 else base + '-' + str(count)
+        while candidate in found:
+            count += 1
+            candidate = base + '-' + str(count)
+        counts[base] = count + 1
+        found.add(candidate)
     return found
 
 
@@ -45,8 +97,10 @@ class Links(HTMLParser):
     def __init__(self):
         super().__init__()
         self.links = []
+        self.ids = []
 
     def handle_starttag(self, tag, attrs):
+        self.ids.extend(value for key, value in attrs if (key == "id" or (tag == "a" and key == "name")) and value)
         if tag == "a":
             self.links.extend(value for key, value in attrs if key == "href" and value)
 
@@ -62,8 +116,7 @@ def check(root=ROOT):
             parser.feed(text)
             targets = parser.links
         else:
-            text = re.sub(r"```.*?```|~~~.*?~~~", "", text, flags=re.S)
-            targets = re.findall(r"\[[^\]]*\]\(([^\s)]+)\)", text)
+            targets = markdown_links(text)
         for target in targets:
             error = check_link(root, source, target)
             if error:

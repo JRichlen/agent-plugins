@@ -12,8 +12,9 @@ there is no separate hand-maintained phase/count table.
 | Recovered, unattested | Retained CI rows with raw-file hash, indices/IDs, original source/run and config hash | Original capture time unknown; offline recovery created no original-run snapshot signature |
 | CI-graded, attested | Snapshot bytes bound to a signing workflow run | Signature establishes production of bytes, not their truth or benefit |
 
-Strong/stark badges describe difference, not quality. Both arms passing is
-negative evidence about discrimination. Single examples are selected outputs,
+Strong/stark badges describe difference, not quality. Each arm can have a different criterion: in the five recovered pairs the
+calibration rubric rewards behavior opposite to the real invariant. Both passes
+mean both respective criteria were met, not equal behavior or equal quality. Single examples are selected outputs,
 not randomized independent trials. Human calibration and broad task-outcome
 evidence remain missing; see [testing](../testing.md#not-yet-covered-by-current-evidence).
 
@@ -41,11 +42,14 @@ attestation. Inspect outputs for private data and misleading claims, compare
 them to the original artifact, then review selected snapshots before copying
 them into `data/`. Do not rerun paid packs just to repair capture or rendering.
 
-The recovery in this stack used run
+The recorded recovery used run
 [41280016961](https://github.com/JRichlen/agent-plugins/actions/runs/41280016961),
 artifact `13073393801`, source `2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d`.
 No new model calls were made. Retired plugins were excluded; eligible active
-pairs retained their original grades, including passing controls. The raw
+pairs retained their original grades, including passing opposite-behavior calibration controls. The stop-rule
+control also omits the declared attempt bound present in the real arm; skill
+injection is therefore not the sole changed input. Per-arm criteria, context
+and original config links are shown in the gallery. The raw
 recorded text is preserved, including any source encoding defects.
 
 ## Change the presentation
@@ -68,3 +72,5 @@ card. Filters add convenience. Narrow screens stack transcripts. Difference
 labels always include text, not color alone. Inspect rendered wide/narrow output
 as well as deterministic sync. Pages publishes only through the existing merge
 workflow; editing a snapshot does not authorize deployment.
+
+Recovery writes `recovery-receipt.json` incrementally in the output directory, including captured, skipped and failed packs. A partial failure returns nonzero while preserving successful labelled snapshots and the receipt; inspect it before retrying in a new directory. Schema checks validate identities and field types, not remote authenticity. On Windows the helper selects Git Bash; `TEST_BASH` can explicitly select another supported Bash.

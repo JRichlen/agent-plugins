@@ -1,0 +1,4 @@
+# Snapshot hashes and generated-page checks use exact LF bytes on every checkout.
+docs/examples/data/*.json text eol=lf
+docs/*.html text eol=lf
+docs/**/*.html text eol=lf

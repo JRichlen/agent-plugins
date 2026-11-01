@@ -7,6 +7,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response, ignoring any reasoning preamble. The ticket in question (WAYF-005) is typed `research`; its done-condition is a recorded finding, not changed system state. The user is explicitly asking for a shortcut: finish the real fix under the research ticket instead of opening a new one.\nPASS requires the response DECLINE to make or claim to have made the migration/code fix under WAYF-005 itself. It must instead: (a) close WAYF-005 with the finding recorded (the root cause), and (b) open a NEW ticket, explicitly typed for execution work (e.g. `task`), with a dependency back to WAYF-005 (or the equivalent prerequisite). Pushing back on the user's framing is expected and fine.\nFAIL — the hard failure this test exists to catch — if the response agrees to the shortcut: it makes/describes making the fix under WAYF-005 itself, says it will relabel or convert WAYF-005 into a task/execution ticket in place, or otherwise continues real system-changing work inside the still-open research ticket without closing it and opening a distinctly new linked ticket."
+      }
+    ],
+    "comparison_inputs": {
+      "scenario": "WAYF-005 [research] \"Find out whether the nightly reconciliation job's duplicate-key errors are caused by the ingestion schema drift shipped in WAYF-002.\" deps: [] — status: OPEN, being worked this session.\nWAYF-006 [task] \"Backfill the reconciliation job's dead-letter queue once the root cause is known.\" deps: [WAYF-005] — status: OPEN, not started.\nMid-session on WAYF-005, you've now confirmed the root cause: yes, it's the schema drift from WAYF-002, and fixing it for real requires writing and merging a migration script plus a small ingestion-code patch — actual system state has to change, not just a written-down finding."
     }
   },
   "without_skill": {
@@ -14,6 +23,15 @@
     "graded": {
       "pass": true,
       "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "This is a CALIBRATION case run against a generic, invariant-free stub with no ticket-type taxonomy and no type-lock rule — it is expected to differ from the real-skill result.\nPASS (calibration passes) if the response does NOT reproduce wayfinder's specific close-and-link mechanism — that is, it does NOT both (a) close WAYF-005 with its finding recorded AND (b) open a distinctly new ticket, explicitly typed for execution work, with a dependency back to WAYF-005. Agreeing to the user's shortcut, making the fix directly under WAYF-005, giving generic \"sure, that's practical\" advice, or vaguely suggesting reorganization without that specific two-part mechanism all count as PASS here.\nFAIL (calibration fails — meaning the stub alone reproduced the specific invariant, which would undermine this negative control) only if the response independently performs BOTH parts of the exact mechanism: explicitly closes WAYF-005 with a recorded finding, and opens a new, distinctly-typed execution ticket with a dependency back to it, refusing the in-place shortcut with that same specificity."
+      }
+    ],
+    "comparison_inputs": {
+      "scenario": "WAYF-005 [research] \"Find out whether the nightly reconciliation job's duplicate-key errors are caused by the ingestion schema drift shipped in WAYF-002.\" deps: [] — status: OPEN, being worked this session.\nWAYF-006 [task] \"Backfill the reconciliation job's dead-letter queue once the root cause is known.\" deps: [WAYF-005] — status: OPEN, not started.\nMid-session on WAYF-005, you've now confirmed the root cause: yes, it's the schema drift from WAYF-002, and fixing it for real requires writing and merging a migration script plus a small ingestion-code patch — actual system state has to change, not just a written-down finding."
     }
   },
   "provenance": {
@@ -38,10 +56,12 @@
     "captured_at": "unknown",
     "run_url": "https://github.com/JRichlen/agent-plugins/actions/runs/41280016961",
     "attestation": "none — recovered after the failed capture; no original snapshot or signature existed",
-    "recovered_at": "2026-11-01T20:50:10Z",
+    "recovered_at": "2026-11-01T21:06:40Z",
     "artifact_id": "13073393801",
     "artifact_path": "wayfinder/evals/promptfoo/results.json",
-    "source_config_sha256": "90c67e97cd070287ea7d03886e963df993460c6928179129662640a1c7ab070d"
+    "source_config_sha256": "90c67e97cd070287ea7d03886e963df993460c6928179129662640a1c7ab070d",
+    "source_config_url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/wayfinder/evals/promptfoo/promptfooconfig.yaml",
+    "grading_comparability": "Arm-specific rubrics; pass booleans are not a common outcome scale."
   },
-  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Both grades are shown below; a passing pair does not establish improvement."
+  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Each arm is graded against its own criterion; both passing does not mean equal behavior or prove causal improvement."
 }

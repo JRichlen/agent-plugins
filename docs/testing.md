@@ -60,8 +60,9 @@ gallery phase/count plan was removed; its historical states remain in Git.
 Five active-plugin examples were recovered offline from retained run41280016961
 artifact13073393801, using the original source config. They are explicitly
 recovered/unattested with unknown original capture time and source row/file
-identities. Every recovered pair passed on both arms; this is not discriminating
-efficacy evidence. No new model trial or human calibration was performed for
+identities. Every recovered pair passed its arm-specific rubric. The calibration criteria
+reward opposite behavior, and stop-rule also varies the declared-bound context;
+these are not identical-input common-rubric efficacy trials. No new model trial or human calibration was performed for
 that recovery. Read [gallery maintenance](examples/README.md) for interpretation.
 
 ## Responsibility-refactor coverage

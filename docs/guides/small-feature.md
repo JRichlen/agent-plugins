@@ -3,6 +3,9 @@
 The repository had no release workflow or release guide. The needed first slice
 was narrower than automatic publishing: create an inspectable source candidate
 from an exact commit, without granting a release token or executing that source.
+The [baseline tree](https://github.com/JRichlen/agent-plugins/tree/37fcc9d3ce27ceb9309da189382b70a6e6fd2e48)
+preserves that starting point; current implementation links below follow their
+owning files rather than temporary draft commit IDs.
 
 The implementation agent read and applied the current `codebase-design` method.
 It compared repeated inline workflow logic, a large reusable workflow with mode
@@ -10,7 +13,7 @@ flags, and a shared offline contract with separate orchestration. The third
 keeps file/Git packaging testable without conflating evaluation, release approval
 and publication authority.
 
-The [candidate commit](https://github.com/JRichlen/agent-plugins/commit/440b64f)
+The [candidate feature proposal](https://github.com/JRichlen/agent-plugins/pull/153)
 adds [`release/build_candidate.py`](../../release/build_candidate.py) and its
 read-only workflow. The pure packaging boundary is Git objects in, deterministic
 archive/manifest/checksums out. No model, registry or release API is involved.
@@ -24,7 +27,7 @@ python3 -m unittest discover -s ci/tests -p 'test_release.py'
 python3 release/build_candidate.py --revision HEAD --output /tmp/plugin-candidate-review
 ```
 
-Choose an unused output directory. The implementation's four free tests passed:
+Choose an unused output directory. The initial implementation's four free tests passed; the current suite extends them with adversarial packaging controls:
 real Git bytes and executable mode, repeatability despite a dirty working copy,
 refusal of missing commits/overwrites/escaping links, and the workflow's
 read-only/manual-staging boundary. Inspect `manifest.json` and verify

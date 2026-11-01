@@ -7,12 +7,14 @@ evaluated its packs, then all 13 direct capture invocations failed with
 ## Follow the evidence
 
 The tracked launcher had mode `100644`; the workflow executed it directly.
+The [pre-fix source](https://github.com/JRichlen/agent-plugins/blob/37fcc9d3ce27ceb9309da189382b70a6e6fd2e48/.github/workflows/refresh-examples.yml)
+is pinned independently of the rebased draft branches.
 Existing fixture tests used Bash, so they did not expose that launch mismatch.
 The implementation agent inspected both source and the available failed-run
 artifact. This is a concrete cause, not an inference that all failures are
 provider failures.
 
-The [workflow foundation commit](https://github.com/JRichlen/agent-plugins/commit/33ca495)
+The [initial workflow proposal](https://github.com/JRichlen/agent-plugins/pull/152)
 sets the executable bit, invokes capture through Bash and runs a real
 selection/mode/help preflight before paid reachability or evaluations. It also
 keeps raw result artifacts on later failure. The existing capture tool was
@@ -38,7 +40,9 @@ run evidence.
 The failed artifact contains existing results, so recovery can avoid another
 model run. Recovery must retain original source identity, distinguish recovery
 time from unknown original capture time, and never promise an absent signature.
-Both arms passing is not proof that the skill helped.
+Read each arm’s criterion before comparing grades: calibration can reward the
+opposite behavior, so two passes are neither equal-outcome evidence nor proof
+of causal improvement.
 
 For the current procedure and failure recovery, use the
 [capture runbook](../../evals/paid/README.md) and [gallery maintenance guide](../examples/README.md).
