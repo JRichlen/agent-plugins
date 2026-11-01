@@ -47,16 +47,54 @@ class AgentPluginsProjection(unittest.TestCase):
                 agent_plugins.manifest({"name": "ok", **bad})
 
     def test_stdio_server_maps_placeholders_and_rejects_shell_commands(self):
-        mapped = agent_plugins.server("k", {"command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/s.py"],
-                                            "env": {"D": "${CLAUDE_PLUGIN_DATA}/x"}}, "t")
-        self.assertEqual(mapped, {"type": "stdio", "command": "python3",
-                                  "args": ["${PLUGIN_ROOT}/s.py"], "env": {"D": "${PLUGIN_DATA}/x"}})
-        for entry in ({"command": "${CLAUDE_PLUGIN_ROOT}/bin"}, {"command": "node server.js"},
-                      {"command": "bin/server"}, {"command": "x", "args": ["${CLAUDE_PROJECT_DIR}"]},
-                      {"command": "x", "cwd": "data"}, {"command": "x", "timeout": 5},
-                      {"type": "http", "url": "http://example.com/mcp"}, {"type": "ws", "url": "wss://x"}):
-            with self.assertRaises(ValueError, msg=entry):
-                agent_plugins.server("k", entry, "t")
+        with tempfile.TemporaryDirectory() as folder:
+            plugin = Path(folder).resolve()
+            mapped = agent_plugins.server(plugin, "k", {"command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/s.py"],
+                                                        "env": {"D": "${CLAUDE_PLUGIN_DATA}/x"},
+                                                        "cwd": "${CLAUDE_PLUGIN_DATA}/cache"}, "t")
+            self.assertEqual(mapped, {"type": "stdio", "command": "python3", "args": ["${PLUGIN_ROOT}/s.py"],
+                                      "env": {"D": "${PLUGIN_DATA}/x"}, "cwd": "${PLUGIN_DATA}/cache"})
+            for entry in ({"command": "${CLAUDE_PLUGIN_ROOT}/bin"}, {"command": "node server.js"},
+                          {"command": "bin/server"}, {"command": "x", "args": ["${CLAUDE_PROJECT_DIR}"]},
+                          {"command": "x", "cwd": "data"}, {"command": "x", "timeout": 5},
+                          {"type": "ws", "url": "wss://x"}):
+                with self.assertRaises(ValueError, msg=entry):
+                    agent_plugins.server(plugin, "k", entry, "t")
+
+    def test_package_paths_and_reserved_env_fail_containment(self):
+        with tempfile.TemporaryDirectory() as folder:
+            plugin = Path(folder).resolve() / "plugin"
+            plugin.mkdir()
+            for entry in ({"command": "./../outside/server"}, {"command": "x", "cwd": "./../up"},
+                          {"command": "x", "cwd": "${PLUGIN_ROOT}/../up"}, {"command": "x", "cwd": "${PLUGIN_DATA}/../up"},
+                          {"command": "x", "env": {"PLUGIN_ROOT": "o"}}, {"command": "x", "env": {"plugin_data": "o"}},
+                          {"command": "x", "env": {"": "o"}}):
+                with self.assertRaises(ValueError, msg=entry):
+                    agent_plugins.server(plugin, "k", entry, "t")
+            try:
+                (plugin / "link").symlink_to(plugin.parent, target_is_directory=True)
+            except OSError:
+                pass  # Windows without symlink privilege; the lexical cases above still run.
+            else:
+                with self.assertRaises(ValueError):
+                    agent_plugins.server(plugin, "k", {"command": "./link/server"}, "t")
+            ok = agent_plugins.server(plugin, "k", {"command": "./bin/s", "cwd": "${PLUGIN_ROOT}/data"}, "t")
+            self.assertEqual(ok["cwd"], "${PLUGIN_ROOT}/data")
+
+    def test_remote_url_and_headers_follow_section_7_2_1(self):
+        plugin = Path(".")
+        for url in ("http://example.com/mcp", "http://localhost.evil.example/mcp", "http://localhost＠evil.example/mcp",
+                    "http://localhost@evil.example/mcp", "https://user:pw@example.com/mcp", "https://example.com/mcp#x",
+                    "ftp://example.com", "https:///mcp", "https://example.com/${TOKEN}"):
+            with self.assertRaises(ValueError, msg=url):
+                agent_plugins.server(plugin, "k", {"type": "http", "url": url}, "t")
+        for url in ("https://example.com/mcp", "http://localhost:8080/mcp", "http://127.0.0.2/mcp", "http://[::1]/mcp"):
+            self.assertEqual(agent_plugins.server(plugin, "k", {"type": "http", "url": url}, "t")["url"], url)
+        for headers in (["invalid"], {"X-Tenant": "a", "x-tenant": "b"}, {"Bad Name": "v"}, {"X": "a\r\nInjected: 1"}, {"X": 1}):
+            with self.assertRaises(ValueError, msg=headers):
+                agent_plugins.server(plugin, "k", {"type": "sse", "url": "https://e.com", "headers": headers}, "t")
+        self.assertEqual(agent_plugins.server(plugin, "k", {"type": "sse", "url": "https://e.com",
+                                                            "headers": {"X-Tenant": "a"}}, "t")["type"], "sse")
 
     def test_check_reports_drift_and_unexpected_files_then_write_repairs(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import ipaddress
 import json
 from pathlib import Path
 import re
 import sys
+from urllib.parse import urlsplit
 
 PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
 MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
@@ -23,6 +25,8 @@ MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 METADATA = ("version", "description", "author", "homepage", "repository", "license", "keywords")
 NAME = re.compile(r"[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?")
 PLACEHOLDERS = {"${CLAUDE_PLUGIN_ROOT}": "${PLUGIN_ROOT}", "${CLAUDE_PLUGIN_DATA}": "${PLUGIN_DATA}"}
+HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")  # RFC 9110 token
+HEADER_VALUE = re.compile(r"[\t\x20-\x7e\x80-\xff]*")     # no CR, LF, NUL or controls
 
 _sync_spec = importlib.util.spec_from_file_location(
     "core_sync", Path(__file__).resolve().parent.parent / "core" / "sync.py")
@@ -68,7 +72,50 @@ def portable(value: str, where: str) -> str:
     return value
 
 
-def server(name: str, entry: object, where: str) -> dict:
+def contained(plugin: Path, relative: str, where: str) -> Path:
+    """§4.1: a package path stays inside the resolved plugin root, links included."""
+    if ".." in Path(relative).parts:
+        raise ValueError(f"{where}: package path traverses upward (§4.1): {relative!r}")
+    path = plugin / relative
+    if not path.resolve().is_relative_to(plugin.resolve()):
+        raise ValueError(f"{where}: package path resolves outside the plugin root (§4.1): {relative!r}")
+    return path
+
+
+def check_url(url: object, where: str) -> str:
+    """§7.2.1: absolute HTTP(S), no userinfo or fragment, HTTP only for loopback."""
+    try:
+        parts = urlsplit(url) if isinstance(url, str) else None
+        host = parts.hostname if parts else None
+    except ValueError:
+        parts = host = None
+    if (not parts or parts.scheme not in ("http", "https") or not host or "@" in parts.netloc
+            or "#" in url or re.search(r"[\s\\$]", url)):
+        raise ValueError(f"{where}: url must be an absolute HTTP(S) URL without userinfo or fragment (§7.2.1)")
+    if parts.scheme == "http" and host != "localhost":
+        try:
+            loopback = ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            loopback = False
+        if not loopback:
+            raise ValueError(f"{where}: plain HTTP is allowed only for localhost or a loopback IP (§7.2.1)")
+    return url
+
+
+def check_headers(headers: object, where: str) -> dict:
+    """§7.2.1: valid HTTP field names and values, no case-insensitive duplicates."""
+    if not isinstance(headers, dict):
+        raise ValueError(f"{where}: headers must be an object of strings")
+    seen = set()
+    for key, value in headers.items():
+        if (not HEADER_NAME.fullmatch(key) or not isinstance(value, str)
+                or not HEADER_VALUE.fullmatch(value) or key.lower() in seen):
+            raise ValueError(f"{where}: invalid or duplicate header {key!r} (§7.2.1)")
+        seen.add(key.lower())
+    return headers
+
+
+def server(plugin: Path, name: str, entry: object, where: str) -> dict:
     """Map one Claude MCP entry onto the closed stdio / remote variants of §7.2.1."""
     where = f"{where} mcpServers.{name}"
     if not isinstance(entry, dict):
@@ -81,6 +128,8 @@ def server(name: str, entry: object, where: str) -> dict:
         if (not isinstance(command, str) or not command or "$" in command or " " in command
                 or ("/" in command and not command.startswith("./"))):
             raise ValueError(f"{where}: command must be one bare executable or ./ path (§7.2.1): {command!r}")
+        if command.startswith("./"):
+            contained(plugin, command, where)
         result = {"type": "stdio", "command": command}
         if "args" in entry:
             if not isinstance(entry["args"], list) or not all(isinstance(arg, str) for arg in entry["args"]):
@@ -89,22 +138,29 @@ def server(name: str, entry: object, where: str) -> dict:
         if "env" in entry:
             if not isinstance(entry["env"], dict) or not all(isinstance(v, str) for v in entry["env"].values()):
                 raise ValueError(f"{where}: env must map names to strings")
+            # §9.2: clients supply these; Windows compares names case-insensitively.
+            reserved = [key for key in entry["env"] if key.upper() in ("PLUGIN_ROOT", "PLUGIN_DATA")]
+            if reserved or not all(key and "=" not in key for key in entry["env"]):
+                raise ValueError(f"{where}: env may not set {reserved or 'empty or = names'} (§9.2)")
             result["env"] = {key: portable(val, where) for key, val in entry["env"].items()}
         if "cwd" in entry:
             cwd = portable(entry["cwd"], where) if isinstance(entry["cwd"], str) else None
-            if not cwd or not (cwd.startswith("./") or re.fullmatch(r"\$\{PLUGIN_(ROOT|DATA)\}(/.*)?", cwd)):
-                raise ValueError(f"{where}: cwd must be ./, ${{PLUGIN_ROOT}} or ${{PLUGIN_DATA}} rooted (§7.2.1)")
+            rooted = re.fullmatch(r"\$\{PLUGIN_(ROOT|DATA)\}(/.*)?", cwd or "")
+            if cwd and cwd.startswith("./"):
+                contained(plugin, cwd, where)
+            elif rooted and rooted.group(1) == "ROOT":
+                contained(plugin, "." + (rooted.group(2) or ""), where)
+            elif not rooted or ".." in Path(rooted.group(2) or "/").parts:
+                # The data directory is client-managed; only traversal is checkable here.
+                raise ValueError(f"{where}: cwd must stay under ./, ${{PLUGIN_ROOT}} or ${{PLUGIN_DATA}} (§7.2.1)")
             result["cwd"] = cwd
         return result
     if kind in ("http", "streamable-http", "sse"):
         if set(entry) - {"type", "url", "headers"}:
             raise ValueError(f"{where}: unsupported remote fields")
-        url = entry.get("url")
-        if not isinstance(url, str) or not re.match(r"https://|http://(localhost|127\.|\[::1\])", url) or "$" in url:
-            raise ValueError(f"{where}: url must be a literal HTTPS (or loopback HTTP) URL (§7.2.1)")
-        result = {"type": "sse" if kind == "sse" else "streamable-http", "url": url}
+        result = {"type": "sse" if kind == "sse" else "streamable-http", "url": check_url(entry.get("url"), where)}
         if "headers" in entry:
-            result["headers"] = entry["headers"]
+            result["headers"] = check_headers(entry["headers"], where)
         return result
     raise ValueError(f"{where}: unsupported transport {kind!r}")
 
@@ -112,7 +168,8 @@ def server(name: str, entry: object, where: str) -> dict:
 def mcp(plugin: Path, source: dict, where: str) -> dict | None:
     servers = source.get("mcpServers")
     if isinstance(servers, str):
-        servers = json.loads((plugin / servers).read_text(encoding="utf-8")).get("mcpServers")
+        path = contained(plugin, servers, where)
+        servers = json.loads(path.read_text(encoding="utf-8")).get("mcpServers")
     elif servers is None and (plugin / ".mcp.json").is_file():
         servers = json.loads((plugin / ".mcp.json").read_text(encoding="utf-8")).get("mcpServers")
     if servers is None:
@@ -120,7 +177,7 @@ def mcp(plugin: Path, source: dict, where: str) -> dict | None:
     if not isinstance(servers, dict):
         raise ValueError(f"{where}: mcpServers must be an object")
     return {"$schema": MCP_SCHEMA,
-            "mcpServers": {name: server(name, entry, where) for name, entry in servers.items()}}
+            "mcpServers": {name: server(plugin, name, entry, where) for name, entry in servers.items()}}
 
 
 def encode(document: dict) -> bytes:
