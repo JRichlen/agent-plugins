@@ -1,7 +1,7 @@
 {
   "name": "wave-research",
-  "version": "0.0.1",
-  "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups.",
+  "version": "0.1.0",
+  "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints), plus fan-out research-and-verify Workflow templates. Not for lookups.",
   "author": {
     "name": "Jordan Richlen"
   },
@@ -15,7 +15,12 @@
     "hypotheses",
     "ach-matrix",
     "checkpoints",
-    "thesis"
+    "thesis",
+    "orchestration",
+    "multi-agent",
+    "workflow",
+    "verification",
+    "subagents"
   ],
   "skills": "./skills/",
   "commands": "./commands/"

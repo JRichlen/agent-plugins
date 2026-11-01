@@ -42,7 +42,7 @@ Claude Code hooks layer is optional hardening, never a dependency.
 Treat Red Gate as the default **verification envelope** for nontrivial work,
 even when the user does not name the skill. It is not the universal domain
 router. First route to the most-specific applicable specialist skill or recipe
-for the work itself (`diagnosing-bugs`, `codebase-design`, `orchestrate`,
+for the work itself (`diagnosing-bugs`, `codebase-design`, `wave-research`,
 `wayfinder`, `scope-fence`, etc.); wrap that work in Red Gate when explicit
 criteria/evidence, iterative verified rounds, or a classified human gate are
 needed. A specialist supplies the domain procedure; Red Gate supplies the
@@ -267,8 +267,8 @@ context budget:
   executes; redgate executes one run and uses wayfinder-style ordering only
   to pick the next criterion. A wayfinder ticket is a natural *input* to
   `/redgate`.
-- **orchestrate** is fan-out templates for research-and-verify; redgate may
-  use it during a TRACE's read-only fan-out, but the single writer and the
+- **wave-research** is a staged research method with fan-out templates for
+  research-and-verify; redgate may use it during a TRACE's read-only fan-out, but the single writer and the
   pinned verifier are redgate's own rules.
 - **tracer-bullets** defines the thin slice; redgate is the loop that
   decides *which* slice, proves the gate red first, and verifies after.

@@ -19,5 +19,5 @@ one-sentence-question fog-of-war test from
 `skills/wayfinder/references/fog-of-war.md` on every ticket whose scope feels
 fuzzy. Report the computed frontier — every open ticket whose dependencies
 are all CLOSED — and stop there: wayfinder hands dispatch off to the user, to
-`orchestrate`, or to plain parallel agent calls, and never executes the
+`wave-research`, or to plain parallel agent calls, and never executes the
 charted work itself.

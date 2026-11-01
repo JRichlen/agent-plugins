@@ -144,7 +144,7 @@ for no corresponding benefit once C's common-case entry point exists.*
 If a subagent-spawning tool is available, Step 1's three candidates MAY be
 dispatched to three separate agents in parallel, each given the same problem
 statement and told not to see the others' output, for genuine independence —
-this mirrors orchestrate's fan-out habit but stops there: there is no
+this mirrors wave-research's fan-out habit but stops there: there is no
 harvest step, no verifier, no reconciliation, because these are competing
 designs the same agent will score in Step 2, not claims to fact-check. On any
 harness without a subagent-spawning tool, generate all three yourself,

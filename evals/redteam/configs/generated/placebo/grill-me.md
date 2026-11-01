@@ -124,4 +124,4 @@ any additional guidance at all" (the missing-placebo error).
 
 ## Before taking an action
 
-- Confirm y
+- Confirm you understand what the

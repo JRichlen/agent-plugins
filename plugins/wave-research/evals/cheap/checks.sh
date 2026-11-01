@@ -132,11 +132,13 @@ group "wave-research — disambiguated from neighbours"
 for n in $(grep -oE 'plugins/[a-z0-9-]+' "$SKILL" | sort -u | sed 's#plugins/##'); do
   if [ -d "plugins/$n" ]; then ok "SKILL.md cites plugins/$n, which exists"; else bad "SKILL.md cites plugins/$n, which is not in this marketplace"; fi
 done
-for n in orchestrate verify-before-claim; do
+for n in verify-before-claim; do
   in_section "$SKILL" "Not this" "\*\*$n\*\* \(.plugins/$n.\)" "'Not this' points at $n" "'Not this' lost the $n pointer"
   if [ -d "plugins/$n" ]; then ok "$n exists in this marketplace"; else bad "'Not this' names $n, which is not installed"; fi
 done
-in_section "$SKILL" "Not this" 'fan-out research with Workflow-tool templates' "'Not this' separates the Workflow-tool fan-out templates" "'Not this' lost the fan-out-templates distinction"
+in_section "$SKILL" "Not this" 'one-pass research-and-verify fan-out' "'Not this' routes a one-pass fan-out to the Workflow templates" "'Not this' lost the one-pass-fan-out routing"
+in_section "$SKILL" "Not this" 'Skip the waves and run a Workflow template' "'Not this' says to skip the waves and run a template" "'Not this' lost the run-a-template instruction"
+if grep -rqi 'orchestrate' "$PLUGIN_DIR/skills" "$PLUGIN_DIR/commands" "$PLUGIN_DIR/AGENTS.md"; then bad "wave-research still names the retired orchestrate plugin"; else ok "no pointer at the retired orchestrate plugin"; fi
 in_section "$SKILL" "Not this" 'quick lookup' "'Not this' excludes quick lookups" "'Not this' lost the quick-lookup exclusion"
 
 group "wave-research — always-resident descriptions stay small"
@@ -149,10 +151,145 @@ fm = open(d + "/skills/wave-research/SKILL.md", encoding="utf-8").read().split("
 m = re.search(r"description:\s*>-\n((?:  .*\n)+)", fm)
 skill = " ".join(m.group(1).split()) if m else ""
 bad = []
-if not 0 < len(plug) <= 150: bad.append("plugin.json description is %d chars (limit 150)" % len(plug))
-if not 0 < len(skill) <= 300: bad.append("SKILL.md description is %d chars (limit 300)" % len(skill))
+if not 0 < len(plug) <= 200: bad.append("plugin.json description is %d chars (limit 200)" % len(plug))
+if not 0 < len(skill) <= 400: bad.append("SKILL.md description is %d chars (limit 400)" % len(skill))
 if len(mkt) != 1 or mkt[0]["description"] != plug: bad.append("marketplace.json entry is missing or its description differs from plugin.json")
 for msg in bad: print("  FAIL " + msg)
 sys.exit(1 if bad else 0)
 PY
-if [ $? -eq 0 ]; then ok "plugin.json <= 150 chars, SKILL.md description <= 300 chars, marketplace entry matches"; else bad "a wave-research description grew past its context-tax limit or drifted from the marketplace entry"; fi
+if [ $? -eq 0 ]; then ok "plugin.json <= 200 chars, SKILL.md description <= 400 chars, marketplace entry matches"; else bad "a wave-research description grew past its context-tax limit or drifted from the marketplace entry"; fi
+
+# --- fan-out discipline and Workflow templates (absorbed from the retired
+# orchestrate plugin). Nothing here is destructive: the templates are prose and
+# workflow scripts. What the cheap tier defends is their epistemic contract —
+# the load-bearing discipline lives in marker comments the templates are built
+# around, and it is easy to silently gut one (delete the FROZEN-CONTEXT
+# injection, drop the ADVERSARIAL-REFUTE-DEFAULT skeptic, soften VERDICT-WINS
+# into an average) while the file still parses and reads fine.
+SKILL_DIR="$PLUGIN_DIR/skills/wave-research"
+REFS="$SKILL_DIR/references"
+TEMPLATES="$SKILL_DIR/templates"
+A="$TEMPLATES/derived-verify.workflow.js"
+B="$TEMPLATES/pipelined-verdict-wins.workflow.js"
+FAN="$REFS/fan-out-discipline.md"
+
+group "wave-research — fan-out references and templates exist and SKILL.md points at them"
+for f in "$FAN" "$REFS/strategy-a-derived-verify.md" "$REFS/strategy-b-pipelined-verdict-wins.md" "$REFS/worked-example-observability.md" "$A" "$B"; do
+  if [ -f "$f" ]; then ok "present: $f"; else bad "MISSING: $f"; fi
+done
+if grep -qF "## Fan-out workers and the Workflow templates" "$SKILL" && [ -n "$(section "$SKILL" "Fan-out workers and the Workflow templates")" ]; then ok "SKILL.md has a non-empty fan-out section"; else bad "SKILL.md lost the '## Fan-out workers and the Workflow templates' section"; fi
+in_section "$SKILL" "Fan-out workers and the Workflow templates" 'references/fan-out-discipline\.md' "the fan-out section points at the discipline reference" "the fan-out section lost its pointer to references/fan-out-discipline.md"
+in_section "$SKILL" "Fan-out workers and the Workflow templates" '`derived-verify`, a sensor' "the fan-out section names derived-verify as a sensor" "the fan-out section lost derived-verify"
+in_section "$SKILL" "Fan-out workers and the Workflow templates" '`pipelined-verdict-wins`, a decider where refuting verdicts win' "the fan-out section names pipelined-verdict-wins as a decider where refuting verdicts win" "the fan-out section lost pipelined-verdict-wins"
+in_section "$SKILL" "Fan-out workers and the Workflow templates" 'does not meet the Invariant' "a template run alone is said not to meet the Invariant" "the fan-out section lost the template-does-not-meet-the-invariant caveat"
+in_section "$SKILL" "Fan-out workers and the Workflow templates" 'freeze one settled-facts context' "the fan-out section states the frozen-context rule" "the fan-out section lost the frozen-context rule"
+in_section "$SKILL" "Fan-out workers and the Workflow templates" 'verifier default to disbelief' "the fan-out section states the disbelief default" "the fan-out section lost the disbelief default"
+for r in strategy-a-derived-verify strategy-b-pipelined-verdict-wins worked-example-observability; do
+  in_section "$SKILL" "Fan-out workers and the Workflow templates" "references/$r\\.md" "the fan-out section links references/$r.md" "the fan-out section lost its link to references/$r.md"
+done
+has "$FAN" 'Frozen ground-truth context' "the reference states the frozen-context rule" "the reference lost the frozen-context rule"
+has "$FAN" 'Per-stage structured output' "the reference states the per-stage-schema rule" "the reference lost the per-stage-schema rule"
+has "$FAN" 'defaults to disbelief' "the reference states the disbelief default" "the reference lost the disbelief default"
+has "$FAN" 'not a result that' "the reference says a template run is not an invariant-grade result" "the reference lost the template-is-not-invariant-grade caveat"
+for t in derived-verify pipelined-verdict-wins; do
+  has "$FAN" "$t.workflow.js" "the reference points at the $t template" "the reference lost its pointer to the $t template"
+done
+# Every relative template path a walkthrough cites must resolve.
+for r in strategy-a-derived-verify strategy-b-pipelined-verdict-wins; do
+  _t=$(grep -oE '\.\./templates/[a-z-]+\.workflow\.js' "$REFS/$r.md" | head -1)
+  if [ -n "$_t" ] && [ -f "$REFS/$_t" ]; then ok "$r.md cites $_t, which resolves"; else bad "$r.md cites a template that does not resolve (${_t:-none})"; fi
+done
+
+# Both templates must be valid workflow scripts: a `meta` block the runtime parses.
+group "wave-research — templates declare meta"
+for t in "$A" "$B"; do
+  if grep -q 'export const meta = {' "$t" 2>/dev/null; then
+    ok "$(basename "$t") declares export const meta"
+  else
+    bad "$(basename "$t") is missing 'export const meta' — not a workflow script"
+  fi
+done
+
+group "wave-research — shared discipline markers in the templates"
+# FROZEN-CONTEXT: one ground-truth string injected into every agent. A verifier
+# that reasons from different facts than the researcher "refutes" by disagreeing
+# about the environment, not the claim.
+for t in "$A" "$B"; do
+  if grep -q 'FROZEN-CONTEXT' "$t"; then
+    ok "$(basename "$t") keeps FROZEN-CONTEXT (single ground truth)"
+  else
+    bad "$(basename "$t") dropped FROZEN-CONTEXT — agents can drift off ground truth"
+  fi
+done
+# ADVERSARIAL-REFUTE-DEFAULT: the skeptic defaults to disbelief so an
+# unsupported claim fails closed instead of getting a free pass.
+for t in "$A" "$B"; do
+  if grep -q 'ADVERSARIAL-REFUTE-DEFAULT' "$t"; then
+    ok "$(basename "$t") keeps ADVERSARIAL-REFUTE-DEFAULT (skeptic fails closed)"
+  else
+    bad "$(basename "$t") dropped ADVERSARIAL-REFUTE-DEFAULT — verifier no longer disbelieves by default"
+  fi
+done
+# DERIVED-TARGETS: Strategy A only. The verify set is harvested FROM the
+# research output, never a list guessed up front. This is what makes A a sensor.
+if grep -q 'DERIVED-TARGETS' "$A"; then
+  ok "derived-verify keeps DERIVED-TARGETS (verify set harvested from fan-out)"
+else
+  bad "derived-verify dropped DERIVED-TARGETS — verify targets no longer derived from research"
+fi
+# UNTRUSTED-PROVENANCE: worker findings cross into the verify and synthesize
+# stages as data inside an untrusted-data fence, never as instructions. Each
+# grep is single-line: the pinned fragments sit on one physical line in the
+# templates and must stay that way.
+for t in "$A" "$B"; do
+  if grep -q 'UNTRUSTED-PROVENANCE' "$t"; then
+    ok "$(basename "$t") keeps UNTRUSTED-PROVENANCE (worker output crosses as data)"
+  else
+    bad "$(basename "$t") dropped UNTRUSTED-PROVENANCE — worker text is unfenced instructions again"
+  fi
+  if grep -q 'untrusted-data' "$t"; then
+    ok "$(basename "$t") wraps worker findings in the untrusted-data fence"
+  else
+    bad "$(basename "$t") lost the untrusted-data fence — findings reach the verifier unfenced"
+  fi
+  if grep -q 'data, never instructions' "$t"; then
+    ok "$(basename "$t") tells the verifier fenced text is data, never instructions"
+  else
+    bad "$(basename "$t") lost the data-never-instructions rule — fenced text can steer the verdict"
+  fi
+done
+# The rule must have teeth where verdicts are made.
+for t in "$A" "$B"; do
+  if grep -q 'change your verdict procedure' "$t"; then
+    ok "$(basename "$t") pins that fenced text cannot change the verdict procedure"
+  else
+    bad "$(basename "$t") lost the verdict-procedure clause — injections can rewrite the check"
+  fi
+done
+# Strategy B's reconciler also consumes worker findings.
+if grep -q 'change the precedence rule' "$B"; then
+  ok "pipelined-verdict-wins shields the precedence rule from fenced findings"
+else
+  bad "pipelined-verdict-wins lost the precedence-rule shield — fenced findings can amend VERDICT-WINS"
+fi
+# VERDICT-WINS: Strategy B only. A refuting verdict overrides the research claim.
+if grep -q 'VERDICT-WINS' "$B"; then
+  ok "pipelined-verdict-wins keeps VERDICT-WINS (verdict overrides refuted claim)"
+else
+  bad "pipelined-verdict-wins dropped VERDICT-WINS — refuted claims can survive into the recommendation"
+fi
+
+group "wave-research — untrusted-data fence cannot be broken out of"
+# A worker string containing a literal triple-backtick would close the
+# untrusted-data fence early and let the remainder read as instructions. Both
+# claim-consuming templates must defang backticks in the payload before
+# embedding it (mapping each to U+02CB). Grep the backtick-free tail of that
+# replacement; coupled — remove the defang and the check goes red.
+for _t in derived-verify pipelined-verdict-wins; do
+  _f="$TEMPLATES/$_t.workflow.js"
+  if grep -qF "u02cb" "$_f"; then
+    ok "fence: $_t defangs backticks in untrusted payload (no fence breakout)"
+  else
+    bad "fence: $_t embeds untrusted payload without defanging backticks — fence breakout possible"
+  fi
+done

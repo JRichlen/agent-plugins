@@ -45,7 +45,7 @@ when the corresponding step is actually reached, not up front.
 Three plugins in this marketplace sit near this one. None of them does
 what codebase-design does:
 
-- **orchestrate** fans subagents out over RESEARCH dimensions and
+- **wave-research** fans subagents out over RESEARCH dimensions and
   adversarially verifies the CLAIMS that research surfaces. codebase-design
   compares DESIGN ALTERNATIVES the agent itself generates — no Workflow
   tool, no per-stage schema, no adversarial verifier required.

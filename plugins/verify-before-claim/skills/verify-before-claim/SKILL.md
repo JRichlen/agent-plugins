@@ -49,17 +49,18 @@ Two plugins in this marketplace look adjacent. Neither is this skill:
   the original claim from ever being written unverified, unprompted, by the
   same agent making it, in real time.
 
-- **orchestrate** (`plugins/orchestrate/skills/orchestrate`) is a multi-agent
-  Workflow-tool *template*: two JS workflow scripts that fan research out
-  across `parallel()`/`pipeline()` subagents and adversarially verify the
-  claims that surface, with frozen-context injection and per-stage JSON
-  schemas as the load-bearing mechanics. It is infrastructure for
-  orchestrating *other agents'* claims across a fan-out.
+- **wave-research** (`plugins/wave-research/skills/wave-research`) is a
+  multi-agent research method with Workflow-tool *templates*: staged waves, and
+  two JS workflow scripts that fan research out across `parallel()`/`pipeline()`
+  subagents and adversarially verify the claims that surface, with
+  frozen-context injection and per-stage JSON schemas as the load-bearing
+  mechanics. It is infrastructure for verifying *other agents'* claims across
+  a fan-out.
 
   `verify-before-claim` has no Workflow tool, no fan-out, no JSON schema
   contracts between stages — it governs a single agent's own claims about its
   own work, in ordinary conversation or task execution, not a scripted
-  multi-agent pipeline. Where orchestrate answers "how do I keep a fleet of
+  multi-agent pipeline. Where wave-research answers "how do I keep a fleet of
   research subagents honest," verify-before-claim answers "how do I keep
   myself, right now, from asserting something I didn't check."
 

@@ -24,24 +24,6 @@
       ]
     },
     {
-      "name": "orchestrate",
-      "description": "Two reusable multi-agent orchestration templates for research-and-verify work on Claude Code's Workflow tool: fan out research over dimensions, then adversarially verify the claims that research surfaces so plausible-but-wrong findings don't survive. Ships a shared skill, two workflow-script templates (derived-verify, pipelined-verdict-wins), and a worked example.",
-      "version": "1.0.0",
-      "source": "./plugins/orchestrate",
-      "author": {
-        "name": "Jordan Richlen"
-      },
-      "license": "MIT",
-      "keywords": [
-        "orchestration",
-        "multi-agent",
-        "workflow",
-        "research",
-        "verification",
-        "subagents"
-      ]
-    },
-    {
       "name": "plugin-factory",
       "description": "Scaffold a new marketplace plugin skeleton in one command: valid plugin.json, invariant-first SKILL.md, AGENTS.md symlinks, command stub, and a red-by-default eval, wired into the marketplace.",
       "version": "1.1.0",
@@ -489,8 +471,8 @@
     },
     {
       "name": "wave-research",
-      "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups.",
-      "version": "0.0.1",
+      "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints), plus fan-out research-and-verify Workflow templates. Not for lookups.",
+      "version": "0.1.0",
       "source": "./plugins/wave-research",
       "author": {
         "name": "Jordan Richlen"
@@ -503,7 +485,12 @@
         "hypotheses",
         "ach-matrix",
         "checkpoints",
-        "thesis"
+        "thesis",
+        "orchestration",
+        "multi-agent",
+        "workflow",
+        "verification",
+        "subagents"
       ]
     }
   ]

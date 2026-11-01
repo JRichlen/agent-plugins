@@ -179,7 +179,7 @@ if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 # the plugin's own plugin.json description as separate marketing copy) — so
 # dropping the field here would degrade discoverability. This repo instead
 # keeps a single voice: the two must read exactly the same, checked here so
-# they can never quietly drift apart again (as 'orchestrate' and 'graveyard'
+# they can never quietly drift apart again (as two plugins
 # both already had, unnoticed, before this check existed).
 group "plugin.json <-> marketplace.json description/keywords parity"
 python3 - "$REPO_ROOT" <<'PY'
@@ -676,7 +676,7 @@ fi
 
 # --- 13. Cross-plugin reference resolution -----------------------------------
 # Plugins name each other in prose: wayfinder points at `grill-me` and
-# `orchestrate`, context-handoff at `dev-diary`, docs-hygiene at `graveyard`,
+# `wave-research`, context-handoff at `dev-diary`, docs-hygiene at `graveyard`,
 # the voice skills at each other. A rename or removal of the referenced plugin
 # leaves the referrer steering the model toward a skill that no longer exists —
 # a broken map, same failure shape as §7 but across plugin boundaries. Roster =
@@ -688,7 +688,7 @@ fi
 #       (ordinary hyphenated prose terms like `api-key`, discovered by actually
 #       grepping the repo). An unknown hyphenated token fails closed: either
 #       the reference is broken, or the ignore set needs a reviewed addition.
-#   (2) CURATED PAIRS: non-hyphenated plugin names (`graveyard`, `orchestrate`)
+#   (2) CURATED PAIRS: non-hyphenated plugin names (`graveyard`)
 #       are indistinguishable from prose, so those live in an explicit
 #       (file, referenced-name) allowlist grepped from the repo. Each pair's
 #       file must still carry the backtick reference (a vanished reference =
@@ -708,7 +708,7 @@ roster |= {os.path.basename(d.rstrip("/"))
 NONSKILL = {
     "oauth-client-id", "oauth-secret", "api-key", "client-id",   # credential nouns
     "as-of", "general-purpose",                                   # plain prose
-    "derived-verify", "pipelined-verdict-wins",                   # orchestrate workflow templates
+    "derived-verify", "pipelined-verdict-wins",                   # wave-research workflow templates
     "homelab-board", "ansible-homelab-sim",                       # worked-example artifacts
     "consolidate-delta", "judge-calibration", "path-consent",     # reference docs, not skills
     "engineering-default",                                        # agent-compiler golden example/registry view
@@ -732,9 +732,6 @@ if fail == 0:
 # Curated pairs for non-hyphenated plugin names the dynamic probe can't see.
 PAIRS = [
     ("plugins/docs-hygiene/skills/docs-hygiene/SKILL.md",       "graveyard"),
-    ("plugins/context-handoff/skills/context-handoff/SKILL.md", "orchestrate"),
-    ("plugins/wayfinder/AGENTS.md",                             "orchestrate"),
-    ("plugins/wayfinder/skills/wayfinder/SKILL.md",             "orchestrate"),
 ]
 pfail = 0
 for rel, name in PAIRS:

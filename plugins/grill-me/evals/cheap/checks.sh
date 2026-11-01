@@ -80,9 +80,9 @@ has "$SKILL" "Not this" \
 has "$SKILL" "second-opinion" \
   "SKILL.md names second-opinion by name" \
   "SKILL.md doesn't name second-opinion — differentiation is incomplete"
-hasE "$SKILL" 'orchestrat' \
-  "SKILL.md names orchestrate/orchestration-patterns by name" \
-  "SKILL.md doesn't name orchestrate/orchestration-patterns — differentiation is incomplete"
+has "$SKILL" "wave-research" \
+  "SKILL.md names wave-research by name" \
+  "SKILL.md doesn't name wave-research — differentiation is incomplete"
 
 # --- (e) anchor + path consent: goal before depth, consent before descent --
 # The waste this stops: a deep question series fired on a branch the user
@@ -159,7 +159,7 @@ for phrase in "second opinion" "validate" "fan out" "research and verify"; do
     collision=$((collision+1))
   fi
 done
-[ "$collision" -eq 0 ] && ok "plugin.json description excludes second-opinion's and orchestrate's trigger phrases"
+[ "$collision" -eq 0 ] && ok "plugin.json description excludes second-opinion's and wave-research's trigger phrases"
 
 # --- attribution note present ------------------------------------------------
 group "grill-me — attribution to Matt Pocock's prior art"

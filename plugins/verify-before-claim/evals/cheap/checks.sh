@@ -104,10 +104,10 @@ if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'second-opinion'; then
 else
   bad "'## Not this' does NOT name second-opinion"
 fi
-if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'orchestrate'; then
-  ok "'## Not this' names orchestrate"
+if printf '%s' "$NOT_THIS_BLOCK" | grep -qF 'wave-research'; then
+  ok "'## Not this' names wave-research"
 else
-  bad "'## Not this' does NOT name orchestrate"
+  bad "'## Not this' does NOT name wave-research"
 fi
 
 # --- the skill practices what it preaches -----------------------------------

@@ -90,8 +90,6 @@ def _verdict(repo_root, card_id, ws):
     elif plugin == "jori":
         cards = json_items("dashboard.json", "cards")
         observed = isinstance(cards, list) and any(isinstance(c, dict) and all(c.get(k) for k in ("id", "owner", "state")) for c in cards)
-    elif plugin == "orchestrate":
-        observed = has("evidence.md", r"CLAIM:|CHECKED:") and has("evidence.md", r"VERDICT:|REFUTED|CONFIRMED")
     elif plugin == "plugin-factory":
         observed = bool(data("new-plugin.json")) or (bool(data("plugin.json")) and bool(data("marketplace-entry.json")) and has("invariant.md"))
         observed = observed or (has("new_plugin_json.txt") and has("marketplace_entry.txt"))

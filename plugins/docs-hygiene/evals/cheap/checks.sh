@@ -270,7 +270,7 @@ fi
 
 # --- keywords / description byte-identical between plugin.json and --------
 # marketplace.json — the exact drift class the task brief calls out as
-# having happened once already (orchestrate) and gone unnoticed.
+# having happened once already and gone unnoticed.
 group "docs-hygiene — plugin.json and marketplace.json entry are byte-identical"
 python3 - "$PLUGIN_DIR" "$REPO_ROOT" <<'PY'
 import json, sys

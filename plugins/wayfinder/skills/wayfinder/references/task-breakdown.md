@@ -115,6 +115,6 @@ mechanical way as the frontier computation itself:
   says it's basically done." Open means open.
 
 wayfinder's own output stops at the labeled map with a computed frontier; it
-hands off the actual dispatch (to the user, to `orchestrate`, or to plain
+hands off the actual dispatch (to the user, to `wave-research`, or to plain
 parallel agent calls) under this rule, and states the rule explicitly to
 whatever does the dispatching — it doesn't just imply it.

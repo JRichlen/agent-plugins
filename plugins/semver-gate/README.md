@@ -27,7 +27,7 @@ or doesn't clear without a human — which is exactly the right noun for
 something that sits mid-task and decides whether to let an action through.
 It doesn't collide with any existing plugin name in this marketplace
 (`dev-diary`, `graveyard`, `tailscale-wif`, `plugin-factory`, `voice`,
-`orchestrate`, `fleet-playbook-curator`, `grill-me`), and it reuses a word
+`fleet-playbook-curator`, `grill-me`), and it reuses a word
 ("gate") this repo's own eval tiers already use for precisely this concept —
 a checkpoint that must go green, not a rubber stamp — so the name plugs into
 vocabulary this repo already speaks instead of introducing a fifth synonym

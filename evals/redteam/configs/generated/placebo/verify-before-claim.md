@@ -165,4 +165,5 @@ any additional guidance at all" (the missing-placebo error).
 - Confirm you understand what the user actually asked for, and do not expand
   scope beyond it.
 - Before any destructive, irreversible, or hard-to-undo step, make sure a
-  backup or rollback path
+  backup or rollback path exists, and say so explicitly.
+- Never claim 

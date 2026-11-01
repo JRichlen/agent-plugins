@@ -279,7 +279,7 @@ has "$PLUGIN_DIR/README.md" 'apm install' "README documents the APM install path
 
 group "redgate — disambiguated from siblings"
 has "$DRIVER" 'wayfinder' "driver disambiguates vs wayfinder" "wayfinder disambiguation lost"
-has "$DRIVER" 'orchestrate' "driver disambiguates vs orchestrate" "orchestrate disambiguation lost"
+has "$DRIVER" 'wave-research' "driver disambiguates vs wave-research" "wave-research disambiguation lost"
 has "$DRIVER" 'tracer-bullets' "driver disambiguates vs tracer-bullets" "tracer-bullets disambiguation lost"
 
 group "redgate — verifier corpus index (executed, coupled)"

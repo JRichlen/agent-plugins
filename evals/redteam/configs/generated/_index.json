@@ -102,11 +102,11 @@
       "planned_attempts_total": 288,
       "plugin": "codebase-design",
       "primary_skill": "plugins/codebase-design/skills/codebase-design/SKILL.md",
-      "primary_skill_sha256": "6ae7f9e244f1809fd2da800637ff45cb2aeaf56e8a6b6bee0957ffd694a8720b",
+      "primary_skill_sha256": "79932f9cdcc90e8e6eb7a79c69a00407ca8fe3bb78558b88a5eaf80e6fc61fc8",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 12368,
-        "treatment": 12368
+        "baseline-generic": 12303,
+        "treatment": 12303
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -214,11 +214,11 @@
       "planned_attempts_total": 288,
       "plugin": "context-handoff",
       "primary_skill": "plugins/context-handoff/skills/context-handoff/SKILL.md",
-      "primary_skill_sha256": "8240c125344d258e7a699147d71313438fbb733695df05c989520975a401b07c",
+      "primary_skill_sha256": "dc426f7a010f7b258b0b5820287631c6b88924a786e3d9b0751c977c4444be97",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 9229,
-        "treatment": 9229
+        "baseline-generic": 9433,
+        "treatment": 9433
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -720,11 +720,11 @@
       "planned_attempts_total": 288,
       "plugin": "grill-me",
       "primary_skill": "plugins/grill-me/skills/grill-me/SKILL.md",
-      "primary_skill_sha256": "3a028c2350a64c0bf1eab4a65ac8f9c70334b3bd79dcf1102c62e849f8ca65a0",
+      "primary_skill_sha256": "5e6114e654504be5e48136ba7e7d7050045f9b191e5ba1449432b13166e035bc",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 6398,
-        "treatment": 6398
+        "baseline-generic": 6420,
+        "treatment": 6420
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -789,62 +789,6 @@
         "treatment": "plugins/jori/skills/jori/SKILL.md"
       }
     },
-    "orchestrate": {
-      "cells": {
-        "C1": {
-          "arm": "baseline",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C2": {
-          "arm": "treatment",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C3": {
-          "arm": "baseline",
-          "condition": "adversarial",
-          "planned_n": 48
-        },
-        "C4": {
-          "arm": "treatment",
-          "condition": "adversarial",
-          "planned_n": 48
-        },
-        "C5": {
-          "arm": "baseline-generic",
-          "condition": "clean",
-          "planned_n": 48
-        },
-        "C6": {
-          "arm": "baseline-generic",
-          "condition": "adversarial",
-          "planned_n": 48
-        }
-      },
-      "config_path": "configs/generated/orchestrate.yaml",
-      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
-      "parity_sha256": {
-        "adversarial": "26678b845a4e2d63a74a692bc65565240b8664ffa46f151713833eb1434d25be",
-        "clean": "572a620f0163d9b8a75ef84a9b0d73b0f234346140dfc7ac6f72c46298234cd3"
-      },
-      "parity_status": "OK",
-      "planned_attempts_total": 288,
-      "plugin": "orchestrate",
-      "primary_skill": "plugins/orchestrate/skills/orchestrate/SKILL.md",
-      "primary_skill_sha256": "91205c0a498583dc470d535caa4f05095e72dea9091cd54735143a39c1c10691",
-      "prompt_chars": {
-        "baseline": 0,
-        "baseline-generic": 6851,
-        "treatment": 6851
-      },
-      "secondary_skills": [],
-      "skill_paths": {
-        "baseline": null,
-        "baseline-generic": "evals/redteam/configs/generated/placebo/orchestrate.md",
-        "treatment": "plugins/orchestrate/skills/orchestrate/SKILL.md"
-      }
-    },
     "plugin-factory": {
       "cells": {
         "C1": {
@@ -881,8 +825,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "0afa4cbf97b57d6a012badf1f615b6f0ccb7bb5bb7582f979e1788a0c3aa7430",
-        "clean": "2796d6dc8c2f03a0e89a02951e6fa2ff3368a751cdb8d9871e60121a758b5eb9"
+        "adversarial": "454e04667da1f22537aa4614fcc9de560a116fa860dbd0cf4e7c3df0ab79e57d",
+        "clean": "b6007cca8c24442b8d001d7b8107c115456accb5d64f09e696f6c3515c158d40"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1000,11 +944,11 @@
       "planned_attempts_total": 288,
       "plugin": "redgate",
       "primary_skill": "plugins/redgate/skills/redgate/SKILL.md",
-      "primary_skill_sha256": "7caabe2c709d09966477e00351d090c5da3136b887c0abb5c5e01bf2aefbc6c2",
+      "primary_skill_sha256": "8105f2a4a2cd9ea4d0d39965cd23b2b762220f8488ce6152260b0d2241199352",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 15785,
-        "treatment": 15785
+        "baseline-generic": 15819,
+        "treatment": 15819
       },
       "secondary_skills": [
         "plugins/redgate/skills/criteria-contract/SKILL.md",
@@ -1346,11 +1290,11 @@
       "planned_attempts_total": 288,
       "plugin": "verify-before-claim",
       "primary_skill": "plugins/verify-before-claim/skills/verify-before-claim/SKILL.md",
-      "primary_skill_sha256": "c9a441d3532f0b0075104c650afee006e26ffd107a1a3bbed9c86d106a04ea46",
+      "primary_skill_sha256": "5b5799a40f80fd62fec3a74b5639c36376b856d3bc3ff805d90edac0634de021",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 8513,
-        "treatment": 8513
+        "baseline-generic": 8559,
+        "treatment": 8559
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -1462,11 +1406,11 @@
       "planned_attempts_total": 288,
       "plugin": "wave-research",
       "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
-      "primary_skill_sha256": "18baf1f28bb58c67439d0733aeba51a41e41e031b5d111a176fae4667781f859",
+      "primary_skill_sha256": "0cf79a1b8a12d0f915dff12fbe8653ffbd2578b867bce99ab74629f4c0c6bf77",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 14242,
-        "treatment": 14242
+        "baseline-generic": 15173,
+        "treatment": 15173
       },
       "secondary_skills": [],
       "skill_paths": {
@@ -1518,11 +1462,11 @@
       "planned_attempts_total": 288,
       "plugin": "wayfinder",
       "primary_skill": "plugins/wayfinder/skills/wayfinder/SKILL.md",
-      "primary_skill_sha256": "5802bfdc7f27114f758e29fb4bca8bda32a4b755b5004d993ba2c756f33384e4",
+      "primary_skill_sha256": "e3c3f6880776a3fc4957e337c430071e5d4230fcd8971bfddb912018be8d28d4",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 11080,
-        "treatment": 11080
+        "baseline-generic": 11086,
+        "treatment": 11086
       },
       "secondary_skills": [],
       "skill_paths": {

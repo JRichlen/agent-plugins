@@ -10,7 +10,7 @@
 # deliberately anchored to the STRUCTURAL content of that procedure (the
 # named steps, in order; the named axes; the named checks) rather than
 # generic file-existence boilerplate, and to the specific language that
-# keeps this plugin from being confused with orchestrate, second-opinion, or
+# keeps this plugin from being confused with wave-research, second-opinion, or
 # grill-me. Every assertion below is positive ("X is present"), never a
 # negative grep for banned language, per this repo's own hard-won lesson
 # that negative greps break the moment correct prose documents the thing it
@@ -101,28 +101,28 @@ if [ $? -eq 0 ]; then pass=$((pass+1)); else fail=$((fail+1)); fi
 # --- Not this: all three adjacent plugins named, with a real contrast ------
 # Scoped to the '## Not this' section body itself (extracted between that
 # header and the next '## ' header), not the whole file — a mention of
-# "orchestrate" in Step 1's portability note must not let a check believe
+# "wave-research" in Step 1's portability note must not let a check believe
 # the differentiation section still names it if that section's own bullet
 # was deleted.
 group "codebase-design — 'Not this' names all three adjacent plugins"
 NOT_THIS_BODY="$(awk '/^## Not this$/{f=1; next} /^## /{f=0} f' "$SKILL")"
-for name in "orchestrate" "second-opinion" "grill-me"; do
+for name in "wave-research" "second-opinion" "grill-me"; do
   if printf '%s' "$NOT_THIS_BODY" | grep -qF "$name"; then
     ok "'## Not this' section names adjacent plugin: $name"
   else
     bad "'## Not this' section does not name adjacent plugin: $name"
   fi
 done
-# The differentiation from orchestrate specifically must be the RESEARCH vs
+# The differentiation from wave-research specifically must be the RESEARCH vs
 # DESIGN ALTERNATIVES distinction the design brief requires, not just a
 # name-drop — assert both capitalized contrast terms are present (checked
 # separately, not proximity-joined: grep matches per-line, and a legitimate
 # prose reflow can move either term to an adjacent line, which must not flip
 # a correct tree red).
 if grep -qF 'RESEARCH' "$SKILL" && grep -qF 'DESIGN ALTERNATIVES' "$SKILL"; then
-  ok "SKILL.md draws the RESEARCH-fan-out vs DESIGN-ALTERNATIVES-comparison distinction against orchestrate"
+  ok "SKILL.md draws the RESEARCH-fan-out vs DESIGN-ALTERNATIVES-comparison distinction against wave-research"
 else
-  bad "SKILL.md does not draw the RESEARCH vs DESIGN ALTERNATIVES distinction against orchestrate"
+  bad "SKILL.md does not draw the RESEARCH vs DESIGN ALTERNATIVES distinction against wave-research"
 fi
 # grill-me's distinction must be the CONVERSATIONAL INTERVIEW vs GENERATING
 # designs contrast, not a generic "it's different" note.

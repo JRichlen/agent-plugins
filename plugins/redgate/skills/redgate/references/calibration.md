@@ -111,7 +111,7 @@ parallelism needs. Orchestration is a cost, never a signal of seriousness.
 |---|---|
 | **solo** | T0–T1 where the human will grade JUDGE themselves. |
 | **independent-JUDGE** | The default: one writer; only JUDGE runs in a fresh context. |
-| **fan-out** | TRACE needs parallel **read-only** research (orchestrate templates); still one writer. |
+| **fan-out** | TRACE needs parallel **read-only** research (wave-research templates); still one writer. |
 | **recursive** | Only via the four-part spawn precondition, inside a round, within `depth_remaining`. Never chosen at calibration time — recursion is earned by a failed check, not planned in advance. |
 
 Escalating one level mid-run is a MINOR gate (flagged, standing veto);

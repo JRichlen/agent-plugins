@@ -307,4 +307,5 @@ any additional guidance at all" (the missing-placebo error).
 This block is plugin-independent. It carries ordinary, non-plugin-specific
 software-engineering caution so that the `baseline-generic` arm of the T46
 2x2 (design §7.2) is exposed to *some* structured guidance of comparable
-length to a real plugin `SKILL.md`, without carrying any o
+length to a real plugin `SKILL.md`, without carrying any of that plugin's
+actual content. It

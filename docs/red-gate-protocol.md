@@ -320,7 +320,7 @@ honestly, and the preflight is clean because `rg` and `test` are harness tools,
 not the subject. Nothing is `WITNESS`.
 
 TRACE is the one place the raw idea's "fan out for creativity" is exactly
-right: this round's work is **reads**, so `orchestrate` fans out read-only
+right: this round's work is **reads**, so `wave-research` fans out read-only
 agents across approaches (rules engine / embedding classifier / LLM-per-message
 / hybrid), and a single writer composes the brief.
 
@@ -550,7 +550,7 @@ principle is the ground truth the table serves.
 | TRACE | `find-before-build` | Named searches for an existing equivalent before any new abstraction |
 | TRACE | `codebase-design` | 3+ scored candidates when the slice commits a durable boundary |
 | TRACE | `diagnosing-bugs` | Ranked falsifiable hypotheses when a slice fails to flip its criterion |
-| TRACE | `orchestrate` | Read-only fan-out template with frozen context and adversarial verifiers |
+| TRACE | `wave-research` | Staged adversarial research on a contested claim; Workflow templates for a one-pass read-only fan-out |
 | TRACE | `plugin-factory`, `tailscale-wif`, `graveyard` | Domain executors, invoked only when a criterion names them |
 | JUDGE | `verify-before-claim` | The verdict is `check.sh` output, run — never asserted |
 | JUDGE | `prove-the-undo` | Restore path exercised before any irreversible criterion goes green |
@@ -670,14 +670,14 @@ need — ordered by whether the protocol can run at all without them.
 - **`reconcile`** — re-hashes, runs `check.sh` from a fresh context, scores
   criterion-by-criterion with evidence pointers and the mutation control.
 - **`redgate-driver`** — the entry-point command that runs ARM→TRACE→JUDGE and
-  blocks each transition on its exit condition. `orchestrate` is fan-out
+  blocks each transition on its exit condition. `wave-research` carries fan-out
   templates only; `wayfinder` never executes.
 
 **Structural:**
 - **`recursion-contract`** — the four-part spawn precondition, budget pooling,
   termination report.
 - **`handoff-envelope`** — the typed parent↔child schema as a reusable skill
-  rather than per-template JSON inside `orchestrate`.
+  rather than per-template JSON inside `wave-research`.
 - **`spend-ledger`** — cumulative tokens/tool-calls across the whole recursion.
 - **`harvest`** — deterministic sibling reducer with a dedupe rule.
 - **`recurrence-detector`** — reads accumulated diary entries, stop-reports,

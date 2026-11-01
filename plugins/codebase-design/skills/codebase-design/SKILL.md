@@ -33,19 +33,18 @@ Before committing to an interface (a module boundary, class API, or function sig
 Three plugins in this marketplace share enough vocabulary to be reached for
 by mistake. None of them is this skill.
 
-- **orchestrate** (`plugins/orchestrate/skills/orchestrate`) ships two
-  Workflow-tool templates for fanning subagents out over RESEARCH dimensions
-  and adversarially verifying the CLAIMS that research surfaces — frozen
-  ground-truth context, per-stage JSON schemas, a verifier that defaults to
-  disbelief. Its own trigger list names "design comparison" too, but only as
-  one *use* of that fan-out-and-verify machinery — hand-rolling subagents to
-  research several options and fact-check what they report back.
+- **wave-research** (`plugins/wave-research/skills/wave-research`) ships a
+  staged research method and two Workflow-tool templates for fanning subagents
+  out over RESEARCH dimensions and adversarially verifying the CLAIMS that
+  research surfaces — frozen ground-truth context, per-stage JSON schemas, a
+  verifier that defaults to disbelief. Hand-rolling subagents to research
+  several options and fact-check what they report back is its job.
   codebase-design borrows only the *shape* of "produce several, then
   compare", applied instead to DESIGN ALTERNATIVES the agent itself generates
   and scores against fixed axes, never to claims a fan-out surfaced — no
   Workflow tool, per-stage schema, or adversarial verifier required by
   default (Step 1's optional parallel dispatch borrows the fan-out habit, not
-  the verify/harvest/reconcile machinery). Reach for orchestrate to research
+  the verify/harvest/reconcile machinery). Reach for wave-research to research
   N options and verify what's claimed about them; reach for this skill when
   the shape space is already known and the job is to generate and score
   candidates directly.
@@ -119,7 +118,7 @@ defensible on its own terms before moving to the next (don't let candidate 2
 be a strawman built to lose to candidate 1). If a subagent-spawning tool
 happens to be available, you MAY optionally dispatch each candidate to a
 separate agent in parallel for genuine independence — that's an optimization
-borrowed from orchestrate's fan-out habit (see "Not this"), never a
+borrowed from wave-research's fan-out habit (see "Not this"), never a
 dependency; see Portability below.
 
 ## Step 2 — Compare on depth, locality, seam placement

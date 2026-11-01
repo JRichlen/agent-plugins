@@ -30,8 +30,8 @@ the user to react to.
 - **second-opinion** (`plugins/voice/skills/second-opinion`) is *post-hoc*:
   batched fact-checks plus advisor personas re-checking a verdict that
   already exists.
-- **orchestrate** (`plugins/orchestration-patterns`) is a Workflow-tool
-  template fanning research across subagents.
+- **wave-research** (`plugins/wave-research`) is a staged research method
+  with Workflow-tool templates fanning research across subagents.
 
 grill-me is neither: a **single-session, no-subagents-required, live
 conversational interrogation of a plan**, run with the user *before* work

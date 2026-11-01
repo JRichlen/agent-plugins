@@ -10,7 +10,7 @@ first match wins: **continue**, **clear**, **handoff**, **delegate**,
 **compact**. This plugin is that ordered tree, plus the exact shape a
 handoff artifact must take when the tree routes there.
 
-It is not a fan-out planner (see `orchestrate` for how to structure a
+It is not a fan-out planner (see `wave-research` for how to structure a
 research-and-verify subagent fan-out once you've already decided to
 delegate) and it is not an end-of-day journal (see `dev-diary` for a
 human-readable summary written for your future self, days later). See the

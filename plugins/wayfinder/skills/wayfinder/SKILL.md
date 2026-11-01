@@ -28,20 +28,20 @@ A multi-session effort must ALWAYS be represented as a labeled map of typed deci
 
 Two plugins in this marketplace look adjacent. Neither is this skill:
 
-- **orchestrate** (`plugins/orchestrate/skills/orchestrate`) is a
-  Workflow-tool *template pair* (`derived-verify` /
-  `pipelined-verdict-wins`) for a **single session's** research-and-verify
-  fan-out. It has no persistent state across sessions: a template script
-  runs once, returns `{research, verdicts}` or a reconciled brief, and is
-  done. It has no concept of a ticket, a dependency graph, or a frontier that
-  persists between invocations — every run starts from a caller-supplied
-  `dimensions` list, not a chart built up over time.
+- **wave-research** (`plugins/wave-research/skills/wave-research`) takes **one
+  contested thesis** to a verified verdict in a single effort: staged waves,
+  plus a Workflow-tool *template pair* (`derived-verify` /
+  `pipelined-verdict-wins`) for a single session's research-and-verify
+  fan-out. Its run directory is scoped to that one thesis. It has no concept
+  of a ticket type, a dependency graph, or a frontier spanning many efforts:
+  every template run starts from a caller-supplied `dimensions` list, not a
+  chart built up over time.
 
   wayfinder is the opposite: durable, cross-session, ticket-typed state that
-  orchestrate's fan-outs could later be *dispatched against* (a wayfinder
-  `task` ticket on the frontier is a plausible orchestrate input) but
-  wayfinder never itself fans out subagents or verifies claims — it only
-  charts the map and gates dispatch order.
+  wave-research could later be *dispatched against* (a wayfinder `research`
+  ticket on the frontier is a plausible wave-research input) but wayfinder
+  never itself fans out subagents or verifies claims — it only charts the map
+  and gates dispatch order.
 
 - **grill-me** (`plugins/grill-me/skills/grill-me`) is a single-session,
   no-subagents-required, **live interrogation of one plan, right now**,
@@ -58,11 +58,12 @@ Two plugins in this marketplace look adjacent. Neither is this skill:
   `grilling` ticket exists and is open, and moves on to charting the rest of
   the map.
 
-The load-bearing distinction: orchestrate and grill-me are both
-single-session and stateless across sessions (orchestrate = execute-and-verify
-now; grill-me = interrogate-and-confirm now). wayfinder is the only one of the
-three that persists a plan as inspectable state across many sessions, and
-explicitly forbids that state from ever being silently treated as execution.
+The load-bearing distinction: wave-research and grill-me each work one
+question at a time (wave-research = research-and-verify one thesis; grill-me
+= interrogate-and-confirm one plan now). wayfinder is the only one of the
+three that persists a plan as inspectable ticket state across many sessions,
+and explicitly forbids that state from ever being silently treated as
+execution.
 
 ## When to use this
 
@@ -163,7 +164,7 @@ right now?**
 ### 4. Dispatch — frontier only, in parallel
 
 wayfinder's own output stops at the labeled map with a computed frontier. It
-hands off dispatch — to the user, to `orchestrate`, or to plain parallel
+hands off dispatch — to the user, to `wave-research`, or to plain parallel
 agent calls — under one stated rule: only tickets currently on the frontier
 may be dispatched concurrently, and a ticket must never be dispatched while
 any of its listed dependencies is still open. This is checked the same
