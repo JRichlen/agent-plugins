@@ -30,7 +30,7 @@ class GraderForgery(unittest.TestCase):
         cases = {
             "plugin-factory-pos-01": {"plugin.json": "NOT JSON\n"},
             "wayfinder-pos-01": {"tickets.json": "NOT JSON\n"},
-            "eval-ladder-pos-01": {"eval-plan.json": "NOT JSON\n"},
+            "eval-ladder-pos-01": {"audit.json": "NOT JSON\n"},
             "agent-compiler-pos-01": {"rendered.md": "imageHash: totally-made-up\n"},
         }
         for card, edits in cases.items():
