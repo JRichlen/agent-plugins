@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# build-index.sh â€” generate the GitHub Pages landing page (docs/index.html).
+# build-index.sh — generate the GitHub Pages landing page (docs/index.html).
 #
 # The landing page is the site's hub: what the marketplace is, how to install
 # from it, examples and verification references, and a
-# catalog of EVERY plugin read from .claude-plugin/marketplace.json â€” with, per
+# catalog of EVERY plugin read from .claude-plugin/marketplace.json — with, per
 # plugin, whether it has a before/after example (and how starkly the judge saw
 # it diverge), a behavioral eval pack, and a deep-dive page. Reading those from
 # the repo instead of hand-writing them is what keeps the hub from going stale
@@ -82,15 +82,15 @@ for p in plugins:
     if ex:
         tiers = ("stark", "strong", "moderate", "subtle")
         label = ex["div"] if ex["div"] in tiers else "example"
-        title = (f'before/after example â€” judged divergence: {ex["div"]}; {ex["kind"]}'
+        title = (f'before/after example — judged divergence: {ex["div"]}; {ex["kind"]}'
                  if ex["div"] in tiers else
-                 f'before/after example â€” {"described without a one-word grade" if ex["div"] == "untagged" else "divergence not judged"}; {ex["kind"]}')
+                 f'before/after example — {"described without a one-word grade" if ex["div"] == "untagged" else "divergence not judged"}; {ex["kind"]}')
         ex_html = f'<a class="tag ex {esc(ex["div"])}" href="examples/#{esc(ex_key)}" title="{esc(title)}"><span class="dot {esc(ex["div"])}"></span>{esc(label)}</a>'
     else:
-        ex_html = '<span class="tag none" title="no before/after example yet â€” the gallery never fabricates one">no example yet</span>'
+        ex_html = '<span class="tag none" title="no before/after example yet — the gallery never fabricates one">no example yet</span>'
     pack_html = ('<span class="tag pack" title="has a behavioral model-evaluation pack; running it depends on the workflow and spending gates">model eval pack</span>'
                  if has_pack(name) else '<span class="tag none" title="no behavioral model-evaluation pack; inspect available structural and agentic coverage">no model pack</span>')
-    deep_html = f' Â· <a href="{esc(name)}/">deep dive</a>' if has_deep(name) else ""
+    deep_html = f' · <a href="{esc(name)}/">deep dive</a>' if has_deep(name) else ""
     kw = " ".join(p.get("keywords") or [])
     # The filter matches data-q only, so a skill the card does not name (a
     # hosted one such as prove-the-undo) is unfindable unless it is listed here.
@@ -173,7 +173,7 @@ TEMPLATE = string.Template('''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>agent-plugins â€” shared rules and task methods</title>
+<title>agent-plugins — shared rules and task methods</title>
 <meta name="description" content="A shared operating contract, reusable services and $n_plugins registered task-method plugins. Inspect evidence, decisions and host limits.">
 <style>$css</style>
 </head>
@@ -198,7 +198,7 @@ $nav
 <h2>Explore further</h2>
 <div class="cards">
   <a class="card" href="examples/"><span class="lbl">Evidence</span><h3>Before &amp; after examples</h3><p>Paired examples with evidence labels and provenance. Some entries are ungraded seeds; inspect the source rather than assuming measured benefit.</p></a>
-  <a class="card" href="$repo/blob/main/docs/testing.md"><span class="lbl">Reference</span><h3>How every change is checked</h3><p>The full inventory of eval tiers, what each proves and what it structurally cannot, when it fires and what it costs â€” the doc the cheap tier itself keeps in sync with the workflows.</p></a>
+  <a class="card" href="$repo/blob/main/docs/testing.md"><span class="lbl">Reference</span><h3>How every change is checked</h3><p>The full inventory of eval tiers, what each proves and what it structurally cannot, when it fires and what it costs — the doc the cheap tier itself keeps in sync with the workflows.</p></a>
 </div>
 
 <h2>Deep dives <small>$n_deep plugins with a long-form page</small></h2>
@@ -214,13 +214,13 @@ $nav
   <strong>This site is generated, and checked.</strong> The landing page and the example gallery are rendered from committed data by a
   script in <code>docs/</code>; the offline eval tier fails any commit whose page drifts from its data, and the Pages workflow re-checks before it deploys.
   <ul>
-    <li><a href="$repo/blob/main/docs/build-index.sh">build-index.sh</a> â€” this page, from <code>marketplace.json</code>, the snapshots and the packs</li>
-    <li><a href="$repo/blob/main/docs/build-examples.sh">build-examples.sh</a> â€” the gallery, from <code>docs/examples/data/</code> (<a href="$repo/blob/main/docs/examples/DESIGN.md">why it looks the way it does</a>)</li>
+    <li><a href="$repo/blob/main/docs/build-index.sh">build-index.sh</a> — this page, from <code>marketplace.json</code>, the snapshots and the packs</li>
+    <li><a href="$repo/blob/main/docs/build-examples.sh">build-examples.sh</a> — the gallery, from <code>docs/examples/data/</code> (<a href="$repo/blob/main/docs/examples/DESIGN.md">why it looks the way it does</a>)</li>
   </ul>
 </div>
 
 <footer class="site">
-  Served from <code>docs/</code> by GitHub Pages Â· <a href="$repo">source</a> Â· <a href="$repo/blob/main/AGENTS.md">eval discipline</a> Â· <a href="$repo/blob/main/core/OPERATING.md">operating core</a> Â· <a href="$repo/blob/main/docs/testing.md">evidence limits</a>
+  Served from <code>docs/</code> by GitHub Pages · <a href="$repo">source</a> · <a href="$repo/blob/main/AGENTS.md">eval discipline</a> · <a href="$repo/blob/main/core/OPERATING.md">operating core</a> · <a href="$repo/blob/main/docs/testing.md">evidence limits</a>
 </footer>
 </div>
 <script>$js</script>
@@ -234,16 +234,16 @@ print(TEMPLATE.substitute(css=CSS, js=JS, nav=nav("home", ""), repo=REPO,
 PY
 }
 
-TMP="$(mktemp "${TMPDIR:-/tmp}/index-page.XXXXXX")" || { echo "index: mktemp FAILED â€” cannot render" >&2; exit 1; }
+TMP="$(mktemp "${TMPDIR:-/tmp}/index-page.XXXXXX")" || { echo "index: mktemp FAILED — cannot render" >&2; exit 1; }
 trap 'rm -f "$TMP"' EXIT
 if ! render > "$TMP"; then
-  echo "index: render FAILED â€” $OUT left untouched" >&2
+  echo "index: render FAILED — $OUT left untouched" >&2
   exit 1
 fi
 if [ "${1:-}" = "--check" ]; then
-  if [ ! -f "$OUT" ]; then echo "index: index.html missing â€” run docs/build-index.sh" >&2; exit 1; fi
+  if [ ! -f "$OUT" ]; then echo "index: index.html missing — run docs/build-index.sh" >&2; exit 1; fi
   if ! diff -q "$TMP" "$OUT" >/dev/null; then
-    echo "index: docs/index.html is STALE â€” regenerate: docs/build-index.sh" >&2
+    echo "index: docs/index.html is STALE — regenerate: docs/build-index.sh" >&2
     exit 1
   fi
   echo "index: docs/index.html in sync"
