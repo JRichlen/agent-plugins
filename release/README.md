@@ -23,7 +23,7 @@ shipped automation or permission to deploy.
 
 ## Build locally without running source code
 
-Prerequisites: Python 3.12 and Git. From the repository root:
+Prerequisites: Python 3.12.3 and Git. From the repository root:
 
 ```sh
 python3 -m unittest discover -s ci/tests -p 'test_release.py'
@@ -41,6 +41,18 @@ preserved. Unsupported submodules, escaping links and targets traversing any
 committed symlink component fail closed; chained symlinks are conservatively
 unsupported. Files are created exclusively, so dangling output links are not
 followed.
+
+The builder disables Git replacement objects and inherited Git environment/config
+overrides, verifies blob identities, and rejects non-UTF-8 names and unsafe
+`.git` path components. It writes into a private staging directory and publishes
+the complete directory only after every output succeeds; failed builds leave no
+partial candidate. The manifest separately identifies candidate source, builder
+revision/source hash, Python, Git and zlib versions. These are reproducibility
+inputs, not a signature.
+
+Directory entries are implicit: Git tracks files and links, not directory modes
+or empty directories. Normal tar extraction creates parent directories; this
+archive does not promise to restore untracked filesystem metadata.
 
 The archive is a source snapshot of the entire tracked tree, not a compiled or
 independently signed product. Checksums detect changed bytes but do not prove

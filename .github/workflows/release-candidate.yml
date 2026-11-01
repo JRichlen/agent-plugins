@@ -30,8 +30,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
       - name: real Git packaging tests
         run: python3 -m unittest discover -s ci/tests -p 'test_release.py'
+      - name: reproduce the actual repository candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 release/build_candidate.py --revision HEAD --output "$RUNNER_TEMP/candidate-first"
+          python3 release/build_candidate.py --revision HEAD --output "$RUNNER_TEMP/candidate-second"
+          diff -r "$RUNNER_TEMP/candidate-first" "$RUNNER_TEMP/candidate-second"
 
   stage:
     name: stage source candidate (not a release)
@@ -43,6 +53,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.3'
       - name: build from committed bytes without executing the candidate
         env:
           CANDIDATE_SHA: ${{ inputs.commit }}
