@@ -5,8 +5,8 @@ description: >-
 
 Invoke the `wave-research` skill and follow `skills/wave-research/SKILL.md`.
 
-Restate the thesis, ask the autonomy and budget question once, and write plan
-v0. Vet the plan with a cold critic before any research: falsifiable
+Restate the thesis, confirm the accepted research budget and write plan v0.
+Use the shared operating contract and execution owner named by the skill. Vet the plan with a cold critic before any research: falsifiable
 sub-claims, rival outcomes, and the evidence that would refute each, written
 before searching. Then run breadth (adversaries in the same wave), checkpoint,
 depth, converge, and have an agent that did not write the thesis try to break

@@ -1302,11 +1302,11 @@
       "planned_attempts_total": 288,
       "plugin": "wave-research",
       "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
-      "primary_skill_sha256": "c3ba13c21503a26e10a44b40fd92309f64eb126a63235541fd4e13b66b35c7a0",
+      "primary_skill_sha256": "f26b724babca8f56cc235766e5c4cb2d95469211916957821dba8d27c918d3b9",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 15231,
-        "treatment": 15231
+        "baseline-generic": 14364,
+        "treatment": 14364
       },
       "secondary_skills": [],
       "skill_paths": {

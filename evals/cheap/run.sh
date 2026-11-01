@@ -2472,6 +2472,7 @@ if grep -q 'core/OPERATING.md' "$REPO_ROOT/AGENTS.md" 2>/dev/null; then
   group "shared core projections and filesystem controls"
   if python3 core/sync.py --check; then ok "packaged core matches its canonical sources"; else bad "packaged core source drift"; fi
   if python3 -m unittest core.test_sync; then ok "core projection mutation/path controls"; else bad "core projection controls failed"; fi
+  if python3 -m unittest evals.agentic.tests.test_method_applicability; then ok "selected-method guidance applicability"; else bad "selected-method applicability failed"; fi
 fi
 
 # --- 23. Gitignored generated content is never left tracked ------------------

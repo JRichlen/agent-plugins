@@ -103,7 +103,7 @@ _GENERIC_MCP_PREFIX = "generic-read-only-tool-surface"
 # structurally against each plugin's REAL surface every time it is called
 # (see its docstring) rather than trusting the curation blindly.
 SCRIPT_DOMINANT_PLUGINS: frozenset[str] = frozenset(
-    {"agent-compiler", "graveyard", "verify-before-claim"}
+    {"agent-compiler", "graveyard"}
 )
 
 _STRATUM_FIELDS: tuple[str, ...] = ("provider", "model", "revision", "effort", "harness")
@@ -693,35 +693,31 @@ def _build_guidance_only_arm(card: Card, ref: PluginRef, workspace: pathlib.Path
 
 
 def is_degenerate(arm: Arm, card: Card) -> bool:
-    """True when a guidance-only arm cannot perform `card`'s task at all
-    because the plugin's real value is procedural (a script/hook/mcp
-    server), not prose a model could imitate by hand -- contract Â§11.4
-    UNKNOWN 5 / settled-unknowns.md item 6. Offline and without a model
-    call, true task-level degeneracy cannot be executed and observed; the
-    structural proxy used here is the curated `SCRIPT_DOMINANT_PLUGINS` set,
-    but it is not trusted blindly -- every call re-derives the plugin's REAL
-    capability surface and raises if the curation no longer matches reality
-    (the plugin now has no script/hook/mcp capability to withhold at all),
-    so a stale curation fails loudly instead of silently asserting a false
-    degeneracy."""
+    """Structural inapplicability for the selected task, not sibling methods.
+
+    A card explicitly selecting a script/hook/MCP procedure loses that procedure
+    in a guidance-only arm. Claim-only cards do not become inapplicable because
+    their package also contains acceptance scripts. This proxy is not measured
+    proof that a model could never reproduce a procedure manually.
+    """
     if arm.estimand is not Estimand.GUIDANCE_ONLY:
         return False
-    if card.plugin not in SCRIPT_DOMINANT_PLUGINS:
+    selected = [c for c in card.capabilities if c.kind in {"script", "hook", "mcp"}]
+    if not selected:
         return False
-
     repo_root = io.repo_root()
     roster = derive_roster(repo_root)
-    ref = next((r for r in roster if r.name == card.plugin), None)
-    if ref is None:
-        raise ContractError(f"is_degenerate: {card.plugin!r} is not in the live roster")
-    full_caps = discover_plugin_capabilities(ref, repo_root)
-    withheld_kinds = {c.kind for c in full_caps} & {"script", "hook", "mcp"}
-    if not withheld_kinds:
-        raise ContractError(
-            f"is_degenerate: {card.plugin!r} is in SCRIPT_DOMINANT_PLUGINS but its real "
-            "surface carries no script/hook/mcp capability to withhold -- the curated set "
-            "needs updating, this is not a real degeneracy"
-        )
+    for capability in selected:
+        owner = capability.source_plugin or card.plugin
+        ref = next((r for r in roster if r.name == owner), None)
+        if ref is None:
+            raise ContractError(f"is_degenerate: {owner!r} is not in the live roster")
+        surface = discover_plugin_capabilities(ref, repo_root)
+        if not any(c.kind == capability.kind and c.name == capability.name for c in surface):
+            raise ContractError(
+                f"is_degenerate: selected {capability.kind} {owner}/{capability.name} "
+                "does not resolve to a real procedure"
+            )
     return True
 
 
@@ -1105,7 +1101,8 @@ def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, di
       full-package:   always "available" (every plugin can be installed whole).
       guidance-only:  "guidance-only-inapplicable" for the curated
                       script-dominant set (re-verified structurally, see
-                      is_degenerate); "available" otherwise.
+                      is_degenerate); mixed verification is task-dependent;
+                      "available" otherwise.
       composition:    single-plugin summary cannot name a partner; always
                       "n/a (needs a second plugin; see composition_arms)".
       version:        the two-revision survey's finding for this plugin, or
@@ -1152,7 +1149,9 @@ def estimand_availability(repo_root: pathlib.Path | None = None) -> dict[str, di
 
         result[ref.name] = {
             "full-package": "available",
-            "guidance-only": "guidance-only-inapplicable" if degenerate else "available",
+            "guidance-only": ("task-dependent (claim guidance available; selected acceptance procedures withheld)"
+                              if ref.name == "verify-before-claim" else
+                              "guidance-only-inapplicable" if degenerate else "available"),
             "composition": "n/a (needs a second plugin; see composition_arms)",
             "version": version_status,
         }

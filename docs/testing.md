@@ -39,6 +39,13 @@ The existing automatic grader/subject reachability jobs are not gated by the
 `paid-evals` label; approval for those calls is distinct from manual paid suites.
 Full red-team execution remains subject to its telemetry/dependency boundary.
 
+The bounded integration refinement adds operative-source/mutation controls for
+research's use of Core, delegation, offer-only review, scheduling authority and
+active-stop recovery. The cheap gate also checks selected-method guidance
+applicability: claim-only cards do not inherit sibling acceptance-script
+inapplicability. These checks establish source composition and structural
+classification, not model effectiveness or actual research dispatch.
+
 ## The tier map
 
 Cheapest first. Each tier catches a class of regression the tiers above it
@@ -277,21 +284,15 @@ that it is green because it did not run, never silently.
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
-Jori's pack covers bounded delegated work, authority expansion, rough task-fit
-guidance that does not authorize provider/account changes, and GitHub Copilot
-HyDRA/HydraFusion control boundaries. The GitHub case requires an explicit
-distinction between those systems, treats undocumented per-leg/cap controls as
-unverified, and rejects invented CLI syntax or credit-to-dollar guarantees. Its
-four calibration rows replace both the skill and routing reference with
-invariant-free stubs, so a baseline that independently produces all
-Jori-specific controls fails as nondiscriminating.
-Its current subject is OpenRouter `z-ai/glm-5.3-flash`, with explicit `max`
-reasoning in the request; the independent Sonnet 5 rubric judge is unchanged.
-This setting change requires behavioral validation; cheap checks cannot prove
-GLM's quality or equivalent behavior to a previous subject.
-It is single-turn and tool-less: it does not prove real worker dispatch,
-persistent monitoring, provider availability, cross-provider equivalence,
-HydraFusion performance, cost savings, or a multi-round project outcome.
+The retired coordinator's behavioral pack is no longer current coverage.
+Current delegation has deterministic source/composition controls; these do not
+replace an empirical worker-dispatch or outcome comparison. The verification
+package's historical claim-only calibration was nondiscriminating, so it cannot
+be renamed into a replacement quality gate. Model-monitor proposals expose that
+replacement validation as unavailable and keep activation blocked; routing,
+trajectory and acceptance-integrity mechanisms remain available but unvalidated
+for each proposed subject. Independently calibrated task-relevant real/negative
+controls, a bounded evaluation budget and human review are still required.
 
 ## routing tier
 

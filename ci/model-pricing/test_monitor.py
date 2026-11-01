@@ -138,6 +138,34 @@ class MonitorPureFunctionTests(unittest.TestCase):
             self.assert_fault(monitor.validate_proposal, bad, POLICY, routes)
         self.assert_fault(monitor.validate_proposal, {**good, "risks": []}, POLICY, routes)
 
+    def test_proposal_gates_resolve_or_explicitly_report_missing_validation(self):
+        gates = monitor.proposal_validation_gates()
+        self.assertTrue(gates)
+        for gate in gates:
+            self.assertFalse(gate["validated"])
+            if gate["availability"] == "available":
+                self.assertTrue((monitor.ROOT / gate["source"]).is_file())
+            else:
+                self.assertIn(gate["availability"], {"unavailable", "approval-required"})
+                self.assertTrue(gate["reason"])
+        missing = next(g for g in gates if g["id"] == "replacement-behavior-controls")
+        self.assertEqual(missing["availability"], "unavailable")
+        self.assertIn("nondiscriminating", missing["reason"])
+        self.assertNotIn("Jori real", json.dumps(gates))
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            absent = monitor.proposal_validation_gates(Path(tmp))
+        self.assertFalse(any(g["availability"] == "available" for g in absent))
+
+    def test_staged_proposal_remains_blocked_and_never_applies(self):
+        value = {"decision": "stage_update", "candidate": MODEL, "reason": "evaluate only",
+                 "evidence": ["route"], "risks": ["missing controls"], "validation": ["independent calibration"]}
+        result = monitor.validate_proposal(value, POLICY, {"route": {"model": MODEL}})
+        self.assertTrue(result["activation_blocked"])
+        self.assertTrue(result["proposed_updates"])
+        self.assertTrue(all(item["apply"] is False for item in result["proposed_updates"]))
+        self.assertTrue(any(g["availability"] == "unavailable" for g in result["required_gates"]))
+
     def test_fresh_accepts_recent_and_rejects_invalid_stale_or_future(self):
         now = dt.datetime.now(dt.timezone.utc)
         self.assertIsNone(monitor.fresh(now.isoformat(), 48))
