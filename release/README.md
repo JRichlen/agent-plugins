@@ -48,7 +48,10 @@ The builder disables Git replacement objects and inherited Git environment/confi
 overrides, verifies blob identities, and rejects non-UTF-8 names and unsafe
 `.git` path components. It writes into a private staging directory and publishes
 the complete directory only after every output succeeds; failed builds leave no
-partial candidate. The manifest separately identifies candidate source, builder
+partial candidate. Publication uses atomic no-replace operations on Windows and Linux (Linux
+requires `renameat2` with filesystem support). Other hosts fail closed rather
+than using a check-then-rename fallback. A competing empty directory is preserved.
+The manifest separately identifies candidate source, builder
 revision/source hash, Python, Git and zlib versions. These are reproducibility
 inputs, not a signature.
 

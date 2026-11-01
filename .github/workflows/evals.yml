@@ -385,9 +385,6 @@ jobs:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-eval-tools
-        with:
-          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -410,6 +407,10 @@ jobs:
               - 'plugins/${{ matrix.plugin }}/.claude-plugin/plugin.json'
               - 'plugins/${{ matrix.plugin }}/evals/promptfoo/**'
               - 'evals/paid/**'
+      - uses: ./.github/actions/setup-eval-tools
+        if: steps.touched.outputs.paid == 'true'
+        with:
+          offline-sandbox: false
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.paid != 'true'
         run: |
@@ -585,9 +586,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-eval-tools
-        with:
-          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -610,6 +608,10 @@ jobs:
               - 'plugins/verify-before-claim/skills/verify-work/SKILL.md'
               - 'plugins/*/.claude-plugin/plugin.json'
               - '.claude-plugin/marketplace.json'
+      - uses: ./.github/actions/setup-eval-tools
+        if: steps.touched.outputs.routing == 'true'
+        with:
+          offline-sandbox: false
       - name: roster is in sync before spending on a model call
         if: steps.touched.outputs.routing == 'true'
         run: evals/routing/gen-roster.sh --check

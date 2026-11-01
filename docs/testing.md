@@ -56,6 +56,11 @@ The free pipeline contracts check the newcomer documentation's local links and
 anchors, capture eligibility, and recovery provenance against real process/Git
 seams. Page generators still own derived counts and presentation. The obsolete
 gallery phase/count plan was removed; its historical states remain in Git.
+
+Historical recovery assertions use immutable test fixtures, so ordinary gallery
+refreshes need not retain recovery-only fields. Capture controls exercise typed
+grader faults, independent assertion failures and fallback per-arm inputs; a
+normal capture is rendered and checked without recovery provenance.
 Renderer controls also execute the actual embedded Python with Windows-style
 stdout/file writers: removing explicit LF output must fail the control. Ordinary
 graded and attested captures retain the same per-arm criteria/context disclosure

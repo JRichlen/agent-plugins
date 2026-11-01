@@ -32,6 +32,15 @@ def execute(program, arguments, prefix=WINDOWS_STDOUT):
 
 
 class RendererControls(unittest.TestCase):
+    def test_visible_plugin_summary_is_searchable(self):
+        import re
+        rendered = execute(body("docs/build-index.sh"), [ROOT]).decode("utf-8")
+        card = next(match for match in re.findall(r'<li class="plugin".*?</li>', rendered, re.S)
+                    if 'data-q="agent-compiler ' in match)
+        query = re.search(r'data-q="([^"]*)"', card).group(1)
+        self.assertIn("reproducible", query)
+        self.assertIn("reproducible", card)
+
     def test_generators_force_lf_even_with_windows_stdout(self):
         for source, output in (("docs/build-examples.sh", "docs/examples/index.html"), ("docs/build-index.sh", "docs/index.html")):
             with self.subTest(source=source):
@@ -49,7 +58,7 @@ class RendererControls(unittest.TestCase):
             data_dir = root / "docs/examples/data"
             data_dir.mkdir(parents=True)
             shutil.copytree(ROOT / "docs/_shared", root / "docs/_shared")
-            original = json.loads((ROOT / "docs/examples/data/stop-rule.json").read_text(encoding="utf-8"))
+            original = json.loads((ROOT / "ci/tests/fixtures/recovered/stop-rule.json").read_text(encoding="utf-8"))
             for attestation in ("none", "github-fixture-only"):
                 original["provenance"].update(source="promptfoo", attestation=attestation)
                 (data_dir / "stop-rule.json").write_text(json.dumps(original), encoding="utf-8", newline="\n")
@@ -57,6 +66,32 @@ class RendererControls(unittest.TestCase):
                 self.assertIn("Inputs differ:", rendered)
                 self.assertIn("Per-arm criteria and context", rendered)
                 self.assertIn("Original source config", rendered)
+                self.assertIn("grades use different rubrics", rendered)
+                self.assertIn("not a common quality scale", rendered)
+                self.assertNotIn("those tests do not discriminate improvement", rendered)
+
+    def test_normal_refresh_with_fallback_inputs_regenerates_and_checks(self):
+        with tempfile.TemporaryDirectory(prefix="refresh-lifecycle-") as folder:
+            root = Path(folder)
+            data = root / "docs/examples/data"
+            data.mkdir(parents=True)
+            shutil.copytree(ROOT / "docs/_shared", root / "docs/_shared")
+            pack = root / "pack"
+            pack.mkdir()
+            (pack / "promptfooconfig.yaml").write_text("defaultTest:\n  options:\n    provider:\n      id: anthropic:messages:claude-test\n", encoding="utf-8")
+            rows = [{"testCase": {"vars": {"skill": skill, "question": "same", "context": context}, "assert": [{"type": "llm-rubric", "value": context}]}, "provider": {"id": "openrouter:qwen/test"}, "response": {"output": "actual fixture"}, "success": True} for skill, context in (("real", "bound one"), ("calibration", "bound two"))]
+            results = root / "results.json"
+            results.write_text(json.dumps({"results": {"results": rows}}), encoding="utf-8")
+            execute(body("evals/paid/capture-example.sh"), [results, "stop-rule", data, "a" * 40, "unknown", "", "none", pack, ROOT / "evals/paid/calibration/sample-for-labelling.py"])
+            snapshot = json.loads((data / "stop-rule.json").read_text(encoding="utf-8"))
+            self.assertNotIn("source_config_sha256", snapshot["provenance"])
+            self.assertEqual(snapshot["with_skill"]["comparison_inputs"], {"context": "bound one"})
+            self.assertEqual(snapshot["without_skill"]["comparison_inputs"], {"context": "bound two"})
+            generated = execute(body("docs/build-examples.sh"), [root])
+            (root / "docs/examples/index.html").write_bytes(generated)
+            self.assertEqual(execute(body("docs/build-examples.sh"), [root]), generated)
+            self.assertIn(b"Inputs differ:", generated)
+            self.assertIn(b"bound two", generated)
 
     def test_capture_json_forces_lf_with_windows_default_file_writer(self):
         with tempfile.TemporaryDirectory(prefix="capture-writer-") as folder:
@@ -70,6 +105,6 @@ class RendererControls(unittest.TestCase):
                 output = root / str(mutant)
                 output.mkdir()
                 selected = program.replace('newline="\\n"', "newline=None") if mutant else program
-                execute(selected, [results, "test", output, "a" * 40, "unknown", "", "none", root], WINDOWS_FILES)
+                execute(selected, [results, "test", output, "a" * 40, "unknown", "", "none", root, ROOT / "evals/paid/calibration/sample-for-labelling.py"], WINDOWS_FILES)
                 snapshot = (output / "test.json").read_bytes()
                 self.assertEqual(b"\r\n" in snapshot, mutant)

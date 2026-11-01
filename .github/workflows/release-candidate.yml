@@ -2,6 +2,7 @@ name: release-candidate
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, stacked]
     paths:
       - 'release/**'
       - 'ci/tests/**'

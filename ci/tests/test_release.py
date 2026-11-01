@@ -20,6 +20,9 @@ spec.loader.exec_module(candidate)
 class Candidate(unittest.TestCase):
     def test_workflow_stages_only_on_manual_event_with_read_token(self):
         text = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
+        import yaml
+        events = yaml.load(text, Loader=yaml.BaseLoader)["on"]["pull_request"]["types"]
+        self.assertEqual(set(events), {"opened", "synchronize", "reopened", "stacked"})
         self.assertIn("contents: read", text)
         self.assertNotIn(": write", text)
         self.assertNotIn("secrets.", text)
@@ -65,6 +68,23 @@ class Candidate(unittest.TestCase):
         self.assertEqual(first["builder"]["python"], sys.version.split()[0])
         with self.assertRaises(FileExistsError):
             candidate.build(self.repo, "HEAD", self.root / "first")
+
+    def test_competing_empty_directory_is_never_replaced(self):
+        output = self.root / "raced"
+        publish = candidate.publish_no_replace
+        def race(source, destination):
+            destination.mkdir()
+            identity = destination.stat().st_ino
+            try:
+                return publish(source, destination)
+            finally:
+                self.assertTrue(destination.is_dir())
+                self.assertEqual(destination.stat().st_ino, identity)
+                self.assertEqual(list(destination.iterdir()), [])
+        with mock.patch.object(candidate, "publish_no_replace", side_effect=race):
+            with self.assertRaises(FileExistsError):
+                candidate.build(self.repo, "HEAD", output)
+        self.assertFalse(list(self.root.glob(".raced.build-*")))
 
     def test_missing_commit_does_not_create_candidate(self):
         with self.assertRaisesRegex(ValueError, "git rev-parse failed"):
@@ -138,7 +158,7 @@ class Candidate(unittest.TestCase):
 
     def test_failed_publication_leaves_no_partial_candidate(self):
         output = self.root / "failed-publication"
-        with mock.patch.object(candidate.os, "rename", side_effect=PermissionError("fixture rename failure")):
+        with mock.patch.object(candidate, "publish_no_replace", side_effect=PermissionError("fixture rename failure")):
             with self.assertRaises(PermissionError):
                 candidate.build(self.repo, "HEAD", output)
         self.assertFalse(output.exists())
