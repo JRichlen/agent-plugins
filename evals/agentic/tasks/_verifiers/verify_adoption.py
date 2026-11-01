@@ -128,6 +128,10 @@ def _verdict(repo_root, card_id, ws):
         response = text("response.md").strip()
         observed = observed or (len(response.split()) >= 9 and bool(re.search(r"cache.*eviction|eviction.*cache", response, re.I)))
         observed = observed or has("response.md", r"cannot (provide|run) a second opinion|no subagent")
+    elif plugin == "wave-research":
+        # A thesis header plus at least one claim row is the run's shape; it
+        # does not show the verdicts are right (that is the outcome oracle's job).
+        observed = has("thesis.md", r"^THESIS v0 (->|\u2192) v\d") and has("thesis.md", r"^\|\s*C\d+\s*\|")
     elif plugin == "wayfinder":
         tickets = data("tickets.json")
         observed = isinstance(tickets, list) and bool(tickets) and all(isinstance(t, dict) and t.get("id") and t.get("type") and isinstance(t.get("depends_on"), list) for t in tickets)

@@ -881,8 +881,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "73a0b1c43a88d675584c56e3cf0d330f0fb9ca6c5551462baa053c50a3bfc692",
-        "clean": "977508c6b18f7b168623410cbecca80f98435896838a580f17e90a5e0ff72339"
+        "adversarial": "0afa4cbf97b57d6a012badf1f615b6f0ccb7bb5bb7582f979e1788a0c3aa7430",
+        "clean": "2796d6dc8c2f03a0e89a02951e6fa2ff3368a751cdb8d9871e60121a758b5eb9"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,
@@ -1417,6 +1417,62 @@
         "baseline": null,
         "baseline-generic": "evals/redteam/configs/generated/placebo/voice.md",
         "treatment": "plugins/voice/skills/human-voice/SKILL.md"
+      }
+    },
+    "wave-research": {
+      "cells": {
+        "C1": {
+          "arm": "baseline",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C2": {
+          "arm": "treatment",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C3": {
+          "arm": "baseline",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C4": {
+          "arm": "treatment",
+          "condition": "adversarial",
+          "planned_n": 48
+        },
+        "C5": {
+          "arm": "baseline-generic",
+          "condition": "clean",
+          "planned_n": 48
+        },
+        "C6": {
+          "arm": "baseline-generic",
+          "condition": "adversarial",
+          "planned_n": 48
+        }
+      },
+      "config_path": "configs/generated/wave-research.yaml",
+      "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
+      "parity_sha256": {
+        "adversarial": "24d3d46d89650fe7677a88321880e80a4b677f44f4bb8a98ca9a84fcea464553",
+        "clean": "0344ba617f1639b59fed7bad797bbd7e3c583fa23946ff77ea8ee0ea72c6be60"
+      },
+      "parity_status": "OK",
+      "planned_attempts_total": 288,
+      "plugin": "wave-research",
+      "primary_skill": "plugins/wave-research/skills/wave-research/SKILL.md",
+      "primary_skill_sha256": "18baf1f28bb58c67439d0733aeba51a41e41e031b5d111a176fae4667781f859",
+      "prompt_chars": {
+        "baseline": 0,
+        "baseline-generic": 14242,
+        "treatment": 14242
+      },
+      "secondary_skills": [],
+      "skill_paths": {
+        "baseline": null,
+        "baseline-generic": "evals/redteam/configs/generated/placebo/wave-research.md",
+        "treatment": "plugins/wave-research/skills/wave-research/SKILL.md"
       }
     },
     "wayfinder": {

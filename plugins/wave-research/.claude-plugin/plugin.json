@@ -1,0 +1,22 @@
+{
+  "name": "wave-research",
+  "version": "0.0.1",
+  "description": "Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/wave-research",
+  "license": "MIT",
+  "keywords": [
+    "research",
+    "adversarial",
+    "falsifiable",
+    "hypotheses",
+    "ach-matrix",
+    "checkpoints",
+    "thesis"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/"
+}

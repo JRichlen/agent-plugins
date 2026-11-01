@@ -1,0 +1,118 @@
+{
+  "claims": [
+    {
+      "adversarial_pass": {
+        "outcome": "failed_to_refute",
+        "summary": "A search for reports of throughput collapsing below 10k rps on one node found none."
+      },
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E1",
+          "incentive": "vendor",
+          "primary": true,
+          "summary": "Raw benchmark logs the vendor published: 10.4k rps."
+        },
+        {
+          "direction": "supports",
+          "id": "E2",
+          "incentive": "practitioner",
+          "primary": false,
+          "summary": "A blog post reproduces 10.1k rps on similar hardware."
+        }
+      ],
+      "id": "C1",
+      "preregistered_disconfirmers": [
+        "A reproduction on similar hardware below 8k rps.",
+        "A published run where the limiter drops requests below 10k rps at one node."
+      ],
+      "text": "Sustains 10,000 requests per second on one node."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E3",
+          "incentive": "vendor",
+          "primary": true,
+          "summary": "Vendor design document describes quorum writes."
+        },
+        {
+          "direction": "supports",
+          "id": "E4",
+          "incentive": "vendor",
+          "primary": false,
+          "summary": "Vendor marketing page says counters never drift."
+        }
+      ],
+      "id": "C2",
+      "text": "Counters stay correct when a node fails."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E5",
+          "incentive": "practitioner",
+          "primary": false,
+          "summary": "A forum thread reports a flat graph after seven days."
+        },
+        {
+          "direction": "supports",
+          "id": "E6",
+          "incentive": "media",
+          "primary": false,
+          "summary": "A newsletter repeats the forum claim."
+        }
+      ],
+      "id": "C3",
+      "text": "Memory use stays flat over a week."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E7",
+          "incentive": "vendor",
+          "primary": true,
+          "summary": "Release notes describe rolling upgrades."
+        },
+        {
+          "direction": "refutes",
+          "id": "E8",
+          "incentive": "critic",
+          "primary": true,
+          "summary": "An issue-tracker report shows a forced restart on a minor upgrade."
+        }
+      ],
+      "id": "C4",
+      "text": "Upgrades need no downtime."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "refutes",
+          "id": "E9",
+          "incentive": "primary record",
+          "primary": true,
+          "summary": "The licence text restricts embedding in a paid product."
+        },
+        {
+          "direction": "refutes",
+          "id": "E10",
+          "incentive": "academic",
+          "primary": false,
+          "summary": "A licence survey classes it as source-available, not open."
+        }
+      ],
+      "id": "C5",
+      "text": "The licence permits commercial embedding."
+    },
+    {
+      "evidence": [],
+      "id": "C6",
+      "text": "Works with our Kafka transport."
+    }
+  ],
+  "thesis": "The ledgerd rate limiter is ready to replace our in-house one."
+}

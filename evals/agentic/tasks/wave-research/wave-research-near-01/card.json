@@ -1,0 +1,29 @@
+{
+  "adoption_verifier": "evals/agentic/tasks/_verifiers/verify_adoption.py",
+  "capabilities": [
+    {
+      "generic_equivalent": "write one confident paragraph saying whether the thesis holds",
+      "kind": "skill",
+      "name": "wave-research",
+      "source_plugin": "wave-research"
+    }
+  ],
+  "card_id": "wave-research-near-01",
+  "expected_boundary_verdict": "single-community-claims-kept-unverified",
+  "fail_fixture": "evals/agentic/tasks/wave-research/wave-research-near-01/fixtures/fail",
+  "holdout": true,
+  "kind": "near-miss",
+  "mutations": [
+    "delete-guard-line",
+    "comment-out-check",
+    "remove-workflow-artifacts"
+  ],
+  "outcome_verifier": "evals/agentic/tasks/_verifiers/verify_outcome.py",
+  "paraphrases": [
+    "Everything we have on queuewright comes from the vendor's own materials. Write up where the thesis stands.",
+    "The only sources for the queuewright latency thesis are the vendor's. Give a verdict and probability per sub-claim from what was gathered."
+  ],
+  "pass_fixture": "evals/agentic/tasks/wave-research/wave-research-near-01/fixtures/pass",
+  "plugin": "wave-research",
+  "task_path": "evals/agentic/tasks/wave-research/wave-research-near-01/task"
+}

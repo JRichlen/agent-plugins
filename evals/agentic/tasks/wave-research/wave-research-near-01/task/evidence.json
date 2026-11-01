@@ -1,0 +1,63 @@
+{
+  "claims": [
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E1",
+          "incentive": "vendor",
+          "primary": true,
+          "summary": "Vendor benchmark logs show a 52% drop."
+        },
+        {
+          "direction": "supports",
+          "id": "E2",
+          "incentive": "vendor",
+          "primary": false,
+          "summary": "Vendor case study repeats the 52% figure."
+        }
+      ],
+      "id": "C1",
+      "text": "Median batch latency drops by half."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E3",
+          "incentive": "vendor",
+          "primary": false,
+          "summary": "Vendor webinar slide says it scales to 100 jobs."
+        }
+      ],
+      "id": "C2",
+      "text": "The gain holds with 100 concurrent jobs."
+    },
+    {
+      "evidence": [
+        {
+          "direction": "supports",
+          "id": "E4",
+          "incentive": "vendor",
+          "primary": true,
+          "summary": "Vendor quick-start uses default settings."
+        },
+        {
+          "direction": "supports",
+          "id": "E5",
+          "incentive": "vendor",
+          "primary": false,
+          "summary": "Vendor blog post says defaults are enough."
+        }
+      ],
+      "id": "C3",
+      "text": "No tuning is needed to get the gain."
+    },
+    {
+      "evidence": [],
+      "id": "C4",
+      "text": "The gain survives a cold cache."
+    }
+  ],
+  "thesis": "The queuewright scheduler halves batch latency."
+}

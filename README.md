@@ -49,6 +49,7 @@ multiple machines and want it to resolve identically every time.
 | [**agent-compiler**](plugins/agent-compiler/) | Compile deterministic, content-hashed agents from small behavior modules: fuzzy intent becomes a typed AgentQuery, then a stdlib-only kernel resolves modules, fails closed on conflicts and over-ceiling effects, and emits an immutable AgentImage with per-line provenance. |
 | [**eval-ladder**](plugins/eval-ladder/) | Design and audit an agent system's eval ladder — the cheapest rung that catches each regression, the blind spot beside every green, judges validated by TPR/TNR, pass^k for irreversible actions. Use when designing or auditing a test/eval strategy. |
 | [**consolidation-map**](plugins/consolidation-map/) | Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a "meta diff" or when merging or pruning plugins, skills, services or packages. |
+| [**wave-research**](plugins/wave-research/) | Stress-test a contested thesis with staged, adversarial research (rival hypotheses, ACH matrix, checkpoints) before believing it. Not for lookups. |
 
 Every plugin ships as a Claude Code plugin **and** works with any coding agent
 (Codex, Cursor, Gemini, Aider, …) via a standard `SKILL.md` + `AGENTS.md` entry
