@@ -89,9 +89,8 @@ that it is green because it did not run, never silently.
   `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
   the fail-closed guard — see
   [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
-  self-test, example-gallery sync/provenance, design-timeline sync/receipts
-  (`docs/timeline/`: page in sync with its decision data, every receipt
-  resolving), and the testing-doc drift guard defending this document.
+  self-test, example-gallery sync/provenance, and the testing-doc drift guard
+  defending this document.
   The model-pricing unit suite also exercises malformed prices, material-change
   thresholds, stale evidence, budget reservations/dedupe, and proposal authority.
 - **What it cannot prove.** Whether any load-bearing sentence still *means*
@@ -597,13 +596,12 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   `gh attestation verify … --signer-workflow`), and opens a **review-gated
   PR** (never pushes to main); `pages.yml` publishes `docs/` only after
   merge, re-verifying `docs/build-index.sh --check`,
-  `docs/build-examples.sh --check` and `docs/timeline/build-timeline.sh
-  --check` first — the landing page, the gallery and the design-trajectory
-  timeline are all generated surfaces. The cheap tier's gallery gate enforces
+  `docs/build-examples.sh --check` first — the landing page and gallery
+  are generated surfaces. The cheap tier's gallery gate enforces
   sync + role-by-role provenance offline (a graded snapshot whose subject and
   grader share a model family fails; so does a seed claiming an attestation),
   its pack gate refuses any promptfoo pack whose subject and grader share a
-  family, and its timeline gate enforces sync + receipts.
+  family.
 - **What it cannot prove.** That the captured pair is *representative* — a
   human reviews the transcript diffs before merge. And an attestation proves
   GitHub-hosted infrastructure produced the bytes in a run of the public
@@ -978,30 +976,26 @@ uninterpretable n=1 and no required check goes red on the weather:
 
 Any **new** LLM tier inherits this spine wholesale.
 
-## Planned tiers (not yet live)
+## Not yet covered by current evidence
 
-Planned, not specified here — the linked issues own the design and
-[testing-plan.md](testing-plan.md) carries the phase-2 plan (what each layer
-proves, its harness, cost, sequencing, and the rules learned from landing
-RQ-002). Do **not** add these to the inventory block until they actually
-exist; when one goes live it moves into this document and out of the plan's
-"planned" list in the same PR:
+- Routing tests do not establish real multi-turn selection or benefit. Evaluate
+  missed routes, false positives, mixed-task transitions and the direct-work
+  control against the current ownership contract.
+- Handoffs must preserve evidence, uncertainty, pending decisions and in-flight
+  effects. Deterministic fixtures do not establish these properties in every host.
+- Native-host interruption, stop propagation, contract protection and permission
+  boundaries need actual supported-host runs. Record unavailable capabilities;
+  no finite roster establishes universal host parity.
+- The [synthetic re-entry pilot](designs/conversation-reentry-pilot.md) is a separate
+  exploratory proposal. PR129's frozen corpus and criteria remain unchanged.
+- Human grader-calibration measurements remain missing: workflows and blind
+  sheets are not labeled human evidence. See [issue102](https://github.com/JRichlen/agent-plugins/issues/102).
 
-- **L1 decision-point probes** — trajectory-prefix promptfoo scenarios that
-  freeze a fabricated mid-run transcript and assert on the single next move,
-  with a must-not-fire twin for every must-fire:
-  [#89](https://github.com/JRichlen/agent-plugins/issues/89).
-- **L2 plan-audit** — typed composition results and plan grading against a
-  labeled corpus; owned by [#88](https://github.com/JRichlen/agent-plugins/issues/88)
-  (see the scope split recorded on #89). (L3 trajectory/artifact audit and L4
-  cross-plugin composition are now **live** — [agentic suite](#agentic-suite),
-  `evals/agentic/` — see [testing-plan.md §1](testing-plan.md#1-where-the-baseline-actually-is).)
-- **Grader calibration measurements** — the human labels for the blind
-  sheets the calibration-sheet workflow draws, and the cross-grader and
-  self-consistency numbers the grader-agreement workflow produces; the
-  workflows exist (above), the measurements do not until someone labels a
-  sheet and dispatches a re-grade:
-  [#102](https://github.com/JRichlen/agent-plugins/issues/102).
+Existing trajectory, composition and agentic packs are listed above. Proposed
+extensions belong in the relevant issue or review; add them to the inventory
+only when implemented. Model/native execution still requires its applicable
+cost, action and disclosure authorization. Static checks and examples do not
+prove better task outcomes or lower accepted-work cost.
 
 ## Machine-verified inventory
 

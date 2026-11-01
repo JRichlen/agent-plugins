@@ -7,7 +7,8 @@ are authored examples, not captured model outputs or validation evidence.
 This is a scoped communication proposal under [issue 117](https://github.com/JRichlen/agent-plugins/issues/117).
 It neither changes nor validates [PR129](https://github.com/JRichlen/agent-plugins/pull/129):
 that experiment's criteria, development set and held-out corpus remain frozen.
-See the [consolidation continuation](plugin-consolidation-continuation.md) for placement.
+Any adopted shared invariant belongs in [Core](../../core/OPERATING.md);
+detailed communication procedure stays contextual with its existing owner.
 
 ## Proposed behavior
 

@@ -27,7 +27,7 @@ the contract-write hook. Other hosts need supported equivalent enforcement;
 script integrity/freshness checks do not establish that an independent reviewer
 actually ran. Preserve that distinction in the handback.
 
-[Migration and legacy data](../../docs/migrations/verification.md) describes
+[Caller migration guidance](../../README.md#current-status-and-migration) describes
 the retired product identity and thin source-path adapters. Earlier
 [claim-check measurements](docs/measurement-history.md) are historical findings,
 not validation of this integration or proof of benefit across hosts.

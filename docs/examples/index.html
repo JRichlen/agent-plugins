@@ -150,7 +150,7 @@
 </style>
 </head>
 <body>
-<nav class="site" aria-label="Site"><a class="brand" href="../">agent-plugins</a><div class="site-links"><a href="../">Home</a><a href="../examples/" class="cur" aria-current="page">Examples</a><a href="../timeline/">Timeline</a><a href="../agent-compiler/">agent-compiler</a><a href="https://github.com/JRichlen/agent-plugins" class="ext" rel="noopener">GitHub ↗</a></div></nav>
+<nav class="site" aria-label="Site"><a class="brand" href="../">agent-plugins</a><div class="site-links"><a href="../">Home</a><a href="../examples/" class="cur" aria-current="page">Examples</a><a href="../agent-compiler/">agent-compiler</a><a href="https://github.com/JRichlen/agent-plugins" class="ext" rel="noopener">GitHub ↗</a></div></nav>
 <div class="layout">
 <aside class="side">
   <h3>Filter <span id="shown-count" class="js-only"></span></h3>
@@ -1210,7 +1210,7 @@ git log --format=&#x27;%H %an %ad&#x27; -- docs/examples/data/tracer-bullets.jso
   <h3>What a seed can and cannot prove</h3>
   <div class="chain">
     <div class="step weak"><b>No signature.</b> A seed was produced by a Claude Code session outside CI, before this chain existed. Its only provenance is the git commit that introduced it (linked from the card), the SHA-256 of the file, and the disclosure that the judge shares the subject's model family.</div>
-    <div class="step weak"><b>Replaced, not dressed up.</b> Seeds are labelled as seeds everywhere they appear. The twelve plugins with a behavioral pack get an attested pair on the next refresh; the rest keep their seed until they have a pack — a plugin with neither has no card at all.</div>
+    <div class="step weak"><b>Replaced, not dressed up.</b> Seeds are labelled as seeds everywhere they appear. An approved refresh can replace eligible seeds with captured pairs; until then, seeds remain ungraded examples. A plugin with no snapshot has no card.</div>
   </div>
 </section>
 

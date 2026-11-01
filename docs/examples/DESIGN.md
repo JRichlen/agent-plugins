@@ -113,6 +113,6 @@ inverted-pyramid order and a nutrition-label provenance block:
 The old hub listed two of twenty-four plugins by hand. It is now generated
 (`docs/build-index.sh`) from `marketplace.json`, the snapshots and the packs,
 so every plugin appears with its example, its grading status and its deep
-dive, and the cheap tier fails a commit that lets it drift. The three entry
-cards follow Diátaxis loosely: evidence (the gallery), story (the timeline),
-reference (the testing inventory).
+dive, and the cheap tier fails a commit that lets it drift. The entry cards
+lead to examples and the authoritative testing inventory. Decision history
+belongs in Git and review discussion, rather than a second curated timeline.

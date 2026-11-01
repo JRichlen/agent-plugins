@@ -24,7 +24,7 @@ no mandatory board, model-brand tier ladder, automatic review or scheduler.
 The former Jori product is retired. Its duplicated coordinator identity,
 boards, tiers and observer policy were removed. Useful whole-cycle cost and
 proportional-record guidance now belongs to this execution method. See the
-[migration](../../docs/migrations/coordination.md).
+[caller migration guidance](../../README.md#current-status-and-migration).
 
 Real dispatch requires real worker tools. A file or worker report alone does
 not prove the result correct. The templates and free checks do not establish

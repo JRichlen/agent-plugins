@@ -199,7 +199,7 @@ for s in snaps:
     commit = str(prov.get("commit") or "")
     commit_html = (f'<a href="{REPO}/commit/{esc(commit)}"><code>{esc(commit[:12])}</code></a>'
                    if re.fullmatch(r"[0-9a-f]{7,40}", commit) else f'<code>{esc(commit)}</code>')
-    run_html = f'<a href="{esc(run_url)}">{esc(run_url.split("github.com/")[-1])}</a>' if run_url else "<em>none — not produced by a CI run</em>"
+    run_html = f'<a href="{esc(run_url)}">{esc(run_url.split("github.com/")[-1])}</a>' if run_url.startswith("https://github.com/") else "<em>none — not produced by a CI run</em>"
     json_url = f"{REPO}/blob/main/docs/examples/data/{plugin}.json"
     hist_url = f"{REPO}/commits/main/docs/examples/data/{plugin}.json"
     if kind == "attested":
@@ -576,7 +576,7 @@ $body
   <h3>What a seed can and cannot prove</h3>
   <div class="chain">
     <div class="step weak"><b>No signature.</b> A seed was produced by a Claude Code session outside CI, before this chain existed. Its only provenance is the git commit that introduced it (linked from the card), the SHA-256 of the file, and the disclosure that the judge shares the subject's model family.</div>
-    <div class="step weak"><b>Replaced, not dressed up.</b> Seeds are labelled as seeds everywhere they appear. The twelve plugins with a behavioral pack get an attested pair on the next refresh; the rest keep their seed until they have a pack — a plugin with neither has no card at all.</div>
+    <div class="step weak"><b>Replaced, not dressed up.</b> Seeds are labelled as seeds everywhere they appear. An approved refresh can replace eligible seeds with captured pairs; until then, seeds remain ungraded examples. A plugin with no snapshot has no card.</div>
   </div>
 </section>
 

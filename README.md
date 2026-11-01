@@ -186,23 +186,23 @@ its current plugin naming and loading behavior.
 
 ## Current status and migration
 
-The inspected main revision
-[`2ff596c`](https://github.com/JRichlen/agent-plugins/tree/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d)
-contains 27 source plugins, including the merged delegation service from PR150.
-This draft has 24 registered plugins after retiring the Jori, Redgate and fleet
-curator products. The first two are dissolved into shared owners; they are not
-wholesale renamed clones. Old names remain only in explicit migration notices,
-compatibility paths and historical evidence.
+This draft has 24 registered plugins. Redgate and Jori are retired public
+products; useful mechanisms have one owner in the existing verification and
+delegation packages. The fleet curator is retired without a replacement for its
+scheduled cross-repository service.
 
-See the [coordination migration](docs/migrations/coordination.md),
-[verification migration](docs/migrations/verification.md) and
-[fleet retirement](docs/retirements/fleet-playbook-curator.md).
-Repository retirement does not uninstall existing copies, edit global activation
-fragments or stop external jobs.
+| Existing caller | Current path | Compatibility boundary |
+|---|---|---|
+| Jori coordination | [delegated-intelligence](plugins/delegated-intelligence/) | Replace old global activation fragments explicitly; installation alone does not activate Core. |
+| Redgate acceptance helpers | [verify-before-claim / verify-work](plugins/verify-before-claim/) | Three old script paths remain thin adapters; existing `.redgate/` records remain readable. |
+| Fleet curator deployment | No new marketplace installation | Existing copied repositories, schedules and credentials are unchanged and uninspected; inventory them before any separate cleanup. |
 
-The [responsibility plan](docs/designs/plugin-consolidation-continuation.md)
-supersedes the earlier nine-bundle packaging hypothesis. Fewer repeated policies
-and conflicting owners matter more than the package count.
+Keep migration notices and adapters only while a known caller needs them. Remove
+them when caller inventories confirm migration and active source-path checks have
+moved to current entry points. Repository retirement does not uninstall copies,
+edit global instructions or stop external jobs. To roll back, restore source,
+catalog, callers and generated outputs together from the pre-migration revision;
+restoring only an unlisted plugin directory is incomplete.
 
 Qualification is still in progress. Focused structural checks are not proof of
 behavioral improvement or complete host parity. The required full gate and host
@@ -251,9 +251,8 @@ update its callers, and run the required checks. [core/sync.py](core/sync.py)
 generates the packaged contract copies; do not edit them independently.
 
 The [documentation site](https://jrichlen.github.io/agent-plugins/) is generated
-from committed sources. Its [timeline](https://jrichlen.github.io/agent-plugins/timeline/)
-preserves decisions and corrections. Historical protocol documents explain prior
-work; they are not current governing instructions.
+from committed sources. Keep current usage, ownership and evidence guidance in
+the tree; use commits and PR discussion to retrieve prior designs and decisions.
 
 ## License
 

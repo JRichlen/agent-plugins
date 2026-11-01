@@ -1,9 +1,7 @@
 """Shared site chrome for the GitHub Pages site under docs/.
 
-Every generated page (docs/build-examples.sh, docs/build-index.sh,
-docs/timeline/build-timeline.sh) imports this so the top navigation, the
-colour tokens and the base typography are identical across the site; the hand-maintained compiler page consumes the
-same navigation markup. No timestamps, no randomness: the output is a pure
+Generated landing and gallery pages import this navigation and base style.
+The hand-maintained compiler page uses the same navigation markup. No timestamps, no randomness: the output is a pure
 function of its inputs so every page stays byte-reproducible.
 """
 import html
@@ -14,7 +12,6 @@ REPO = "https://github.com/JRichlen/agent-plugins"
 PAGES = [
     ("home",     "Home",           ""),
     ("examples", "Examples",       "examples/"),
-    ("timeline", "Timeline",       "timeline/"),
     ("compiler", "agent-compiler", "agent-compiler/"),
 ]
 
@@ -33,7 +30,7 @@ def nav(current, prefix):
 
 
 # The top bar's own rules, as one self-contained block: pages that keep their
-# own palette (the timeline, the two hand-written deep dives) embed exactly
+# own palette embed exactly
 # this, so the nav can never be split from its closing brace again.
 NAV_CSS = """
   nav.site { position:sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:1rem; padding:.55rem 1.2rem; font-size:.9rem; }
