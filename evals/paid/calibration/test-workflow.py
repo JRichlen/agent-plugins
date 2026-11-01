@@ -8,6 +8,9 @@ import subprocess
 import tempfile
 import unittest
 import yaml
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from ci.host_tools import select_bash
 
 REPO = Path(__file__).resolve().parents[3]
 WORKFLOW = yaml.safe_load((REPO / '.github/workflows/calibration-sheet.yml').read_text(encoding='utf-8'))
@@ -42,10 +45,10 @@ class CalibrationWorkflow(unittest.TestCase):
         self.git('push', 'origin', 'HEAD:refs/heads/main')
 
     def git(self, *args, check=True):
-        return subprocess.run(['git', *args], cwd=self.work, text=True, capture_output=True, check=check)
+        return subprocess.run(['git', '-c', 'commit.gpgsign=false', *args], cwd=self.work, text=True, capture_output=True, check=check)
 
     def step(self, name, ok=True, **env):
-        result = subprocess.run([os.environ.get('TEST_BASH', 'bash'), '-e', '-o', 'pipefail', '-c', STEPS[name]['run']],
+        result = subprocess.run([select_bash(), '-e', '-o', 'pipefail', '-c', STEPS[name]['run']],
                                 cwd=self.work, env=dict(self.env, **env), text=True, capture_output=True)
         self.assertEqual(result.returncode == 0, ok, result.stdout + result.stderr)
         return result
@@ -87,7 +90,7 @@ class CalibrationWorkflow(unittest.TestCase):
             doc = yaml.safe_load((REPO / '.github/workflows' / workflow).read_text())
             steps = [s for job in doc['jobs'].values() for s in job.get('steps', [])]
             producer = next(s for s in steps if s.get('name') == 'record results checkout provenance')
-            p = subprocess.run([os.environ.get('TEST_BASH', 'bash'), '-e', '-c', producer['run']], cwd=pack,
+            p = subprocess.run([select_bash(), '-e', '-c', producer['run']], cwd=pack,
                                env=dict(self.env, GITHUB_RUN_ID='123', GITHUB_RUN_ATTEMPT='1', PACK='sample'),
                                capture_output=True, text=True)
             self.assertEqual(p.returncode, 0, p.stderr)
