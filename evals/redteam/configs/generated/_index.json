@@ -270,11 +270,11 @@
       "planned_attempts_total": 288,
       "plugin": "delegated-intelligence",
       "primary_skill": "plugins/delegated-intelligence/skills/delegated-intelligence/SKILL.md",
-      "primary_skill_sha256": "101c7f25dcf29713a8f2362d3cce19e17e13de0d2f262fc66ea7602b10ab6c75",
+      "primary_skill_sha256": "34bef3e5beab690bf67f52cfff3f7ae7d99caadd0dd8c4a4342bdc709296bcf0",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 11724,
-        "treatment": 11724
+        "baseline-generic": 11895,
+        "treatment": 11895
       },
       "secondary_skills": [],
       "skill_paths": {

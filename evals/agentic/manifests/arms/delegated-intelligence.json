@@ -50,7 +50,7 @@
     "extra_dirs": [],
     "system_prompt_append": "",
     "realized_tree": {
-      "skills/delegated-intelligence/SKILL.md": "101c7f25dcf29713a8f2362d3cce19e17e13de0d2f262fc66ea7602b10ab6c75",
+      "skills/delegated-intelligence/SKILL.md": "34bef3e5beab690bf67f52cfff3f7ae7d99caadd0dd8c4a4342bdc709296bcf0",
       "skills/delegated-intelligence/references/recovery.md": "b57a83cf923910a6cf82fb34290895890cf505d02815319c72d9007f05949541",
       "skills/delegated-intelligence/references/templates.md": "eae8e6cb6d845b9b2c61fae6c5f6befc3e32cf651103c0765e3490ab9d4fafab"
     }

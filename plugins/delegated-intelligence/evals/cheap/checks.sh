@@ -69,6 +69,14 @@ in_section "$SKILL" "The brief" 'return limit \(at most 200 words\)' "briefs cap
 in_section "$SKILL" "The brief" 'what to do when blocked \(workers cannot ask the human\)' "briefs say what to do when blocked" "The brief lost the when-blocked instruction"
 in_section "$SKILL" "The brief" 'State purpose and constraints; leave method to the agent' "briefs state purpose and constraints, not method" "The brief lost the purpose-not-method rule"
 in_section "$SKILL" "The brief" 'Never grant session-control tools' "workers never get session-control tools" "The brief lost the no-session-control rule"
+in_section "$SKILL" "The brief" 'to any worker, whatever the job' "session-control tools go to no worker, whatever the job" "The brief lost the no-exceptions wording for session-control tools"
+in_section "$SKILL" "The brief" 'Scheduling, messaging, sending, spending and session control stay with the coordinator' "scheduling, messaging, sending, spending and session control stay with the coordinator" "The brief lost the coordinator-keeps-them rule"
+in_section "$SKILL" "The brief" 'a job that is one of those actions is done by the coordinator, not delegated' "a job that is itself a session-control action is done by the coordinator, not delegated" "The brief lost the coordinator-does-those-jobs rule"
+# No file may reopen the exception: the invariant is unconditional. Whole-file
+# squash so a phrase wrapped across lines is still caught.
+for f in "$SKILL" "$AGENTS" "$PLUGIN_DIR/README.md" "$CMD" "$TPL" "$REC"; do
+  if tr '\n' ' ' < "$f" | tr -s ' ' | grep -qiE 'unless the job is|unless the job itself|except when the job|unless (it|that) is the job'; then bad "$f reopens an exception to the no-session-control rule"; else ok "$f carries no exception to the no-session-control rule"; fi
+done
 in_section "$SKILL" "The brief" 'stray session-ending call' "the stray session-ending call is the recorded reason" "The brief lost the stray-session-ending-call example"
 in_section "$SKILL" "The brief" 'Never give workers the agent-spawning tool' "workers never get the agent-spawning tool" "The brief lost the no-spawning-tool rule"
 in_section "$SKILL" "The brief" 'Pre-scope tools so no permission prompt is needed' "tools are pre-scoped so no worker stalls on a prompt" "The brief lost the pre-scope-tools rule"

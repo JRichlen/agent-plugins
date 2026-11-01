@@ -3,12 +3,14 @@
 
 Nothing here reads a prose claim. The expected finding for each service is
 derived from the supplied ``services/*.conf`` by a fixed rule, and the checks
-compare what is on disk against it:
+compare what is on disk against it. A finding is a key AND its value, both read
+from the config, so an output or report row that names the right setting with the
+wrong value fails:
 
 * pos: an interrupted fan-out. Every handback says "done", but one output is
   empty and one was never written. The run must regenerate exactly those two
-  from the configs, leave the two complete outputs byte-identical, make
-  ``report.md`` true to the configs, and leave ``status.md`` matching the disk
+  from the configs (each with its own non-empty ``briefs/<service>.md``), leave the two complete outputs byte-identical, make
+  ``report.md`` true to the configs (setting, value and source file per row), and leave ``status.md`` matching the disk
   (state, attempts, and an output file behind every row).
 * near: one known file, an answer needed now. The answer must be right and no
   delegation artifacts (board, briefs, outputs, handbacks) may exist.
@@ -44,12 +46,12 @@ def settings(path):
     return out
 
 
-def risky_keys(root):
-    """{service: the one risky key}; the input must hold exactly one per service."""
+def risky_pairs(root):
+    """{service: (risky key, its configured value)}; exactly one risky setting per service."""
     found = {}
     for conf in sorted((root / 'services').glob('*.conf')):
-        hits = [k for k, v in settings(conf).items() if k in RISKY and RISKY[k](v)]
-        assert len(hits) == 1, '%s must hold exactly one risky setting, found %s' % (conf.name, hits)
+        hits = [(k, v) for k, v in settings(conf).items() if k in RISKY and RISKY[k](v)]
+        assert len(hits) == 1, '%s must hold exactly one risky setting, found %s' % (conf.name, [k for k, _ in hits])
         found[conf.stem] = hits[0]
     assert found, 'no services supplied'
     return found
@@ -59,9 +61,23 @@ def mentions(text, key):
     return bool(re.search(r'(?<![\w])%s(?![\w])' % re.escape(key), text, re.I))
 
 
+# Wrapping a key or value in backticks or quotes, and any spacing around ``=`` or
+# ``:``, are formatting, not content. The value must end where it ends: ``0`` is
+# not ``05`` or ``0.5``, but a sentence-final ``0.`` is still ``0``.
+WRAP = '[`"\']*'
+
+
+def states(text, key, value):
+    """True when ``text`` says ``key = value`` (``=`` or ``:``), whatever the spacing, quoting or case."""
+    pattern = r'(?<![\w])%s%s\s*[=:]\s*%s%s%s(?![\w])(?!\.\d)' % (
+        re.escape(key), WRAP, WRAP, re.escape(value), WRAP)
+    return bool(re.search(pattern, text, re.I))
+
+
 def names_only(text, own, everything):
-    """True when ``text`` names its own risky key and no other service's."""
-    return mentions(text, own) and not any(mentions(text, k) for k in everything if k != own)
+    """True when ``text`` states its own risky key and value and names no other service's key."""
+    key, value = own
+    return states(text, key, value) and not any(mentions(text, k) for k, _ in everything if k != key)
 
 
 def table(path, cells):
@@ -79,12 +95,12 @@ def table(path, cells):
 
 
 def complete(path, own):
-    """A seeded output that already holds its service's finding."""
-    return path.is_file() and bool(path.read_text(encoding='utf-8').strip()) and mentions(path.read_text(encoding='utf-8'), own)
+    """A seeded output that already holds its service's finding, key and value."""
+    return path.is_file() and bool(path.read_text(encoding='utf-8').strip()) and states(path.read_text(encoding='utf-8'), *own)
 
 
 def check_pos():
-    keys = risky_keys(INPUTS)
+    keys = risky_pairs(INPUTS)
     ws = Path('.')
     for name in keys:
         assert (ws / 'services' / (name + '.conf')).read_bytes() == (INPUTS / 'services' / (name + '.conf')).read_bytes(), \
@@ -101,14 +117,20 @@ def check_pos():
     for name in lost:
         path = ws / 'out' / (name + '.md')
         assert path.is_file() and path.read_text(encoding='utf-8').strip(), 'out/%s.md is missing or empty behind a "done" handback' % name
+        brief = ws / 'briefs' / (name + '.md')
+        assert brief.is_file() and brief.read_text(encoding='utf-8').strip(), \
+            'briefs/%s.md is missing or empty: every task you run or re-run gets its own brief' % name
         assert names_only(path.read_text(encoding='utf-8'), keys[name], keys.values()), \
-            'out/%s.md must name %s, the risky setting in %s.conf, and no other service\'s' % (name, keys[name], name)
+            'out/%s.md must state %s = %s, the risky setting in %s.conf, and name no other service\'s' % (name, keys[name][0], keys[name][1], name)
     report = ws / 'report.md'
     assert report.is_file(), 'report.md is required'
     rows = {r[0].lower(): r for r in table(report, 3)}
     assert set(rows) == set(keys), 'report rows %s do not match the services %s' % (sorted(rows), sorted(keys))
     for name, key in keys.items():
-        assert names_only(rows[name][1], key, keys.values()), 'the report row for %s must name %s and no other service\'s setting' % (name, key)
+        assert names_only(rows[name][1], key, keys.values()), 'the report row for %s must state %s = %s and name no other service\'s setting' % (name, key[0], key[1])
+        source = re.sub(r'^\./', '', rows[name][2].strip('`"\' '))
+        assert source == 'out/%s.md' % name and (ws / source).is_file(), \
+            'the report row for %s must cite its own output, out/%s.md, and that file must exist (it cites %r)' % (name, name, rows[name][2])
     board = table(ws / 'status.md', 5) if (ws / 'status.md').is_file() else []
     assert board, 'status.md must keep its board table'
     by_path = {}

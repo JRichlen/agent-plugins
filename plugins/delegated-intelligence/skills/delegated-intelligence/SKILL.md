@@ -112,9 +112,11 @@ return limit (at most 200 words), done criteria, and what to do when blocked
 **Tool scoping.** Allowlist per job. Researchers: search, fetch, read, write to
 their own output path. Cataloguers: read and write only. Never grant
 session-control tools (ending the session, schedulers, messaging, connectors
-that send or spend) unless the job is exactly that; a cataloguing worker that
-held one once made a stray session-ending call. Never give workers the
-agent-spawning tool. Pre-scope tools so no permission prompt is needed, since a
+that send or spend) to any worker, whatever the job; a cataloguing worker that
+held one once made a stray session-ending call. Scheduling, messaging, sending,
+spending and session control stay with the coordinator, and a job that is one
+of those actions is done by the coordinator, not delegated. Never give workers
+the agent-spawning tool. Pre-scope tools so no permission prompt is needed, since a
 background agent that must ask stalls silently.
 
 **Search budgets.** Quotas are shared across all concurrent agents. Give each

@@ -80,6 +80,61 @@ class Positive(unittest.TestCase):
     def test_a_look_alike_setting_is_not_the_finding(self):
         self.assertFalse(grade(POS, "pass", lambda w: (w / "out/notify.md").write_text("# notify\nRISKY SETTING: retry_delay = 0\n")))
 
+    def test_an_output_with_the_right_key_and_a_wrong_value_is_rejected(self):
+        """Codex repro: request_timeout = 0 changed to 60 named the key and used to pass."""
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "out/notify.md", "RISKY SETTING: request_timeout = 0", "RISKY SETTING: request_timeout = 60")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "out/search.md", "cors_origin = *", "cors_origin = https://x.example.com")))
+        self.assertFalse(grade(POS, "pass", lambda w: (w / "out/notify.md").write_text("# notify\nRISKY SETTING: request_timeout\n")))
+
+    def test_a_value_that_only_starts_with_the_right_one_is_rejected(self):
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "out/notify.md", "request_timeout = 0", "request_timeout = 0.5")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "out/notify.md", "request_timeout = 0", "request_timeout = 05")))
+
+    def test_report_row_with_the_right_key_and_a_wrong_value_is_rejected(self):
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| notify | request_timeout = 0 |", "| notify | request_timeout = 60 |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| billing | tls_verify = false |", "| billing | tls_verify = true |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| api | admin_password = admin |", "| api | admin_password |")))
+
+    def test_the_correct_pair_passes_in_any_reasonable_format(self):
+        self.assertTrue(grade(POS, "pass"))
+        for form in ("request_timeout=0", "request_timeout   =   0", "`request_timeout = 0`", "request_timeout = \"0\"", "request_timeout: 0", "request_timeout = 0."):
+            self.assertTrue(grade(POS, "pass", lambda w, f=form: (w / "out/notify.md").write_text("# notify\nRISKY SETTING: %s\n" % f)), form)
+            self.assertTrue(grade(POS, "pass", lambda w, f=form: sub(w / "report.md", "request_timeout = 0", f)), form)
+        self.assertTrue(grade(POS, "pass", lambda w: sub(w / "report.md", "| search | cors_origin = * |", "| search | `cors_origin` = `*` |")))
+        self.assertTrue(grade(POS, "pass", lambda w: sub(w / "report.md", "tls_verify = false", "TLS_VERIFY = False")))
+
+    def test_a_url_value_is_a_wrong_value_for_a_wildcard_origin(self):
+        """Copilot's case: cors_origin = https://safe.example.com is not the configured finding."""
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "out/search.md", "cors_origin = *", "cors_origin = https://safe.example.com")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| search | cors_origin = * |", "| search | cors_origin = https://safe.example.com |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| search | cors_origin = * |", "| search | cors_origin |")))
+
+    def test_every_rerun_task_needs_its_own_nonempty_brief(self):
+        self.assertTrue(grade(POS, "pass"))
+        self.assertFalse(grade(POS, "pass", lambda w: (w / "briefs/notify.md").unlink()))
+        self.assertFalse(grade(POS, "pass", lambda w: (w / "briefs/search.md").unlink()))
+        self.assertFalse(grade(POS, "pass", lambda w: (w / "briefs/notify.md").write_text(" \n")))
+        self.assertFalse(grade(POS, "pass", lambda w: shutil.rmtree(w / "briefs")))
+
+    def test_one_surviving_brief_still_counts_as_adoption_but_not_as_a_pass(self):
+        """The adoption observer stays an any-brief shape check; the outcome grader owns coverage."""
+        def drop(w):
+            (w / "briefs/notify.md").unlink()
+        self.assertTrue(adopted(POS, "pass", drop))
+        self.assertFalse(grade(POS, "pass", drop))
+
+    def test_a_brief_for_a_kept_task_is_not_required(self):
+        self.assertFalse((TASKS / POS / "fixtures/pass/briefs/api.md").exists())
+        self.assertTrue(grade(POS, "pass"))
+
+    def test_report_source_must_be_the_services_own_output(self):
+        self.assertTrue(grade(POS, "pass", lambda w: sub(w / "report.md", "| out/search.md |", "| `out/search.md` |")))
+        self.assertTrue(grade(POS, "pass", lambda w: sub(w / "report.md", "| out/search.md |", "| ./out/search.md |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| search | cors_origin = * | out/search.md |", "| search | cors_origin = * | out/api.md |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| out/search.md |", "| out/nowhere.md |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| out/api.md |", "|  |")))
+        self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| out/notify.md |", "| services/notify.conf |")))
+
     def test_report_row_with_the_wrong_setting_is_rejected(self):
         self.assertFalse(grade(POS, "pass", lambda w: sub(w / "report.md", "| notify | request_timeout = 0 |", "| notify | admin_password = admin |")))
 
