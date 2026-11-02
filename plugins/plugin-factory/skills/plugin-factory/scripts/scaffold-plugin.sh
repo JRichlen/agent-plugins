@@ -97,10 +97,13 @@ mkdir -p "$PLUGIN_DIR/.claude-plugin" \
          "$PLUGIN_DIR/commands" \
          "$PLUGIN_DIR/evals/cheap"
 
-# plugin.json (version 0.0.1 — a scaffold is pre-release until implemented)
-python3 - "$PLUGIN_DIR/.claude-plugin/plugin.json" "$NAME" "$DESC" "$AUTHOR" <<'PY'
+# plugin.json (version 0.0.1 — a scaffold is pre-release until implemented).
+# Two manifests: the Claude Code one is the edited source; the root one is the
+# closed Agent Plugins 1.0 projection, written byte-identical to what
+# ci/agent_plugins.py generates so the marketplace drift check starts green.
+python3 - "$PLUGIN_DIR" "$NAME" "$DESC" "$AUTHOR" <<'PY'
 import json, sys
-out, name, desc, author = sys.argv[1:5]
+plugin, name, desc, author = sys.argv[1:5]
 data = {
   "name": name,
   "version": "0.0.1",
@@ -113,9 +116,14 @@ data = {
   "skills": "./skills/",
   "commands": "./commands/",
 }
-with open(out, "w") as f:
+with open(f"{plugin}/.claude-plugin/plugin.json", "w") as f:
   json.dump(data, f, indent=2)
   f.write("\n")
+portable = {"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json", "name": name}
+for field in ("version", "description", "author", "homepage", "repository", "license", "keywords"):
+  portable[field] = data[field]
+with open(f"{plugin}/plugin.json", "w", encoding="utf-8", newline="\n") as f:
+  f.write(json.dumps(portable, indent=2, ensure_ascii=False) + "\n")
 PY
 
 # SKILL.md — invariant-first (#3): the invariant leads, before any workflow prose.
