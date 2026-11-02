@@ -1,5 +1,6 @@
 """Free tool policy and host-selection controls; never initialize a model client."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -18,6 +19,38 @@ host = load("host_tools")
 
 
 class Tools(unittest.TestCase):
+    def test_distribution_manifest_uses_case_sensitive_posix_order(self):
+        with tempfile.TemporaryDirectory() as folder:
+            home = Path(folder)
+            dist = home / "dist/src"
+            dist.mkdir(parents=True)
+            for name, data in (("a.js", b"lower"), ("B.js", b"upper"), ("types.d.ts", b"types")):
+                (dist / name).write_bytes(data)
+            expected = "".join(f"dist/src/{name}  {hashlib.sha256(data).hexdigest()}\n"
+                               for name, data in (("B.js", b"upper"), ("a.js", b"lower"), ("types.d.ts", b"types")))
+            self.assertEqual(policy.promptfoo_dist_manifest(home), (hashlib.sha256(expected.encode()).hexdigest(), 3))
+            # Emulate Windows Path comparison even on Linux CI. Replacing the
+            # explicit string key with Path.sort() must fail this control.
+            class CasefoldFile:
+                def __init__(self, path):
+                    self.path, self.name = path, path.name
+                def is_file(self):
+                    return True
+                def read_bytes(self):
+                    return self.path.read_bytes()
+                def relative_to(self, ignored):
+                    return self.path.relative_to(home)
+                def __lt__(self, other):
+                    return self.name.casefold() < other.name.casefold()
+            class WindowsLikeHome:
+                def __truediv__(self, ignored):
+                    return self
+                def iterdir(self):
+                    return [CasefoldFile(path) for path in dist.iterdir()]
+            self.assertEqual(policy.promptfoo_dist_manifest(WindowsLikeHome()), (hashlib.sha256(expected.encode()).hexdigest(), 3))
+            changed = expected.replace("dist/src/B.js", "dist\\src\\B.js")
+            self.assertNotEqual(hashlib.sha256(changed.encode()).hexdigest(), policy.promptfoo_dist_manifest(home)[0])
+
     def test_unknown_lifecycle_and_vulnerable_versions_are_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

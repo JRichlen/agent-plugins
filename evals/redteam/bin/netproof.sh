@@ -49,7 +49,7 @@ NODE_HOME_DIR="$(dirname "$(dirname "$(command -v node)")")"
 # undocumented off this machine, it was unfixable off it. It is now derived
 # from PROMPTFOO_HOME (the one variable README.md's "Run it" section asks a
 # new host to export) and still overridable on its own.
-: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo}"
+: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.125.1/node_modules/promptfoo}"
 : "${NPX_CACHE_ROOT:=$(cd "$PROMPTFOO_HOME/../.." 2>/dev/null && pwd)}"
 [[ -n "$NPX_CACHE_ROOT" && -d "$NPX_CACHE_ROOT/node_modules/promptfoo" ]] || \
   fail "NPX_CACHE_ROOT=$NPX_CACHE_ROOT does not contain node_modules/promptfoo (export PROMPTFOO_HOME or NPX_CACHE_ROOT -- see README.md's \"Run it\")"

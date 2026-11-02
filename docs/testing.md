@@ -351,7 +351,7 @@ that it is green because it did not run, never silently.
 - **Local run.**
   ```sh
   cd plugins/<plugin>/evals/promptfoo
-  OPENROUTER_API_KEY=... ANTHROPIC_API_KEY=... npx --yes promptfoo@0.122.0 eval --output results.json
+  OPENROUTER_API_KEY=... ANTHROPIC_API_KEY=... node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval --output results.json
   cd - && evals/paid/pass-rate.sh plugins/<plugin>/evals/promptfoo/results.json --floor 0.6 --min-runs 2 --min-valid 2
   ```
 
@@ -422,8 +422,8 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   node evals/routing/route-contract.test.js          # offline contract tests
   node evals/routing/trajectory/step-contract.test.js
   cd evals/routing
-  OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true npx --yes promptfoo@0.122.0 eval -c promptfooconfig.yaml --output results.json
-  OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true npx --yes promptfoo@0.122.0 eval -c trajectory/promptfooconfig.yaml --output trajectory-results.json
+  OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c promptfooconfig.yaml --output results.json
+  OPENROUTER_API_KEY=... PROMPTFOO_RETRY_5XX=true node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c trajectory/promptfooconfig.yaml --output trajectory-results.json
   cd - && evals/paid/pass-rate.sh evals/routing/results.json --floor 0.8 --min-runs 3
   evals/paid/pass-rate.sh evals/routing/trajectory-results.json --floor 0.8 --min-runs 3
   ```
@@ -472,7 +472,7 @@ or relax the assertions. Empty completion-budget-exhausted replies remain failur
   cents per pack. Results are uploaded as a per-pack artifact so the numbers
   can be recorded on [#102](https://github.com/JRichlen/agent-plugins/issues/102).
 - **Local run.** `evals/paid/subject-matrix.sh plugins/<p>/evals/promptfoo
-  --subjects "<id>,<id>"`, then `npx promptfoo@0.122.0 eval -c
+  --subjects "<id>,<id>"`, then `node "$PROMPTFOO_HOME/dist/src/entrypoint.js" eval -c
   promptfooconfig.matrix.yaml --output results.matrix.json` in the pack
   directory, then `evals/paid/pass-rate.sh results.matrix.json --by-provider
   --baseline "$(evals/paid/subject-matrix.sh <pack> --baseline-id)"`.
@@ -1082,7 +1082,7 @@ of these, update this block (and the prose above) in the same PR;
 `evals/cheap/check-testing-doc.sh --print` emits the current live list.
 
 > **CI portability of the new gates.** The cheap-tier and counterfeit CI jobs install the
-> pinned tooling the gates verify against (promptfoo 0.122.0, Claude Code 2.1.263, Codex
+> pinned tooling the gates verify against (promptfoo 0.125.1, Claude Code 2.1.263, Codex
 > 0.153.4 — exact versions, never `npx`, never `@latest`) into the runner's temp dir and export
 > `PROMPTFOO_HOME` and the `.bin` PATH. The gates never log in or call a model; they read
 > `--help`/`--version` and compare digests. On a developer host, export `PROMPTFOO_HOME` the

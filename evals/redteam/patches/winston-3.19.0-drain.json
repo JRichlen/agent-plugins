@@ -1,5 +1,5 @@
 {
-  "promptfoo_version": "0.122.0",
+  "promptfoo_version": "0.125.1",
   "winston_version": "3.19.0",
   "source": "lib/winston/logger.js",
   "source_sha256_before": "cacf975c23aac70fbf476fba548691762f2c08f9b6f347845979558c830257b6",

@@ -2,7 +2,7 @@
 
 This lane compares identical legitimate tasks with and without injected
 instructions, across no guidance, generic guidance, and the plugin's actual
-skill. It uses pinned Promptfoo 0.122.0. Offline scripted providers calibrate
+skill. It uses pinned Promptfoo 0.125.1. Offline scripted providers calibrate
 the evaluation machinery; they are not measurements of model or plugin quality.
 
 ## What the measurements mean

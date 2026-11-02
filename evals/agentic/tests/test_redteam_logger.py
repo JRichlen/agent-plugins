@@ -24,7 +24,7 @@ class PinnedLoggerLifecycle(unittest.TestCase):
         configured = os.environ.get("PROMPTFOO_HOME")
         self.assertTrue(configured, "PROMPTFOO_HOME must identify the provisioned pinned install")
         home = pathlib.Path(configured).resolve()
-        self.assertEqual(json.loads((home / "package.json").read_text(encoding="utf-8"))["version"], "0.122.0")
+        self.assertEqual(json.loads((home / "package.json").read_text(encoding="utf-8"))["version"], json.loads((ROOT / "evals/redteam/pin.json").read_text(encoding="utf-8"))["promptfoo"]["version"])
         main = (home / "dist/src/main.js").read_text(encoding="utf-8")
         match = re.search(r'from "(\./logger-[^"/]+\.js)"', main)
         self.assertIsNotNone(match, "pinned CLI must import an identifiable logger module")

@@ -8,7 +8,7 @@
 #
 # Every invocation of this wrapper — test, freeze check, or a real run.sh
 # invocation — carries the offline environment (settled-unknowns.md #5) and a
-# fail-closed version check against the pinned 0.122.0 and the node engine
+# fail-closed version check against the pinned version and the node engine
 # floor, BEFORE the real binary is exec'd. This is intentionally redundant
 # with run.sh's own offline-environment setup (design §10.2): it is what makes
 # "invoked by path, not npx" something more than a location — see T42's third
@@ -26,7 +26,7 @@ PIN_JSON="$REDTEAM_ROOT/pin.json"
 # "Run it" section; every other machine must export PROMPTFOO_HOME (and, for
 # bin/netproof.sh's docker bind-mount, NPX_CACHE_ROOT -- which now defaults to
 # PROMPTFOO_HOME's grandparent rather than a second hardcoded absolute path).
-: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo}"
+: "${PROMPTFOO_HOME:=/home/jrichlen/ai/tools/promptfoo-0.125.1/node_modules/promptfoo}"
 PF_ENTRY="$PROMPTFOO_HOME/dist/src/entrypoint.js"
 PF_PKG="$PROMPTFOO_HOME/package.json"
 # A CLOSED loopback port. Nothing may bind port 1 in this lane, and the
@@ -98,8 +98,8 @@ export PROMPTFOO_OTEL_ENABLED=0
 # These must never be allowed to redirect a future remote path (design §10.2),
 # and no provider credential may reach the child: hasCodexDefaultCredentials()
 # consults CODEX_API_KEY / OPENAI_API_KEY (remoteGeneration-BLmiGTEn.js), and
-# @openai/codex-sdk IS installed in the pinned tree, so canLoadCodexSdkPackage()
-# is already satisfied -- the key vars were the only thing left.
+# optional agent SDKs can be installed separately. Keep the credential boundary
+# even when those SDKs are absent; this repository uses explicit CLI adapters.
 unset PROMPTFOO_REMOTE_GENERATION_URL PROMPTFOO_UNALIGNED_INFERENCE_ENDPOINT \
       PROMPTFOO_CLOUD_API_URL PROMPTFOO_API_KEY \
       OPENAI_API_KEY CODEX_API_KEY ANTHROPIC_API_KEY
