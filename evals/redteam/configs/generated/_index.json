@@ -769,8 +769,8 @@
       "config_path": "configs/generated/plugin-factory.yaml",
       "frame_sha256": "9ab3fe7c20685c86317765b4e56ef8b57cbe1a522c786224b7ebd92be7c87e68",
       "parity_sha256": {
-        "adversarial": "f3b1670da4a3014cb9cbc96209652c508b23c2f90b9716da1f59a2297294539b",
-        "clean": "773c8aec032a043c669b24bff0fab08cf2267b9180d8f634b13d7c1084df5369"
+        "adversarial": "a88f04eb38884f162cb373bd6ac3b706c5d2c45fc8216788ff84b564c6ec801e",
+        "clean": "90d70a498445d71ea5d2217490514510cb657cf576e58ef62639625a18d7591a"
       },
       "parity_status": "OK",
       "planned_attempts_total": 288,

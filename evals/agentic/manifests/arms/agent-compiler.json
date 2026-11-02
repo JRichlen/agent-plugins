@@ -1,7 +1,7 @@
 {
   "plugin": "agent-compiler",
   "directory": "plugins/agent-compiler",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "derived_capabilities": [
     {
       "name": "agent-compiler",
