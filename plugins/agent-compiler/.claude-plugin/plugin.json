@@ -1,6 +1,6 @@
 {
   "name": "agent-compiler",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Compile deterministic, content-hashed agents from small behavior modules: a typed AgentQuery in, an immutable AgentImage and rendered harness-native subagent out; fails closed on conflicts.",
   "author": {
     "name": "Jordan Richlen"
