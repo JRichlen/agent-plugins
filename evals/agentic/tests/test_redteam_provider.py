@@ -31,7 +31,7 @@ def _load_verdict():
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
-PINNED_VERSION = "0.122.0"
+PINNED_VERSION = json.loads((REDTEAM_ROOT / "pin.json").read_text(encoding="utf-8"))["promptfoo"]["version"]
 
 
 def _offline_env(tmp_home: pathlib.Path, extra: dict | None = None) -> dict:
