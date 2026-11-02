@@ -4,7 +4,7 @@
     "find-before-build-boundary-v1": {
       "source_commit": "37fcc9d3ce27ceb9309da189382b70a6e6fd2e48",
       "kind": "opposite-rubric boundary calibration; not common-outcome efficacy",
-      "runner": "Promptfoo 0.122.0 (existing packs/subject-matrix; no tournament execution adapter)",
+      "runner": "Historical source used Promptfoo 0.122.0; an execution adapter must record its actual runtime separately (no tournament execution adapter enabled)",
       "cases": {
         "existing-helper": {
           "skill_test_index": 0,

@@ -52,8 +52,10 @@ must verify its bytes, row selection and matching suite conditions before use.
 No replay calls are made here. `provider_batch` currently fails closed as
 unsupported; it never silently falls back to synchronous paid calls.
 
-Pinned Promptfoo 0.122.0 does not become a provider batch orchestrator through
-`maxConcurrency` or an invented `batch: true`. A future batch adapter needs:
+The [repository-pinned Promptfoo](../redteam/pin.json) does not become a provider
+batch orchestrator through `maxConcurrency` or an invented `batch: true`.
+Record the actual runtime separately from a suite's historical source version.
+A future batch adapter needs:
 
 - Durable submission identity and batch ID; resume before considering resubmit.
 - Stable per-cell/custom IDs because result order is not guaranteed.
