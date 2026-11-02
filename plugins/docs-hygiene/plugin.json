@@ -1,0 +1,22 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "docs-hygiene",
+  "version": "1.0.0",
+  "description": "Audits CLAUDE.md/AGENTS.md/SKILL.md instruction files against current repo state, catches claims that have gone stale (a renamed path, a dropped command, a policy that changed) before they get trusted or acted on, and resolves contradictions between layered instruction files. Use to audit docs or when instruction files contradict each other.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/docs-hygiene",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agents-md",
+    "claude-md",
+    "skill-md",
+    "instruction-files",
+    "staleness",
+    "contradiction-resolution",
+    "docs-audit",
+    "onboarding"
+  ]
+}

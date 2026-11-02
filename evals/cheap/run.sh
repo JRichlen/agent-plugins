@@ -2471,6 +2471,16 @@ if grep -q 'core/OPERATING.md' "$REPO_ROOT/AGENTS.md" 2>/dev/null; then
   if python3 -m unittest evals.agentic.tests.test_method_applicability; then ok "selected-method guidance applicability"; else bad "selected-method applicability failed"; fi
 fi
 
+# Agent Plugins 1.0.0 projections: every registered plugin ships a generated,
+# closed root plugin.json (and mcp.json when it declares MCP servers) so
+# spec-conformant clients can load it. REPO-level gate: the synthetic
+# counterfeit root copies ci/ but is not a git worktree, and its baseline
+# plugin deliberately carries only the Claude layout.
+if [ -e ".git" ] && [ -f ci/agent_plugins.py ]; then
+  group "Agent Plugins 1.0 manifests match their Claude sources"
+  if python3 ci/agent_plugins.py --check; then ok "root plugin.json / mcp.json in sync and spec-valid"; else bad "Agent Plugins projection drift (run python3 ci/agent_plugins.py)"; fi
+fi
+
 # --- 23. Gitignored generated content is never left tracked ------------------
 # .gitignore documents directories as generated and "never committed" — eval
 # artifacts, promptfoo debug/error logs, canary/listener output, under

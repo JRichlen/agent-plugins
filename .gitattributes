@@ -2,3 +2,6 @@
 docs/examples/data/*.json text eol=lf
 docs/*.html text eol=lf
 docs/**/*.html text eol=lf
+# Generated Agent Plugins manifests are compared byte-for-byte by ci/agent_plugins.py.
+plugins/*/plugin.json text eol=lf
+plugins/*/mcp.json text eol=lf

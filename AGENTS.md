@@ -28,7 +28,8 @@ find this governance here, and the plugin's own entry point inside its directory
 ```
 .claude-plugin/marketplace.json   # lists every plugin (name, source path)
 plugins/<name>/                    # one directory per plugin
-  .claude-plugin/plugin.json       # that plugin's manifest
+  .claude-plugin/plugin.json       # that plugin's manifest (edited source)
+  plugin.json  mcp.json            # generated Agent Plugins 1.0 projections
   skills/  commands/  docs/        # the plugin's contents
   AGENTS.md (+ CLAUDE.md/GEMINI.md symlinks)
 evals/                             # eval harness (see docs/testing.md)
@@ -36,6 +37,10 @@ evals/                             # eval harness (see docs/testing.md)
 
 Adding a plugin: create `plugins/<new>/` with its own `.claude-plugin/plugin.json`
 and add a matching entry to `marketplace.json` whose `source` is `./plugins/<new>`.
+Then run `python3 ci/agent_plugins.py` to generate the
+[Agent Plugins 1.0](https://github.com/agentplugins/agent-plugins-spec/blob/main/spec/1.0.0.md)
+root `plugin.json` (and `mcp.json` when the plugin declares MCP servers); never
+edit those copies by hand.
 The cheap eval verifies that wiring.
 
 ## Repository verification and review

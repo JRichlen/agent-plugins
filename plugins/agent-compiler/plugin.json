@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "agent-compiler",
+  "version": "0.3.0",
+  "description": "Compile deterministic, content-hashed agents from small behavior modules: a typed AgentQuery in, an immutable AgentImage and rendered harness-native subagent out; fails closed on conflicts.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/agent-compiler",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "agent-compiler",
+    "behavior-modules",
+    "deterministic",
+    "provenance",
+    "effect-ceiling",
+    "agent-image",
+    "persona"
+  ]
+}
