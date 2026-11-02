@@ -32,7 +32,7 @@ const EXPECTED = [
   ['T2', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
   ['T3 (blocked)', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
   ['T3 (declined)', 'STEP: action=gate | gate=major | disposition=declined | proceed=no'],
-  ['direct bounded work', 'STEP: action=trace | gate=none | disposition=approved | proceed=yes'],
+  ['direct bounded work', 'STEP: action=trace | gate=patch | disposition=auto | proceed=yes'],
   ['T4', 'STEP: action=resume | gate=major | disposition=blocked | proceed=no'],
   ['T4 (step named by the re-raised gate)', 'STEP: action=gate | gate=major | disposition=blocked | proceed=no'],
 ];
@@ -60,6 +60,14 @@ check('…and the contract rejects it regardless of any regex',
 const t4Regex = cfgRegexes.find((r) => r.includes('resume'));
 check('T4 widened regex still requires disposition=blocked exactly',
   Boolean(t4Regex) && !new RegExp(t4Regex).test('STEP: action=gate | gate=major | disposition=approved | proceed=no'));
+const t2Regex = cfgRegexes.find((r) => r.includes('action=gate') && !r.includes('(?:blocked|declined)'));
+check('T2 fixture identifies the proposed action rather than a different accepted task',
+  cfgRaw.includes('Proposed next action being judged: begin implementing the separate network service'));
+check('T2 does not license the proposed service through accepted-task ambiguity',
+  Boolean(t2Regex) && !new RegExp(t2Regex).test('STEP: action=trace | gate=patch | disposition=auto | proceed=yes'));
+const directRegex = cfgRegexes.find((r) => r.includes('action=trace'));
+check('direct PATCH fixture uses auto rather than the MAJOR-only approved disposition',
+  Boolean(directRegex) && !new RegExp(directRegex).test('STEP: action=trace | gate=none | disposition=approved | proceed=yes'));
 
 // The proceed slot is defined in prompt.txt (residual pass): yes = TRACE may
 // begin now; the next protocol step (ARM / asking / gating) is no. T1's label

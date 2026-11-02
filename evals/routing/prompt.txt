@@ -14,19 +14,25 @@ another:
   warrants explicit falsifiable acceptance criteria, independently verified
   acceptance checks. Risk classification or a required approval alone does not
   select this service. Work that is merely nontrivial does not
-  acquire an envelope; none is the default.
+  acquire an envelope; none is the default. A specialist's ordinary domain
+  verification (for example, checking archive readability before deletion) is
+  not by itself a fixed independent acceptance contract.
 - guards — zero or more cross-cutting rules honored during execution, owning
   neither the procedure nor the round loop. Evaluate each guard's trigger
   independently: an envelope or specialist does not subsume a different skill's
   guard merely because their verification steps overlap. If that guard's rule
   applies, include it alongside the procedure and envelope. Comma-separated,
-  alphabetically sorted, no duplicates; none when empty.
+  alphabetically sorted, no duplicates; none when empty. An explicit request
+  for evidence before a completion claim selects verify-before-claim's checking
+  method even when verify-work separately owns an acceptance contract.
 - interaction_owner — the active method that needs a blocking human decision,
   or none. It must already appear in specialist or envelope. The core's main
   assistant delivers the question and retains objective/authority; this slot
   never creates another coordinator. An envelope does not take over unrelated
   domain questions. Name the method that actually needs the decision, and
   preserve existing valid authorization rather than asking again by default.
+  Explaining or walking through a design does not itself establish a pending
+  human decision. A specifically required criteria agreement does.
 
 Skills are DISCIPLINES that govern how you carry out a request — they are not
 tools that perform it. A skill activates when the request would trigger the

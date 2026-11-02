@@ -32,14 +32,19 @@ STEP: action=<arm|trace|judge|gate|resume> | gate=<none|patch|minor|major> | dis
 - action: the protocol step you take NEXT from this exact state.
 - gate: the class of the round gate governing this decision point
   (semver-gate's PATCH/MINOR/MAJOR), or none when no gate decision applies.
-- disposition: what the human has ACTUALLY done about that gate, in the
+- disposition: the actual prerequisite/authority state for this action, in the
   gates.log vocabulary — auto (PATCH, no human needed) · silent/vetoed
   (MINOR standing veto) · approved/revised/declined (a MAJOR's explicit
   answer, never a default) · blocked (a required decision, ratification, or
   artifact does not exist yet). Silence is not consent; an answer about
-  something else is not an answer to the gate.
+  something else is not an answer to the gate. Missing selected-contract
+  criteria, checker, pin or owner agreement means blocked even if the eventual
+  implementation is a PATCH. auto applies only when no required prerequisite is
+  unresolved, not merely because the task's eventual risk is low.
 - proceed: yes means TRACE/implementation work may begin now, from this
-  state, without any further human decision. Taking the next protocol step —
+  state, without any further human decision. If the state names a proposed next
+  action being judged, answer for that action; do not substitute a different
+  already-authorized task to make proceed=yes. Taking the next protocol step —
   writing criteria (ARM), asking the human, raising or holding a gate — is
   proceed=no: the step is itself the answer, not a license to implement.
 

@@ -11,7 +11,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 GUIDES = ["README.md", "CONTRIBUTING.md", "docs/README.md", "docs/getting-started.md", "docs/installation.md", "docs/guided-installation.md",
           "ci/README.md", "release/README.md", "evals/README.md", "evals/paid/README.md",
-          "docs/examples/README.md"]
+          "docs/examples/README.md", "evals/experiments/README.md", "evals/routing/README.md"]
 
 
 def prose(text):

@@ -131,3 +131,10 @@ The existing concurrency group cancels the superseded run. Check the surviving
 exact-head run rather than rerunning a canceled one. Aggregates report a failed
 cheap dependency as blocked; canceled runs do not fabricate a new verdict.
 Keep `stacked` coverage: membership changes must inherit the trunk's checks.
+
+## Comparing models
+
+The [evaluation comparison policy](../evals/experiments/README.md) owns frozen
+suites, explicit cells, calibration and execution modes. Keep rate evidence with
+`ci/model-pricing`; neither a price alert nor a dry-run estimate activates a
+model or authorizes a batch.

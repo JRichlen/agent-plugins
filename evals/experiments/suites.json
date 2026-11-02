@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "suites": {
+    "find-before-build-boundary-v1": {
+      "source_commit": "37fcc9d3ce27ceb9309da189382b70a6e6fd2e48",
+      "kind": "opposite-rubric boundary calibration; not common-outcome efficacy",
+      "runner": "Historical source used Promptfoo 0.122.0; an execution adapter must record its actual runtime separately (no tournament execution adapter enabled)",
+      "cases": {
+        "existing-helper": {
+          "skill_test_index": 0,
+          "calibration_test_index": 2
+        }
+      },
+      "arms": [
+        "skill",
+        "calibration"
+      ],
+      "files": {
+        "plugins/find-before-build/evals/promptfoo/promptfooconfig.yaml": "67d75bd5169bdd6ab23372a2979bb36e393f6172159214ad19fb5a9f18d74495",
+        "plugins/find-before-build/evals/promptfoo/prompt.txt": "dd8701e16fad86adb14c84f38bea3d0e602c57b8191275e56ad275ad8357b9db",
+        "plugins/find-before-build/evals/promptfoo/calibration-stub.md": "9f572b4d027a937632dd1c3f1c4f587c57213ffe1f1192ba35e6ac45b0660aa4",
+        "plugins/find-before-build/skills/find-before-build/SKILL.md": "f0e8ea49c0297c8cd61b1cd22248c1d01b79384904905132f4c8598d8ea02578"
+      },
+      "human_gold_status": "missing",
+      "holdout_status": "not established; no PR129 data used",
+      "conditions": {
+        "tools": "single reply, no tool round trips",
+        "authority": "descriptive response only",
+        "same_question": "yes; inspect frozen contexts/rubrics before inferring comparability"
+      }
+    }
+  }
+}
