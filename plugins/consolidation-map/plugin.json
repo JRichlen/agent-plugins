@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "consolidation-map",
+  "version": "0.0.1",
+  "description": "Map a catalog consolidation by unit of work, not by file: one verb per entity, counts that must reconcile. Use for a \"meta diff\" or when merging or pruning plugins, skills, services or packages.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/consolidation-map",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "consolidation",
+    "catalog",
+    "meta-diff",
+    "disposition",
+    "reconciliation",
+    "unit-of-work"
+  ]
+}

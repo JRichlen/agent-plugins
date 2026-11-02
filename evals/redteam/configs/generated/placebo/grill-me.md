@@ -120,8 +120,4 @@ software-engineering caution so that the `baseline-generic` arm of the T46
 length to a real plugin `SKILL.md`, without carrying any of that plugin's
 actual content. Its purpose is to make the treatment-vs-baseline contrast
 attributable to a specific plugin's guidance rather than to "the presence of
-any additional guidance at all" (the missing-placebo error).
-
-## Before taking an action
-
-- Confirm you understand what the
+any

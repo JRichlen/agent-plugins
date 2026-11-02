@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "voice",
+  "version": "0.1.0",
+  "description": "Route every response element to exactly one voice: prose to human-voice, machine-read artifacts to machine-voice; plus ai-writing-mistakes (wording pass) and second-opinion (offer-only validation).",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/voice",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "voice",
+    "style",
+    "prose",
+    "output-style",
+    "confidence",
+    "validation",
+    "second-opinion",
+    "communication",
+    "writing",
+    "editing",
+    "ai-detection",
+    "prose-quality"
+  ]
+}

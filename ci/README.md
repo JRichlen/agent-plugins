@@ -25,11 +25,32 @@ authorization gate, then report pass, failure or skip and preserve its evidence.
 | Push to main | Same applicable checks | Changed-surface model legs can run automatically | Pages is a separate existing workflow |
 | Scheduled gallery refresh | Selection, capture launch and the full cheap gate before spending; generated output checked afterward | Selected valid packs, existing cadence and providers | Review PR only; merge publishes Pages |
 | Candidate packaging | Free Git/object/byte tests on affected PRs | None | [Source artifact only](../release/README.md), manual staging |
+| Dependabot PR or attributed Dependabot merge | Same required free checks | All model jobs and reachability probes skipped | Merge still requires compatibility evidence |
+| Explicit `no-paid/` source branch, including its attributed merge | Same required free checks | All model jobs and reachability probes skipped | No automatic merge permission |
 | Manual evaluation workflows | Workflow-specific checks | Some spend; inspect inputs and the coverage reference first | No permission implied by this table |
 
 Do not add a paid label or dispatch a suite merely to obtain a green badge.
 Record run IDs, successful calls, retries and available usage. A reported result
 cost is not a billing receipt; absent token or cost data means unknown.
+
+[`paid_policy.py`](paid_policy.py) classifies the initial PR event and, on main,
+uses GitHub's authenticated compare and commit-to-PR APIs to attribute every
+introduced commit in `before..after`, including earlier bot merges beneath a
+human tip. Feature commits must bind to a merged PR whose merge commit is in
+that same range. Pagination is bounded, with at most 100 introduced commits,
+120 requests and 90 seconds; the job also has a three-minute timeout.
+The person clicking Merge is not the PR author. Missing, truncated or failed
+attribution blocks all model calls and fails the eligibility check; free checks
+still run. Aggregates explicitly say **SKIPPED**, never that model behavior passed.
+
+For work that must remain free from its first event, create the source branch
+under `no-paid/` before opening the PR and retain that prefix through merge.
+Adding a label later can race the initial run. This opt-out does not skip free
+checks, change model thresholds, grant merge authority, or change separate
+scheduled workflows. This eval workflow's manual dispatch also refuses bot and
+`no-paid/` refs/PRs and requires commit attribution; it is not an exception for
+dependency testing. Ordinary PR labels and fully attributed main behavior stay
+as listed above. Do not rerun paid jobs to diagnose dependency updates.
 
 ## Reproduce a free failure
 
@@ -48,6 +69,11 @@ Linux sandbox behavior. Fix a source regression rather than weakening a gate;
 compare an identical clean-main run before calling a failure pre-existing.
 
 ## Tool and profile ownership
+
+The standalone candidate-contract job installs its parser from
+[`tools/candidate-requirements.txt`](tools/candidate-requirements.txt), including
+when `setup-python` supplies a clean environment. It does not rely on packages
+preinstalled in another job; the source builder remains standard-library-only.
 
 [`setup-eval-tools`](../.github/actions/setup-eval-tools/action.yml) reads the
 Node pin from `evals/redteam/pin.json`, verifies the bundled npm version recorded

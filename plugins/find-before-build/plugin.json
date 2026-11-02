@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "find-before-build",
+  "version": "0.0.1",
+  "description": "Search for the existing implementation before writing a new one: name the searches run for an existing helper, abstraction, or pattern and what they returned.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/find-before-build",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "reuse",
+    "duplication",
+    "search-first",
+    "abstraction",
+    "dependencies",
+    "dry"
+  ]
+}

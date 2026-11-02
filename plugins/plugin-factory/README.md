@@ -30,6 +30,7 @@ That produces `plugins/my-plugin/` and adds its marketplace entry.
 ```
 plugins/my-plugin/
   .claude-plugin/plugin.json      # valid manifest, name matches dir, v0.0.1
+  plugin.json                      # Agent Plugins 1.0 projection (ci/agent_plugins.py keeps it in sync)
   skills/my-plugin/SKILL.md        # frontmatter + invariant-first "## Invariant"
   commands/my-plugin.md            # command stub
   AGENTS.md                        # cross-harness entry point

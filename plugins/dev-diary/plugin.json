@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "dev-diary",
+  "version": "1.0.0",
+  "description": "Keep a scannable developer journal that writes itself: discover the day's work from sessions, commits and prompts, interview the user, record a dated entry. Ships /dev-diary and /dev-diary-review.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/dev-diary",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "diary",
+    "journal",
+    "changelog",
+    "standup",
+    "dev-log",
+    "retrospective"
+  ]
+}

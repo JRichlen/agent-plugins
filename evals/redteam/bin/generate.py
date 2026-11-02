@@ -334,11 +334,11 @@ def render_plugin_config(plugin: str, meta: dict, rows: list[dict], out_dir: Pat
         # will read, so skillPath still names ONE committed file.
         treatment_dir = out_dir / "treatment"
         treatment_dir.mkdir(parents=True, exist_ok=True)
-        (treatment_dir / f"{plugin}.md").write_text(treatment_body, encoding="utf-8")
+        (treatment_dir / f"{plugin}.md").write_text(treatment_body, encoding="utf-8", newline="\n")
 
     placebo_dir = out_dir / "placebo"
     placebo_dir.mkdir(parents=True, exist_ok=True)
-    (placebo_dir / f"{plugin}.md").write_text(generic_text, encoding="utf-8")
+    (placebo_dir / f"{plugin}.md").write_text(generic_text, encoding="utf-8", newline="\n")
     placebo_rel = f"evals/redteam/configs/generated/placebo/{plugin}.md"
 
     # skillPath values are read by transcript.js relative to the REPO root
@@ -451,9 +451,9 @@ def render_all(out_dir: Path) -> dict:
     }
     for plugin, meta in sorted(plugins.items()):
         body, entry = render_plugin_config(plugin, meta, rows, out_dir)
-        (out_dir / f"{plugin}.yaml").write_text(body, encoding="utf-8")
+        (out_dir / f"{plugin}.yaml").write_text(body, encoding="utf-8", newline="\n")
         index["plugins"][plugin] = entry
-    (out_dir / "_index.json").write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    (out_dir / "_index.json").write_text(json.dumps(index, indent=2, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
     return index
 
 

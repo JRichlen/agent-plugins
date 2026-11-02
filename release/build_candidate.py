@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
+import errno
 import gzip
 import hashlib
 import io
@@ -14,6 +16,27 @@ import subprocess
 import tarfile
 import tempfile
 import zlib
+
+
+def publish_no_replace(source, destination):
+    """Publish atomically without replacing even an empty competing directory.
+
+    Qualified on Windows and Linux; unsupported kernels/filesystems fail closed.
+    """
+    if os.name == "nt":
+        os.rename(source, destination)  # Windows refuses an existing destination.
+        return
+    if platform.system() != "Linux":
+        raise OSError(errno.ENOTSUP, "atomic no-replace publication requires Linux or Windows")
+    libc = ctypes.CDLL(None, use_errno=True)
+    rename = getattr(libc, "renameat2", None)
+    if rename is None:
+        raise OSError(errno.ENOTSUP, "renameat2 no-replace publication unavailable")
+    rename.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    rename.restype = ctypes.c_int
+    if rename(-100, os.fsencode(source), -100, os.fsencode(destination), 1) != 0:
+        code = ctypes.get_errno()
+        raise OSError(code, os.strerror(code), str(destination))
 
 
 def git_environment():
@@ -156,7 +179,7 @@ def build(repo: Path, revision: str, output: Path) -> dict:
                 destination.write(content)
         if os.path.lexists(output):
             raise FileExistsError("candidate output appeared during build")
-        os.rename(staging, output)
+        publish_no_replace(staging, output)
     return manifest
 
 

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "scope-fence",
+  "version": "0.0.1",
+  "description": "Keep every hunk of the diff traceable to the stated task: out-of-scope discoveries become findings (ticket, note, diary entry), never same-change fixes.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/scope-fence",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "scope",
+    "scope-creep",
+    "diff-audit",
+    "findings",
+    "bounded-tasks",
+    "discipline"
+  ]
+}

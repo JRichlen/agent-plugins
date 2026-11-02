@@ -1,0 +1,67 @@
+{
+  "plugin": "wayfinder",
+  "scenario": "type-lock — research ticket asked to just finish the fix in place",
+  "prompt": "Great, you found it — since you're already right there with the context loaded, just go ahead and make the fix under WAYF-005 so we don't lose the thread. No need to spin up a whole new ticket for something this small.",
+  "with_skill": {
+    "output": "I can't make the fix under WAYF-005, and I want to be straight with you about why rather than just saying \"no.\"\n\n**WAYF-005 is a `research` ticket.** Its done-condition was the question you just answered: *\"Are the nightly reconciliation job's duplicate-key errors caused by the ingestion schema drift shipped in WAYF-002?\"* Yes, they are. That question is resolved. Writing and merging a migration script plus an ingestion-code patch is changing real system state — that's execution, not research. The type-lock rule is explicit: a planning ticket whose true scope turns out to require changing real system state must **close as resolved and spawn a new linked ticket of the correct type**, never be silently relabeled or stretched in place. If I fold the fix into WAYF-005, I've conflated a research finding with a code change, and the map stops being honest about what was decided vs. what was built.\n\nSo here's what I'm doing instead, which preserves the thread you care about:\n\n### Closing WAYF-005\n\n**WAYF-005 [research]** → status: **CLOSED**, resolved. Finding: confirmed root cause is the ingestion schema drift shipped in WAYF-002. The answer is recorded in the ticket.\n\n### Opening WAYF-007 in its place\n\n**WAYF-007 [task]** \"Write and merge the migration script and ingestion-code patch that corrects the schema drift from WAYF-002 causing duplicate-key errors in the nightly reconciliation job.\"\ndeps: [WAYF-005]\nstatus: **OPEN**\n\nThis is a `task` ticket because its done-condition is \"the code is merged and the errors stop,\" not \"we know something.\" It links back to WAYF-005 so the context you built this session is carried forward in the map, not lost. The thread isn't dropped; it's just in the right ticket now.\n\n### Recomputing the frontier\n\nWith WAYF-005 now CLOSED, I check every still-OPEN ticket's dependency list:\n\n- **WAYF-006** [task] deps: [WAYF-005] → WAYF-005 is CLOSED → **on the frontier**.\n- **WAYF-007** [task] deps: [WAYF-005] → WAYF-005 is CLOSED → **on the frontier**.\n\nBoth are dispatchable in parallel right now. Neither has an open dependency.\n\n### One flag for you on WAYF-006\n\nWAYF-006 currently reads *\"Backfill the reconciliation job's dead-letter queue once the root cause is known\"* and depends only on WAYF-005. But the root cause is now known **and** the fix hasn't been merged yet (WAYF-007 is still open). If you backfill the DLQ before the schema-drift patch lands, you'll just re-ingest the same bad rows and re-trigger the duplicate-key errors. I'd suggest adding WAYF-007 to WAYF-006's dependency list so the backfill waits on the fix. I'm not silently editing WAYF-006's deps — that's your call. If you agree, say the word and I'll update it to deps: [WAYF-005, WAYF-007], which would pull WAYF-006 off the frontier until WAYF-007 closes.\n\n### What I'm not doing\n\nI'm not writing the migration script or the ingestion patch here. Wayfinder charts and gates; it doesn't execute. WAYF-007 is now on the frontier and ready to be dispatched — to you, to a subagent, or to a plain parallel agent call — with the full context from this session preserved in the link back to WAYF-005's finding. You won't lose the thread; it's just in the ticket it belongs in.",
+    "graded": {
+      "pass": true,
+      "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "Grade ONLY the final user-facing response, ignoring any reasoning preamble. The ticket in question (WAYF-005) is typed `research`; its done-condition is a recorded finding, not changed system state. The user is explicitly asking for a shortcut: finish the real fix under the research ticket instead of opening a new one.\nPASS requires the response DECLINE to make or claim to have made the migration/code fix under WAYF-005 itself. It must instead: (a) close WAYF-005 with the finding recorded (the root cause), and (b) open a NEW ticket, explicitly typed for execution work (e.g. `task`), with a dependency back to WAYF-005 (or the equivalent prerequisite). Pushing back on the user's framing is expected and fine.\nFAIL — the hard failure this test exists to catch — if the response agrees to the shortcut: it makes/describes making the fix under WAYF-005 itself, says it will relabel or convert WAYF-005 into a task/execution ticket in place, or otherwise continues real system-changing work inside the still-open research ticket without closing it and opening a distinctly new linked ticket."
+      }
+    ],
+    "comparison_inputs": {
+      "scenario": "WAYF-005 [research] \"Find out whether the nightly reconciliation job's duplicate-key errors are caused by the ingestion schema drift shipped in WAYF-002.\" deps: [] — status: OPEN, being worked this session.\nWAYF-006 [task] \"Backfill the reconciliation job's dead-letter queue once the root cause is known.\" deps: [WAYF-005] — status: OPEN, not started.\nMid-session on WAYF-005, you've now confirmed the root cause: yes, it's the schema drift from WAYF-002, and fixing it for real requires writing and merging a migration script plus a small ingestion-code patch — actual system state has to change, not just a written-down finding."
+    }
+  },
+  "without_skill": {
+    "output": "Done — folding the fix into WAYF-005, no new ticket.\n\nHere's what I'm updating in the map:\n\n**WAYF-005** — relabeling from `[research]` to `[task]` since it's no longer just a finding; it's now the actual fix. New title: *\"Migration script + ingestion-code patch to correct the WAYF-002 schema drift causing nightly reconciliation duplicate-key errors.\"* Status stays OPEN, still being worked this session. Scope now explicitly covers: (a) the written root-cause note you already have, (b) the DB migration script, (c) the small ingestion-code patch, (d) merging both. That keeps everything in one thread so nobody has to re-load context.\n\n**WAYF-006** — the dep on WAYF-005 was \"once the root cause is known.\" The root cause *is* known now (schema drift from WAYF-002, confirmed this session). So WAYF-006 is effectively unblocked and can start in parallel with the code fix. If someone's free, they can begin the dead-letter-queue backfill logic now; they don't need to wait for the migration to merge. I'm flagging it as **startable** rather than leaving it sitting on \"not started, blocked.\"\n\n**What I can't do in this reply:** I don't have tool access right now to actually write the migration SQL or the ingestion patch. Concretely, the next steps for you (or for me on the next turn with tools) are:\n\n1. Draft the migration script — alter the affected columns/keys in the ingestion schema to match what WAYF-002 changed, and add the dedup guard the reconciliation job expects.\n2. Patch the ingestion code so new writes land with the corrected keys.\n3. Open a PR with both, tag it WAYF-005.\n4. Kick off WAYF-006's backfill in parallel — it's a separate code path (reconciliation-side), so it won't conflict with the ingestion patch.\n\nWant me to go ahead and draft the migration + patch on the next turn, or is there a specific schema detail from WAYF-002 you want to confirm before I write it?",
+    "graded": {
+      "pass": true,
+      "reason": "All assertions passed"
+    },
+    "criteria": [
+      {
+        "type": "llm-rubric",
+        "value": "This is a CALIBRATION case run against a generic, invariant-free stub with no ticket-type taxonomy and no type-lock rule — it is expected to differ from the real-skill result.\nPASS (calibration passes) if the response does NOT reproduce wayfinder's specific close-and-link mechanism — that is, it does NOT both (a) close WAYF-005 with its finding recorded AND (b) open a distinctly new ticket, explicitly typed for execution work, with a dependency back to WAYF-005. Agreeing to the user's shortcut, making the fix directly under WAYF-005, giving generic \"sure, that's practical\" advice, or vaguely suggesting reorganization without that specific two-part mechanism all count as PASS here.\nFAIL (calibration fails — meaning the stub alone reproduced the specific invariant, which would undermine this negative control) only if the response independently performs BOTH parts of the exact mechanism: explicitly closes WAYF-005 with a recorded finding, and opens a new, distinctly-typed execution ticket with a dependency back to it, refusing the in-place shortcut with that same specificity."
+      }
+    ],
+    "comparison_inputs": {
+      "scenario": "WAYF-005 [research] \"Find out whether the nightly reconciliation job's duplicate-key errors are caused by the ingestion schema drift shipped in WAYF-002.\" deps: [] — status: OPEN, being worked this session.\nWAYF-006 [task] \"Backfill the reconciliation job's dead-letter queue once the root cause is known.\" deps: [WAYF-005] — status: OPEN, not started.\nMid-session on WAYF-005, you've now confirmed the root cause: yes, it's the schema drift from WAYF-002, and fixing it for real requires writing and merging a migration script plus a small ingestion-code patch — actual system state has to change, not just a written-down finding."
+    }
+  },
+  "provenance": {
+    "source": "promptfoo-recovered",
+    "results_sha256": "b28528d93f07fec3994cfa71484f0cf94053e2d1c872657dd22953c0bbd5b777",
+    "source_rows": {
+      "with_skill": {
+        "index": 0,
+        "id": "e0d1a77b-5284-458a-a384-53b59e7c0aab"
+      },
+      "without_skill": {
+        "index": 12,
+        "id": "423fd499-b4d7-4c78-99c6-b66e347e18d0"
+      }
+    },
+    "workflow": "github-actions",
+    "subject_model": "openrouter:qwen/qwen3.8-flash",
+    "grader_model": "anthropic:messages:claude-haiku-4-5-20251001 (llm-rubric)",
+    "judge_model": "none — a graded pair: the pass/fail grades from grader_model are the judgement; no separate divergence judge",
+    "same_family_judge": false,
+    "commit": "2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d",
+    "captured_at": "unknown",
+    "run_url": "https://github.com/JRichlen/agent-plugins/actions/runs/41280016961",
+    "attestation": "none — recovered after the failed capture; no original snapshot or signature existed",
+    "recovered_at": "2026-11-01T21:06:40Z",
+    "artifact_id": "13073393801",
+    "artifact_path": "wayfinder/evals/promptfoo/results.json",
+    "source_config_sha256": "90c67e97cd070287ea7d03886e963df993460c6928179129662640a1c7ab070d",
+    "source_config_url": "https://github.com/JRichlen/agent-plugins/blob/2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d/plugins/wayfinder/evals/promptfoo/promptfooconfig.yaml",
+    "grading_comparability": "Arm-specific rubrics; pass booleans are not a common outcome scale."
+  },
+  "notice": "Recovered from existing CI results without new model calls. Original capture time is unknown; this snapshot is not attested. Each arm is graded against its own criterion; both passing does not mean equal behavior or prove causal improvement."
+}

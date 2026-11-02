@@ -41,6 +41,15 @@ and preserves raw result artifacts on failure. Required behavioral/deep aggregat
 fail as blocked when their cheap dependency fails; a canceled superseded run does
 not report a fresh verdict. See the CI runbook for stacked-event cancellation.
 
+The model-call eligibility job blocks all five model-bearing jobs, including
+reachability probes, for Dependabot PRs and exact attributed Dependabot merges.
+An explicit `no-paid/` source branch has the same free-only policy. The whole
+introduced push range is checked, including earlier bot merges beneath human
+tips. Missing or bounded-out attribution fails closed; manual dispatch has no
+bot/no-paid exemption. Aggregates distinguish intentional skips from model
+passes. Offline event/control tests cover both PR and post-merge paths. The
+[CI runbook](../ci/README.md) owns operation and recovery.
+
 ## Release-candidate boundary
 
 The [candidate builder](../release/README.md) packages exact Git objects with
@@ -56,6 +65,11 @@ The free pipeline contracts check the newcomer documentation's local links and
 anchors, capture eligibility, and recovery provenance against real process/Git
 seams. Page generators still own derived counts and presentation. The obsolete
 gallery phase/count plan was removed; its historical states remain in Git.
+
+Historical recovery assertions use immutable test fixtures, so ordinary gallery
+refreshes need not retain recovery-only fields. Capture controls exercise typed
+grader faults, independent assertion failures and fallback per-arm inputs; a
+normal capture is rendered and checked without recovery provenance.
 Renderer controls also execute the actual embedded Python with Windows-style
 stdout/file writers: removing explicit LF output must fail the control. Ordinary
 graded and attested captures retain the same per-arm criteria/context disclosure
@@ -149,7 +163,11 @@ that it is green because it did not run, never silently.
   `evals/cheap/helpers.sh`, define no local helper, and wrap pack sourcing in
   the fail-closed guard — see
   [#120](https://github.com/JRichlen/agent-plugins/issues/120)), statistical-gate
-  self-test, example-gallery sync/provenance, and the testing-doc drift guard
+  self-test, example-gallery sync/provenance, Agent Plugins 1.0 projection
+  sync (`ci/agent_plugins.py --check`: every registered plugin's generated root
+  `plugin.json`/`mcp.json` matches its `.claude-plugin/plugin.json` and the
+  spec's closed-manifest, name and MCP rules, and every discovered `SKILL.md`
+  satisfies the Agent Skills frontmatter rules), and the testing-doc drift guard
   defending this document.
   The model-pricing unit suite also exercises malformed prices, material-change
   thresholds, stale evidence, budget reservations/dedupe, and proposal authority.
@@ -1085,6 +1103,7 @@ job: behavioral tier (promptfoo)
 job: behavioral tier — detect paid packs
 job: behavioral tier — promptfoo
 job: build
+job: model-call eligibility (no API evaluation)
 job: calibration sheet — draw and commit
 job: candidate packaging contracts (offline)
 job: cheap tier (deterministic, offline)

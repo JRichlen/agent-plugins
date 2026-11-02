@@ -101,7 +101,7 @@ for p in plugins:
     # hosted one such as prove-the-undo) is unfindable unless it is listed here.
     skills = " ".join(sorted(shipped.get(name, set()) - {name}))
     rows.append(f'''
-  <li class="plugin" data-q="{esc((name + ' ' + p.get('description','') + ' ' + kw + (' ' + skills if skills else '')).lower())}">
+  <li class="plugin" data-q="{esc((name + ' ' + p.get('description','') + ' ' + user_purposes.get(name, '') + ' ' + kw + (' ' + skills if skills else '')).lower())}">
     <div class="p-head">
       <h3><a href="{REPO}/tree/main/plugins/{esc(name)}">{esc(name)}</a> <span class="ver">v{esc(p.get("version","?"))}</span></h3>
       <div class="tags">{ex_html}{pack_html}</div>

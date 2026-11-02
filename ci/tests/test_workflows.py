@@ -29,7 +29,7 @@ class WorkflowContracts(unittest.TestCase):
         self.assertEqual(schedule.check_text(text), [])
         jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
         for name in ("grader-model", "subject-model", "routing-eval"):
-            self.assertEqual(jobs[name]["needs"], ["cheap"])
+            self.assertEqual(jobs[name]["needs"], ["cheap", "paid-policy"])
         for name in ("counterfeit", "install", "behavioral", "deep"):
             self.assertIn("!cancelled()", jobs[name]["if"])
         for name in ("behavioral", "deep"):
@@ -46,6 +46,10 @@ class WorkflowContracts(unittest.TestCase):
             setup = [step for step in jobs[name]["steps"] if step.get("uses") == "./.github/actions/setup-eval-tools"]
             self.assertEqual(len(setup), 1)
             self.assertEqual(setup[0]["with"]["offline-sandbox"], "false")
+            key = "paid" if name == "behavioral-run" else "routing"
+            self.assertEqual(setup[0]["if"], f"steps.touched.outputs.{key} == 'true'")
+            steps = jobs[name]["steps"]
+            self.assertLess(next(i for i,x in enumerate(steps) if x.get("id") == "touched"), steps.index(setup[0]))
         paths = jobs["counterfeit-detect"]["steps"][1]["with"]["filters"]
         for surface in (".github/actions/**", "ci/setup-eval-tools.sh", "ci/eval-profile.sh", "ci/tools/**"):
             self.assertIn(surface, paths)
@@ -153,6 +157,8 @@ class CaptureEligibility(unittest.TestCase):
                 ("different provider", row("calibration", provider="openrouter:other/test"), False),
                 ("faulted", row("calibration", failure=2), False),
                 ("empty", row("calibration", output=""), False),
+                ("typed grader fault", {**row("calibration", failure=1), "success": False, "gradingResult": {"componentResults": [{"pass": False, "metadata": {"graderError": True}}]}}, False),
+                ("independent failure", {**row("calibration", failure=1), "success": False, "gradingResult": {"componentResults": [{"pass": False, "metadata": {"graderError": True}}, {"pass": False, "assertion": {"type": "contains"}}]}}, True),
             ):
                 with self.subTest(label=label):
                     result = root / "results.json"

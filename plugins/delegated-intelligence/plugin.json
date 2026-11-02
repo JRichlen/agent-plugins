@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "delegated-intelligence",
+  "version": "0.2.0",
+  "description": "Delegate independent work through bounded briefs, owned outputs and checked handbacks. Use when real workers help; keep small or tightly coupled work direct.",
+  "author": {
+    "name": "Jordan Richlen"
+  },
+  "homepage": "https://github.com/JRichlen/agent-plugins/tree/main/plugins/delegated-intelligence",
+  "repository": "https://github.com/JRichlen/agent-plugins",
+  "license": "MIT",
+  "keywords": [
+    "delegation",
+    "subagents",
+    "orchestration",
+    "multi-agent",
+    "coordinator",
+    "background",
+    "bounded-execution"
+  ]
+}

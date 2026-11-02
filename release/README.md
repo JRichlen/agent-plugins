@@ -23,9 +23,12 @@ shipped automation or permission to deploy.
 
 ## Build locally without running source code
 
-Prerequisites: Python 3.12.3 and Git. From the repository root:
+Prerequisites: Python 3.12.3 and Git. Contract tests also need the pinned parser
+from `ci/tools/candidate-requirements.txt`; install it in an activated virtual
+environment. The builder itself uses only the standard library. From the repository root:
 
 ```sh
+python3 -m pip install --requirement ci/tools/candidate-requirements.txt
 python3 -m unittest discover -s ci/tests -p 'test_release.py'
 python3 release/build_candidate.py --revision FULL_COMMIT_SHA --output /tmp/plugin-candidate
 cd /tmp/plugin-candidate
@@ -48,7 +51,10 @@ The builder disables Git replacement objects and inherited Git environment/confi
 overrides, verifies blob identities, and rejects non-UTF-8 names and unsafe
 `.git` path components. It writes into a private staging directory and publishes
 the complete directory only after every output succeeds; failed builds leave no
-partial candidate. The manifest separately identifies candidate source, builder
+partial candidate. Publication uses atomic no-replace operations on Windows and Linux (Linux
+requires `renameat2` with filesystem support). Other hosts fail closed rather
+than using a check-then-rename fallback. A competing empty directory is preserved.
+The manifest separately identifies candidate source, builder
 revision/source hash, Python, Git and zlib versions. These are reproducibility
 inputs, not a signature.
 

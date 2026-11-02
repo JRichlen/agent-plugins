@@ -34,7 +34,7 @@ else
   # Every file the marketplace conventions require is present.
   _missing=""
   for f in \
-    ".claude-plugin/plugin.json" \
+    ".claude-plugin/plugin.json" "plugin.json" \
     "skills/sample-plugin/SKILL.md" \
     "commands/sample-plugin.md" \
     "AGENTS.md" "CLAUDE.md" "GEMINI.md" "README.md" \
@@ -58,6 +58,17 @@ else
     ok "plugin-factory: generated plugin.json is valid and names the plugin (v0.0.1)"
   else
     bad "plugin-factory: generated plugin.json invalid or misnamed"
+  fi
+
+  # The root Agent Plugins 1.0 manifest is exactly what the marketplace's
+  # projection gate expects, so a fresh scaffold does not start in drift.
+  # Only where that gate ships (the marketplace repo and its synthetic roots).
+  if [ -f ci/agent_plugins.py ]; then
+    if python3 ci/agent_plugins.py --root "$_tmp" --check >/dev/null 2>&1; then
+      ok "plugin-factory: root plugin.json matches the Agent Plugins projection"
+    else
+      bad "plugin-factory: scaffolded root plugin.json drifts from ci/agent_plugins.py"
+    fi
   fi
 
   # SKILL.md leads with the invariant section (#3 invariant-first).
@@ -88,8 +99,18 @@ else
     bad "plugin-factory: scaffold did not wire the marketplace entry exactly once"
   fi
 
+  # Names the Agent Plugins contract rejects are refused before any write.
+  _long="$(printf 'a%.0s' $(seq 1 65))"
+  for _bad in "sample--plugin" "$_long"; do
+    if "$_scaffold" "$_bad" --root "$_tmp" >/dev/null 2>&1 || [ -e "$_tmp/plugins/$_bad" ]; then
+      bad "plugin-factory: scaffold accepted invalid name '${_bad:0:20}...'"
+    else
+      ok "plugin-factory: scaffold refuses invalid name '${_bad:0:20}' without writing"
+    fi
+  done
+
   rm -rf "$_tmp"
-  unset _scaffold _tmp _gen _missing
+  unset _scaffold _tmp _gen _missing _long _bad
 fi
 
 # --- Wave 3: the wrapped skill-iteration loop --------------------------------
