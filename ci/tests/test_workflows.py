@@ -29,7 +29,7 @@ class WorkflowContracts(unittest.TestCase):
         self.assertEqual(schedule.check_text(text), [])
         jobs = yaml.load(text, Loader=yaml.BaseLoader)["jobs"]
         for name in ("grader-model", "subject-model", "routing-eval"):
-            self.assertEqual(jobs[name]["needs"], ["cheap"])
+            self.assertEqual(jobs[name]["needs"], ["cheap", "paid-policy"])
         for name in ("counterfeit", "install", "behavioral", "deep"):
             self.assertIn("!cancelled()", jobs[name]["if"])
         for name in ("behavioral", "deep"):
