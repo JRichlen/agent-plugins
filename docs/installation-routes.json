@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "sources_checked": "2026-11-02",
+  "host_version_note": "Installed host versions were not measured for native routes; inspect local help before acting.",
+  "routes": [
+    {
+      "id": "source-codex",
+      "label": "Explicit source load",
+      "effects": "Disposable clone and the current task",
+      "evidence": "A read-only Codex search on Windows was exercised in Getting started",
+      "evidence_level": "source-exercised",
+      "qualified_os": ["Windows"],
+      "unit": ".",
+      "required": ["AGENTS.md", "core/OPERATING.md", "core/ownership.json", "plugins/find-before-build/skills/find-before-build/SKILL.md"],
+      "sources": ["https://developers.openai.com/codex/skills"]
+    },
+    {
+      "id": "claude-session",
+      "label": "Claude session trial",
+      "effects": "Load one local plugin for one session",
+      "evidence": "Host-documented; native loading was not exercised here",
+      "evidence_level": "host-documented",
+      "qualified_os": [],
+      "unit": "plugins/find-before-build",
+      "required": [".claude-plugin/plugin.json", "AGENTS.md", "commands/find-before-build.md", "skills/find-before-build/SKILL.md"],
+      "instruction_only": true,
+      "sources": ["https://code.claude.com/docs/en/plugins/cli-reference"]
+    },
+    {
+      "id": "codex-project-skill",
+      "label": "Codex project skill",
+      "effects": "Add the starter skill and LICENSE to the selected project's .agents/skills/",
+      "evidence": "Declared resource closure checked; discovery and invocation still need verification",
+      "evidence_level": "structurally-checked",
+      "qualified_os": [],
+      "unit": "plugins/find-before-build/skills/find-before-build",
+      "required": ["SKILL.md"],
+      "supplemental_repo_files": ["LICENSE"],
+      "sources": ["https://developers.openai.com/codex/skills"]
+    },
+    {
+      "id": "native-marketplace",
+      "label": "Native marketplace",
+      "effects": "Marketplace registration, installed cache and host settings",
+      "evidence": "Repository structure and official host guidance; no end-to-end native qualification",
+      "evidence_level": "host-documented",
+      "qualified_os": [],
+      "unit": ".",
+      "required": [".claude-plugin/marketplace.json", "plugins/find-before-build/.claude-plugin/plugin.json", "plugins/find-before-build/plugin.json", "plugins/find-before-build/skills/find-before-build/SKILL.md"],
+      "sources": ["https://developers.openai.com/plugins/build/plugins", "https://code.claude.com/docs/en/discover-plugins"]
+    },
+    {
+      "id": "apm-project",
+      "label": "APM",
+      "effects": "Project manifest, lockfile and selected target files; lifecycle actions may also run",
+      "evidence": "Host-documented; this repository's APM deployment was not exercised",
+      "evidence_level": "host-documented",
+      "qualified_os": [],
+      "unit": "plugins/find-before-build/skills/find-before-build",
+      "required": ["SKILL.md"],
+      "supplemental_repo_files": ["LICENSE"],
+      "sources": ["https://microsoft.github.io/apm/reference/cli/install/", "https://microsoft.github.io/apm/reference/cli/uninstall/"]
+    }
+  ]
+}
