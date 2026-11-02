@@ -422,14 +422,15 @@ python3 "$REDTEAM_ROOT/bin/render_controls.py" --check || exit 1
 echo "=== redteam design: 2x2 generated configs match the frozen corpus, no drift, no dominance defect (T46) ==="
 python3 "$REDTEAM_ROOT/bin/generate.py" --check || exit 1
 
-echo "=== redteam offline: validating every config against promptfoo 0.122.0 (T42) ==="
+PIN_VERSION="$(node -e 'process.stdout.write(require(process.argv[1]).promptfoo.version)' "$REDTEAM_ROOT/pin.json")" || fail "redteam offline: unreadable version pin"
+echo "=== redteam offline: validating every config against promptfoo $PIN_VERSION (T42) ==="
 CONFIG_COUNT=0
 while IFS= read -r -d '' cfg; do
   CONFIG_COUNT=$((CONFIG_COUNT + 1))
   if ! "$REDTEAM_ROOT/bin/promptfoo.sh" validate -c "$cfg" >/dev/null 2>/tmp/redteam-validate.$$; then
     cat /tmp/redteam-validate.$$ >&2
     rm -f /tmp/redteam-validate.$$
-    fail "redteam offline: config invalid under promptfoo 0.122.0: $cfg"
+    fail "redteam offline: config invalid under promptfoo $PIN_VERSION: $cfg"
   fi
   rm -f /tmp/redteam-validate.$$
 done < <(find "$REDTEAM_ROOT" -path "$REDTEAM_ROOT/.artifacts" -prune -o \
@@ -462,5 +463,5 @@ if [[ "$ASSERT_OFFLINE" == "1" ]]; then
   "$REDTEAM_ROOT/bin/netproof.sh" --check-canary || fail "redteam offline: netproof did not verify isolation"
 fi
 
-echo "redteam: PASS — $CONFIG_COUNT configs validated against promptfoo 0.122.0, corpus hashes match, 0 npx references"
+echo "redteam: PASS — $CONFIG_COUNT configs validated against promptfoo $PIN_VERSION, corpus hashes match, 0 npx references"
 exit 0

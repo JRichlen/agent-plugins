@@ -5,6 +5,18 @@ import hashlib
 import json
 from pathlib import Path
 
+DIST_ALGORITHM = "sha256 over UTF-8 'dist/src/<name>  <sha256>\\n' lines, sorted by case-sensitive relative POSIX path, for every dist/src/*.js and dist/src/*.d.ts"
+
+
+def promptfoo_dist_manifest(home):
+    paths = [path for path in (home / "dist/src").iterdir()
+             if path.is_file() and path.name.endswith((".js", ".d.ts"))]
+    # Path ordering is case-insensitive on Windows. Sort explicit POSIX strings
+    # instead so the same package bytes produce the same manifest on every OS.
+    paths.sort(key=lambda path: path.relative_to(home).as_posix())
+    rows = "".join(f"{path.relative_to(home).as_posix()}  {hashlib.sha256(path.read_bytes()).hexdigest()}\n" for path in paths)
+    return hashlib.sha256(rows.encode("utf-8")).hexdigest(), len(paths)
+
 
 def check(root, modules=None):
     package = json.loads((root / "ci/tools/package.json").read_text(encoding="utf-8"))
@@ -33,6 +45,16 @@ def check(root, modules=None):
         path = modules / approved["package"] / approved["path"]
         if not path.resolve().is_relative_to(modules.resolve()) or hashlib.sha256(path.read_bytes()).hexdigest() != approved["sha256"]:
             problems.append("approved installer source/hash mismatch")
+        home = modules / "promptfoo"
+        pin = json.loads((root / "evals/redteam/pin.json").read_text(encoding="utf-8"))["promptfoo"]
+        actual_package = json.loads((home / "package.json").read_text(encoding="utf-8"))
+        if actual_package["version"] != pin["version"] or actual_package["version"] != package["dependencies"]["promptfoo"]:
+            problems.append("installed Promptfoo version differs from lock/pin")
+        if hashlib.sha256((home / "package.json").read_bytes()).hexdigest() != pin["package_json_sha256"]:
+            problems.append("Promptfoo package metadata hash differs from pin")
+        digest, count = promptfoo_dist_manifest(home)
+        if pin["dist_manifest_algo"] != DIST_ALGORITHM or (digest, count) != (pin["dist_manifest_sha256"], pin["dist_manifest_file_count"]):
+            problems.append("Promptfoo canonical distribution manifest differs from pin")
     return problems
 
 

@@ -626,7 +626,7 @@ class EgressIsFailedClosedOnTheHost(unittest.TestCase):
         measures the wrapper's forcing rather than an absence of traffic."""
         pf_home = os.environ.get(
             "PROMPTFOO_HOME",
-            "/home/jrichlen/ai/tools/promptfoo-0.122.0/node_modules/promptfoo",
+            "/home/jrichlen/ai/tools/promptfoo-0.125.1/node_modules/promptfoo",
         )
         entry = pathlib.Path(pf_home) / "dist" / "src" / "entrypoint.js"
         self.assertTrue(entry.is_file(), f"pinned entrypoint missing at {entry}")
@@ -797,7 +797,7 @@ tests:
                 capture_output=True, text=True, timeout=60, env=env,
             )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(result.stdout.strip(), "0.122.0")
+        self.assertEqual(result.stdout.strip(), json.loads((REDTEAM_ROOT / "pin.json").read_text(encoding="utf-8"))["promptfoo"]["version"])
 
 
 class GateHeaderMatchesTheProcessesItRuns(unittest.TestCase):
