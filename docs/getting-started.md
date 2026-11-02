@@ -23,22 +23,18 @@ method only to the task below. This is explicit source loading, not a native
 plugin installation or persistent host configuration.
 
 <details>
-<summary>Alternative: native Claude Code packaging (not qualified by this demonstration)</summary>
+<summary>Alternative: Claude session trial (not qualified by this demonstration)</summary>
 
-Start Claude Code in the same cloned repository. Add the marketplace and open
-installation details:
+From the same clone, check that `claude --help` supports `--plugin-dir`, then:
 
-```text
-/plugin marketplace add JRichlen/agent-plugins
-/plugin install find-before-build@jrichlen
+```sh
+claude --plugin-dir ./plugins/find-before-build
 ```
 
-Review the plugin details and choose local-only scope for this trial. Read the
-install summary, then select its installed command from the `/` menu. If it is
-missing, inspect `/plugin` for errors and follow
-[Claude's plugin guide](https://code.claude.com/docs/en/discover-plugins). Do not
-paste Core into global instructions as a troubleshooting shortcut. Native
-end-to-end installation/use was not run for this guide.
+Apply the same read-only task below. This loads the local plugin for one session;
+native end-to-end use was not run for this guide. For persistent installation,
+scope, existing-copy precedence and removal, use the [installation chooser](installation.md)
+or [guided-install prompt](guided-installation.md).
 
 </details>
 
@@ -77,15 +73,9 @@ choosing any discard operation; do not reset unrelated work.
 
 For source-loaded use, end the task/session; no plugin or global instruction was
 installed. Keep or remove only your disposable clone after checking its path.
-For the native Claude route, uninstall the method with:
-
-```text
-/plugin uninstall find-before-build@jrichlen
-```
-
-Verify the plugin list afterward. Uninstalling a method does not undo files or
-external actions it previously performed. This read-only exercise avoids those
-side effects.
+For the Claude session route, end the trial session. An existing installed copy
+is separate; do not uninstall it as part of ending this trial. If you chose
+persistent installation, use the scope-matched [removal guidance](installation.md#use-native-marketplace-packaging).
 
 ## What is qualified?
 

@@ -8,7 +8,7 @@ works when you need more control. Shared scope, authority and evidence rules
 have one owner; a plugin supplies the detailed method.
 
 **[Try a first task](docs/getting-started.md)** ·
-[Choose by need](#choose-by-need) · [Follow the guides](docs/guides/README.md)
+[Choose by need](#choose-by-need) · [Installation](docs/installation.md) · [Follow the guides](docs/guides/README.md)
 
 ## Try it
 
@@ -30,18 +30,17 @@ source-loaded Codex, how to check and undo the exercise, and host limits. No
 plugin or global instruction is installed by this route.
 
 <details>
-<summary>Prefer native Claude Code packaging?</summary>
+<summary>Prefer a Claude session trial?</summary>
 
-Start Claude Code in the cloned repository, then:
+From the same clone, with a Claude version that supports the flag:
 
-```text
-/plugin marketplace add JRichlen/agent-plugins
-/plugin install find-before-build@jrichlen
+```sh
+claude --plugin-dir ./plugins/find-before-build
 ```
 
-Review the details and choose local-only scope for the trial. Native Claude
-installation/use was not tested in the recorded Codex demonstration; see the
-[host guide](docs/getting-started.md) for qualification and removal.
+This loads one local plugin for that session. Native Claude use was not tested
+in the recorded Codex demonstration. See [installation choices](docs/installation.md)
+or give your agent the [guided prompt](docs/guided-installation.md).
 
 </details>
 
@@ -174,35 +173,16 @@ worker tool. It cannot simulate dispatched validation when that tool is absent.
 </details>
 
 <details>
-<summary>Install one method or inspect another host</summary>
+<summary>Keep one method or inspect another host</summary>
 
-For a debugging task in Claude Code:
+Use the [installation chooser](docs/installation.md) for source loading, a
+session trial, Codex project skills, native marketplaces and APM. It separates
+package availability from discovery, tools, hooks and actual host qualification.
+The [guided-install prompts](docs/guided-installation.md) help your agent inspect
+existing installs, choose scope, verify a read-only invocation and preserve undo.
 
-~~~text
-/plugin marketplace add JRichlen/agent-plugins
-/plugin install diagnosing-bugs@jrichlen
-~~~
-
-Choose the installed command from the "/" menu and give it the outcome request.
-For another method, install its catalog name as <name>@jrichlen.
-
-The repository also documents [APM](https://github.com/microsoft/apm) installation:
-
-~~~sh
-apm install JRichlen/agent-plugins/plugins/<name>
-apm install JRichlen/agent-plugins/plugins/<name>#<sha>
-~~~
-
-The second form pins the source revision. Keep the lockfile and use
-`apm install --frozen` for the locked set; it does not make host tools or model
-behavior identical.
-
-Other hosts can read SKILL.md and AGENTS.md, but tool support and enforcement
-differ. The core adapters here are reviewable repository artifacts, not a live
-installation. Selected services carry generated core-contract copies; enabling
-always-on host instructions remains a separate reviewed adoption step.
-[Claude Code's documentation](https://code.claude.com/docs/en/plugins) explains
-its current plugin naming and loading behavior.
+Installing a method does not adopt Core globally or supply worker tools.
+See the [host adapters](core/adapters/) when you need deeper integration.
 
 </details>
 
