@@ -73,7 +73,9 @@ def desc_of(plugin):
     if not p:
         return ""
     txt = open(p, encoding="utf-8").read()
-    m = re.search(r'description:\s*>?-?\s*\n?(.*?)(?:\nlicense:|\ncompatibility:|\n---)', txt, re.S)
+    # Stop at the next top-level frontmatter key, whatever it is, so fields such
+    # as allowed-tools or metadata never leak into the rendered description.
+    m = re.search(r'description:\s*>?-?\s*\n?(.*?)(?:\n[A-Za-z][\w-]*:|\n---)', txt, re.S)
     if not m:
         return ""
     return " ".join(m.group(1).split())

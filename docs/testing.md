@@ -166,7 +166,8 @@ that it is green because it did not run, never silently.
   self-test, example-gallery sync/provenance, Agent Plugins 1.0 projection
   sync (`ci/agent_plugins.py --check`: every registered plugin's generated root
   `plugin.json`/`mcp.json` matches its `.claude-plugin/plugin.json` and the
-  spec's closed-manifest, name and MCP rules), and the testing-doc drift guard
+  spec's closed-manifest, name and MCP rules, and every discovered `SKILL.md`
+  satisfies the Agent Skills frontmatter rules), and the testing-doc drift guard
   defending this document.
   The model-pricing unit suite also exercises malformed prices, material-change
   thresholds, stale evidence, budget reservations/dedupe, and proposal authority.

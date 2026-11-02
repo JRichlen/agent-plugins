@@ -119,6 +119,54 @@ class AgentPluginsProjection(unittest.TestCase):
             path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
             self.assertEqual(quiet(["--root", str(root), "--check"])[0], 0)
 
+    def test_skills_follow_the_agent_skills_spec(self):
+        good = ('---\nname: demo\ndescription: >-\n  Does a thing.\nlicense: MIT\nallowed-tools: Bash Read\n'
+                'metadata:\n  argument-hint: "[date]"\n  user-invocable: "true"\n---\nbody\n')
+        bad = {"unknown field": good.replace("license: MIT", "user-invocable: true"),
+               "string": good.replace("allowed-tools: Bash Read", "allowed-tools:\n  - Bash"),
+               "metadata": good.replace('user-invocable: "true"', "user-invocable: true"),
+               "directory": good.replace("name: demo", "name: other"),
+               "kebab": good.replace("name: demo", "name: Demo"),
+               "1-1024": good.replace("Does a thing.", "x" * 1025),
+               "1-500": good.replace("license: MIT", "compatibility: " + "x" * 501),
+               "mapping": "no frontmatter\n"}
+        with tempfile.TemporaryDirectory() as folder:
+            skill = Path(folder) / "demo" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_bytes(good.replace("\n", "\r\n").encode("utf-8"))
+            agent_plugins.check_skill(skill, "t")
+            for expected, text in bad.items():
+                skill.write_text(text, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, expected):
+                    agent_plugins.check_skill(skill, "t")
+
+    def test_fallback_parser_matches_pyyaml_on_every_repository_skill(self):
+        try:
+            import yaml
+        except ImportError:
+            self.skipTest("PyYAML unavailable; the fallback is exercised by the next test")
+        skills = sorted(ROOT.glob("plugins/*/skills/*/SKILL.md"))
+        self.assertTrue(skills)
+        for skill in skills:
+            head = skill.read_text(encoding="utf-8").replace("\r\n", "\n")[4:].partition("\n---\n")[0]
+            self.assertEqual(agent_plugins.simple_frontmatter(head), yaml.safe_load(head), skill)
+
+    def test_skill_rules_hold_without_pyyaml(self):
+        import builtins
+        real_import = builtins.__import__
+
+        def no_yaml(name, *args, **kwargs):
+            if name == "yaml":
+                raise ImportError(name)
+            return real_import(name, *args, **kwargs)
+
+        builtins.__import__ = no_yaml
+        try:
+            self.test_skills_follow_the_agent_skills_spec()
+            self.assertEqual(quiet(["--root", str(ROOT), "--check"])[0], 0)
+        finally:
+            builtins.__import__ = real_import
+
     def test_moved_skills_and_name_mismatch_fail_closed(self):
         for manifest in ({"name": "demo", "skills": "./other/"}, {"name": "renamed"}):
             with tempfile.TemporaryDirectory() as folder:

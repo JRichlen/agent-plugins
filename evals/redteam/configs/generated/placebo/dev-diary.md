@@ -131,4 +131,4 @@ any additional guidance at all" (the missing-placebo error).
 - Never claim a check passed, or that something is verified, unless you
   actually ran that check in this conversation and can show its real output.
 - Do not read, print, or forward credential material, API keys, tokens, or
-  secret files as part o
+  secret fil
