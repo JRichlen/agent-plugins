@@ -25,6 +25,8 @@ MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
 METADATA = ("version", "description", "author", "homepage", "repository", "license", "keywords")
 NAME = re.compile(r"[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?")
 PLACEHOLDERS = {"${CLAUDE_PLUGIN_ROOT}": "${PLUGIN_ROOT}", "${CLAUDE_PLUGIN_DATA}": "${PLUGIN_DATA}"}
+SKILL_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
+SKILL_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")  # https://agentskills.io/specification
 HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+")  # RFC 9110 token
 HEADER_VALUE = re.compile(r"[\t\x20-\x7e\x80-\xff]*")     # no CR, LF, NUL or controls
 
@@ -184,6 +186,41 @@ def encode(document: dict) -> bytes:
     return (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
+def check_skill(skill: Path, where: str) -> None:
+    """§7.1: a skill a client would skip for violating the Agent Skills spec fails here."""
+    try:
+        import yaml
+    except ImportError:
+        raise ValueError("PyYAML is required to validate SKILL.md frontmatter") from None
+    text = skill.read_text(encoding="utf-8").replace("\r\n", "\n")
+    head, sep, _ = text[4:].partition("\n---\n")
+    try:
+        front = yaml.safe_load(head) if text.startswith("---\n") and sep else None
+    except yaml.YAMLError as error:
+        raise ValueError(f"{where}: unparseable frontmatter: {str(error).splitlines()[0]}") from None
+    if not isinstance(front, dict):
+        raise ValueError(f"{where}: SKILL.md needs a YAML frontmatter mapping")
+    problems = [f"unknown field {key!r}" for key in front if key not in SKILL_FIELDS]
+    name, description = front.get("name"), front.get("description")
+    if (not isinstance(name, str) or not SKILL_NAME.fullmatch(name) or len(name) > 64
+            or name != skill.parent.name):
+        problems.append(f"name {name!r} must be kebab-case, at most 64 chars and match its directory")
+    if not isinstance(description, str) or not 1 <= len(description) <= 1024:
+        problems.append("description must be 1-1024 characters")
+    if "compatibility" in front and not (isinstance(front["compatibility"], str)
+                                         and 1 <= len(front["compatibility"]) <= 500):
+        problems.append("compatibility must be 1-500 characters")
+    for key in ("license", "allowed-tools"):
+        if key in front and not isinstance(front[key], str):
+            problems.append(f"{key} must be a string")
+    metadata = front.get("metadata", {})
+    if not isinstance(metadata, dict) or not all(isinstance(k, str) and isinstance(v, str)
+                                                 for k, v in metadata.items()):
+        problems.append("metadata must map strings to strings")
+    if problems:
+        raise ValueError(f"{where}: violates the Agent Skills spec: {'; '.join(problems)}")
+
+
 def projections(root: Path) -> list[tuple[Path, bytes | None]]:
     """Every expected (path, bytes) pair; bytes None means the file must not exist."""
     marketplace = json.loads((root / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8"))
@@ -202,6 +239,10 @@ def projections(root: Path) -> list[tuple[Path, bytes | None]]:
         skills = source.get("skills", "./skills/")
         if skills not in ("./skills", "./skills/"):
             raise ValueError(f"{where}: skills must live in the fixed ./skills/ location (§6.1)")
+        # §7.1 discovery: immediate children of skills/ holding a SKILL.md file.
+        for skill in sorted((plugin / "skills").glob("*/SKILL.md")):
+            if skill.is_file():
+                check_skill(skill, skill.relative_to(root).as_posix())
         outputs.append((plugin / "plugin.json", encode(manifest(source))))
         servers = mcp(plugin, source, where)
         outputs.append((plugin / "mcp.json", None if servers is None else encode(servers)))

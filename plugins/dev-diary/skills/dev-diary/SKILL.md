@@ -9,16 +9,10 @@ description: >-
   wrap-up — or says things like "log today", "diary entry", "capture today",
   "end of day", "what did I get done", "dev-diary", or invokes /dev-diary. Also
   use it to backfill a past day (pass the date) or to review recent entries.
-argument-hint: "[YYYY-MM-DD]  (defaults to today, local time)"
-user-invocable: true
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
+metadata:
+  argument-hint: "[YYYY-MM-DD]  (defaults to today, local time)"
+  user-invocable: "true"
 ---
 
 # Dev Diary

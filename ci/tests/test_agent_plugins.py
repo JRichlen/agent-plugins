@@ -119,6 +119,27 @@ class AgentPluginsProjection(unittest.TestCase):
             path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
             self.assertEqual(quiet(["--root", str(root), "--check"])[0], 0)
 
+    def test_skills_follow_the_agent_skills_spec(self):
+        good = ('---\nname: demo\ndescription: >-\n  Does a thing.\nlicense: MIT\nallowed-tools: Bash Read\n'
+                'metadata:\n  argument-hint: "[date]"\n  user-invocable: "true"\n---\nbody\n')
+        bad = {"unknown field": good.replace("license: MIT", "user-invocable: true"),
+               "string": good.replace("allowed-tools: Bash Read", "allowed-tools:\n  - Bash"),
+               "metadata": good.replace('user-invocable: "true"', "user-invocable: true"),
+               "directory": good.replace("name: demo", "name: other"),
+               "kebab": good.replace("name: demo", "name: Demo"),
+               "1-1024": good.replace("Does a thing.", "x" * 1025),
+               "1-500": good.replace("license: MIT", "compatibility: " + "x" * 501),
+               "mapping": "no frontmatter\n"}
+        with tempfile.TemporaryDirectory() as folder:
+            skill = Path(folder) / "demo" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text(good.replace("\n", "\r\n"), encoding="utf-8")
+            agent_plugins.check_skill(skill, "t")
+            for expected, text in bad.items():
+                skill.write_text(text, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, expected):
+                    agent_plugins.check_skill(skill, "t")
+
     def test_moved_skills_and_name_mismatch_fail_closed(self):
         for manifest in ({"name": "demo", "skills": "./other/"}, {"name": "renamed"}):
             with tempfile.TemporaryDirectory() as folder:

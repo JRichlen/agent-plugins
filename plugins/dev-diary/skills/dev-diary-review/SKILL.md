@@ -10,16 +10,10 @@ description: >-
   or invokes /dev-diary-review. This is the editing counterpart to /dev-diary
   (which writes today's entry); reach for it for any change to a day already on
   disk.
-argument-hint: "[YYYY-MM-DD]  (the entry to edit; omit to pick from recent)"
-user-invocable: true
-allowed-tools:
-  - Bash
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - AskUserQuestion
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
+metadata:
+  argument-hint: "[YYYY-MM-DD]  (the entry to edit; omit to pick from recent)"
+  user-invocable: "true"
 ---
 
 # Dev Diary — Review & Edit
