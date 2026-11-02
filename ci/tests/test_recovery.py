@@ -20,7 +20,7 @@ spec.loader.exec_module(recovery)
 
 class Recovery(unittest.TestCase):
     def test_recovery_provenance_requires_actual_field_formats(self):
-        data = json.loads((ROOT / "docs/examples/data/stop-rule.json").read_text(encoding="utf-8"))["provenance"]
+        data = json.loads((ROOT / "ci/tests/fixtures/recovered/stop-rule.json").read_text(encoding="utf-8"))["provenance"]
         self.assertEqual(recovery.validate_recovered(data), [])
         for key, value in (("commit", "wrong"), ("results_sha256", True), ("source_config_sha256", "short"), ("artifact_id", 42), ("recovered_at", "2026-11-01"), ("artifact_path", "../outside"), ("source_rows", {"with_skill": {"index": True, "id": []}, "without_skill": {"index": -1, "id": None}})):
             changed = copy.deepcopy(data)
@@ -31,19 +31,15 @@ class Recovery(unittest.TestCase):
     def test_recovered_passes_refer_to_distinct_rubrics_and_inputs(self):
         for name in ("agent-compiler", "find-before-build", "semver-gate", "stop-rule", "wayfinder"):
             with self.subTest(plugin=name):
-                data = json.loads((ROOT / "docs/examples/data" / (name + ".json")).read_text(encoding="utf-8"))
+                data = json.loads((ROOT / "ci/tests/fixtures/recovered" / (name + ".json")).read_text(encoding="utf-8"))
                 self.assertTrue(data["with_skill"]["graded"]["pass"])
                 self.assertTrue(data["without_skill"]["graded"]["pass"])
                 self.assertTrue(data["with_skill"]["criteria"])
                 self.assertTrue(data["without_skill"]["criteria"])
                 self.assertNotEqual(data["with_skill"]["criteria"], data["without_skill"]["criteria"])
                 self.assertIn("2ff596caf3be9fd59ebfe42d17b05ccab1f1da1d", data["provenance"]["source_config_url"])
-        stop = json.loads((ROOT / "docs/examples/data/stop-rule.json").read_text(encoding="utf-8"))
+        stop = json.loads((ROOT / "ci/tests/fixtures/recovered/stop-rule.json").read_text(encoding="utf-8"))
         self.assertNotEqual(stop["with_skill"]["comparison_inputs"], stop["without_skill"]["comparison_inputs"])
-        page = (ROOT / "docs/examples/index.html").read_text(encoding="utf-8")
-        self.assertIn("grades use different rubrics", page)
-        self.assertIn("not a common quality scale", page)
-        self.assertNotIn("those tests do not discriminate improvement", page)
 
     def test_real_capture_preserves_unknown_time_and_source_rows(self):
         with tempfile.TemporaryDirectory(prefix="gallery-recovery-") as folder:
@@ -54,6 +50,9 @@ class Recovery(unittest.TestCase):
             destination = repo / "evals/paid/capture-example.sh"
             destination.parent.mkdir(parents=True)
             shutil.copyfile(ROOT / "evals/paid/capture-example.sh", destination)
+            classifier = destination.parent / "calibration/sample-for-labelling.py"
+            classifier.parent.mkdir()
+            shutil.copyfile(ROOT / "evals/paid/calibration/sample-for-labelling.py", classifier)
             pack = repo / "plugins/scope-fence/evals/promptfoo"
             pack.mkdir(parents=True)
             (pack / "promptfooconfig.yaml").write_text("defaultTest:\n  options:\n    provider:\n      id: anthropic:messages:claude-test\n", encoding="utf-8")

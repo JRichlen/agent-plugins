@@ -41,6 +41,15 @@ and preserves raw result artifacts on failure. Required behavioral/deep aggregat
 fail as blocked when their cheap dependency fails; a canceled superseded run does
 not report a fresh verdict. See the CI runbook for stacked-event cancellation.
 
+The model-call eligibility job blocks all five model-bearing jobs, including
+reachability probes, for Dependabot PRs and exact attributed Dependabot merges.
+An explicit `no-paid/` source branch has the same free-only policy. The whole
+introduced push range is checked, including earlier bot merges beneath human
+tips. Missing or bounded-out attribution fails closed; manual dispatch has no
+bot/no-paid exemption. Aggregates distinguish intentional skips from model
+passes. Offline event/control tests cover both PR and post-merge paths. The
+[CI runbook](../ci/README.md) owns operation and recovery.
+
 ## Release-candidate boundary
 
 The [candidate builder](../release/README.md) packages exact Git objects with
@@ -56,6 +65,11 @@ The free pipeline contracts check the newcomer documentation's local links and
 anchors, capture eligibility, and recovery provenance against real process/Git
 seams. Page generators still own derived counts and presentation. The obsolete
 gallery phase/count plan was removed; its historical states remain in Git.
+
+Historical recovery assertions use immutable test fixtures, so ordinary gallery
+refreshes need not retain recovery-only fields. Capture controls exercise typed
+grader faults, independent assertion failures and fallback per-arm inputs; a
+normal capture is rendered and checked without recovery provenance.
 Renderer controls also execute the actual embedded Python with Windows-style
 stdout/file writers: removing explicit LF output must fail the control. Ordinary
 graded and attested captures retain the same per-arm criteria/context disclosure
@@ -1089,6 +1103,7 @@ job: behavioral tier (promptfoo)
 job: behavioral tier — detect paid packs
 job: behavioral tier — promptfoo
 job: build
+job: model-call eligibility (no API evaluation)
 job: calibration sheet — draw and commit
 job: candidate packaging contracts (offline)
 job: cheap tier (deterministic, offline)

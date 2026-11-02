@@ -61,9 +61,12 @@ case "$ATTEST" in github|none) ;; *) echo "capture-example: --attestation must b
 [ -n "$PACK" ] || PACK="$(dirname "$RESULTS")"
 mkdir -p "$OUT"
 
-python3 - "$RESULTS" "$PLUGIN" "$OUT" "$COMMIT" "$CAPTURED" "$RUN_URL" "$ATTEST" "$PACK" <<'PY'
-import collections, hashlib, json, os, re, sys
+python3 - "$RESULTS" "$PLUGIN" "$OUT" "$COMMIT" "$CAPTURED" "$RUN_URL" "$ATTEST" "$PACK" "$(dirname "$0")/calibration/sample-for-labelling.py" <<'PY'
+import collections, hashlib, importlib.util, json, os, re, sys
 results, plugin, outdir, commit, captured, run_url, attest, pack = sys.argv[1:9]
+spec = importlib.util.spec_from_file_location("capture_faults", sys.argv[9])
+faults = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(faults)
 try:
     doc = json.load(open(results, encoding="utf-8"))
 except Exception as e:
@@ -76,9 +79,11 @@ def out_of(r):
     o = r.get("response", {}) or {}
     val = o.get("output", r.get("output", ""))
     return val if isinstance(val, str) else json.dumps(val)
+def variables(r):
+    return (r.get("vars") or {}) or ((r.get("testCase") or {}).get("vars") or {})
+
 def var(r, k):
-    v = (r.get("vars") or {}) or ((r.get("testCase") or {}).get("vars") or {})
-    return v.get(k)
+    return variables(r).get(k)
 def desc(r):
     return (r.get("testCase") or {}).get("description") or r.get("description") or ""
 def graded(r):
@@ -93,7 +98,7 @@ def provider_id(r):
     return (p.get("id") if isinstance(p, dict) else p) or "unknown"
 
 def gradeable(r):
-    return isinstance(r.get("success"), bool) and r.get("failureReason") != 2 and bool(out_of(r).strip())
+    return isinstance(r.get("success"), bool) and not faults.is_fault(r, doc) and bool(out_of(r).strip())
 
 real = stub = None
 for candidate in rows:
@@ -185,8 +190,8 @@ snap = {
     "plugin": plugin,
     "scenario": desc(real),
     "prompt": (var(real, "question") or "").strip(),
-    "with_skill": {"output": out_of(real).strip(), "graded": graded(real), "criteria": (real.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (real.get("vars") or {}).items() if k not in ("skill", "question")}},
-    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub), "criteria": (stub.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in (stub.get("vars") or {}).items() if k not in ("skill", "question")}},
+    "with_skill": {"output": out_of(real).strip(), "graded": graded(real), "criteria": (real.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in variables(real).items() if k not in ("skill", "question")}},
+    "without_skill": {"output": out_of(stub).strip(), "graded": graded(stub), "criteria": (stub.get("testCase") or {}).get("assert") or [], "comparison_inputs": {k:v for k,v in variables(stub).items() if k not in ("skill", "question")}},
     "provenance": {
         "source": "promptfoo",
         "results_sha256": hashlib.sha256(open(results, "rb").read()).hexdigest(),

@@ -16,7 +16,8 @@ import shlex
 import sys
 
 WORKFLOW = pathlib.Path(".github/workflows/evals.yml")
-# Same-repo PRs also need the paid-evals label before any paid call (#137).
+# Same-repo PRs need paid-evals for evaluation legs (#137). Reachability
+# probes retain their separate policy, but all five obey paid-policy.
 FORK_GATE = (
     "github.event_name != 'pull_request' || "
     "(github.event.pull_request.head.repo.full_name == github.repository && "
@@ -25,7 +26,9 @@ FORK_GATE = (
 # The matrix is capped, not serialized: 4 legs x --max-concurrency 1 bounds
 # in-flight subject calls at 4 (main's run 35287312617 sizing).
 MAX_PARALLEL = 4
+POLICY_GATE = "needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' && "
 BEHAVIOR_GATE = (
+    POLICY_GATE +
     "!cancelled() && needs.behavioral-detect.result == 'success' && "
     "needs.grader-model.result == 'success' && "
     "needs.behavioral-detect.outputs.plugins != '[]' && (" + FORK_GATE + ")"
@@ -77,11 +80,11 @@ def check_text(text: str) -> list[str]:
         if not re.fullmatch(r"\[[a-z0-9_, -]+\]", needs):
             raise ValueError("behavioral needs must be an explicit flow list")
         names = [name.strip() for name in needs[1:-1].split(",")]
-        if sorted(names) != ["behavioral-detect", "grader-model", "routing-eval"]:
+        if sorted(names) != ["behavioral-detect", "grader-model", "paid-policy", "routing-eval"]:
             problems.append("behavioral-run must wait for detect, grader-model, and routing-eval")
         if _expression(_field(behavior, "if", 4)) != _expression(BEHAVIOR_GATE):
             problems.append("behavioral condition must retain !cancelled(), detect/grader success, nonempty packs, and fork filtering; routing failure must not skip packs")
-        if _expression(_field(routing, "if", 4)) != _expression(FORK_GATE):
+        if _expression(_field(routing, "if", 4)) != _expression(POLICY_GATE + "(" + FORK_GATE + ")"):
             problems.append("routing fork filter changed")
         strategy = _block(behavior, r"    strategy:", "behavioral strategy")
         mp = _field(strategy, "max-parallel", 6)

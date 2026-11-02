@@ -17,7 +17,8 @@ name: evals
 #   fix to a PR no longer re-buys the full paid suite on every push. Add the label
 #   when a PR is ready for a paid pass (adding it triggers a run); remove it again
 #   to stop paying for follow-up pushes. Pushes to main and manual dispatch are
-#   unaffected.
+#   unaffected except Dependabot PRs and attributed Dependabot merges, which
+#   run free checks only. Attribution failures block model calls.
 on:
   push:
     branches: [main]
@@ -34,6 +35,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  paid-policy:
+    name: model-call eligibility (no API evaluation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      allowed: ${{ steps.policy.outputs.allowed }}
+      reason: ${{ steps.policy.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 ci/paid_policy.py
+
   cheap:
     name: cheap tier (deterministic, offline)
     # Pinned: the agentic gate's bubblewrap sandbox cannot start on ubuntu-26.04
@@ -231,10 +246,10 @@ jobs:
     # This is the check that answers "is the grader slug a real, reachable id?" without
     # depending on the OpenRouter subject model at all.
     name: confirm grader model resolves
-    needs: [cheap]
+    needs: [cheap, paid-policy]
     runs-on: ubuntu-latest
     # Secrets aren't available to fork PRs, so only run where they are.
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' && (!cancelled() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) ) }}
     steps:
       - uses: actions/checkout@v4
       - name: require successful free checks
@@ -315,10 +330,10 @@ jobs:
     # to the behavioral aggregate's needs + assess, exactly as grader-model is)
     # is a one-line change and an owner decision.
     name: confirm subject model resolves (advisory)
-    needs: [cheap]
+    needs: [cheap, paid-policy]
     runs-on: ubuntu-latest
     # Secrets aren't available to fork PRs, so only run where they are.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     steps:
       - uses: actions/checkout@v4
       - name: ping the configured subject model
@@ -350,12 +365,13 @@ jobs:
 
   behavioral-run:
     name: behavioral tier — promptfoo (${{ matrix.plugin }})
-    needs: [behavioral-detect, grader-model, routing-eval]
+    needs: [behavioral-detect, grader-model, routing-eval, paid-policy]
     # Share the subject-provider budget with routing without overlapping calls.
     # !cancelled() overrides the implicit success() dependency gate: a routing
     # FAILURE must not skip these independent behavioral measurements.
     # No packs → nothing to run. Fork PRs have no secrets, same as the other tiers.
     if: >-
+      needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' &&
       !cancelled() &&
       needs.behavioral-detect.result == 'success' &&
       needs.grader-model.result == 'success' &&
@@ -385,9 +401,6 @@ jobs:
         plugin: ${{ fromJSON(needs.behavioral-detect.outputs.plugins) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-eval-tools
-        with:
-          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -410,6 +423,10 @@ jobs:
               - 'plugins/${{ matrix.plugin }}/.claude-plugin/plugin.json'
               - 'plugins/${{ matrix.plugin }}/evals/promptfoo/**'
               - 'evals/paid/**'
+      - uses: ./.github/actions/setup-eval-tools
+        if: steps.touched.outputs.paid == 'true'
+        with:
+          offline-sandbox: false
       - name: announce that this leg did NOT run
         if: steps.touched.outputs.paid != 'true'
         run: |
@@ -533,12 +550,15 @@ jobs:
     # REQUIRED status check. !cancelled() + the assess table below mean an empty pack
     # set (fromJSON('[]') → run skipped), a fork PR, or an untouched plugin all
     # report green, while a real promptfoo failure reports red. Never left hanging.
-    needs: [cheap, behavioral-detect, behavioral-run, grader-model]
+    needs: [cheap, behavioral-detect, behavioral-run, grader-model, paid-policy]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess behavioral tier outcome
         env:
+          POLICY: ${{ needs.paid-policy.result }}
+          ALLOWED: ${{ needs.paid-policy.outputs.allowed }}
+          REASON: ${{ needs.paid-policy.outputs.reason }}
           CHEAP: ${{ needs.cheap.result }}
           DETECT: ${{ needs.behavioral-detect.result }}
           RUN: ${{ needs.behavioral-run.result }}
@@ -552,6 +572,14 @@ jobs:
             echo "::error::behavioral-detect did not succeed ($DETECT) — fail-closed paid discovery tripped or errored."
             exit 1
           fi
+          test "$POLICY" = success || { echo '::error::model eligibility attribution failed; no paid verdict'; exit 1; }
+          if [ "$ALLOWED" = false ]; then
+            test "$RUN" = skipped || { echo '::error::model run unexpectedly executed under no-paid policy'; exit 1; }
+            echo "::notice::model tier SKIPPED — $REASON; free checks passed, model behavior was not evaluated."
+            echo "- Model tier: **SKIPPED** — $REASON (not a model pass)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test "$ALLOWED" = true || { echo '::error::invalid model eligibility output'; exit 1; }
           # grader-model is skipped on fork PRs (no secrets) — treat skipped as green.
           case "$GRADER" in
             success|skipped) : ;;
@@ -578,16 +606,14 @@ jobs:
   routing-eval:
     name: routing tier (roster trigger routing)
     if: >-
-      github.event_name != 'pull_request' ||
+      needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' &&
+      (github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
-       contains(github.event.pull_request.labels.*.name, 'paid-evals'))
-    needs: [cheap]
+       contains(github.event.pull_request.labels.*.name, 'paid-evals')))
+    needs: [cheap, paid-policy]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-eval-tools
-        with:
-          offline-sandbox: false
       - uses: dorny/paths-filter@v3
         id: touched
         with:
@@ -610,6 +636,10 @@ jobs:
               - 'plugins/verify-before-claim/skills/verify-work/SKILL.md'
               - 'plugins/*/.claude-plugin/plugin.json'
               - '.claude-plugin/marketplace.json'
+      - uses: ./.github/actions/setup-eval-tools
+        if: steps.touched.outputs.routing == 'true'
+        with:
+          offline-sandbox: false
       - name: roster is in sync before spending on a model call
         if: steps.touched.outputs.routing == 'true'
         run: evals/routing/gen-roster.sh --check
@@ -860,12 +890,13 @@ jobs:
 
   deep-run:
     name: deep tier — pier run (${{ matrix.plugin }})
-    needs: [deep-detect, cheap]
+    needs: [deep-detect, cheap, paid-policy]
     # Run only when the gate switch is ON, AND the safety surface changed, AND
     # there are pier packs, AND secrets are available (fork PRs get no secrets —
     # same policy as the other tiers). The `enabled` clause is the off switch; it
     # is first so that while the tier is disabled nothing below it can start a run.
     if: >-
+      needs.paid-policy.result == 'success' && needs.paid-policy.outputs.allowed == 'true' &&
       needs.deep-detect.outputs.enabled == 'true' &&
       needs.deep-detect.outputs.changed == 'true' &&
       needs.deep-detect.outputs.plugins != '[]' &&
@@ -929,12 +960,15 @@ jobs:
     # This is the REQUIRED status check. It always runs and always reports, so the
     # branch-protection gate is never left hanging on a job that was conditionally
     # skipped. It fails only if the pier run itself failed.
-    needs: [cheap, deep-detect, deep-run]
+    needs: [cheap, deep-detect, deep-run, paid-policy]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: assess deep tier outcome
         env:
+          POLICY: ${{ needs.paid-policy.result }}
+          ALLOWED: ${{ needs.paid-policy.outputs.allowed }}
+          REASON: ${{ needs.paid-policy.outputs.reason }}
           CHEAP: ${{ needs.cheap.result }}
           DETECT: ${{ needs.deep-detect.result }}
           RUN: ${{ needs.deep-run.result }}
@@ -948,6 +982,14 @@ jobs:
             echo "::error::deep-detect did not succeed ($DETECT) — cannot trust the gate."
             exit 1
           fi
+          test "$POLICY" = success || { echo '::error::model eligibility attribution failed; no paid verdict'; exit 1; }
+          if [ "$ALLOWED" = false ]; then
+            test "$RUN" = skipped || { echo '::error::model run unexpectedly executed under no-paid policy'; exit 1; }
+            echo "::notice::model tier SKIPPED — $REASON; free checks passed, model behavior was not evaluated."
+            echo "- Model tier: **SKIPPED** — $REASON (not a model pass)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test "$ALLOWED" = true || { echo '::error::invalid model eligibility output'; exit 1; }
           # Same discipline the behavioral tier learned the hard way: a green
           # check that never ran must never be mistakable for a green check that
           # passed. Announce the disabled gate on every single run.
