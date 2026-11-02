@@ -68,6 +68,10 @@ case "$NAME" in
   *[!a-z0-9-]*|-*|*-|"") die "name '$NAME' must be kebab-case: ^[a-z][a-z0-9-]*\$ (lowercase, digits, hyphens; no leading/trailing hyphen)" ;;
 esac
 [[ "$NAME" =~ ^[a-z] ]] || die "name '$NAME' must start with a lowercase letter"
+# Agent Plugins 1.0 §5.5 and Agent Skills: no consecutive hyphens, at most 64
+# characters — the name is copied into both manifests and the skill directory.
+case "$NAME" in *--*) die "name '$NAME' must not contain consecutive hyphens" ;; esac
+[ "${#NAME}" -le 64 ] || die "name '$NAME' must be at most 64 characters"
 
 # --- locate the marketplace root -------------------------------------------
 if [ -z "$ROOT" ]; then

@@ -99,8 +99,18 @@ else
     bad "plugin-factory: scaffold did not wire the marketplace entry exactly once"
   fi
 
+  # Names the Agent Plugins contract rejects are refused before any write.
+  _long="$(printf 'a%.0s' $(seq 1 65))"
+  for _bad in "sample--plugin" "$_long"; do
+    if "$_scaffold" "$_bad" --root "$_tmp" >/dev/null 2>&1 || [ -e "$_tmp/plugins/$_bad" ]; then
+      bad "plugin-factory: scaffold accepted invalid name '${_bad:0:20}...'"
+    else
+      ok "plugin-factory: scaffold refuses invalid name '${_bad:0:20}' without writing"
+    fi
+  done
+
   rm -rf "$_tmp"
-  unset _scaffold _tmp _gen _missing
+  unset _scaffold _tmp _gen _missing _long _bad
 fi
 
 # --- Wave 3: the wrapped skill-iteration loop --------------------------------
