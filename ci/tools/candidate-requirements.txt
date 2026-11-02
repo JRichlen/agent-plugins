@@ -1,0 +1,2 @@
+# Parser used by the standalone packaging workflow's contract tests.
+PyYAML==6.0.2

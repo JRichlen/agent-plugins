@@ -70,6 +70,11 @@ compare an identical clean-main run before calling a failure pre-existing.
 
 ## Tool and profile ownership
 
+The standalone candidate-contract job installs its parser from
+[`tools/candidate-requirements.txt`](tools/candidate-requirements.txt), including
+when `setup-python` supplies a clean environment. It does not rely on packages
+preinstalled in another job; the source builder remains standard-library-only.
+
 [`setup-eval-tools`](../.github/actions/setup-eval-tools/action.yml) reads the
 Node pin from `evals/redteam/pin.json`, verifies the bundled npm version recorded
 in `tools/package.json`, and installs the exact

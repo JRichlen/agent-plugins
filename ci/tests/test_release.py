@@ -21,8 +21,11 @@ class Candidate(unittest.TestCase):
     def test_workflow_stages_only_on_manual_event_with_read_token(self):
         text = (ROOT / ".github/workflows/release-candidate.yml").read_text(encoding="utf-8")
         import yaml
-        events = yaml.load(text, Loader=yaml.BaseLoader)["on"]["pull_request"]["types"]
+        configuration = yaml.load(text, Loader=yaml.BaseLoader)
+        events = configuration["on"]["pull_request"]["types"]
         self.assertEqual(set(events), {"opened", "synchronize", "reopened", "stacked"})
+        for event in ("pull_request", "push"):
+            self.assertIn("ci/tools/candidate-requirements.txt", configuration["on"][event]["paths"])
         self.assertIn("contents: read", text)
         self.assertNotIn(": write", text)
         self.assertNotIn("secrets.", text)
