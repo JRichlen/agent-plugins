@@ -326,11 +326,11 @@
       "planned_attempts_total": 288,
       "plugin": "dev-diary",
       "primary_skill": "plugins/dev-diary/skills/dev-diary/SKILL.md",
-      "primary_skill_sha256": "b5ce59f2c995e830b64129df4882b801bec105e889c494e301556f7dec43cd2d",
+      "primary_skill_sha256": "0774751bdd9ef129812db180596b0ffccee4718fddeb968f0699a8600c76a95c",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 6862,
-        "treatment": 6862
+        "baseline-generic": 6850,
+        "treatment": 6850
       },
       "secondary_skills": [
         "plugins/dev-diary/skills/dev-diary-review/SKILL.md"
@@ -720,11 +720,11 @@
       "planned_attempts_total": 288,
       "plugin": "grill-me",
       "primary_skill": "plugins/grill-me/skills/grill-me/SKILL.md",
-      "primary_skill_sha256": "5e6114e654504be5e48136ba7e7d7050045f9b191e5ba1449432b13166e035bc",
+      "primary_skill_sha256": "e222b8252a99bbb579d9a865343e99d9ba9991f1806b2801435bf8500e44b877",
       "prompt_chars": {
         "baseline": 0,
-        "baseline-generic": 6420,
-        "treatment": 6420
+        "baseline-generic": 6300,
+        "treatment": 6300
       },
       "secondary_skills": [],
       "skill_paths": {

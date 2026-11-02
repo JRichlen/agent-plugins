@@ -4,14 +4,12 @@ description: >-
   Interview the user about a plan before work starts, single-session and no subagents required, walking its design tree and scaling question depth to each branch's stakes (reversibility x blast radius) while offering a recommendation at almost every step. Use on phrases like grill me, interview me about this plan, stress-test this plan, or before starting a nontrivial multi-step change whose design isn't yet settled.
 license: MIT
 compatibility: >-
-  PORTABILITY: harness-agnostic. Pure conversational prose — no subagents, no
-  Workflow tool, no hooks, no harness-specific primitive required at all — so
-  it ports to any harness that can hold a multi-turn conversation with the
-  user. The "Not this" section below names subagents and the Workflow tool
-  only to describe two OTHER plugins, not a dependency of this one. Interview
-  technique adapted from Matt Pocock's MIT-licensed grill-me/grilling skills
-  (github.com/mattpocock/skills); see README.md for the attribution note and
-  the departures this version makes.
+  PORTABILITY: harness-agnostic. Pure conversational prose with no subagents,
+  Workflow tool, hooks or other harness-specific primitive; it ports to any
+  harness that can hold a multi-turn conversation. "Not this" names subagents
+  and the Workflow tool only to describe other plugins. Interview technique
+  adapted from Matt Pocock's MIT-licensed grill-me/grilling skills
+  (github.com/mattpocock/skills); see README.md for attribution and departures.
 ---
 
 # grill-me
